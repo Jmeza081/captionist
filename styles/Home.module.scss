@@ -1,0 +1,22 @@
+@use 'theme/colors';
+@use 'theme/typography';
+
+.container {
+  padding: 0 2rem;
+  background-color: colors.$charcoal-900;
+}
+
+.main {
+  min-height: 100vh;
+  padding: 4rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.title {
+  @include typography.heroText;
+}
+
