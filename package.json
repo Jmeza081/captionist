@@ -8,8 +8,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ably-labs/react-hooks": "^1.1.5",
     "@dicebear/avatars": "^4.10.2",
     "@dicebear/avatars-bottts-sprites": "^4.10.2",
+    "ably": "^1.2.5-beta.1",
     "next": "12.0.10",
     "phosphor-react": "^1.4.0",
     "react": "17.0.2",
