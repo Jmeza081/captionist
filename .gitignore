@@ -38,3 +38,15 @@ yarn-error.log*
 
 # Env Files
 *.env
+
+# keep the documented template
+!.env.example
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# repomix pack (derived artifact — docs/architecture.md is what we commit)
+docs/repomix-output.xml

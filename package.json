@@ -5,25 +5,34 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:mobile": "playwright test --project=mobile",
+    "test:e2e:report": "playwright show-report --host 0.0.0.0",
+    "docs:pack": "repomix",
+    "verify": "npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
-    "@ably-labs/react-hooks": "^1.1.5",
-    "@dicebear/avatars": "^4.10.2",
-    "@dicebear/avatars-bottts-sprites": "^4.10.2",
-    "ably": "^1.2.5-beta.1",
-    "next": "12.0.10",
-    "phosphor-react": "^1.4.0",
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
-    "react-qr-code": "^2.0.3",
-    "sass": "^1.49.7"
+    "@dicebear/collection": "^9.4.2",
+    "@dicebear/core": "^9.4.3",
+    "@phosphor-icons/react": "^2.1.10",
+    "ably": "^2.28.0",
+    "next": "^16.3.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-qr-code": "^2.2.0",
+    "sass": "^1.103.1"
   },
   "devDependencies": {
-    "@types/node": "17.0.15",
-    "@types/react": "17.0.39",
-    "eslint": "8.8.0",
-    "eslint-config-next": "12.0.10",
-    "typescript": "4.5.5"
+    "@playwright/test": "1.56.1",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "^16.3.3",
+    "repomix": "^1.18.0",
+    "typescript": "^5.9.3"
   }
 }
