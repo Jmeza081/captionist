@@ -1,0 +1,39 @@
+@use 'theme' as t;
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-5;
+  width: 100%;
+  max-width: 22rem;
+
+  @include t.mq('md') {
+    gap: t.$space-6;
+    max-width: 26rem;
+  }
+}
+
+.heading {
+  @include t.titleText;
+  margin: 0;
+  text-align: center;
+}
+
+.qr {
+  width: 100%;
+  max-width: 16rem;
+  padding: t.$space-4;
+  background-color: t.$white-100;
+  border-radius: t.$radius-lg;
+
+  @include t.mq('md') {
+    max-width: 18rem;
+  }
+}
+
+.hint {
+  @include t.bodyText;
+  margin: 0;
+  text-align: center;
+}

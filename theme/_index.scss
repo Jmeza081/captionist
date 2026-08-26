@@ -1,0 +1,14 @@
+// Single entry point for every design token.
+//
+// Component styles should always write:
+//
+//   @use 'theme' as t;
+//
+// and reach tokens as `t.$space-4`, `t.$charcoal-900`, `t.mq('md')`. One
+// import path means the design system is greppable: any `.module.scss` that
+// doesn't `@use 'theme'` is not using the system.
+
+@forward 'colors';
+@forward 'typography';
+@forward 'spacing';
+@forward 'breakpoints';

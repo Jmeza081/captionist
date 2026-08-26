@@ -1,0 +1,29 @@
+@use 'sass:map';
+
+// Breakpoints — mobile-first, min-width only.
+//
+// Mobile is the default branch of every component: write the small-screen
+// styles unconditionally, then layer wider screens on with `mq()`. There are
+// deliberately no max-width mixins; a max-width query means the mobile case
+// was treated as the exception.
+
+$bp-sm: 480px;
+$bp-md: 768px;
+$bp-lg: 1024px;
+$bp-xl: 1280px;
+
+$breakpoints: (
+  'sm': $bp-sm,
+  'md': $bp-md,
+  'lg': $bp-lg,
+  'xl': $bp-xl,
+);
+
+@mixin mq($name) {
+  @if not map.has-key($breakpoints, $name) {
+    @error "Unknown breakpoint `#{$name}`. Use one of: #{map.keys($breakpoints)}.";
+  }
+  @media (min-width: map.get($breakpoints, $name)) {
+    @content;
+  }
+}

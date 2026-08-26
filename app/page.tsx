@@ -1,16 +1,14 @@
-import QRCode from 'react-qr-code'
+import { JoinPanel } from '@/components/molecules/JoinPanel'
 import styles from './page.module.scss'
 
+// Placeholder until rooms are real: the code and link are generated per room.
 const ROOM_CODE = 'C-F34213'
 const JOIN_URL = 'https://github.com/Jmeza081'
 
 export default function HomePage() {
   return (
-    <div className={styles.container}>
-      <main className={styles.main}>
-        <h1 className={styles.title}>{ROOM_CODE}</h1>
-        <QRCode value={JOIN_URL} />
-      </main>
-    </div>
+    <main className={styles.main}>
+      <JoinPanel code={ROOM_CODE} joinUrl={JOIN_URL} />
+    </main>
   )
 }

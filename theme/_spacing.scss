@@ -1,0 +1,25 @@
+// Spacing scale — 4px base.
+//
+// Rule: component styles use these tokens for margin, padding, gap, and
+// radius. Never a raw px/rem. If a value you need isn't here, add it here
+// first and note it in docs/design-system.md.
+
+$space-0: 0;
+$space-1: 0.25rem; //  4px
+$space-2: 0.5rem; //   8px
+$space-3: 0.75rem; //  12px
+$space-4: 1rem; //     16px  — default page gutter (mobile)
+$space-5: 1.5rem; //   24px
+$space-6: 2rem; //     32px  — default page gutter (>= md)
+$space-7: 3rem; //     48px
+$space-8: 4rem; //     64px
+$space-9: 6rem; //     96px
+$space-10: 8rem; //   128px
+
+$radius-sm: 0.25rem; //   4px
+$radius-md: 0.5rem; //    8px
+$radius-lg: 1rem; //     16px
+$radius-full: 999px;
+
+// Smallest comfortable touch target. Every interactive element must meet it.
+$tap-target-min: 44px;

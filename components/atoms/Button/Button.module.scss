@@ -1,0 +1,72 @@
+@use 'theme' as t;
+
+.button {
+  @include t.labelText;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$space-2;
+
+  // Every interactive element clears the minimum touch target.
+  min-height: t.$tap-target-min;
+  padding: t.$space-3 t.$space-5;
+
+  border: 1px solid transparent;
+  border-radius: t.$radius-md;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 120ms ease, border-color 120ms ease,
+    opacity 120ms ease;
+
+  &:focus-visible {
+    outline: 2px solid t.$honey-mustard;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.primary {
+  background-color: t.$massacre;
+  color: t.$white-100;
+
+  &:hover:not(:disabled) {
+    background-color: t.$rose-petal;
+  }
+}
+
+.secondary {
+  background-color: t.$charcoal-700;
+  border-color: t.$white-25;
+  color: t.$white-100;
+
+  &:hover:not(:disabled) {
+    border-color: t.$white-50;
+  }
+}
+
+.ghost {
+  background-color: transparent;
+  color: t.$white-75;
+
+  &:hover:not(:disabled) {
+    color: t.$white-100;
+  }
+}
+
+.md {
+  font-size: 0.875rem;
+}
+
+.lg {
+  font-size: 1rem;
+  padding: t.$space-4 t.$space-6;
+}
+
+.fullWidth {
+  width: 100%;
+}

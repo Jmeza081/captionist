@@ -1,0 +1,39 @@
+# Components
+
+Organised by [atomic design](https://bradfrost.com/blog/post/atomic-web-design/).
+The tier is decided by dependencies, not by size — a 200-line atom is still an
+atom, and a 10-line component that subscribes to Ably is an organism.
+
+| Tier | May contain | May **not** contain |
+| --- | --- | --- |
+| `atoms/` | Markup, tokens, its own props | App state, data fetching, other components from this repo |
+| `molecules/` | Atoms, layout, local UI state | Data fetching, realtime subscriptions, routing side effects |
+| `organisms/` | Molecules, atoms, data fetching, Ably subscriptions, routing | — |
+
+Pages in `app/` compose organisms and molecules. They should hold almost no
+markup of their own.
+
+## Before you add a component
+
+Search first. Every new component is a maintenance cost and a chance for two
+things to drift apart. In order:
+
+1. Does an existing component already do this? Use it.
+2. Does one nearly do it? Add a prop to it. A variant is a prop, never a
+   copy-pasted sibling component.
+3. Only then create a new one — and say in your PR or response why 1 and 2
+   didn't work.
+
+New components must be appended to the inventory table in
+[`docs/design-system.md`](../docs/design-system.md).
+
+## File shape
+
+Every component is a directory with three files:
+
+```
+ComponentName/
+  ComponentName.tsx          # the component
+  ComponentName.module.scss  # styles, always `@use 'theme' as t;`
+  index.ts                   # re-export, so imports stay `@/components/...`
+```

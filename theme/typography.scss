@@ -1,8 +1,0 @@
-@use 'theme/colors';
-
-@mixin heroText {
-    font-family: 'Inter', sans-serif;
-    font-size: 6rem;
-    font-weight: 800;
-    color: colors.$white-100;
-}

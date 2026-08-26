@@ -1,22 +1,19 @@
-@use 'theme/colors';
-@use 'theme/typography';
-
-.container {
-  padding: 0 2rem;
-  background-color: colors.$charcoal-900;
-}
+@use 'theme' as t;
 
 .main {
-  min-height: 100vh;
-  padding: 4rem 0;
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-}
+  justify-content: center;
 
-.title {
-  @include typography.heroText;
-}
+  // dvh tracks the mobile browser's collapsing toolbar; vh is the fallback.
+  min-height: 100vh;
+  min-height: 100dvh;
 
+  padding: t.$space-7 t.$space-4;
+  background-color: t.$charcoal-900;
+
+  @include t.mq('md') {
+    padding: t.$space-8 t.$space-6;
+  }
+}
