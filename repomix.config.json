@@ -1,0 +1,41 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "output": {
+    "filePath": "docs/repomix-output.xml",
+    "style": "xml",
+    "fileSummary": true,
+    "directoryStructure": true,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": false,
+    "compress": false
+  },
+  "include": [
+    "app/**",
+    "components/**",
+    "theme/**",
+    "e2e/**",
+    "docs/**/*.md",
+    "*.ts",
+    "*.tsx",
+    "*.mjs",
+    "*.json",
+    "*.md"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "package-lock.json",
+      "docs/repomix-output.xml",
+      "public/**",
+      "playwright-report/**",
+      "test-results/**",
+      "node_modules/**",
+      ".next/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}
