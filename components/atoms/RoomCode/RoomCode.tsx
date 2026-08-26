@@ -14,7 +14,7 @@ export interface RoomCodeProps {
  */
 export function RoomCode({ code }: RoomCodeProps) {
   return (
-    <p className={styles.roomCode}>
+    <p className={styles.roomCode} data-testid="room-code">
       <span aria-hidden="true">{code}</span>
       <span className={styles.srOnly}>
         Room code: {code.split('').join(' ')}
