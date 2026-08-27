@@ -1,0 +1,27 @@
+@use 'theme' as t;
+
+// Dev-only scaffolding: phase 1 has no screens, so this route renders the
+// room's raw state to prove the spine walks the whole flow. Phase 2 replaces
+// it with RoomShell and the real organisms.
+
+.headline {
+  @include t.cardTitleText;
+  margin: 0;
+}
+
+.meta {
+  @include t.labelText;
+  margin: 0;
+}
+
+.dump {
+  background: t.$surface-card;
+  border-radius: t.$radius-card;
+  padding: t.$space-14;
+  margin: 0;
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: t.$text-body;
+}
