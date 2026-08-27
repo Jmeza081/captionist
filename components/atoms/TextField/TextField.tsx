@@ -20,6 +20,8 @@ export interface TextFieldProps
   showCount?: boolean
   /** A leading glyph, typically the search magnifier. */
   icon?: ReactNode
+  /** A trailing control inside the field — the composer's send key. */
+  trailing?: ReactNode
 }
 
 /**
@@ -34,6 +36,7 @@ export function TextField({
   primary = false,
   showCount = false,
   icon,
+  trailing,
   className,
   value,
   maxLength,
@@ -79,6 +82,7 @@ export function TextField({
           maxLength={maxLength}
           {...rest}
         />
+        {trailing}
       </div>
     </div>
   )

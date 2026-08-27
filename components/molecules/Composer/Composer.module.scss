@@ -1,0 +1,176 @@
+@use 'theme' as t;
+
+.wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-10;
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-10;
+  padding: t.$composer-pad;
+  border: 1px solid t.$fill-secondary;
+  border-radius: t.$radius-field;
+  background-color: t.$surface-header;
+}
+
+// --- staged attachment ---
+
+.attached {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+  padding: t.$space-8 t.$space-10;
+  border: 1px solid t.$accent-fill-strong;
+  border-radius: t.$radius-field;
+  background-color: rgba(123, 97, 255, 0.12);
+}
+
+.attachedPreview {
+  flex: none;
+  width: t.$composer-attach-preview-w;
+  height: t.$composer-attach-preview-h;
+  border-radius: t.$radius-media-lg;
+  object-fit: cover;
+  display: block;
+}
+
+.attachedBody {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+  min-width: 0;
+}
+
+.attachedLabel {
+  @include t.eyebrowText;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.attachedHint {
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$text-body;
+}
+
+.attachedClose {
+  @include t.focusRing;
+
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$composer-attach-close;
+  height: t.$composer-attach-close;
+  border: 0;
+  border-radius: t.$radius-media;
+  background: none;
+  color: t.$text-label;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}
+
+// --- quick strip ---
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+}
+
+.quick {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: t.$space-2;
+  overflow: hidden;
+}
+
+.quickKey {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$composer-key;
+  height: t.$composer-key;
+  border: 0;
+  border-radius: t.$radius-media;
+  background: none;
+  font-size: t.$composer-quick-glyph;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: t.$fill-subtle;
+  }
+}
+
+.stripKey {
+  flex: none;
+  height: t.$composer-key;
+}
+
+.gifKey {
+  @include t.focusRing;
+
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: t.$composer-key;
+  padding: 0 t.$space-10;
+  border: 0;
+  border-radius: t.$radius-pill;
+  background-color: rgba(123, 97, 255, 0.22);
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: t.$accent-on-fill;
+  cursor: pointer;
+
+  &:hover {
+    background-color: t.$accent-fill-strong;
+  }
+}
+
+// --- send key, inside the field ---
+
+.send {
+  @include t.focusRing;
+
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$composer-send;
+  height: t.$composer-send;
+  border: 0;
+  border-radius: t.$radius-media-lg;
+  background-color: t.$accent;
+  color: t.$text-primary;
+  cursor: pointer;
+  transition: background-color 120ms ease, opacity 120ms ease;
+
+  &:hover:not(:disabled) {
+    background-color: t.$accent-hover;
+  }
+
+  // Nothing to send yet — dimmed, but still reachable and still explains
+  // itself through its label.
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}

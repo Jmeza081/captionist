@@ -75,7 +75,9 @@ graph BT
     Room["JoinPanel · PlayerRow · PromptBanner"]
     Media["MediaCard"]
     Chat["ChatMessage · UnreadDivider · ChatRail"]
-    Overlay["Modal · RoundOpener · HostToolbox<br/>Dropzone · ReactionToolbar"]
+    Overlay["Modal · RoundOpener · HostToolbox<br/>Dropzone · ReactionToolbar · GifPanel"]
+    Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
+    Lobby["CodeEntry · RoomShare · Podium"]
   end
   subgraph organisms["organisms/ — may fetch or subscribe"]
     Gallery["ComponentGallery"]
@@ -96,6 +98,10 @@ graph BT
   Media --> Gallery
   Chat --> Gallery
   Overlay --> Gallery
+  Compose --> Gallery
+  Lobby --> Gallery
+  Controls --> Compose
+  Ident --> Lobby
   Gallery --> Comp
 ```
 
@@ -172,11 +178,10 @@ it. What's missing is the code.
 | Iconography | `@phosphor-icons/react` | Unused |
 | GIF search + upload | — | Giphy search and a shared dropzone, both modes |
 
-The component library is largely built — see the inventory in
-[design-system.md](./design-system.md#component-inventory). Still unbuilt: the
-chat composer, the GIF attach panel, the reveal reaction bar, reaction
-floaters, the app header, the code-entry slots, the room share block, and the
-podium block.
+The component library is complete — see the inventory in
+[design-system.md](./design-system.md#component-inventory). What's missing is
+the twelve round-flow screens that assemble them, which is gated on rooms and
+realtime rather than on any further component work.
 
 When the first realtime feature lands, add a data-flow diagram here covering
 the client ↔ API-route ↔ Ably channel path, and record the decision in an ADR.

@@ -149,3 +149,45 @@ $pip-height: 8px;
 $gif-thumb: 22px;
 $gif-thumb-sm: 14px;
 $gif-thumb-radius: 4px;
+
+// --- Composer -------------------------------------------------------------
+
+$composer-pad: 12px;
+$composer-quick-glyph: 17px;
+$composer-key: 28px;
+$composer-send: 34px;
+$composer-attach-preview-w: 52px;
+$composer-attach-preview-h: 40px;
+$composer-attach-close: 26px;
+
+// --- GIF panel ------------------------------------------------------------
+
+$gif-panel-tile-height: 76px;
+
+// --- Reveal reaction bar --------------------------------------------------
+
+$reveal-tile: 34px;
+$reveal-pad-y: 10px;
+$reveal-pad-x: 12px;
+
+// --- App header -----------------------------------------------------------
+
+$header-logo: 26px;
+
+// --- Code entry -----------------------------------------------------------
+
+$slot-width: 46px;
+$slot-height: 60px;
+$slot-width-lg: 60px;
+$slot-height-lg: 76px;
+
+// --- Podium ---------------------------------------------------------------
+//
+// The design gives block heights 150/190/262 at full size; these are the
+// proportions it actually draws the compact block at.
+
+$podium-block-width: 96px;
+$podium-block-width-first: 110px;
+$podium-height-first: 110px;
+$podium-height-second: 74px;
+$podium-height-third: 58px;

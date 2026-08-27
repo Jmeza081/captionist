@@ -242,6 +242,14 @@ primitives.
 | `Modal` | molecule | The multi-step walkthrough. Escape closes; Back/Next stay paired |
 | `HostToolbox` | molecule | The host's controls, fixed bottom-right, collapsing to a FAB |
 | `ChatRail` | molecule | Room chat, docked beside content. Collapses to a 64px strip |
+| `Composer` | molecule | The chat composer. Sends on text *or* an attachment |
+| `GifPanel` | molecule | Giphy search above the composer. Picking attaches and closes; it never sends |
+| `RevealReactionBar` | molecule | Five one-tap reactions on the reveal, plus the CTA to the full toolbar |
+| `ReactionFloaters` | molecule | The decorative emoji burst. `pointer-events: none`, hidden from assistive tech |
+| `AppHeader` | molecule | The bar on every in-room screen — phase left, clock right |
+| `CodeEntry` | molecule | Typing a room code. One real input behind the slots |
+| `RoomShare` | molecule | The lobby share block — QR, code, copy and Slack |
+| `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
 
 **Organisms**
 
@@ -249,9 +257,9 @@ primitives.
 | --- | --- | --- |
 | `ComponentGallery` | organism | The review surface at `/components` — every component in its states |
 
-Still unbuilt from the design: the composer, the GIF attach panel, the reveal
-reaction bar, reaction floaters, the app header, the code-entry slots, the room
-share block, and the podium block.
+Every component the design library specifies is now built. What remains is
+assembling them into the twelve round-flow screens, which needs rooms and
+realtime — see [architecture.md](./architecture.md#not-yet-built).
 
 ---
 

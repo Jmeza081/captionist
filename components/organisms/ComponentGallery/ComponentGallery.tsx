@@ -22,15 +22,23 @@ import { TallyPill } from '@/components/atoms/TallyPill'
 import { TextField } from '@/components/atoms/TextField'
 import { TimerPill, formatClock } from '@/components/atoms/TimerPill'
 import { Toggle } from '@/components/atoms/Toggle'
+import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatMessage } from '@/components/molecules/ChatMessage'
 import { ChatRail } from '@/components/molecules/ChatRail'
+import { CodeEntry } from '@/components/molecules/CodeEntry'
+import { Composer } from '@/components/molecules/Composer'
 import { Dropzone } from '@/components/molecules/Dropzone'
+import { GifPanel, type GifResult } from '@/components/molecules/GifPanel'
 import { HostToolbox } from '@/components/molecules/HostToolbox'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { Modal } from '@/components/molecules/Modal'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
+import { Podium } from '@/components/molecules/Podium'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
+import { ReactionFloaters } from '@/components/molecules/ReactionFloaters'
 import { ReactionToolbar, type Reaction } from '@/components/molecules/ReactionToolbar'
+import { RevealReactionBar } from '@/components/molecules/RevealReactionBar'
+import { RoomShare } from '@/components/molecules/RoomShare'
 import { RoundOpener, type GameMode } from '@/components/molecules/RoundOpener'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
 import { ATTACHMENT, MEDIA, PLAYER_COLORS, SLACKMOJI } from './placeholders'
@@ -58,6 +66,24 @@ const REACTIONS: Reaction[] = [
   { id: 'yikes', glyph: SLACKMOJI.yikes, kind: 'gif', keywords: ['yikes', 'oof'], label: 'Yikes' },
   { id: 'nice', glyph: SLACKMOJI.nice, kind: 'gif', keywords: ['nice', 'good'], label: 'Nice' },
   { id: 'clap', glyph: '👏', keywords: ['clap', 'applause'], label: 'Applause' },
+]
+
+const GIFS: GifResult[] = [
+  { id: 'g1', src: MEDIA.serverRack, alt: 'a server rack on fire', keywords: ['fire', 'prod', 'outage'] },
+  { id: 'g2', src: MEDIA.standup, alt: 'a skull', keywords: ['dead', 'standup', 'rip'] },
+  { id: 'g3', src: MEDIA.deploy, alt: 'a rocket', keywords: ['deploy', 'ship', 'friday'] },
+  { id: 'g4', src: MEDIA.oncall, alt: 'a flat expression', keywords: ['oncall', 'pager', 'tired'] },
+  { id: 'g5', src: MEDIA.retro, alt: 'a melting face', keywords: ['retro', 'fine', 'melt'] },
+  { id: 'g6', src: MEDIA.outage, alt: 'an upside-down smile', keywords: ['outage', 'ok', 'sure'] },
+]
+
+const QUICK = [
+  { id: 'fire', glyph: '🔥', label: 'Fire' },
+  { id: 'skull', glyph: '💀', label: 'Skull' },
+  { id: 'cry', glyph: '😂', label: 'Crying laughing' },
+  { id: 'eyes', glyph: '👀', label: 'Eyes' },
+  { id: 'melt', glyph: '🫠', label: 'Melting face' },
+  { id: 'target', glyph: '🎯', label: 'Direct hit' },
 ]
 
 const MODAL_STEPS = [
@@ -130,6 +156,16 @@ export function ComponentGallery() {
   const [modalOpen, setModalOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [toolboxSeconds, setToolboxSeconds] = useState(22)
+  const [message, setMessage] = useState('')
+  const [gifPanelOpen, setGifPanelOpen] = useState(false)
+  const [attached, setAttached] = useState<GifResult | null>(null)
+  const [roomCode, setRoomCode] = useState('F34')
+  const [revealChosen, setRevealChosen] = useState<string[]>([])
+  const [burst, setBurst] = useState<{ glyph: string; key: number } | null>(null)
+
+  function fireBurst(glyph: string) {
+    setBurst({ glyph, key: Date.now() })
+  }
 
   return (
     <div className={styles.page}>
@@ -471,6 +507,123 @@ export function ComponentGallery() {
             <ReactionCTA active />
             <ReactionCTA size="rail" />
           </Inline>
+        </Case>
+      </Section>
+
+      {/* ---------------- Room chrome ---------------- */}
+      <Section id="chrome" title="App header" spec="72px · phase · settings line">
+        <Case label="In-round — phase left, clock right">
+          <AppHeader
+            phase="Round 2 of 5 · Vote"
+            trailing={<TimerPill seconds={31} />}
+          />
+        </Case>
+        <Case label="Lobby — host, and the settings line leads with the mode">
+          <AppHeader
+            host
+            surface="vote"
+            settings="React to the caption · 5 rounds · 90s · rank top 3"
+          />
+        </Case>
+      </Section>
+
+      <Section id="entry" title="Code entry & share" spec="C- prefix · 6 chars">
+        <Grid columns={1} mdColumns={2} gap={20}>
+          <Case label="Typing a code — one input behind the slots">
+            <Stack gap={12}>
+              <CodeEntry value={roomCode} onChange={setRoomCode} />
+              <CodeEntry
+                value="ZZZZZZ"
+                onChange={() => undefined}
+                error="That room code doesn't exist. Check the code and try again."
+              />
+            </Stack>
+          </Case>
+          <Case label="Sharing a room — both actions owe a snackbar">
+            <RoomShare
+              code="C-F34213"
+              joinUrl="https://captionist.fun/C-F34213"
+              onCopyLink={() => undefined}
+              onShareToSlack={() => undefined}
+            />
+          </Case>
+        </Grid>
+      </Section>
+
+      <Section id="podium" title="Podium" spec="winner centre · 1-2-3 in the DOM">
+        <Case label="After round five">
+          <Podium
+            first={{ player: PLAYERS.lukasz, score: 18 }}
+            second={{ player: PLAYERS.jack, score: 14 }}
+            third={{ player: PLAYERS.jesska, score: 11 }}
+          />
+        </Case>
+      </Section>
+
+      {/* ---------------- Composer ---------------- */}
+      <Section id="composer" title="Composer & GIF panel" spec="send on text or attachment">
+        <Grid columns={1} mdColumns={2} gap={20}>
+          <Case label="Composer — the GIF panel opens above it">
+            <Composer
+              value={message}
+              onChange={setMessage}
+              onSend={() => setMessage('')}
+              quickReactions={QUICK}
+              onQuickReact={(id) => {
+                const q = QUICK.find((r) => r.id === id)
+                if (q) fireBurst(q.glyph)
+              }}
+              onReact={() => undefined}
+              onAttachGif={() => setGifPanelOpen((v) => !v)}
+              attachment={
+                attached ? { src: attached.src, alt: attached.alt } : undefined
+              }
+              onClearAttachment={() => setAttached(null)}
+              panel={
+                gifPanelOpen ? (
+                  <GifPanel
+                    results={GIFS}
+                    selectedId={attached?.id}
+                    onPick={(g) => {
+                      setAttached(g)
+                      setGifPanelOpen(false)
+                    }}
+                    onClose={() => setGifPanelOpen(false)}
+                  />
+                ) : null
+              }
+            />
+          </Case>
+          <Case label="GIF panel — picking attaches and closes, never sends">
+            <GifPanel
+              results={GIFS}
+              onPick={() => undefined}
+              onClose={() => undefined}
+              selectedId="g3"
+            />
+          </Case>
+        </Grid>
+      </Section>
+
+      <Section id="reveal" title="Reveal reaction bar" spec="5 one-tap · then the toolbar">
+        <Case label="Tap one — the burst is decorative and never blocks a click">
+          <div className={styles.burstStage}>
+            <RevealReactionBar
+              reactions={QUICK}
+              chosen={revealChosen}
+              onReact={(id) => {
+                const q = QUICK.find((r) => r.id === id)
+                if (q) fireBurst(q.glyph)
+                setRevealChosen((prev) =>
+                  prev.includes(id)
+                    ? prev.filter((x) => x !== id)
+                    : [...prev, id],
+                )
+              }}
+              onOpenToolbar={() => undefined}
+            />
+            <ReactionFloaters burst={burst} />
+          </div>
         </Case>
       </Section>
 

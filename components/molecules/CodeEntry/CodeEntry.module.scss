@@ -1,0 +1,79 @@
+@use 'theme' as t;
+
+.wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-10;
+}
+
+// The real control. Visually hidden but focusable and on top of the slots, so
+// tapping anywhere on them opens the keyboard.
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  background: none;
+  font-size: 16px; // stops iOS zooming on focus
+  cursor: pointer;
+  z-index: 1;
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-8;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$slot-width;
+  height: t.$slot-height;
+  border-radius: t.$radius-field;
+  background-color: t.$surface-track;
+  font-family: t.$font-sans;
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.14);
+  font-variant-numeric: tabular-nums;
+}
+
+.lg .slot {
+  width: t.$slot-width-lg;
+  height: t.$slot-height-lg;
+  font-size: 30px;
+}
+
+// The fixed `C-`, always there, never typed.
+.prefix {
+  background-color: t.$surface-field;
+  color: t.$text-caption;
+}
+
+.filled {
+  color: t.$text-primary;
+}
+
+.active {
+  background-color: t.$surface-track;
+  box-shadow: t.$focus-ring;
+}
+
+// The input carries focus, so the ring has to be drawn on the slots.
+.input:focus-visible + .slots .active {
+  box-shadow: t.$focus-ring;
+}
+
+.error {
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: t.$urgent;
+}

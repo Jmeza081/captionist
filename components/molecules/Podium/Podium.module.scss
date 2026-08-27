@@ -1,0 +1,104 @@
+@use 'theme' as t;
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: t.$space-12;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-8;
+}
+
+// Visual order puts the winner in the middle; DOM order stays 1-2-3 so the
+// standings are read out in the order they happened.
+.first {
+  order: 2;
+}
+.second {
+  order: 1;
+}
+.third {
+  order: 3;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: t.$podium-block-width;
+  border: 1px solid t.$line-hairline-strong;
+  border-bottom: 0;
+  border-radius: t.$radius-field t.$radius-field 0 0;
+  background-color: t.$fill-subtle;
+}
+
+.first .block {
+  width: t.$podium-block-width-first;
+  height: t.$podium-height-first;
+  background-color: rgba(246, 227, 56, 0.11);
+  border-color: rgba(246, 227, 56, 0.3);
+}
+
+.second .block {
+  height: t.$podium-height-second;
+}
+
+.third .block {
+  height: t.$podium-height-third;
+}
+
+.rank {
+  font-family: t.$font-sans;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  color: t.$text-caption;
+  font-variant-numeric: tabular-nums;
+}
+
+.first .rank {
+  font-size: 30px;
+  color: t.$winner;
+}
+
+.name {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 800;
+  color: t.$text-primary;
+}
+
+.first .name {
+  font-size: 16px;
+}
+
+.score {
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 600;
+  color: t.$text-body;
+  font-variant-numeric: tabular-nums;
+}
+
+// Runners-up don't show a score at this size; the winner's is the headline.
+.second .score,
+.third .score {
+  display: none;
+}
+
+@include t.mq('sm') {
+  .second .score,
+  .third .score {
+    display: block;
+  }
+}

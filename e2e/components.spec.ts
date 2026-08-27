@@ -220,3 +220,158 @@ test.describe('component gallery', () => {
     expect(overflows).toBe(false)
   })
 })
+
+// --- compositions -----------------------------------------------------------
+
+test.describe('compositions', () => {
+  test('the composer only sends with text or an attachment', async ({ page }) => {
+    await page.goto('/components')
+
+    const composer = page
+      .getByLabel('Message the room')
+      .locator('xpath=ancestor::form')
+    const send = composer.getByRole('button', { name: 'Send message' })
+
+    // Empty: nothing to send.
+    await expect(send).toBeDisabled()
+
+    await page.getByLabel('Message the room').fill('deploying on a friday')
+    await expect(send).toBeEnabled()
+
+    // Whitespace alone is not a message.
+    await page.getByLabel('Message the room').fill('   ')
+    await expect(send).toBeDisabled()
+  })
+
+  test('attaching a GIF alone is enough to send', async ({ page }) => {
+    await page.goto('/components')
+
+    const send = page
+      .getByLabel('Message the room')
+      .locator('xpath=ancestor::form')
+      .getByRole('button', { name: 'Send message' })
+    await expect(send).toBeDisabled()
+
+    // Open the panel from the composer, pick one: it attaches and closes.
+    const gifKey = page.getByRole('button', { name: 'Attach a GIF', exact: true })
+    await expect(gifKey).toHaveAttribute('aria-expanded', 'false')
+    await gifKey.click()
+    await expect(gifKey).toHaveAttribute('aria-expanded', 'true')
+
+    const panel = page.getByRole('dialog', { name: 'Attach a GIF' }).first()
+    await expect(panel).toBeVisible()
+
+    await panel.getByRole('button', { name: /Attach a rocket/ }).click()
+    await expect(gifKey).toHaveAttribute('aria-expanded', 'false')
+
+    // Staged, and now sendable with no text at all.
+    await expect(page.getByText('GIF attached')).toBeVisible()
+    await expect(send).toBeEnabled()
+
+    await page.getByRole('button', { name: 'Remove attached GIF' }).click()
+    await expect(send).toBeDisabled()
+  })
+
+  test('the GIF panel searches by keyword', async ({ page }) => {
+    await page.goto('/components')
+
+    const panel = page.getByRole('dialog', { name: 'Attach a GIF' }).last()
+    await panel.getByLabel('Search Giphy').fill('friday')
+    await expect(panel.getByRole('button', { name: /Attach a rocket/ })).toBeVisible()
+    await expect(panel.getByRole('button', { name: /^Attach/ })).toHaveCount(1)
+
+    await panel.getByLabel('Search Giphy').fill('zzzz')
+    await expect(panel.getByText(/No GIFs for/)).toBeVisible()
+  })
+
+  test('the reveal bar caps at five reactions and toggles them', async ({
+    page,
+  }) => {
+    await page.goto('/components')
+
+    const bar = page.getByText('React', { exact: true }).locator('xpath=..')
+    // Six are supplied; the design caps the row at five.
+    await expect(bar.getByRole('button', { name: /^React with/ })).toHaveCount(5)
+
+    const fire = bar.getByRole('button', { name: 'React with Fire' })
+    await expect(fire).toHaveAttribute('aria-pressed', 'false')
+    await fire.click()
+    await expect(fire).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('reaction floaters are decorative and never block a click', async ({
+    page,
+  }) => {
+    await page.goto('/components')
+
+    const bar = page.getByText('React', { exact: true }).locator('xpath=..')
+    await bar.getByRole('button', { name: 'React with Skull' }).click()
+
+    // The burst layer is hidden from assistive tech and transparent to input,
+    // so the next reaction is still clickable straight away.
+    const layer = page.locator('div[aria-hidden="true"]').filter({ hasText: '💀' })
+    await expect(layer.first()).toHaveCSS('pointer-events', 'none')
+
+    await bar.getByRole('button', { name: 'React with Fire' }).click()
+    await expect(
+      bar.getByRole('button', { name: 'React with Fire' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('code entry normalises input and reports a bad code', async ({ page }) => {
+    await page.goto('/components')
+
+    const input = page.getByRole('textbox', { name: 'Room code' }).first()
+    await input.fill('')
+    await input.pressSequentially('f3-4a b2')
+
+    // Lowercase upper-cased, separators and spaces dropped, capped at six.
+    await expect(input).toHaveValue('F34AB2')
+
+    // The error names what happened and what to do next, and is announced.
+    const errored = page.getByRole('textbox', { name: 'Room code' }).nth(1)
+    await expect(errored).toHaveAttribute('aria-invalid', 'true')
+    await expect(
+      page.getByText(/That room code doesn't exist\. Check the code/),
+    ).toBeVisible()
+  })
+
+  test('the podium reads 1-2-3 in the DOM but centres the winner', async ({
+    page,
+  }) => {
+    await page.goto('/components')
+
+    const places = page.getByRole('listitem').filter({ hasText: 'pts' })
+    await expect(places).toHaveCount(3)
+
+    // DOM order is the standings order.
+    await expect(places.nth(0)).toContainText('Lukasz')
+    await expect(places.nth(1)).toContainText('Jack')
+    await expect(places.nth(2)).toContainText('Jesska')
+
+    // Visual order puts first in the middle.
+    const boxes = await places.evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect().left),
+    )
+    expect(boxes[1]).toBeLessThan(boxes[0])
+    expect(boxes[0]).toBeLessThan(boxes[2])
+  })
+
+  test('the app header states the mode first in its settings line', async ({
+    page,
+  }) => {
+    await page.goto('/components')
+
+    // The mode leads: it's how a late joiner learns which way round the game
+    // runs. See DESIGNSYSTEM.md §4.9.
+    const settings = page.getByText(
+      'React to the caption · 5 rounds · 90s · rank top 3',
+    )
+    await expect(settings).toBeVisible()
+
+    // The in-round header pairs the phase with the clock.
+    const header = page.locator('header').filter({ hasText: 'Round 2 of 5' })
+    await expect(header).toBeVisible()
+    await expect(header.getByRole('timer')).toBeVisible()
+  })
+})

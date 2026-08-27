@@ -1,0 +1,85 @@
+@use 'theme' as t;
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  width: 100%;
+  height: t.$header-height;
+  padding: 0 t.$space-20;
+  background-color: t.$surface-header;
+
+  @include t.mq('md') {
+    padding: 0 t.$header-pad-h;
+  }
+}
+
+.default {
+  border-bottom: 1px solid t.$line-hairline;
+}
+
+// Vote screens fill rather than rule, so the header reads as part of the canvas.
+.vote {
+  background-color: t.$surface-lobby;
+  border-bottom: 1px solid t.$line-hairline;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  min-width: 0;
+}
+
+// Stands in for the logo until the asset lands.
+.mark {
+  flex: none;
+  width: t.$header-logo;
+  height: t.$header-logo;
+  border-radius: t.$radius-media-lg;
+  background: linear-gradient(135deg, t.$accent, t.$accent-text);
+}
+
+.wordmark {
+  font-family: t.$font-sans;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: t.$text-primary;
+  white-space: nowrap;
+}
+
+.phase {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  color: t.$text-meta;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings {
+  margin-left: auto;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: t.$text-caption;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trailing {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+}
+
+// When both are present the settings line keeps its auto margin and the
+// trailing slot sits after it.
+.settings + .trailing {
+  margin-left: t.$space-12;
+}

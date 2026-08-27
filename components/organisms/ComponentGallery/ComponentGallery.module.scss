@@ -96,3 +96,13 @@
   font-size: 12px;
   color: t.$text-timestamp;
 }
+
+// Floaters are absolutely positioned against their nearest positioned
+// ancestor, so the demo gives them a box to rise through rather than letting
+// them escape into the page.
+.burstStage {
+  position: relative;
+  min-height: 220px;
+  display: flex;
+  align-items: flex-end;
+}
