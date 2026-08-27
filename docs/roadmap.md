@@ -27,8 +27,8 @@ not.** So the state machine went first.
 | --- | --- | --- | --- |
 | **0** | `lib/game/*` — types, rng, actions, reducer, authorize, selectors, project, fixtures. Vitest folded into `verify`. | A scripted 5-round game reaches `podium` with expected scores; a tie resolves to the seeded winner; a stale `clock/expired` is a no-op. | ✅ done |
 | **1** | `lib/room/*` — `LocalTransport` (async), `HostEngine`, `GuestClient`, `BotDriver`, store, `RoomProvider`, `useRoom`. Host-death mitigations. | `/room/DEV?seed=42&bots=4` walks the whole flow as raw state JSON — no UI. | ✅ done |
-| **2** | `RoomShell` chrome, `LobbyScreen`, `BriefScreen`, `ComposeScreen`, `/api/gifs` + Giphy search. | Play to `waiting` on a phone viewport; timer, rail offset and toolbox all real. | ◻️ next |
-| **3** | `WaitingScreen`, `VoteScreen`, `TiebreakScreen`, `RevealScreen`, `ScoreScreen`, `PodiumScreen`. | **A complete 5-round game, solo, vs 4 bots, both modes.** The milestone that matters. | ◻️ |
+| **2** | `RoomShell` chrome, `LobbyScreen`, `BriefScreen`, `ComposeScreen`, `/api/gifs` + Giphy search. | Play to `waiting` on a phone viewport; timer, rail offset and toolbox all real. | ✅ done |
+| **3** | `WaitingScreen`, `VoteScreen`, `TiebreakScreen`, `RevealScreen`, `ScoreScreen`, `PodiumScreen`. | **A complete 5-round game, solo, vs 4 bots, both modes.** The milestone that matters. | ◻️ next |
 | **4** | Landing, `/join`, `/join/[code]`, `/host`, real room codes, join + nickname + avatar, `BroadcastTransport`. | Two tabs, one host one guest, a real game with no network. | ◻️ |
 | **5** | `AblyTransport`, `/api/ably/token`, presence, reconnect overlay. Plus the ADR and the client↔API-route↔Ably diagram. | Two devices on the same wifi. | ◻️ |
 | **6** | Chat + live reaction tallies on the event lane. | `ChatRail` fills; vote-card tallies go live. | ◻️ |
@@ -64,11 +64,11 @@ a server-authoritative variant open later.
 3. **The round opener is a phase, not a boolean**, so its 3.8s dismiss is the
    same mechanism as every other timeout and "skip" is identical to expiry.
 
-Fourteen designed states resolve to **9 room phases and 10 screen organisms**.
+Fourteen designed states resolve to **10 room phases and 10 screen organisms**.
 `BriefScreen` covers `1g/1v/1x/1w/1h/3a/3b`; `ComposeScreen` covers
 `1i/1s/3c/3d`.
 
-## The four URL levers
+## The URL levers
 
 Read once in `RoomProvider`, and **gated to non-production** so no test branch
 can leak into a screen.
@@ -79,6 +79,12 @@ can leak into a screen.
 | `?bots=4` | Spawns bot guests *over the transport*, so one page plays a full room. |
 | `?fast=10` | Scales the room's clock — a 5-round game in ~30s instead of ~5min. |
 | `?phase=vote` | Boots from `lib/game/fixtures.ts` so a screen gets a spec without playing to it. |
+| `?mode=react` | Boots that fixture in the reversed mode. Without it the react lane is unreachable, because every fixture takes `DEFAULT_SETTINGS.mode`. |
+| `?as=p2` | Takes a different seat. Round one's role holder is always `p0`, and the role holder sits the round out — so the caption and answer faces cannot be reached as the host. Also the first real exercise of the guest path, ahead of phase 4 depending on it. |
+| `?gifs=stub` | Serves offline sample art instead of calling Giphy. `GIFS_STUB=1` does the same thing permanently; a missing `GIPHY_API_KEY` falls back to it outside production. |
+
+`?as=` needs `?phase=`: it takes a seat that already exists, and in a fresh room
+the other seats are empty until somebody joins — which is phase 4's job.
 
 `?fast` scales the host's clock rather than faking the page's: `page.clock` is
 per-page, and with a host in one page and guests in others it would

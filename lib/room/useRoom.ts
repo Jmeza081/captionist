@@ -1,15 +1,25 @@
 'use client'
 
-import { createContext, useCallback, useContext, useRef, useSyncExternalStore } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+} from 'react'
 import type { ActionInput } from '@/lib/game/actions'
 import type { RoomSnapshot, RoomStore } from './store'
 import { shallowEqual } from './store'
+import type { Unsubscribe } from './transport'
 
 export interface RoomBinding {
   store: RoomStore
   send: (action: ActionInput) => void
   /** The room's clock, host skew already applied. Never put this in the store. */
   roomNow: () => number
+  /** Fires when the host refuses something *this* player asked for. */
+  onRefused: (listener: (reason: string) => void) => Unsubscribe
 }
 
 export const RoomContext = createContext<RoomBinding | undefined>(undefined)
@@ -80,4 +90,29 @@ export function useRoomSelector<T>(
   ])
 
   return useSyncExternalStore(binding.store.subscribe, read, readServer)
+}
+
+/**
+ * Hear why the room said no.
+ *
+ * `authorize.ts` returns finished sentences — "You set this round up, so you
+ * sit it out." — so the handler is normally just the snackbar. Kept as a
+ * subscription rather than a value because a refusal is an event: it happens
+ * once, and re-rendering it back into view later would be a lie.
+ *
+ * The handler is held in a ref so a screen can pass an inline closure without
+ * resubscribing on every render.
+ */
+export function useRoomRefusal(handler: (reason: string) => void): void {
+  const binding = useBinding()
+  const ref = useRef(handler)
+
+  // Kept current in an effect rather than during render: a ref written while
+  // rendering is invisible to React's scheduling, and the subscription below
+  // only ever reads it from a callback.
+  useEffect(() => {
+    ref.current = handler
+  })
+
+  useEffect(() => binding.onRefused((reason) => ref.current(reason)), [binding])
 }

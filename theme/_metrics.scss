@@ -164,6 +164,15 @@ $composer-attach-close: 26px;
 
 $gif-panel-tile-height: 76px;
 
+// The page-scale picker on the brief and compose screens. Wider tiles than the
+// composer popover because it is the screen's subject, not an attachment.
+$gif-board-min: 240px;
+$gif-board-tile: 200px;
+
+// The compose screen's live preview column. Wide enough that the caption
+// renders at the size the vote grid will show it.
+$compose-preview-width: 520px;
+
 // --- Reveal reaction bar --------------------------------------------------
 
 $reveal-tile: 34px;

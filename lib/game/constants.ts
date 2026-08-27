@@ -99,3 +99,39 @@ export const FALLBACK_PROMPTS: readonly string[] = [
   'When the on-call pager goes off during dinner.',
   'Your face when the rollback also fails.',
 ]
+
+/**
+ * The prompt field's limit, from the design's `38 / 90` counter on artboard
+ * `3a`. Longer than a caption because a prompt is a whole sentence and the
+ * captions are punchlines.
+ */
+export const PROMPT_MAX = 90
+
+/**
+ * The Giphy search suggestions under the picker's field, verbatim from the
+ * design. They are chips, not a taxonomy — the point is to get an indecisive
+ * picker typing something rather than nothing.
+ */
+export const SEARCH_SUGGESTIONS: readonly string[] = [
+  'deploy on friday',
+  'merge conflict',
+  'it works on my machine',
+  'standup',
+  'prod is down',
+  'legacy code',
+]
+
+/**
+ * Starters offered to the Prompter, verbatim from the design.
+ *
+ * Distinct from `FALLBACK_PROMPTS`: these are picked *by a person* who wants a
+ * running start, while the fallbacks are what the clock chooses when nobody
+ * picked at all.
+ */
+export const PROMPT_STARTERS: readonly string[] = [
+  'when the deploy succeeds on the first try',
+  'me explaining the outage to leadership',
+  'the intern pushing straight to main',
+  'reading the PR description after approving it',
+  'day four of the migration',
+]

@@ -28,6 +28,9 @@
   display: flex;
   align-items: center;
   gap: t.$space-12;
+  // Shrinkable, so a long settings line compresses the cluster instead of
+  // being pushed underneath it.
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -41,6 +44,14 @@
 }
 
 .wordmark {
+  // The design's phone topbar carries no wordmark — there is only room for
+  // where you are and how long is left.
+  display: none;
+
+  @include t.mq('md') {
+    display: block;
+  }
+
   font-family: t.$font-sans;
   font-size: 17px;
   font-weight: 800;
@@ -61,6 +72,8 @@
 
 .settings {
   margin-left: auto;
+  flex: 0 1 auto;
+  min-width: 0;
   font-family: t.$font-sans;
   font-size: 13px;
   font-weight: 500;
@@ -68,6 +81,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.secondary {
+  display: none;
+
+  @include t.mq('md') {
+    display: block;
+  }
 }
 
 .trailing {

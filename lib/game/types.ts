@@ -136,7 +136,7 @@ export interface Round {
 /**
  * Where the room is.
  *
- * Nine phases, not the design's fourteen screens. `landing`, `join` and
+ * Ten phases, not the design's fourteen screens. `landing`, `join` and
  * `setup` are routes, not phases — no room exists during them. And
  * `pick`/`pickwait` and `prompt`/`promptwait` are one phase (`brief`) rendered
  * four ways: phase is room-wide and authoritative, "is it my turn" is

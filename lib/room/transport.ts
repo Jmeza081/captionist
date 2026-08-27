@@ -42,6 +42,17 @@ export interface Intent {
 export interface StateMeta {
   readonly rev: number
   readonly hostNow: number
+  /**
+   * How fast the room's clock runs relative to real time — the `?fast` lever,
+   * 1 in any normal room.
+   *
+   * It rides with `hostNow` for the same reason: a guest deriving a countdown
+   * needs to know not just where the host's clock *was* but how quickly it is
+   * moving, or the number drifts between broadcasts and only snaps back when
+   * the next one lands. Like skew, it is a property of the host's clock, and
+   * the domain has no business knowing it exists.
+   */
+  readonly rate?: number
 }
 
 /**

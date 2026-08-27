@@ -2,6 +2,7 @@ import type { ActionInput } from '@/lib/game/actions'
 import { FALLBACK_PROMPTS, RANK_POINTS } from '@/lib/game/constants'
 import { hasSubmitted, hasVoted, isRoleHolder, voteCards } from '@/lib/game/selectors'
 import type { EntryAnswer, PlayerId, PublicState, RoundSubject } from '@/lib/game/types'
+import { sampleAt } from '@/lib/gifs/samples'
 
 /**
  * A scripted guest, so one page can play a full room.
@@ -113,10 +114,12 @@ export class BotDriver {
   private subjectFor(state: PublicState): RoundSubject {
     const n = state.roundNumber
     if (state.settings.mode === 'caption') {
-      // A URL, never a data URI — see the invariant in `types.ts`.
+      // A real file under `public/`, so a bot's pick renders instead of
+      // showing a broken frame. A URL, never a data URI — see `types.ts`.
+      const gif = sampleAt(n)
       return {
         kind: 'media',
-        media: { src: `/media/round-${n}.gif`, alt: `Round ${n} subject`, source: 'giphy' },
+        media: { src: gif.src, alt: gif.alt, source: 'giphy' },
       }
     }
     return {
@@ -130,13 +133,10 @@ export class BotDriver {
     if (state.settings.mode === 'caption') {
       return { kind: 'caption', lines: [CAPTIONS[index % CAPTIONS.length] ?? 'A caption.'] }
     }
+    const gif = sampleAt(state.roundNumber + index)
     return {
       kind: 'media',
-      media: {
-        src: `/media/answer-${state.roundNumber}-${index}.gif`,
-        alt: `${this.options.name}'s answer`,
-        source: 'giphy',
-      },
+      media: { src: gif.src, alt: gif.alt, source: 'giphy' },
     }
   }
 }

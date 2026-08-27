@@ -41,6 +41,53 @@ describe('the transport boundary', () => {
     expect(seen).toHaveBeenCalledTimes(1)
   })
 
+  it('tells the host why its own action was refused', async () => {
+    // The path a real button takes: send over the transport, not into the
+    // engine. `apply()` can only name a refusal when it can name the intent
+    // that caused it, so this is the only route that produces a snackbar.
+    const { bus, engine, hostTransport, refusals } = room('compose')
+    engine.start()
+    await bus.flush()
+
+    // p0 holds round 1, and the role holder sits the round out.
+    hostTransport.sendIntent({
+      type: 'round/entrySubmitted',
+      answer: { kind: 'caption', lines: ['nope'] },
+    })
+    await bus.flush()
+
+    expect(refusals).toHaveLength(1)
+    expect(refusals[0]?.intent.from).toBe('p0')
+    expect(refusals[0]?.reason).toBe('You set this round up, so you sit it out.')
+  })
+
+  it('keeps a scaled room clock honest between broadcasts', async () => {
+    // Under `?fast` the host's clock runs faster than the wall clock. A guest
+    // holding only an offset falls behind the moment broadcasts stop, which is
+    // exactly when a countdown is being read.
+    const origin = 1_700_000_000_000
+    let realNow = origin
+    const bus = new LocalBus('C-F34213', { latencyMs: 0 })
+    const hostTransport = createLocalTransport({ bus, selfId: 'p0', isHost: true })
+    const engine = new HostEngine({
+      transport: hostTransport,
+      initial: fixtureFor('vote', { players: 5 }),
+      now: () => realNow,
+      fast: 10,
+      ...noTimers,
+    })
+    const guestTransport = createLocalTransport({ bus, selfId: 'p1', isHost: false })
+    const guest = new GuestClient({ transport: guestTransport, now: () => realNow })
+    guest.start()
+    engine.start()
+    await bus.flush()
+
+    realNow += 100
+    // 100ms of real time is a full second of room time at 10x.
+    expect(guest.roomNow()).toBe(origin + 1_000)
+    expect(guest.roomNow()).toBe(engine.now())
+  })
+
   it('strips authorship from other players while voting, and keeps your own', async () => {
     const { bus, engine } = room('vote')
     const guestTransport = createLocalTransport({ bus, selfId: 'p1', isHost: false })

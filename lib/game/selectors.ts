@@ -1,4 +1,4 @@
-import { CAPTION_MAX, MIN_PLAYERS, RANK_POINTS } from './constants'
+import { CAPTION_MAX, MIN_PLAYERS, PROMPT_MAX, RANK_POINTS } from './constants'
 import type {
   Entry,
   EntryId,
@@ -102,24 +102,71 @@ export function viewKey(state: GameState, viewerId: PlayerId): ViewKey {
 /* Chrome                                                              */
 /* ------------------------------------------------------------------ */
 
-const PHASE_NAMES: Partial<Record<GameState['phase'], string>> = {
+/**
+ * The step names the design puts in the header, by phase.
+ *
+ * `brief` and `compose` are absent on purpose — their label depends on which
+ * face the viewer is on, not on the phase, so they resolve through `VIEW_STEPS`.
+ */
+const PHASE_STEPS: Partial<Record<GameState['phase'], string>> = {
   opener: 'Get ready',
-  brief: 'Setup',
-  compose: 'Write',
   waiting: 'Waiting',
   vote: 'Vote',
   tiebreak: 'Sudden death',
   reveal: 'Reveal',
   score: 'Scoreboard',
-  podium: 'Podium',
 }
 
-/** `AppHeader.phase` — "Round 2 of 5 · Vote". */
-export function phaseLabel(state: GameState): string | undefined {
-  const name = PHASE_NAMES[state.phase]
-  if (!name) return undefined
-  if (state.phase === 'podium') return name
-  return `Round ${state.roundNumber} of ${state.settings.totalRounds} · ${name}`
+/**
+ * The step names that depend on the viewer rather than the room.
+ *
+ * The faces that are absent — `pick`, `pickwait`, `promptwait`, `watch` — show
+ * the bare round instead, which is what the design draws.
+ */
+const VIEW_STEPS: Partial<Record<ViewKey, string>> = {
+  prompt: 'Write the prompt',
+  caption: 'Caption this',
+  submit: 'Answer the prompt',
+}
+
+/**
+ * `AppHeader.phase` — "Round 2 of 5 · Caption this".
+ *
+ * Per-viewer, because the design names the step *you* are on rather than the
+ * phase the room is in: the Captionist picking and everyone watching them are
+ * one phase with two headers. Follows the prototype, which drops the Screens
+ * doc's "Step N — " prefix.
+ */
+export function phaseLabel(state: GameState, viewerId: PlayerId): string | undefined {
+  if (state.phase === 'lobby') return undefined
+  if (state.phase === 'podium') return 'Podium'
+
+  const round = `Round ${state.roundNumber} of ${state.settings.totalRounds}`
+  const step =
+    state.phase === 'brief' || state.phase === 'compose'
+      ? VIEW_STEPS[viewKey(state, viewerId)]
+      : PHASE_STEPS[state.phase]
+
+  return step ? `${round} · ${step}` : round
+}
+
+/**
+ * `TimerPill.suffix` — what the clock is counting down *to*.
+ *
+ * Empty on the waiting faces, where the design shows a bare `0:24`: you are
+ * not on a deadline, someone else is.
+ */
+export function timerSuffix(state: GameState, viewerId: PlayerId): string {
+  const view = viewKey(state, viewerId)
+  if (view === 'pick') return 'to pick'
+  if (view === 'prompt') return 'to write'
+  if (view === 'pickwait' || view === 'promptwait') return ''
+  return 'left'
+}
+
+/** The 3px header rail. The design draws it on the compose phases only. */
+export function showsProgressRail(state: GameState): boolean {
+  return state.phase === 'compose'
 }
 
 /** `AppHeader.settings` — mode first, so a late joiner learns the game. */
@@ -139,6 +186,158 @@ export function isUrgent(state: GameState): boolean {
 }
 
 /* ------------------------------------------------------------------ */
+/* Screen copy                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The copy each face of `BriefScreen` and `ComposeScreen` shows.
+ *
+ * Copy lives here for the same reason every other branch does: `BriefScreen` is
+ * one component rendering four designed screens, and the moment a screen picks
+ * its own strings with a ternary it has forked. The screen receives finished
+ * sentences and renders them.
+ */
+export interface ScreenCopy {
+  view: ViewKey
+  /** The small accent marker above the headline. */
+  eyebrow: string
+  headline: string
+  /** The dimmer second line the waiting faces draw under the headline. */
+  headlineSecond?: string
+  body?: string
+  /** The one primary action, verb-first. */
+  action?: string
+  /** The quieter escape next to it. */
+  secondary?: string
+  /** What happens if the clock wins. */
+  timeoutNote?: string
+}
+
+function holderName(state: GameState): string {
+  return roleHolder(state)?.name ?? 'The role holder'
+}
+
+/** `BriefScreen`'s four faces — pick, prompt, and the two waits. */
+export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
+  const view = viewKey(state, viewerId)
+  const name = holderName(state)
+
+  if (view === 'pick') {
+    return {
+      view,
+      eyebrow: `You’re up, ${name}`,
+      headline: 'Pick the GIF everyone has to suffer through.',
+      action: 'Lock it in',
+      secondary: 'Shuffle results',
+      timeoutNote: 'If the clock runs out we’ll pick for you — and our taste is questionable.',
+    }
+  }
+
+  if (view === 'prompt') {
+    return {
+      view,
+      eyebrow: 'You’re the Prompter',
+      headline: 'Write one line. Let them find the GIF.',
+      body: 'No image from you this round. Everyone else answers your prompt with something they had to search for.',
+      action: 'Send it to the room',
+      timeoutNote: 'If the clock runs out we’ll send a starter for you.',
+    }
+  }
+
+  if (view === 'promptwait') {
+    return {
+      view,
+      eyebrow: 'Writing',
+      headline: `${name} is typing a prompt.`,
+      headlineSecond: 'Start warming up your search history.',
+      body: 'You’ll answer it with a GIF — Giphy, or something regrettable from your screenshots folder.',
+    }
+  }
+
+  return {
+    view,
+    eyebrow: 'Picking',
+    headline: `${name} is scrolling Giphy.`,
+    headlineSecond: 'Or rummaging through their screenshots.',
+    body: 'Brace yourself. Last time they picked a 4-second clip of a burning server rack.',
+  }
+}
+
+/** `ComposeScreen`'s three faces — caption, submit, and the role holder watching. */
+export function composeCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
+  const view = viewKey(state, viewerId)
+  const name = holderName(state)
+
+  if (view === 'caption') {
+    return {
+      view,
+      eyebrow: `${name} picked this`,
+      headline: 'Make it hurt. Make it funny.',
+      body: 'Your colleagues will rank the top three captions. Yours is anonymous until the reveal, so go ahead and roast the deploy process.',
+      action: 'Submit caption',
+      secondary: 'Skip this round',
+    }
+  }
+
+  if (view === 'submit') {
+    return {
+      view,
+      eyebrow: `${name}’s prompt`,
+      headline: 'Answer it with a GIF.',
+      body: 'Anonymous until the reveal. You can swap it until the clock runs out.',
+      action: 'Lock in my answer',
+    }
+  }
+
+  // The role holder set the round up and sits it out. The design never draws
+  // this screen, because the prototype only ever has one local player.
+  return {
+    view,
+    eyebrow: 'Your round',
+    headline:
+      state.settings.mode === 'caption'
+        ? 'They’re captioning your pick.'
+        : 'They’re answering your prompt.',
+    body: 'You sit this one out. You still get a vote when it closes.',
+  }
+}
+
+/** The compose footer — "4 of 7 have submitted". */
+export function submittedLine(state: GameState): string {
+  const { done, total } = submittedCount(state)
+  return `${done} of ${total} have submitted`
+}
+
+/**
+ * The lobby's headline and blurb.
+ *
+ * Two designed states — a room that can start and a room that cannot — that
+ * are the same screen with different words. Branching here rather than in the
+ * screen is what stops "not enough players" growing into its own component.
+ */
+export function lobbyCopy(state: GameState): { heading: string; body: string } {
+  if (!canStart(state).ok) {
+    return {
+      heading: 'Two’s a code review, three’s a game.',
+      body: `Captionist needs at least ${MIN_PLAYERS} players so nobody is voting for their own material. Grab one more warm body and you’re live.`,
+    }
+  }
+
+  return {
+    heading: 'Everybody in?',
+    body:
+      state.settings.mode === 'caption'
+        ? 'One of you gets handed a GIF to pick, the rest fight over who captions it best. Loser buys the postmortem donuts.'
+        : 'One of you gets handed a prompt to write, the rest answer it with the worst GIF they can find. Loser buys the postmortem donuts.',
+  }
+}
+
+/** The prompt field's counter, mirroring `captionRemaining`. */
+export function promptRemaining(text: string): number {
+  return PROMPT_MAX - text.length
+}
+
+/* ------------------------------------------------------------------ */
 /* Lobby                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -154,6 +353,19 @@ export function canStart(state: GameState): Gate {
     return { ok: false, label: `Start game — need ${short} more` }
   }
   return { ok: true }
+}
+
+/**
+ * The lobby CTA's label, ready or blocked.
+ *
+ * One function for both lobby states so the blocked copy can never drift from
+ * the live copy — "blocked is not disabled" means the label is the only place
+ * the missing thing is stated.
+ */
+export function startLabel(state: GameState): string {
+  const gate = canStart(state)
+  if (!gate.ok) return gate.label
+  return `Start game — ${state.players.length} players ready`
 }
 
 /* ------------------------------------------------------------------ */

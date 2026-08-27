@@ -43,7 +43,15 @@ export function AppHeader({
         {phase && <span className={styles.phase}>{phase}</span>}
       </div>
 
-      {settings && <span className={styles.settings}>{settings}</span>}
+      {settings && (
+        // In-round on a phone there is only room for where you are and how
+        // long is left, so the settings line stands down for the phase. In the
+        // lobby there is no phase, and the settings line is how you learn the
+        // game — so it stays.
+        <span className={`${styles.settings} ${phase ? styles.secondary : ''}`}>
+          {settings}
+        </span>
+      )}
       {trailing && <div className={styles.trailing}>{trailing}</div>}
     </header>
   )

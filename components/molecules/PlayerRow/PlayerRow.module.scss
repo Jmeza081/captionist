@@ -31,6 +31,13 @@
 }
 
 .name {
+  // Without `min-width: 0` a flex item refuses to shrink below its text, and
+  // a long name pushes the score off a phone instead of ellipsing.
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-family: t.$font-sans;
   font-size: 16px;
   font-weight: 600;
@@ -70,12 +77,21 @@
 }
 
 .bar {
+  // The bar is the decorative half of a standing — the number carries the
+  // meaning — so a narrow column drops it rather than squeezing everything.
+  display: none;
   flex: 1;
   min-width: t.$space-52;
   height: t.$space-10;
   border-radius: t.$radius-pip;
   background-color: t.$fill-secondary;
   overflow: hidden;
+}
+
+@include t.mq('md') {
+  .bar {
+    display: block;
+  }
 }
 
 .barFill {

@@ -24,6 +24,13 @@ export interface DropzoneProps {
   onReplace?: () => void
   /** Largest accepted upload, for the hint line. */
   maxLabel?: string
+  /**
+   * Uploads are unavailable. The zone stays visible and focusable and says why
+   * — "blocked is not disabled" applies to a whole surface, not only buttons.
+   */
+  blocked?: boolean
+  /** What is missing. Shown in place of the hint when `blocked`. */
+  reason?: string
 }
 
 /**
@@ -39,6 +46,8 @@ export function Dropzone({
   onConfirm,
   onReplace,
   maxLabel = '12MB max',
+  blocked = false,
+  reason = 'Uploads land in a later release.',
 }: DropzoneProps) {
   const [over, setOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -48,6 +57,16 @@ export function Dropzone({
     setOver(false)
     const dropped = e.dataTransfer.files?.[0]
     if (dropped) onFile(dropped)
+  }
+
+  if (blocked) {
+    return (
+      <div className={`${styles.zone} ${styles.blocked}`} aria-disabled="true" tabIndex={0}>
+        <Icon name="upload" size={26} color="#A18FFF" />
+        <span className={styles.zoneTitle}>Upload your own</span>
+        <span className={styles.zoneHint}>{reason}</span>
+      </div>
+    )
   }
 
   if (file) {

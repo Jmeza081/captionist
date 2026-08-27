@@ -61,6 +61,8 @@
 .tile {
   @include t.focusRing;
 
+  // The board's "Selected" badge is positioned against this.
+  position: relative;
   padding: 0;
   border: 1px solid t.$line-hairline-strong;
   border-radius: t.$radius-media-lg;
@@ -93,4 +95,60 @@
   font-weight: 500;
   color: t.$text-caption;
   text-align: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* Board — the same search at page scale                               */
+/* ------------------------------------------------------------------ */
+
+.boardPanel {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-14;
+  width: 100%;
+}
+
+.searchRow {
+  width: 100%;
+}
+
+.searchField {
+  flex: 1;
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  @include t.labelText;
+  color: t.$text-meta;
+}
+
+// `auto-fill` rather than a fixed column count: the grid has to survive a
+// 360px phone and a 1440px screen-share without a breakpoint for each.
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(t.$gif-board-min, 1fr));
+  gap: t.$space-12;
+}
+
+.board .tile img {
+  height: t.$gif-board-tile;
+}
+
+// A ring rather than a border, so choosing a tile does not reflow the grid.
+.board .selected {
+  box-shadow: 0 0 0 t.$media-ring t.$accent;
+}
+
+.badge {
+  position: absolute;
+  left: t.$space-10;
+  top: t.$space-10;
+  padding: t.$space-5 t.$space-12;
+  border-radius: t.$radius-pill;
+  background-color: t.$accent;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$accent-on-fill;
 }

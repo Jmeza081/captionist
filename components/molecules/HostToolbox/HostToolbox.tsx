@@ -22,8 +22,12 @@ export interface HostToolboxProps {
   onForceTie: () => void
   onJumpToFinal: () => void
   onRestart: () => void
-  /** Left offset for the docked chat rail, so nothing sits under it. */
-  railWidth?: number
+  /**
+   * Offset for the docked chat rail, so nothing sits under it. A number is
+   * treated as pixels; a string is any CSS length, which is how the room shell
+   * hands over a custom property that changes at the breakpoint.
+   */
+  railWidth?: number | string
 }
 
 /**
@@ -48,12 +52,13 @@ export function HostToolbox({
   onRestart,
   railWidth = 0,
 }: HostToolboxProps) {
+  const railOffset = typeof railWidth === 'number' ? `${railWidth}px` : railWidth
   if (!open) {
     return (
       <button
         type="button"
         className={styles.fab}
-        style={{ right: `calc(${railWidth}px + var(--space-20))` }}
+        style={{ right: `calc(${railOffset} + var(--space-20))` }}
         onClick={() => onOpenChange(true)}
       >
         Host toolbox
@@ -64,7 +69,7 @@ export function HostToolbox({
   return (
     <section
       className={styles.toolbox}
-      style={{ right: `calc(${railWidth}px + var(--space-20))` }}
+      style={{ right: `calc(${railOffset} + var(--space-20))` }}
       aria-label="Host toolbox"
     >
       <header className={styles.head}>

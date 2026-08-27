@@ -215,7 +215,7 @@ test.describe('component gallery', () => {
     await page.goto('/components')
 
     const overflows = await page.evaluate(
-      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     )
     expect(overflows).toBe(false)
   })

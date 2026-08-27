@@ -22,4 +22,10 @@
   }
 
   --tap-target-min: #{spacing.$tap-target-min};
+
+  // The chat rail's two widths. Published because the room shell offsets the
+  // host toolbox and the snackbar by whichever one is showing, and that offset
+  // has to survive a media query — so it is chosen in CSS, not in React.
+  --rail-width: #{spacing.$rail-width};
+  --rail-width-collapsed: #{spacing.$rail-width-collapsed};
 }

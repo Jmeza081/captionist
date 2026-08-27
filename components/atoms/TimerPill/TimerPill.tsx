@@ -3,7 +3,11 @@ import styles from './TimerPill.module.scss'
 export interface TimerPillProps {
   /** Whole seconds remaining. */
   seconds: number
-  /** What the clock is counting down to — "left", "to pick". */
+  /**
+   * What the clock is counting down to — "left", "to pick". Pass an empty
+   * string on the waiting screens, where the design shows a bare `0:24`
+   * because the deadline is somebody else's.
+   */
   suffix?: string
   /**
    * Force the urgent look regardless of the clock. Sudden death is always
@@ -12,8 +16,13 @@ export interface TimerPillProps {
   urgent?: boolean
 }
 
-/** At or below this, the pill turns red. From DESIGNSYSTEM.md §4.6. */
-const URGENT_AT = 15
+/**
+ * At or below this, the pill turns red. From DESIGNSYSTEM.md §4.6.
+ *
+ * Exported because `ProgressRail` has no threshold of its own — the room shell
+ * computes urgency once and drives both from the same number.
+ */
+export const URGENT_AT = 15
 
 export function formatClock(seconds: number): string {
   const safe = Math.max(0, Math.floor(seconds))
@@ -42,7 +51,7 @@ export function TimerPill({
       role="timer"
       aria-live={isUrgent ? 'assertive' : 'off'}
     >
-      {clock} {suffix}
+      {suffix ? `${clock} ${suffix}` : clock}
     </span>
   )
 }

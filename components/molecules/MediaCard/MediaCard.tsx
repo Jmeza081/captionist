@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { hasImage, imageSrc } from '@/lib/media'
 import styles from './MediaCard.module.scss'
 
 export interface MediaCardProps {
@@ -47,8 +48,14 @@ export function MediaCard({
   action,
   caption,
 }: MediaCardProps) {
+  // A round whose clock ran out has a subject with no image. Rather than a
+  // broken frame, the alt text becomes the content — it already says what
+  // happened ("No image was picked in time").
+  const missing = !hasImage(src)
+
   const frameClasses = [
     styles.frame,
+    missing ? styles.missing : '',
     rank ? styles[`rank${rank}`] : '',
     selected ? styles.selected : '',
     winner ? styles.winner : '',
@@ -62,7 +69,9 @@ export function MediaCard({
       <div className={frameClasses}>
         {/* eslint-disable-next-line @next/next/no-img-element -- GIFs from
             Giphy are remote and animated; next/image would rasterise them. */}
-        <img className={styles.image} src={src} alt={alt} />
+        <img className={styles.image} src={imageSrc(src)} alt={missing ? '' : alt} />
+
+        {missing && <span className={styles.fallback}>{alt}</span>}
 
         {topText && <span className={`${styles.overlay} ${styles.top}`}>{topText}</span>}
         {bottomText && (

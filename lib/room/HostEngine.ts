@@ -193,7 +193,7 @@ export class HostEngine {
   }
 
   private publish(): void {
-    const meta = { rev: this.state.rev, hostNow: this.now() }
+    const meta = { rev: this.state.rev, hostNow: this.now(), rate: this.fast }
     // One projection per recipient: a voter keeps authorship of their own
     // entry, everyone else's is stripped. See `project.ts`.
     for (const id of this.recipients()) {

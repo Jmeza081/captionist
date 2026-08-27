@@ -1,0 +1,62 @@
+@use 'theme' as t;
+
+.lobby {
+  width: 100%;
+  align-items: start;
+}
+
+.heading {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+.blurb {
+  margin: 0;
+  max-width: 46ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}
+
+.note {
+  margin: 0;
+  text-align: center;
+  @include t.labelText;
+  color: t.$text-meta;
+}
+
+.rosterTitle {
+  margin: 0;
+  @include t.cardTitleText;
+}
+
+.count {
+  @include t.labelText;
+  color: t.$text-meta;
+}
+
+.roster {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// The seat nobody is in yet. Dashed rather than absent, so a short room reads
+// as "one more needed" instead of "this is everyone".
+.empty {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  padding: t.$player-row-pad-y t.$player-row-pad-x;
+  border: 1px dashed t.$line-dashed;
+  border-radius: t.$radius-field;
+  @include t.bodyText;
+  color: t.$text-meta;
+}
+
+.emptyDot {
+  width: t.$avatar-40;
+  height: t.$avatar-40;
+  flex: none;
+  border-radius: t.$radius-avatar;
+  background-color: t.$fill-subtle;
+}

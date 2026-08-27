@@ -1,8 +1,8 @@
 import { FIXTURE_PHASES } from '@/lib/game/fixtures'
-import type { RoomPhase } from '@/lib/game/types'
+import type { GameMode, PlayerId, RoomPhase } from '@/lib/game/types'
 
 /**
- * The four URL levers, read once in `RoomProvider`.
+ * The seven URL levers, read once in `RoomProvider`.
  *
  * Gated to non-production so no test branch can leak into a screen: in a
  * production build every lever reads as absent, whatever the query string says.
@@ -16,6 +16,26 @@ export interface Levers {
   bots?: number
   fast?: number
   phase?: RoomPhase
+  /**
+   * Which mode a fixture boots in. Without it the reversed lane's screens
+   * cannot be reached at all: every fixture takes `DEFAULT_SETTINGS.mode`.
+   */
+  mode?: GameMode
+  /**
+   * Who the local player is. Defaults to the host.
+   *
+   * The round-1 role holder is `players[0]`, which is also the host — so as
+   * the host you are always the one setting the round up, and the caption and
+   * answer faces are unreachable. `?as=p2` sits you in someone else's seat,
+   * which is also the first real exercise of the guest path before phase 4
+   * has to depend on it.
+   */
+  as?: PlayerId
+  /**
+   * Serve offline placeholder art instead of calling Giphy. Keeps a long
+   * afternoon of layout work off the rate limit.
+   */
+  gifs?: 'stub' | 'live'
 }
 
 const MAX_BOTS = 19
@@ -41,6 +61,17 @@ export function readLevers(
   if (phase && (FIXTURE_PHASES as readonly string[]).includes(phase)) {
     levers.phase = phase as RoomPhase
   }
+
+  const mode = search.get('mode')
+  if (mode === 'caption' || mode === 'react') levers.mode = mode
+
+  // Shape only — whether that seat exists is the room's business, not the
+  // parser's, and a fixture with fewer players should fall back rather than throw.
+  const as = search.get('as')
+  if (as && /^p\d+$/.test(as)) levers.as = as
+
+  const gifs = search.get('gifs')
+  if (gifs === 'stub' || gifs === 'live') levers.gifs = gifs
 
   return levers
 }

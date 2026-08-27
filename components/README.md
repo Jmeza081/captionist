@@ -2,13 +2,13 @@
 
 Organised by [atomic design](https://bradfrost.com/blog/post/atomic-web-design/).
 The tier is decided by dependencies, not by size — a 200-line atom is still an
-atom, and a 10-line component that subscribes to Ably is an organism.
+atom, and a 10-line component that calls `useRoom()` is an organism.
 
 | Tier | May contain | May **not** contain |
 | --- | --- | --- |
 | `atoms/` | Markup, tokens, its own props, `Icon` | App state, data fetching, any other component from this repo |
 | `molecules/` | Atoms, layout, local UI state | Data fetching, realtime subscriptions, routing side effects |
-| `organisms/` | Molecules, atoms, data fetching, Ably subscriptions, routing | — |
+| `organisms/` | Molecules, atoms, data fetching, room state (`useRoom()`), routing | — |
 
 **`Icon` is the one exception**, and it's deliberate. It's a leaf that renders a
 single `<svg>` — no state, no props beyond name/size/colour, and nothing it

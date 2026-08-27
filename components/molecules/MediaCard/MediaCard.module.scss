@@ -158,3 +158,27 @@
   font-weight: 700;
   color: t.$text-primary;
 }
+
+/**
+ * A subject with no image — the round whose clock ran out before anyone
+ * picked. The alt text becomes the content rather than a broken frame.
+ */
+.missing {
+  background-color: t.$surface-card;
+  border: 1px dashed t.$line-dashed;
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-20;
+  text-align: center;
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: t.$text-meta;
+}

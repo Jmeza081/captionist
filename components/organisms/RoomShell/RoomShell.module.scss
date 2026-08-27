@@ -1,0 +1,99 @@
+@use 'theme' as t;
+
+.shell {
+  // The rail's offset is chosen in CSS rather than React, because it changes
+  // at the breakpoint: phones have no docked rail at all, so nothing that
+  // offsets by it may assume a number.
+  --room-rail-width: 0px;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: t.$surface-canvas;
+
+  @include t.mq('md') {
+    --room-rail-width: var(--rail-width-collapsed);
+  }
+}
+
+@include t.mq('md') {
+  .shell.railOpen {
+    --room-rail-width: var(--rail-width);
+  }
+}
+
+// Content and rail are siblings, never stacked: chat docks beside the room and
+// never over it (DESIGNSYSTEM.md §4.8).
+.body {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+
+.content {
+  flex: 1;
+  // Without this a wide grid inside the column pushes the rail off-screen
+  // instead of scrolling itself.
+  min-width: 0;
+  padding: t.$screen-pad-v t.$screen-pad-h;
+
+  @include t.mq('md') {
+    padding: t.$screen-pad-v-lg t.$screen-pad-h-lg;
+  }
+}
+
+// The toolbox is fixed, so the column has to reserve room for it or it lands
+// on top of whatever the screen's primary action is — which on a phone is
+// exactly where both of them want to be.
+.hasToolbox .content {
+  padding-bottom: t.$space-52 + t.$space-26;
+}
+
+.connecting {
+  margin: 0;
+  padding: t.$screen-pad-v t.$screen-pad-h;
+  @include t.bodyText;
+  color: t.$text-meta;
+}
+
+.rail {
+  display: none;
+
+  // `contents` rather than `block`: the rail has to stay a flex sibling of the
+  // content column, not sit inside an extra box that would break its sticky
+  // full-height behaviour.
+  @include t.mq('md') {
+    display: contents;
+  }
+}
+
+.railEmpty {
+  margin: 0;
+  padding: t.$space-20;
+  @include t.bodyText;
+  color: t.$text-meta;
+}
+
+.interstitial {
+  position: fixed;
+  inset: 0;
+  z-index: t.$z-interstitial;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-20;
+  @include t.backdrop;
+}
+
+// Centred on the content column rather than the window, so the rail does not
+// push it visually off-centre.
+.snackbarDock {
+  position: fixed;
+  bottom: t.$space-26;
+  left: calc(50% - (var(--room-rail-width) / 2));
+  transform: translateX(-50%);
+  z-index: t.$z-snackbar;
+  pointer-events: none;
+}

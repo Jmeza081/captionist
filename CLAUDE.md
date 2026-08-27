@@ -85,8 +85,11 @@ recalled APIs.
 
 ## Architecture
 
-One route (`/`), statically prerendered — the round flow above is designed but
-not built. `app/layout.tsx` owns fonts, global CSS and `app/tokens.scss` (which
+Four routes: `/` and `/components` are static, `/room/[code]` is dynamic and
+client-driven, and `/api/gifs` proxies Giphy so the key stays server-side. The
+round flow's engine is built (`lib/game` pure core, `lib/room` host engine) and
+four of its ten phases have screens; the rest render `PhasePending` until phase
+3. `app/layout.tsx` owns fonts, global CSS and `app/tokens.scss` (which
 publishes the token custom properties). Components are tiered atoms → molecules
 → organisms by *dependency*, not size; pages compose and hold almost no markup.
 

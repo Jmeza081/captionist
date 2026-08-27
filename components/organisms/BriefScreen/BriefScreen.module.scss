@@ -1,0 +1,97 @@
+@use 'theme' as t;
+
+.headline {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+.body {
+  margin: 0;
+  max-width: 46ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}
+
+.note {
+  @include t.labelText;
+  color: t.$text-meta;
+}
+
+// Two columns above `md`, stacked below. The preview column is what the room
+// will see, so on a phone it follows the field rather than competing with it.
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-26;
+
+  @include t.mq('md') {
+    flex-direction: row;
+    gap: t.$space-52;
+  }
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview {
+  flex: none;
+
+  @include t.mq('md') {
+    width: t.$interstitial-width * 0.75;
+    max-width: 100%;
+  }
+}
+
+/* ---------------- Waiting on the role holder ---------------- */
+
+.waiting {
+  padding-top: t.$space-44;
+  text-align: center;
+}
+
+.halo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-12;
+  border-radius: t.$radius-avatar;
+  background-color: t.$accent-fill-weak;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.badge {
+  position: absolute;
+  right: -(t.$space-5);
+  bottom: 0;
+  padding: t.$space-5 t.$space-12;
+  border-radius: t.$radius-pill;
+  background-color: t.$accent;
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: t.$accent-on-fill;
+  white-space: nowrap;
+}
+
+.waitHeadline {
+  margin: 0;
+  @include t.displayText;
+}
+
+.waitSecond {
+  margin: 0;
+  @include t.screenTitleText;
+  color: t.$text-caption;
+}
+
+.waitBody {
+  margin: 0;
+  max-width: 52ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}

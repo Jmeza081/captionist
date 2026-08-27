@@ -9,6 +9,12 @@ export interface PromptBannerProps {
   author?: Pick<AvatarProps, 'name' | 'color' | 'src'>
   /** `lg` is the round's hero banner; `sm` sits above a vote grid. */
   size?: 'sm' | 'lg'
+  /**
+   * Overrides the derived "Vic's prompt". The Prompter's own preview reads
+   * "Your prompt" — naming yourself in the third person is the tell that a
+   * screen was written for one viewer and reused for another.
+   */
+  label?: string
 }
 
 /**
@@ -21,16 +27,17 @@ export function PromptBanner({
   prompt,
   author,
   size = 'sm',
+  label,
 }: PromptBannerProps) {
   return (
     <div className={`${styles.banner} ${styles[size]}`}>
       {author ? (
         <div className={styles.author}>
           <Avatar {...author} size={size === 'lg' ? 40 : 30} />
-          <Eyebrow>{author.name}&rsquo;s prompt</Eyebrow>
+          <Eyebrow>{label ?? `${author.name}’s prompt`}</Eyebrow>
         </div>
       ) : (
-        <Eyebrow>Prompt</Eyebrow>
+        <Eyebrow>{label ?? 'Prompt'}</Eyebrow>
       )}
 
       <p className={styles.quote}>&ldquo;{prompt}&rdquo;</p>

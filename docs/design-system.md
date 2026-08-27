@@ -256,10 +256,23 @@ primitives.
 | Component | Tier | Use when |
 | --- | --- | --- |
 | `ComponentGallery` | organism | The review surface at `/components` — every component in its states |
+| `RoomShell` | organism | The chrome around every in-room screen — header, clock, rail, host toolbox, snackbar |
+| `LobbyScreen` | organism | The room before it starts: share block, roster, and the one button |
+| `BriefScreen` | organism | Setting the round up, and watching someone else do it — all four `viewKey` faces |
+| `ComposeScreen` | organism | Captioning an image, answering a prompt, or sitting the round out |
+| `PhasePending` | organism | Temporary. The phases with no screen yet, with their real roster and the host's advance control |
 
-Every component the design library specifies is now built. What remains is
-assembling them into the twelve round-flow screens, which needs rooms and
-realtime — see [architecture.md](./architecture.md#not-yet-built).
+An organism is anything that calls `useRoom()` — that is what puts these here
+rather than in `molecules/`. `RoomShell` owns everything outside the content
+column; a screen owns its column and nothing else, which is what stops ten
+screens each growing a header.
+
+Every component the design library specifies is built, and four of the ten room
+phases now have a screen. `PhasePending` stands in for the rest and is deleted a
+screen at a time as phase 3 lands. See
+[architecture.md](./architecture.md#not-yet-built) for how the design's 16 state
+branches normalise to 10 phases, and [the roadmap](./roadmap.md#phases) for the
+order they arrive in.
 
 ---
 

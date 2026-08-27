@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import { normalizeCode } from '@/lib/game/codes'
+import { RoomShell } from '@/components/organisms/RoomShell'
 import { RoomProvider } from '@/lib/room/RoomProvider'
-import { RoomStateView } from './RoomStateView'
+import { SCREENS } from './screens'
 
 /**
  * One route for the whole room; the phase is a render switch inside it.
@@ -29,7 +30,7 @@ export default async function RoomPage({
 
   return (
     <RoomProvider roomCode={roomCode} search={search}>
-      <RoomStateView />
+      <RoomShell screens={SCREENS} />
     </RoomProvider>
   )
 }

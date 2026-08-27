@@ -102,3 +102,13 @@
   gap: t.$space-8;
   margin-top: t.$space-6;
 }
+
+/**
+ * Uploads are modelled but have no storage target in v1, so the zone states
+ * the reason instead of quietly vanishing — a missing affordance reads as a
+ * bug, an explained one reads as a decision.
+ */
+.blocked {
+  cursor: default;
+  opacity: 0.55;
+}

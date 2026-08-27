@@ -21,8 +21,9 @@ import { RoomContext, type RoomBinding } from './useRoom'
  * Nothing above `useRoom()` knows a transport exists, which is the whole reason
  * the spine was built before the screens.
  *
- * Today the local player is always the host, because joining a room someone
- * else opened is phase 4. `?bots=` fills the other seats.
+ * The local player is normally the host, because joining a room someone else
+ * opened is phase 4. `?bots=` fills the other seats, and `?as=` sits you in one
+ * of them — the first real use of the guest path.
  */
 
 const HOST_ID = 'p0'
@@ -94,11 +95,21 @@ function rebaseClock(state: GameState, now: number): GameState {
 }
 
 export function RoomProvider({ roomCode, search, children }: RoomProviderProps) {
-  const [store] = useState(() => createRoomStore(HOST_ID, true))
+  const levers = useMemo(() => readLevers(toSearchParams(search)), [search])
+
+  /**
+   * `?as=` only means anything against a fixture, where the seat already
+   * exists. In a fresh room the seats are empty until someone joins, and
+   * joining is phase 4's problem — so this falls back to the host rather than
+   * putting you in a chair nobody is sitting in.
+   */
+  const selfId = levers.phase !== undefined && levers.as ? levers.as : HOST_ID
+  const isHost = selfId === HOST_ID
+
+  const [store] = useState(() => createRoomStore(selfId, isHost))
   const engineRef = useRef<HostEngine | undefined>(undefined)
   const guestRef = useRef<GuestClient | undefined>(undefined)
-
-  const levers = useMemo(() => readLevers(toSearchParams(search)), [search])
+  const refusalListeners = useRef(new Set<(reason: string) => void>())
 
   useEffect(() => {
     const bus = new LocalBus(roomCode, { latencyMs: 80, jitterMs: 40 })
@@ -113,6 +124,7 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
               // `?phase=vote` alone is how a screen gets reviewed in isolation.
               players: levers.bots !== undefined ? levers.bots + 1 : 5,
               seed: levers.seed,
+              settings: levers.mode ? { mode: levers.mode } : undefined,
             }),
             Date.now(),
           )
@@ -130,21 +142,36 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
       initial,
       fast: levers.fast,
       onChange: (state) => saveSnapshot(roomCode, state),
+      // Only *our* refusals are worth a snackbar. A bot being told to sit a
+      // round out is the harness working, not something to interrupt over.
+      onRefused: (intent, reason) => {
+        if (intent.from !== selfId) return
+        for (const listener of [...refusalListeners.current]) listener(reason)
+      },
     })
     engineRef.current = engine
 
     // The host is a player too, so it needs the same state feed a guest gets.
-    const hostClient = new GuestClient({
-      transport: hostTransport,
+    // Under `?as=` the local endpoint is a genuine guest instead: its own
+    // transport, its own seat, and intents that travel the same road a real
+    // guest's will in phase 4.
+    const selfTransport = isHost
+      ? hostTransport
+      : createLocalTransport({ bus, selfId, isHost: false })
+
+    const selfClient = new GuestClient({
+      transport: selfTransport,
       onState: (state) => store.setState(state),
       onStatus: (status) => store.setStatus(status),
     })
-    hostClient.start()
-    guestRef.current = hostClient
+    selfClient.start()
+    guestRef.current = selfClient
 
     const bots: Array<() => void> = []
     for (let i = 1; i <= (levers.bots ?? 0); i++) {
       const id = `p${i}`
+      // Two drivers in one chair would submit twice and vote against itself.
+      if (id === selfId) continue
       const transport = createLocalTransport({ bus, selfId: id, isHost: false })
       const bot = new BotDriver({
         id,
@@ -181,22 +208,37 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('beforeunload', onUnload)
       for (const stop of bots) stop()
-      hostClient.stop()
+      selfClient.stop()
+      if (!isHost) selfTransport.close()
       engine.stop()
       hostTransport.close()
       bus.close()
       engineRef.current = undefined
       guestRef.current = undefined
     }
-  }, [roomCode, levers, store])
+  }, [roomCode, levers, store, selfId, isHost])
 
   const binding = useMemo<RoomBinding>(
     () => ({
       store,
+      /**
+       * Deliberately over the transport rather than straight into the engine.
+       *
+       * `engine.apply()` skips authorisation feedback — it only reports a
+       * refusal when it can name the intent that caused it — and it resolves
+       * in the same tick, which is exactly the shortcut the transport's
+       * artificial latency exists to prevent. Going through `sendIntent` gives
+       * the host the same round trip a guest gets, so a screen that works here
+       * works in phase 5.
+       */
       send: (action: ActionInput) => {
-        engineRef.current?.apply(action, HOST_ID)
+        guestRef.current?.send(action)
       },
       roomNow: () => guestRef.current?.roomNow() ?? Date.now(),
+      onRefused: (listener) => {
+        refusalListeners.current.add(listener)
+        return () => refusalListeners.current.delete(listener)
+      },
     }),
     [store],
   )
