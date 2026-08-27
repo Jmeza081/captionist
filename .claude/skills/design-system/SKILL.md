@@ -7,6 +7,12 @@ description: How to build UI that follows Captionist's design system — atomic 
 
 `docs/design-system.md` is the reference. This is how to apply it.
 
+The design itself lives in [`design/`](../../../design/) — read
+`design/DESIGNSYSTEM.md` for the authoritative values and
+`design/Captionist Components.dc.html` for a component's exact spec and states.
+`design/README.md` says which parts of it apply to this app and which describe
+the prototype.
+
 ## 1. Which tier?
 
 Decide by **dependencies, not size**. A 200-line atom is still an atom.

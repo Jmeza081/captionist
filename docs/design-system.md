@@ -3,10 +3,10 @@
 The rules new UI must follow. Tokens live in `theme/`, this file is the
 reference for how to use them.
 
-**Source of truth:** `DESIGNSYSTEM.md` from the design project, plus the three
-`.dc.html` files (prototype, screens, component library). Every value in
-`theme/` is copied verbatim from there. When this file and the design disagree,
-the design wins and this file is the bug.
+**Source of truth:** [`design/`](../design/) — `DESIGNSYSTEM.md` plus the three
+`.dc.html` files (prototype, screens, component library), committed as
+delivered. Every value in `theme/` is copied verbatim from there. When this
+file and the design disagree, the design wins and this file is the bug.
 
 ---
 

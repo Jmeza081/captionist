@@ -11,6 +11,9 @@ const config = [
       'playwright-report/**',
       'blob-report/**',
       'docs/repomix-output.xml',
+      // The design as delivered — vendored reference material, not source.
+      // support.js in particular is a generated runtime bundle.
+      'design/**',
     ],
   },
   ...next,
