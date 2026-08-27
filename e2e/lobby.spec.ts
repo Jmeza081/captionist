@@ -53,6 +53,31 @@ test.describe('the lobby', () => {
     expect(second!.x).toBeGreaterThan(first!.x)
   })
 
+  test('keeps the help key on the mode toggle’s row, even on a phone', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=lobby')
+
+    const toggle = (await page.getByRole('radiogroup').boundingBox())!
+    const help = (await page.getByRole('button', { name: 'How Captionist works' }).boundingBox())!
+
+    // Two mode labels are wider than a phone, and flex wraps before it
+    // shrinks — so without the control narrowing, the key drops to its own
+    // line. It sits to the right of the toggle, overlapping its rows.
+    expect(help.x).toBeGreaterThan(toggle.x + toggle.width - 1)
+    expect(help.y).toBeLessThan(toggle.y + toggle.height)
+    expect(help.y + help.height).toBeGreaterThan(toggle.y)
+  })
+
+  test('offers a guest nothing that is the host’s to do', async ({ page }) => {
+    // `?as=` takes a seat that is not the host's.
+    await page.goto('/room/DEV?seed=42&phase=lobby&as=p2')
+
+    // Starting and switching mode are both host-only, so offering either would
+    // hand a guest a control that can only refuse them.
+    await expect(page.getByRole('button', { name: /Start game/ })).toHaveCount(0)
+    await expect(page.getByRole('radiogroup')).toHaveCount(0)
+    await expect(page.getByText('Waiting on the host to start')).toBeVisible()
+  })
+
   test('blocks the start without disabling it, and says why out loud', async ({ page }) => {
     // A bare room: just the host, two short of the minimum.
     await page.goto('/room/DEV?seed=42')

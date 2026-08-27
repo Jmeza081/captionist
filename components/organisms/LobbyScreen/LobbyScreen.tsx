@@ -73,7 +73,7 @@ export function LobbyScreen() {
           />
         </Stack>
 
-        <Inline gap={10}>
+        <Inline gap={10} wrap={false}>
           {isHost && (
             <SegmentedControl
               label="Game mode"
@@ -98,17 +98,30 @@ export function LobbyScreen() {
         </Stack>
 
         <Stack gap={10} align="stretch">
-          {/* Blocked, never disabled: the control stays live and focusable and
-              the label carries the reason. */}
-          <Button
-            size="form"
-            fullWidth
-            blocked={!gate.ok}
-            onClick={() => send({ type: 'game/started' })}
-          >
-            {startLabel(state)}
-          </Button>
-          <p className={styles.note}>Late joiners can still hop in between rounds</p>
+          {isHost ? (
+            <>
+              {/* Blocked, never disabled: the control stays live and focusable
+                  and the label carries the reason. */}
+              <Button
+                size="form"
+                fullWidth
+                blocked={!gate.ok}
+                onClick={() => send({ type: 'game/started' })}
+              >
+                {startLabel(state)}
+              </Button>
+              <p className={styles.note}>Late joiners can still hop in between rounds</p>
+            </>
+          ) : (
+            /* Starting is the host's, so a guest is told what they are waiting
+               for rather than handed a button that would only refuse them. The
+               guest lobby the design draws — its own screen, with no share
+               block — arrives with real joining in phase 4. */
+            <p className={styles.waiting}>
+              <span className={styles.waitingDot} aria-hidden="true" />
+              Waiting on the host to start
+            </p>
+          )}
         </Stack>
       </Stack>
 

@@ -6,6 +6,13 @@
   padding: t.$segmented-inset;
   border-radius: t.$segmented-radius;
   background-color: t.$surface-track;
+
+  // Never wider than what it is sitting in, and free to shrink below its own
+  // content. Two mode labels are ~460px of text — wider than a phone — and
+  // without `min-width: 0` a flex row would bump whatever shares it onto the
+  // next line rather than narrowing the control.
+  max-width: 100%;
+  min-width: 0;
 }
 
 // On a card the track drops a step so it still reads as inset.
@@ -36,7 +43,11 @@
   font-size: 13px;
   font-weight: 500;
   color: t.$text-label;
-  white-space: nowrap;
+  // Shrinkable, and free to take a second line when the row is narrow. There
+  // is always room on a laptop, so this only ever fires on a phone.
+  min-width: 0;
+  text-align: center;
+  text-wrap: balance;
   cursor: pointer;
   transition: background-color 120ms ease, color 120ms ease;
 

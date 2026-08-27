@@ -72,6 +72,27 @@
   color: t.$text-meta;
 }
 
+.waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$space-10;
+  margin: 0;
+  padding: t.$space-12 t.$space-20;
+  border-radius: t.$radius-pill;
+  background-color: t.$fill-subtle;
+  @include t.bodyText;
+  color: t.$text-body;
+}
+
+.waitingDot {
+  width: t.$space-8;
+  height: t.$space-8;
+  flex: none;
+  border-radius: t.$radius-pip;
+  background-color: t.$status-waiting;
+}
+
 .rosterTitle {
   margin: 0;
   @include t.cardTitleText;

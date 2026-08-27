@@ -39,6 +39,10 @@ $accent-border: rgba(123, 97, 255, 0.45);
 $accent-border-strong: rgba(123, 97, 255, 0.55);
 
 $urgent-fill: rgba(255, 120, 125, 0.14);
+// The same amber also marks "waiting on someone" — a different job, one hex.
+// Aliased rather than repeated so the value still lives in exactly one place.
+$status-waiting: $winner;
+
 $winner-fill-weak: rgba(246, 227, 56, 0.09);
 $winner-fill: rgba(246, 227, 56, 0.14);
 
