@@ -1,0 +1,100 @@
+@use 'theme' as t;
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  padding: t.$player-row-pad-y t.$player-row-pad-x;
+  border: 1px solid transparent;
+  border-radius: t.$radius-field;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tracker {
+  border-radius: t.$radius-toolbox;
+}
+
+.standing {
+  gap: t.$space-14;
+  padding: t.$space-14 t.$space-20;
+  border-radius: t.$radius-card;
+}
+
+// A player who hasn't acted yet recedes, but stays readable.
+.pending .name {
+  color: t.$text-label;
+}
+
+.winner {
+  background-color: t.$winner-fill-weak;
+  border-color: rgba(246, 227, 56, 0.26);
+}
+
+.name {
+  font-family: t.$font-sans;
+  font-size: 16px;
+  font-weight: 600;
+  color: t.$text-primary;
+}
+
+.standing .name {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.rank {
+  width: t.$space-26;
+  flex: none;
+  font-family: t.$font-sans;
+  font-size: 22px;
+  font-weight: 800;
+  color: t.$text-caption;
+  font-variant-numeric: tabular-nums;
+}
+
+.winner .rank {
+  color: t.$winner;
+}
+
+.status {
+  margin-left: auto;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  color: t.$text-timestamp;
+  white-space: nowrap;
+}
+
+.done {
+  color: t.$success;
+}
+
+.bar {
+  flex: 1;
+  min-width: t.$space-52;
+  height: t.$space-10;
+  border-radius: t.$radius-pip;
+  background-color: t.$fill-secondary;
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: t.$radius-pip;
+  // Neutral by default — the yellow is what marks first place, so every row
+  // carrying it would make the colour mean nothing.
+  background-color: t.$line-rank;
+}
+
+.winner .barFill {
+  background-color: t.$winner;
+}
+
+.score {
+  font-family: t.$font-sans;
+  font-size: 24px;
+  font-weight: 800;
+  color: t.$text-primary;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,48 @@
+@use 'theme' as t;
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: t.$space-6;
+  padding: t.$reveal-pad-y t.$reveal-pad-x;
+  border: 1px solid t.$fill-secondary;
+  border-radius: t.$radius-field-lg;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.label {
+  @include t.eyebrowText;
+  flex: none;
+  color: t.$text-caption;
+  letter-spacing: 0.07em;
+}
+
+.key {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$reveal-tile;
+  height: t.$reveal-tile;
+  border: 0;
+  border-radius: t.$radius-media-lg;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: t.$fill-subtle;
+  }
+}
+
+.chosen {
+  background-color: t.$accent-fill;
+}
+
+.more {
+  margin-left: auto;
+  height: t.$reveal-tile;
+}

@@ -1,0 +1,64 @@
+@use 'theme' as t;
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$space-20;
+}
+
+.label {
+  font-family: t.$font-sans;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+  flex: none;
+}
+
+.key {
+  @include t.focusRing;
+
+  width: t.$stepper-key-width;
+  height: t.$stepper-height;
+  border: 0;
+  border-radius: t.$radius-toolbox;
+  background-color: t.$surface-field;
+  color: t.$text-primary;
+  font-family: t.$font-sans;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+
+  &:hover:not(:disabled) {
+    background-color: t.$surface-snackbar;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+.value {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$stepper-value-width;
+  height: t.$stepper-height;
+  border-radius: t.$radius-field;
+  background-color: t.$surface-field;
+  font-family: t.$font-sans;
+  font-size: 16px;
+  font-weight: 600;
+  color: t.$text-primary;
+  font-variant-numeric: tabular-nums;
+}

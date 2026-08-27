@@ -1,0 +1,39 @@
+@use 'theme' as t;
+
+.cta {
+  @include t.focusRing;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$space-2;
+  border: 0;
+  background-color: t.$fill-subtle;
+  color: t.$text-meta;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    background-color: t.$accent-fill-strong;
+    color: t.$accent-on-fill;
+  }
+}
+
+.pill {
+  height: 32px;
+  padding: 0 t.$space-10;
+  border-radius: t.$radius-pill;
+}
+
+.rail {
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+  border-radius: t.$radius-field;
+  background-color: rgba(123, 97, 255, 0.18);
+  color: t.$accent-on-fill;
+}
+
+.active {
+  background-color: t.$accent-fill-strong;
+  color: t.$accent-on-fill;
+}

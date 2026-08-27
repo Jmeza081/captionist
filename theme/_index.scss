@@ -4,11 +4,19 @@
 //
 //   @use 'theme' as t;
 //
-// and reach tokens as `t.$space-4`, `t.$charcoal-900`, `t.mq('md')`. One
+// and reach tokens as `t.$space-12`, `t.$surface-card`, `t.mq('md')`. One
 // import path means the design system is greppable: any `.module.scss` that
 // doesn't `@use 'theme'` is not using the system.
+//
+// Values come from DESIGNSYSTEM.md and are copied verbatim — the spacing scale
+// is intentionally uneven, so don't round anything to a 4/8px grid.
 
 @forward 'colors';
 @forward 'typography';
 @forward 'spacing';
+@forward 'metrics';
 @forward 'breakpoints';
+@forward 'elevation';
+@forward 'motion';
+@forward 'css-vars';
+@forward 'layout';

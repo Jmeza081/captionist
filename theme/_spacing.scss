@@ -1,25 +1,100 @@
-// Spacing scale — 4px base.
+// Spacing — taken verbatim from DESIGNSYSTEM.md §2.
 //
-// Rule: component styles use these tokens for margin, padding, gap, and
-// radius. Never a raw px/rem. If a value you need isn't here, add it here
-// first and note it in docs/design-system.md.
+// This is deliberately NOT a 4px grid. The design specifies an uneven set, and
+// the guide is explicit: copy the values, don't round them to a 4/8px scale.
+// So each token is named for its own pixel value — `$space-26` is 26px. There
+// is no arithmetic relationship to infer and nothing to round to, which is the
+// point.
+//
+// If a value you need isn't here, it isn't in the design either. Check the
+// spec before adding one, then document it in docs/design-system.md.
 
 $space-0: 0;
-$space-1: 0.25rem; //  4px
-$space-2: 0.5rem; //   8px
-$space-3: 0.75rem; //  12px
-$space-4: 1rem; //     16px  — default page gutter (mobile)
-$space-5: 1.5rem; //   24px
-$space-6: 2rem; //     32px  — default page gutter (>= md)
-$space-7: 3rem; //     48px
-$space-8: 4rem; //     64px
-$space-9: 6rem; //     96px
-$space-10: 8rem; //   128px
+$space-2: 2px;
+$space-5: 5px;
+$space-6: 6px;
+$space-8: 8px;
+$space-10: 10px;
+$space-12: 12px;
+$space-14: 14px;
+$space-20: 20px;
+$space-26: 26px;
+$space-34: 34px;
+$space-44: 44px;
+$space-52: 52px;
 
-$radius-sm: 0.25rem; //   4px
-$radius-md: 0.5rem; //    8px
-$radius-lg: 1rem; //     16px
-$radius-full: 999px;
+// --- Named layout measurements ----------------------------------------------
+//
+// Ranges in the spec become two endpoint tokens, so a component picks a side
+// rather than inventing a value between them. Mobile-first: reach for the
+// smaller one unconditionally and step up at `mq('md')`.
+
+$screen-pad-h: 40px; //      screen padding, horizontal — narrow end
+$screen-pad-h-lg: 60px; //   wide end
+$screen-pad-v: 24px; //      screen padding, vertical — narrow end
+$screen-pad-v-lg: 56px; //   wide end
+
+$card-pad: 20px; //          card padding — narrow end
+$card-pad-lg: 26px; //       wide end
+
+$header-height: 72px;
+$header-pad-h: $screen-pad-h;
+
+$rail-pad: 16px;
+$rail-width: 360px; //       chat rail, docked
+$rail-width-collapsed: 64px; // chat rail, strip
 
 // Smallest comfortable touch target. Every interactive element must meet it.
 $tap-target-min: 44px;
+
+// --- Radii ------------------------------------------------------------------
+//
+// Named by what they wrap. The 143px pill is not a typo — it is large enough
+// that any button height under ~286px renders as a true pill.
+
+$radius-pill: 143px; //      pills, buttons
+$radius-modal: 24px; //      modals, big surfaces
+$radius-card: 16px; //       cards
+$radius-field: 12px; //      fields, popovers, list rows
+$radius-field-lg: 14px;
+$radius-toolbox: 10px; //    toolbox buttons, chat attachments
+$radius-media: 8px; //       media, small fields, picker tiles
+$radius-media-lg: 9px;
+$radius-pip: 99px; //        pips, progress bars
+$radius-avatar: 50%;
+
+// --- Map forms --------------------------------------------------------------
+//
+// These exist so the scales can be iterated — `theme/_css-vars.scss` walks them
+// to emit the custom properties the React layout primitives reference. Keep
+// them in sync with the variables above; the variables stay the ones you reach
+// for in a `.module.scss`.
+
+$spaces: (
+  0: $space-0,
+  2: $space-2,
+  5: $space-5,
+  6: $space-6,
+  8: $space-8,
+  10: $space-10,
+  12: $space-12,
+  14: $space-14,
+  20: $space-20,
+  26: $space-26,
+  34: $space-34,
+  44: $space-44,
+  52: $space-52,
+);
+
+$radii: (
+  'pill': $radius-pill,
+  'modal': $radius-modal,
+  'card': $radius-card,
+  'field': $radius-field,
+  'field-lg': $radius-field-lg,
+  'toolbox': $radius-toolbox,
+  'media': $radius-media,
+  'media-lg': $radius-media-lg,
+  'pip': $radius-pip,
+  'avatar': $radius-avatar,
+);

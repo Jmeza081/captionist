@@ -1,0 +1,36 @@
+@use 'theme' as t;
+
+.snackbar {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-12;
+  padding: t.$snackbar-pad-y t.$snackbar-pad-right t.$snackbar-pad-y
+    t.$snackbar-pad-left;
+  border: 1px solid t.$fill-secondary-hover;
+  border-radius: t.$radius-pill;
+  background-color: t.$surface-snackbar;
+  box-shadow: t.$shadow-snackbar;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 600;
+  color: t.$text-primary;
+  animation: toastin t.$duration-toast ease;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: t.$snackbar-check;
+  height: t.$snackbar-check;
+  border-radius: t.$radius-avatar;
+  background-color: rgba(131, 208, 108, 0.18);
+  color: t.$success;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snackbar {
+    animation: none;
+  }
+}

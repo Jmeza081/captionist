@@ -1,21 +1,20 @@
 @use 'theme' as t;
 
+// Layout and spacing come from the <Stack> and <Box> primitives this component
+// composes. What's left here is only what a primitive can't express: the
+// measure the panel is allowed to grow to, and the type mixins.
+
 .panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: t.$space-5;
   width: 100%;
   max-width: 22rem;
 
   @include t.mq('md') {
-    gap: t.$space-6;
     max-width: 26rem;
   }
 }
 
 .heading {
-  @include t.titleText;
+  @include t.screenTitleText;
   margin: 0;
   text-align: center;
 }
@@ -23,9 +22,6 @@
 .qr {
   width: 100%;
   max-width: 16rem;
-  padding: t.$space-4;
-  background-color: t.$white-100;
-  border-radius: t.$radius-lg;
 
   @include t.mq('md') {
     max-width: 18rem;

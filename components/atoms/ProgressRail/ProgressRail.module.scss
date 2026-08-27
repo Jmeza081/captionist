@@ -1,0 +1,23 @@
+@use 'theme' as t;
+
+.rail {
+  width: 100%;
+  height: t.$progress-rail-height;
+  background-color: t.$line-hairline;
+}
+
+.fill {
+  height: 100%;
+  background-color: t.$text-primary;
+  transition: width 1s linear;
+}
+
+.urgent {
+  background-color: t.$urgent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}

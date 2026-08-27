@@ -1,13 +1,75 @@
-$charcoal-900: #0E0F10;
-$charcoal-800: #131415;
-$charcoal-700: #161718;
+// Colour — taken verbatim from DESIGNSYSTEM.md §2.
+//
+// Dark-first. Surfaces are named for what they carry, not for a lightness
+// number, because the ramp is deliberately uneven — #0A0A0B to #303031 is ten
+// steps that each mean something. Picking "the next one up" is a design
+// decision, so the name has to make it.
 
-$massacre: #FF416C;
-$rose-petal: #FF4B2B;
+// --- Surfaces ---------------------------------------------------------------
 
-$white-100: rgba(255, 255, 255, 1);
-$white-75: rgba(255, 255, 255, 0.75);
-$white-50: rgba(255, 255, 255, 0.50);
-$white-25: rgba(255, 255, 255, 0.25);
+$surface-canvas: #0a0a0b; //      app canvas
+$surface-lobby: #0d0e0f; //       lobby, scoreboard
+$surface-header: #0e0f10; //      header fill, chat rail
+$surface-vote: #131415; //        vote canvas, setup canvas
+$surface-modal: #17181a; //       modal / interstitial card
+$surface-card: #1b1c1c; //        cards, popovers, toolbox
+$surface-timer: #1d1e1f; //       timer pill (neutral)
+$surface-snackbar: #232426; //    snackbar
+$surface-track: #242425; //       segmented-control track
+$surface-field: #303031; //       fields, active segment
 
-$honey-mustard: #F6E338;
+// --- Accents ----------------------------------------------------------------
+
+$accent: #7b61ff; //              primary action, focus ring, selection
+$accent-hover: #8b74ff; //        primary hover
+$accent-text: #a18fff; //         accent text, eyebrows, links
+$accent-on-fill: #c9bcff; //      icons/text on accent fills
+
+$winner: #f6e338; //              winner, 1st place
+$success: #83d06c; //             success, online, submitted
+$urgent: #ff787d; //              urgency (<=15s), destructive, unread badge
+
+// Tints. The design gives ranges; these are the endpoints, so a component
+// picks one rather than inventing an alpha.
+$accent-fill-weak: rgba(123, 97, 255, 0.1);
+$accent-fill: rgba(123, 97, 255, 0.2);
+$accent-fill-strong: rgba(123, 97, 255, 0.3);
+$accent-border-weak: rgba(123, 97, 255, 0.26);
+$accent-border: rgba(123, 97, 255, 0.45);
+$accent-border-strong: rgba(123, 97, 255, 0.55);
+
+$urgent-fill: rgba(255, 120, 125, 0.14);
+$winner-fill-weak: rgba(246, 227, 56, 0.09);
+$winner-fill: rgba(246, 227, 56, 0.14);
+
+// --- Text on dark -----------------------------------------------------------
+//
+// Named by role. `$text-body` and lighter fail WCAG AA on the canvas, so they
+// are for supporting text only — never for the sentence a player has to read
+// to play. See docs/design-system.md §5.
+
+$text-primary: #fff;
+$text-chat: rgba(255, 255, 255, 0.78);
+$text-body: rgba(255, 255, 255, 0.55);
+$text-label: rgba(255, 255, 255, 0.45);
+$text-meta: rgba(255, 255, 255, 0.4);
+$text-caption: rgba(255, 255, 255, 0.35);
+$text-timestamp: rgba(255, 255, 255, 0.3);
+
+// --- Neutral fills and lines ------------------------------------------------
+
+$fill-subtle: rgba(255, 255, 255, 0.06); //   tally pill in chat
+$fill-secondary: rgba(255, 255, 255, 0.07); // secondary button
+$fill-field: rgba(255, 255, 255, 0.08); //     text field, avatar overflow chip
+$fill-secondary-hover: rgba(255, 255, 255, 0.14);
+
+$line-hairline: rgba(255, 255, 255, 0.06);
+$line-hairline-strong: rgba(255, 255, 255, 0.09);
+$line-dashed: rgba(255, 255, 255, 0.16);
+$line-outline: rgba(255, 255, 255, 0.22);
+$line-rank: rgba(255, 255, 255, 0.55); //      2nd–3rd place ring
+
+// Scrim over a player's own entry, and the modal backdrop.
+$scrim-own-entry: rgba(10, 10, 11, 0.5);
+$scrim-tally: rgba(10, 10, 11, 0.8);
+$scrim-backdrop: rgba(6, 6, 7, 0.82);

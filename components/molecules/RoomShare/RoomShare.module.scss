@@ -1,0 +1,50 @@
+@use 'theme' as t;
+
+.share {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-20;
+  width: 100%;
+
+  // Side by side once there's room; stacked on a phone, where the QR is the
+  // thing you point a camera at and wants the width.
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: t.$space-26;
+  }
+}
+
+.qr {
+  flex: none;
+  width: 100%;
+  max-width: 200px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-6;
+  min-width: 0;
+
+  @include t.mq('md') {
+    align-items: flex-start;
+  }
+}
+
+.url {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 700;
+  color: t.$text-body;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-8;
+  margin-top: t.$space-8;
+}

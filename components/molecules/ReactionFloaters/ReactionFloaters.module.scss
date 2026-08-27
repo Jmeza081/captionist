@@ -1,0 +1,28 @@
+@use 'theme' as t;
+
+.layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  // Decorative: never intercept a click meant for the card underneath.
+  pointer-events: none;
+  z-index: t.$z-floater;
+}
+
+.floater {
+  position: absolute;
+  bottom: 0;
+  line-height: 1;
+  // `rise` is declared once in app/tokens.scss, per the design's rule that
+  // keyframes live in a stylesheet rather than being driven from JS.
+  animation-name: rise;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+// A burst of emoji flying up the screen is exactly what this setting is for.
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    display: none;
+  }
+}

@@ -1,0 +1,28 @@
+@use 'theme' as t;
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: t.$tag-pad-y t.$tag-pad-x;
+  border-radius: t.$tag-radius;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.accent {
+  background-color: rgba(123, 97, 255, 0.16);
+  color: t.$accent-text;
+}
+
+.neutral {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: t.$text-primary;
+}
+
+.winner {
+  background-color: t.$winner-fill;
+  color: t.$winner;
+}

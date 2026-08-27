@@ -16,7 +16,8 @@ Companion docs: [design system](./design-system.md) ·
 | UI | React 19 | Server Components by default; `'use client'` only where interactivity needs it |
 | Language | TypeScript 5.9, `strict` | `@/*` path alias maps to the repo root |
 | Styling | Sass modules + `theme/` tokens | `sassOptions.loadPaths` makes `@use 'theme'` resolve from anywhere |
-| Realtime | Ably v2 (installed, unused) | See "Not yet designed" below |
+| Layout | `Stack` · `Inline` · `Box` · `Grid` | Spacing is a token-typed prop; see "Token flow" below |
+| Realtime | Ably v2 (installed, unused) | See "Not yet built" below |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
 
 ## Commands
@@ -33,17 +34,23 @@ Companion docs: [design system](./design-system.md) ·
 
 ## Routes
 
-Only one route exists. Every page is statically prerendered; nothing fetches
+Two routes exist. Every page is statically prerendered; nothing fetches
 data yet.
 
 ```mermaid
 graph TD
-  L["app/layout.tsx<br/><i>root layout · Inter via next/font · metadata</i>"]
+  L["app/layout.tsx<br/><i>root layout · Inter · globals.css + tokens.scss</i>"]
   P["app/page.tsx<br/><i>/ — join screen · static</i>"]
+  C["app/components/page.tsx<br/><i>/components — the gallery · static</i>"]
   NF["app/_not-found<br/><i>Next default</i>"]
   L --> P
+  L --> C
   L --> NF
 ```
+
+`/components` renders every built component in its states. It's the design
+review surface and what `e2e/components.spec.ts` drives — the components are
+verified against a real browser rather than a snapshot.
 
 `app/layout.tsx` is the only place fonts and global CSS are loaded. Inter is
 pulled by `next/font/google` and exposed to Sass as the `--font-inter` custom
@@ -56,29 +63,82 @@ Tier is decided by dependencies, not size. Full rules in
 
 ```mermaid
 graph BT
-  subgraph atoms["atoms/ — no app state, no repo imports"]
-    Button["Button"]
-    RoomCode["RoomCode"]
+  subgraph atoms["atoms/ — no app state, no repo imports (Icon excepted)"]
+    Layout["Stack · Inline · Box · Grid"]
+    Icon["Icon"]
+    Controls["Button · TextField · Toggle<br/>Stepper · SegmentedControl · Chip"]
+    Status["TimerPill · TallyPill · PresencePill<br/>Tag · Eyebrow · RoundProgress · ProgressRail"]
+    Ident["Avatar · RoomCode"]
+    Feedback["Snackbar · ReactionCTA"]
   end
   subgraph molecules["molecules/ — compose atoms"]
-    JoinPanel["JoinPanel"]
+    Room["JoinPanel · PlayerRow · PromptBanner"]
+    Media["MediaCard"]
+    Chat["ChatMessage · UnreadDivider · ChatRail"]
+    Overlay["Modal · RoundOpener · HostToolbox<br/>Dropzone · ReactionToolbar · GifPanel"]
+    Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
+    Lobby["CodeEntry · RoomShare · Podium"]
   end
   subgraph organisms["organisms/ — may fetch or subscribe"]
-    Empty["(none yet)"]
+    Gallery["ComponentGallery"]
   end
   subgraph pages["app/ — composition only"]
     Home["page.tsx"]
+    Comp["components/page.tsx"]
   end
 
-  RoomCode --> JoinPanel
-  JoinPanel --> Home
-
-  style organisms stroke-dasharray: 5 5
-  style Empty stroke-dasharray: 5 5
+  Icon --> Feedback
+  Layout --> Room
+  Ident --> Room
+  Ident --> Chat
+  Controls --> Overlay
+  Feedback --> Chat
+  Room --> Home
+  Room --> Gallery
+  Media --> Gallery
+  Chat --> Gallery
+  Overlay --> Gallery
+  Compose --> Gallery
+  Lobby --> Gallery
+  Controls --> Compose
+  Ident --> Lobby
+  Gallery --> Comp
 ```
 
-`Button` is not yet used by any page — it exists as the canonical file-shape
-template for new atoms.
+`Stack`, `Inline`, `Box` and `Grid` are the layout primitives. They hold no
+state and render no text, so they're atoms by the dependency rule — and they're
+server components, so using them costs no client JS.
+
+`Icon` is the one component atoms may import; the reasoning is in
+[`components/README.md`](../components/README.md). Everything that takes user
+input is `'use client'` and **controlled** — it owns no state, so the same
+`Toggle` works in the setup screen and the host toolbox without either one
+fighting it for ownership.
+
+## Token flow
+
+Values exist exactly once. Sass owns them; React reads them by name.
+
+```mermaid
+graph LR
+  S["theme/_spacing.scss<br/><i>$spaces, $radii maps</i>"]
+  V["theme/_css-vars.scss<br/><i>rootVars() mixin</i>"]
+  T["app/tokens.scss<br/><i>:root + keyframes</i>"]
+  B["Browser<br/><i>--space-26, --radius-card</i>"]
+  TS["theme/tokens.ts<br/><i>names only, no values</i>"]
+  P["Stack / Inline / Box / Grid<br/><i>gap={26} → var(--space-26)</i>"]
+
+  S --> V --> T --> B
+  TS --> P --> B
+
+  style TS stroke-dasharray: 5 5
+```
+
+`theme/tokens.ts` contains no numbers — only the legal token names and the
+`var()` references built from them. So `gap={13}` is a type error (13px isn't in
+the design), and changing a value stays a one-line edit in Sass.
+`e2e/tokens.spec.ts` asserts the bridge reaches the browser: if it breaks, every
+gap silently falls back to `0` and no other test would fail.
 
 ## Rendering path
 
@@ -103,21 +163,28 @@ sequenceDiagram
 
 ---
 
-## Not yet designed
+## Not yet built
 
-Deliberately absent, not overlooked. Four dependencies are installed and unused,
-which signals intent but not a settled shape:
+Designed but not implemented. Unlike the earlier state of this repo, the shape
+*is* settled — `DESIGNSYSTEM.md` and the three `.dc.html` files specify all of
+it. What's missing is the code.
 
 | Area | Dependency present | Status |
 | --- | --- | --- |
+| The round flow — 12 phases from landing to podium | — | Only the join screen exists |
 | Rooms — creation, codes, lifecycle | — | Room code on `/` is a hardcoded placeholder |
-| Realtime caption transport | `ably` v2 | No channels, no API route, no token minting |
-| Participant identity + avatars | `@dicebear/core`, `@dicebear/collection` | Unused |
+| Realtime transport | `ably` v2 | No channels, no API route, no token minting |
+| Player identity + avatars | `@dicebear/core`, `@dicebear/collection` | Unused; design specifies 8 avatar sizes |
 | Iconography | `@phosphor-icons/react` | Unused |
+| GIF search + upload | — | Giphy search and a shared dropzone, both modes |
+
+The component library is complete — see the inventory in
+[design-system.md](./design-system.md#component-inventory). What's missing is
+the twelve round-flow screens that assemble them, which is gated on rooms and
+realtime rather than on any further component work.
 
 When the first realtime feature lands, add a data-flow diagram here covering
 the client ↔ API-route ↔ Ably channel path, and record the decision in an ADR.
-Until then this section stays as the honest answer.
 
 ## Conventions worth knowing before you edit
 

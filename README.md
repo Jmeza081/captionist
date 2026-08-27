@@ -1,11 +1,17 @@
 # Captionist
 
-Live captions for a room. A host opens a session; guests join by scanning a QR
+A live meme-caption game for engineering teams. A room of 3–20 players plays 5
+rounds; a rotating role holder sets up each round, everyone else competes, the
+room ranks its top three, a champion is crowned. Players join by scanning a QR
 code or typing a short room code.
 
-> **Early.** The join screen is built and the workflow around it is set up.
-> Rooms, realtime captions, and participant avatars are not implemented yet —
-> see [Not yet designed](docs/architecture.md#not-yet-designed).
+Two modes share one round engine — **caption** (caption a GIF) and **react**
+(answer a text prompt with a GIF).
+
+> **Early.** The design system is ported to `theme/` and most of the component
+> library is built — browse it at `/components`. The join screen is the only
+> real screen; the round flow, rooms, and realtime are not implemented yet —
+> see [Not yet built](docs/architecture.md#not-yet-built).
 
 ## Getting started
 
@@ -26,7 +32,7 @@ npm run test:e2e
 
 | Command | Does |
 | --- | --- |
-| `npm run dev` | Dev server |
+| `npm run dev` | Dev server — the component gallery is at `/components` |
 | `npm run verify` | `lint` + `typecheck` + `build` — run before pushing |
 | `npm run test:e2e` | Playwright across mobile and desktop |
 | `npm run test:e2e:ui` | Playwright's interactive runner |
@@ -37,7 +43,7 @@ npm run test:e2e
 | Doc | What's in it |
 | --- | --- |
 | [architecture.md](docs/architecture.md) | Stack, routes, component tiers, rendering path |
-| [design-system.md](docs/design-system.md) | Tokens, layout, component usage, copy and voice |
+| [design-system.md](docs/design-system.md) | Tokens, layout primitives, component usage, interaction rules, copy and voice |
 | [components/README.md](components/README.md) | The atomic tier boundary and when to add a component |
 | [adr/](docs/adr/) | Why things are the way they are |
 

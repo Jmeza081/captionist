@@ -1,0 +1,108 @@
+@use 'theme' as t;
+
+.page {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.masthead {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-12;
+  margin-bottom: t.$space-52;
+}
+
+.title {
+  @include t.displayText;
+  margin: 0;
+}
+
+.standfirst {
+  @include t.bodyText;
+  margin: 0;
+  max-width: 62ch;
+}
+
+.section {
+  margin-top: t.$space-52;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: t.$space-14;
+  flex-wrap: wrap;
+  padding-bottom: t.$space-12;
+  margin-bottom: t.$space-26;
+  border-bottom: 1px solid t.$line-hairline-strong;
+}
+
+.sectionTitle {
+  @include t.cardTitleText;
+  margin: 0;
+}
+
+.sectionSpec {
+  margin-left: auto;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$text-meta;
+}
+
+.case {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-12;
+  margin-bottom: t.$space-26;
+}
+
+.caseLabel {
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 600;
+  color: t.$text-caption;
+}
+
+.caseBody {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-12;
+}
+
+// The rail is `position: sticky` and full-height, so the demo gives it a
+// bounded box to sit in rather than letting it span the gallery.
+.railDemo {
+  display: flex;
+  height: 320px;
+  overflow: hidden;
+}
+
+.railContent {
+  flex: 1;
+  padding: t.$space-20;
+  min-width: 0;
+}
+
+.railNote {
+  @include t.chatBodyText;
+  margin: 0;
+}
+
+.clockNote {
+  margin: t.$space-52 0 0;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  color: t.$text-timestamp;
+}
+
+// Floaters are absolutely positioned against their nearest positioned
+// ancestor, so the demo gives them a box to rise through rather than letting
+// them escape into the page.
+.burstStage {
+  position: relative;
+  min-height: 220px;
+  display: flex;
+  align-items: flex-end;
+}

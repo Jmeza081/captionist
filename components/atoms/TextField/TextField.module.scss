@@ -1,0 +1,122 @@
+@use 'theme' as t;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: t.$space-10;
+  margin-bottom: t.$space-8;
+}
+
+.label {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: t.$text-label;
+}
+
+.count {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: t.$text-timestamp;
+  font-variant-numeric: tabular-nums;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  width: 100%;
+  border-radius: t.$radius-media;
+  background-color: t.$fill-field;
+  transition: box-shadow 120ms ease;
+
+  // The whole field shows focus, not just the inner input.
+  &:focus-within {
+    box-shadow: t.$focus-ring;
+  }
+}
+
+// The primary field on a screen carries the ring at rest too.
+.primary {
+  box-shadow: t.$focus-ring;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: t.$font-sans;
+  color: t.$text-primary;
+
+  &::placeholder {
+    color: t.$text-caption;
+  }
+}
+
+.icon {
+  display: flex;
+  flex: none;
+  color: t.$text-meta;
+}
+
+// --- sizes ---
+
+.caption {
+  height: t.$field-height-caption;
+  padding: 0 t.$field-pad-x;
+
+  .input {
+    font-size: t.$field-font-caption;
+    font-weight: 600;
+  }
+}
+
+.search {
+  height: t.$field-height-search;
+  padding: 0 t.$field-pad-x;
+  border-radius: t.$radius-field-lg;
+  background-color: t.$surface-card;
+
+  .input {
+    font-size: t.$field-font-search;
+    font-weight: 500;
+  }
+}
+
+.composer {
+  height: t.$field-height-composer;
+  padding: 0 t.$field-pad-x-composer;
+  border-radius: t.$radius-field;
+  background-color: t.$surface-card;
+  border: 1px solid t.$line-hairline-strong;
+
+  .input {
+    font-size: 14px;
+    font-weight: 400;
+  }
+}
+
+.popover {
+  height: t.$field-height-popover;
+  padding: 0 t.$field-pad-x-sm;
+  border-radius: t.$radius-media-lg;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  .input {
+    font-size: 13px;
+    font-weight: 500;
+  }
+}

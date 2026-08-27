@@ -1,0 +1,193 @@
+// Component metrics — from `Captionist Components.dc.html`.
+//
+// The design has two spacing systems, and conflating them is what makes a
+// component drift:
+//
+//   1. `_spacing.scss` — the gap scale (2…52). Governs distance *between*
+//      things, and is what the layout primitives take as props.
+//   2. This file — the paddings, heights and insets each component is drawn
+//      at. These are per-component values from the library, not steps on a
+//      scale, and there is no arithmetic relationship between them.
+//
+// Keeping them apart means nobody reaches for `$space-14` because a button
+// happens to be 14px padded, and then "fixes" the scale when a different
+// button isn't.
+
+// --- Button ---------------------------------------------------------------
+
+$btn-pad-y: 15px;
+$btn-pad-x: 40px;
+$btn-compact-pad-y: 13px;
+$btn-compact-pad-x: 30px;
+$btn-secondary-pad-y: 14px;
+$btn-secondary-pad-x: 28px;
+$btn-outline-pad-y: 11px;
+$btn-outline-pad-x: 22px;
+$btn-form-height: 51px;
+$btn-form-pad-x: 34px;
+$btn-toolbox-pad-y: 11px;
+$btn-toolbox-pad-x: 16px;
+$btn-small-pad-y: 9px;
+$btn-small-pad-x: 16px;
+
+// --- Segmented control ----------------------------------------------------
+
+$segmented-inset: 3px;
+$segmented-radius: 11px;
+$segmented-radius-card: 12px;
+$segmented-item-pad-y: 9px;
+$segmented-item-pad-x: 15px;
+$segmented-item-pad-x-icon: 16px;
+$segmented-item-radius: 8px;
+$segmented-item-radius-card: 9px;
+
+// --- Text field -----------------------------------------------------------
+
+$field-height-caption: 62px;
+$field-height-search: 52px;
+$field-height-composer: 46px;
+$field-height-popover: 34px;
+$field-pad-x: 20px;
+$field-pad-x-sm: 11px;
+$field-pad-x-composer: 14px;
+$field-font-caption: 17px;
+$field-font-search: 16px;
+
+// --- Toggle and stepper ---------------------------------------------------
+
+$toggle-width: 44px;
+$toggle-height: 24px;
+$toggle-track-height: 16px;
+$toggle-knob: 24px;
+
+$stepper-key-width: 36px;
+$stepper-height: 44px;
+$stepper-value-width: 88px;
+
+// --- Status ---------------------------------------------------------------
+
+$timer-pad-y: 7px;
+$timer-pad-x: 15px;
+$progress-rail-height: 3px;
+
+$chip-pad-y: 8px;
+$chip-pad-x: 15px;
+$tag-pad-y: 4px;
+$tag-pad-x: 10px;
+$tag-radius: 6px;
+$presence-pad-y: 4px;
+$presence-pad-x: 9px;
+$presence-dot: 6px;
+
+$tally-pad-y: 4px;
+$tally-pad-x: 8px;
+$tally-pad-x-own: 9px;
+
+$snackbar-pad-y: 13px;
+$snackbar-pad-right: 20px;
+$snackbar-pad-left: 16px;
+$snackbar-check: 24px;
+
+// --- Identity -------------------------------------------------------------
+//
+// The eight avatar sizes the design specifies. Art sits at ~78% of the circle.
+
+$avatar-26: 26px;
+$avatar-30: 30px;
+$avatar-34: 34px;
+$avatar-40: 40px;
+$avatar-46: 46px;
+$avatar-56: 56px;
+$avatar-88: 88px;
+$avatar-108: 108px;
+$avatar-art-ratio: 0.78;
+
+$player-row-pad-y: 12px;
+$player-row-pad-x: 14px;
+
+// --- Media ----------------------------------------------------------------
+
+$media-height: 186px;
+$media-height-lg: 210px;
+$media-rank-badge: 28px;
+$media-ring: 3px;
+$media-ring-winner: 4px;
+
+// --- Chat -----------------------------------------------------------------
+
+$chat-avatar: 30px;
+$chat-gap: 10px;
+$chat-attachment-width: 180px;
+$chat-attachment-height: 120px;
+$chat-header-height: 48px;
+
+// --- Overlays -------------------------------------------------------------
+
+$dropzone-height: 300px;
+$dropzone-border: 2px;
+$dropzone-preview-width: 300px;
+$dropzone-preview-height: 260px;
+
+$toolbar-width: 262px;
+$toolbar-tile: 36px;
+$toolbar-scroll-cap: 196px;
+
+$modal-media-rail: 300px;
+$modal-pad: 22px;
+$modal-dot: 8px;
+$modal-dot-active: 26px;
+
+$interstitial-width: 560px;
+
+$toolbox-width: 340px;
+$toolbox-radius: 20px;
+
+$pip-width: 26px;
+$pip-height: 8px;
+
+// GIF thumbnails inside tally pills and toolbar tiles.
+$gif-thumb: 22px;
+$gif-thumb-sm: 14px;
+$gif-thumb-radius: 4px;
+
+// --- Composer -------------------------------------------------------------
+
+$composer-pad: 12px;
+$composer-quick-glyph: 17px;
+$composer-key: 28px;
+$composer-send: 34px;
+$composer-attach-preview-w: 52px;
+$composer-attach-preview-h: 40px;
+$composer-attach-close: 26px;
+
+// --- GIF panel ------------------------------------------------------------
+
+$gif-panel-tile-height: 76px;
+
+// --- Reveal reaction bar --------------------------------------------------
+
+$reveal-tile: 34px;
+$reveal-pad-y: 10px;
+$reveal-pad-x: 12px;
+
+// --- App header -----------------------------------------------------------
+
+$header-logo: 26px;
+
+// --- Code entry -----------------------------------------------------------
+
+$slot-width: 46px;
+$slot-height: 60px;
+$slot-width-lg: 60px;
+$slot-height-lg: 76px;
+
+// --- Podium ---------------------------------------------------------------
+//
+// The design gives block heights 150/190/262 at full size; these are the
+// proportions it actually draws the compact block at.
+
+$podium-block-width: 96px;
+$podium-block-width-first: 110px;
+$podium-height-first: 110px;
+$podium-height-second: 74px;
+$podium-height-third: 58px;

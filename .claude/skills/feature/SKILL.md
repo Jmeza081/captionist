@@ -49,9 +49,9 @@ Anything with a visual surface gets something the user can look at, in chat,
 before or alongside the build:
 
 1. **Preferred:** publish an Artifact. Load the `artifact-design` skill first.
-   Build the mockup with the real tokens from `theme/` — the same charcoals,
-   the same spacing scale — so it reads as this product and not a generic
-   wireframe.
+   Build the mockup with the real tokens from `theme/` — the same surfaces, the
+   same `#7B61FF` accent, the same uneven spacing scale — so it reads as this
+   product and not a generic wireframe.
 2. **Fallback:** if publishing fails, build the real thing and capture a
    Playwright screenshot at both viewports (see the `e2e` skill), then send it
    with `SendUserFile`.

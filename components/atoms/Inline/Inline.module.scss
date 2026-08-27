@@ -1,0 +1,16 @@
+@use 'theme' as t;
+
+.inline {
+  display: flex;
+  flex-direction: row;
+
+  gap: var(--inline-gap, 0);
+  padding: var(--inline-padding, 0);
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+@include t.alignClasses;
+@include t.justifyClasses;
