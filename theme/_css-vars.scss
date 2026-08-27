@@ -1,0 +1,25 @@
+@use 'spacing';
+
+// The bridge between the Sass tokens and React.
+//
+// Sass variables can't be read from a `.tsx` file, so the layout primitives
+// (`Stack`, `Inline`, `Box`, `Grid`) would otherwise need their own copy of the
+// scale — two sources of truth that drift the first time a value changes.
+//
+// Instead this mixin emits every spacing and radius token as a CSS custom
+// property, and `theme/tokens.ts` exports only the *names*. The numbers live
+// here and nowhere else.
+//
+// Included once, at `:root`, from `app/tokens.scss`.
+
+@mixin rootVars {
+  @each $step, $value in spacing.$spaces {
+    --space-#{$step}: #{$value};
+  }
+
+  @each $name, $value in spacing.$radii {
+    --radius-#{$name}: #{$value};
+  }
+
+  --tap-target-min: #{spacing.$tap-target-min};
+}

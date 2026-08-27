@@ -1,3 +1,4 @@
+import { Stack } from '@/components/atoms/Stack'
 import { JoinPanel } from '@/components/molecules/JoinPanel'
 import styles from './page.module.scss'
 
@@ -7,8 +8,8 @@ const JOIN_URL = 'https://github.com/Jmeza081'
 
 export default function HomePage() {
   return (
-    <main className={styles.main}>
+    <Stack as="main" align="center" justify="center" className={styles.main}>
       <JoinPanel code={ROOM_CODE} joinUrl={JOIN_URL} />
-    </main>
+    </Stack>
   )
 }

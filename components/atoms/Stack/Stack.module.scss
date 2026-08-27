@@ -1,0 +1,14 @@
+@use 'theme' as t;
+
+.stack {
+  display: flex;
+  flex-direction: column;
+
+  // Set from the `gap` and `padding` props as `var(--space-N)`. The fallback is
+  // the unspaced case, so <Stack> with no props is an inert flex column.
+  gap: var(--stack-gap, 0);
+  padding: var(--stack-padding, 0);
+}
+
+@include t.alignClasses;
+@include t.justifyClasses;

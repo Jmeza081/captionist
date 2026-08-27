@@ -1,0 +1,39 @@
+// Shared emitters for the layout primitives.
+//
+// `Stack` and `Inline` expose the same `align` and `justify` unions, so the
+// classes behind them are declared once here and included by each module. The
+// class names are literal in the compiled output, so `styles.alignCenter`
+// still resolves inside a CSS module.
+
+@mixin alignClasses {
+  .alignStart {
+    align-items: flex-start;
+  }
+  .alignCenter {
+    align-items: center;
+  }
+  .alignEnd {
+    align-items: flex-end;
+  }
+  .alignStretch {
+    align-items: stretch;
+  }
+  .alignBaseline {
+    align-items: baseline;
+  }
+}
+
+@mixin justifyClasses {
+  .justifyStart {
+    justify-content: flex-start;
+  }
+  .justifyCenter {
+    justify-content: center;
+  }
+  .justifyEnd {
+    justify-content: flex-end;
+  }
+  .justifyBetween {
+    justify-content: space-between;
+  }
+}

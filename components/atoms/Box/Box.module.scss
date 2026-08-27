@@ -1,0 +1,36 @@
+@use 'theme' as t;
+
+.box {
+  padding: var(--box-padding, 0);
+  border-radius: var(--box-radius, 0);
+}
+
+.none {
+  background-color: transparent;
+}
+
+.lobby {
+  background-color: t.$surface-lobby;
+}
+
+.vote {
+  background-color: t.$surface-vote;
+}
+
+.modal {
+  background-color: t.$surface-modal;
+}
+
+.card {
+  background-color: t.$surface-card;
+}
+
+.field {
+  background-color: t.$surface-field;
+}
+
+// The one light surface in a dark-first app. Scanners need the contrast, so
+// the foreground content is expected to be dark — see JoinPanel.
+.light {
+  background-color: #fff;
+}

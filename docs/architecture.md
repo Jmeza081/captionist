@@ -16,7 +16,8 @@ Companion docs: [design system](./design-system.md) ·
 | UI | React 19 | Server Components by default; `'use client'` only where interactivity needs it |
 | Language | TypeScript 5.9, `strict` | `@/*` path alias maps to the repo root |
 | Styling | Sass modules + `theme/` tokens | `sassOptions.loadPaths` makes `@use 'theme'` resolve from anywhere |
-| Realtime | Ably v2 (installed, unused) | See "Not yet designed" below |
+| Layout | `Stack` · `Inline` · `Box` · `Grid` | Spacing is a token-typed prop; see "Token flow" below |
+| Realtime | Ably v2 (installed, unused) | See "Not yet built" below |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
 
 ## Commands
@@ -57,6 +58,10 @@ Tier is decided by dependencies, not size. Full rules in
 ```mermaid
 graph BT
   subgraph atoms["atoms/ — no app state, no repo imports"]
+    Stack["Stack"]
+    Inline["Inline"]
+    Box["Box"]
+    Grid["Grid"]
     Button["Button"]
     RoomCode["RoomCode"]
   end
@@ -71,14 +76,46 @@ graph BT
   end
 
   RoomCode --> JoinPanel
+  Stack --> JoinPanel
+  Box --> JoinPanel
   JoinPanel --> Home
+  Stack --> Home
 
   style organisms stroke-dasharray: 5 5
   style Empty stroke-dasharray: 5 5
 ```
 
-`Button` is not yet used by any page — it exists as the canonical file-shape
-template for new atoms.
+`Stack`, `Inline`, `Box` and `Grid` are the layout primitives. They hold no
+state and render no text, so they're atoms by the dependency rule — and they're
+server components, so using them costs no client JS.
+
+`Button`, `Inline` and `Grid` aren't used by a page yet. `Button` is the
+canonical file-shape template for new atoms.
+
+## Token flow
+
+Values exist exactly once. Sass owns them; React reads them by name.
+
+```mermaid
+graph LR
+  S["theme/_spacing.scss<br/><i>$spaces, $radii maps</i>"]
+  V["theme/_css-vars.scss<br/><i>rootVars() mixin</i>"]
+  T["app/tokens.scss<br/><i>:root + keyframes</i>"]
+  B["Browser<br/><i>--space-26, --radius-card</i>"]
+  TS["theme/tokens.ts<br/><i>names only, no values</i>"]
+  P["Stack / Inline / Box / Grid<br/><i>gap={26} → var(--space-26)</i>"]
+
+  S --> V --> T --> B
+  TS --> P --> B
+
+  style TS stroke-dasharray: 5 5
+```
+
+`theme/tokens.ts` contains no numbers — only the legal token names and the
+`var()` references built from them. So `gap={13}` is a type error (13px isn't in
+the design), and changing a value stays a one-line edit in Sass.
+`e2e/tokens.spec.ts` asserts the bridge reaches the browser: if it breaks, every
+gap silently falls back to `0` and no other test would fail.
 
 ## Rendering path
 
@@ -103,21 +140,29 @@ sequenceDiagram
 
 ---
 
-## Not yet designed
+## Not yet built
 
-Deliberately absent, not overlooked. Four dependencies are installed and unused,
-which signals intent but not a settled shape:
+Designed but not implemented. Unlike the earlier state of this repo, the shape
+*is* settled — `DESIGNSYSTEM.md` and the three `.dc.html` files specify all of
+it. What's missing is the code.
 
 | Area | Dependency present | Status |
 | --- | --- | --- |
+| The round flow — 12 phases from landing to podium | — | Only the join screen exists |
 | Rooms — creation, codes, lifecycle | — | Room code on `/` is a hardcoded placeholder |
-| Realtime caption transport | `ably` v2 | No channels, no API route, no token minting |
-| Participant identity + avatars | `@dicebear/core`, `@dicebear/collection` | Unused |
+| Realtime transport | `ably` v2 | No channels, no API route, no token minting |
+| Player identity + avatars | `@dicebear/core`, `@dicebear/collection` | Unused; design specifies 8 avatar sizes |
 | Iconography | `@phosphor-icons/react` | Unused |
+| GIF search + upload | — | Giphy search and a shared dropzone, both modes |
+
+Eighteen components are specified and unbuilt — segmented control, text field,
+toggle, stepper, dropzone, timer pill, avatar, media card, prompt banner, chat
+message, reaction CTA, reaction toolbar, tally pill, snackbar, modal,
+round-opener interstitial, chat rail, host toolbox. They're listed under the
+inventory in [design-system.md](./design-system.md#component-inventory).
 
 When the first realtime feature lands, add a data-flow diagram here covering
 the client ↔ API-route ↔ Ably channel path, and record the decision in an ADR.
-Until then this section stays as the honest answer.
 
 ## Conventions worth knowing before you edit
 

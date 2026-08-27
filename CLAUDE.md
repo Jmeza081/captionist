@@ -2,13 +2,27 @@
 
 # Captionist
 
-Live captions for a room. A host opens a session; guests join by scanning a QR
-code or typing a short room code. Mobile-first — most guests are on a phone,
-in a room, while someone is talking.
+A live meme-caption game for engineering teams. A room of 3–20 players plays 5
+rounds; a rotating role holder sets up each round, everyone else competes, the
+room ranks its top three, a champion is crowned. Players join by scanning a QR
+code or typing a short room code.
+
+**Two modes, one round engine.** `caption` — the Captionist supplies a GIF and
+everyone writes captions over it. `react` — the Prompter supplies a text prompt
+and everyone answers with a GIF. Everything else is shared. Never fork a shared
+screen to add mode behaviour; branch the values.
+
+Round flow: `landing → join|setup → lobby → [round opener] → pick|prompt →
+caption|submit → waiting → vote → (tiebreak) → reveal → score → … → podium`
 
 **Stack:** Next 16 (App Router, Turbopack) · React 19 · TypeScript 5.9 strict ·
 Sass modules over `theme/` tokens · Playwright for E2E · Ably v2 (installed,
 not yet wired).
+
+**Design source of truth:** the design project's `DESIGNSYSTEM.md` and the three
+`.dc.html` files. `theme/` copies its values verbatim. The design's own
+implementation notes (inline styles, `<sc-if>` templates, `DCLogic`) describe the
+prototype, **not** this app — here it's React, Sass modules and the primitives.
 
 This Next version postdates your training data. Read
 `node_modules/next/dist/docs/` before writing framework code — do not rely on
@@ -30,29 +44,46 @@ recalled APIs.
    A new component needs a stated reason why neither worked.
 2. **A variant is a prop, never a copy-pasted sibling component.**
 3. **Tokens only.** No raw px/rem/hex for spacing, colour, or radius in a
-   `.module.scss`. Every one starts `@use 'theme' as t;`. Missing a value? Add
-   it to `theme/` and document it in `docs/design-system.md` first.
-4. **Mobile-first.** Write the phone layout unconditionally, then layer wider
+   `.module.scss`. Every one starts `@use 'theme' as t;`. Missing a value? Check
+   the design first — if it isn't there either, add it to `theme/` and document
+   it in `docs/design-system.md`.
+4. **The spacing scale is not a 4px grid — never round to one.** It is the
+   uneven set the design specifies (`2/5/6/8/10/12/14/20/26/34/44/52`), and each
+   token is named for its own pixel value. `t.$space-12` is 12px.
+5. **Layout is a primitive, not a re-declaration.** Reach for `Stack`, `Inline`,
+   `Box` or `Grid` before writing `display: flex` in a `.module.scss`. Spacing
+   goes on the container as a prop.
+6. **Mobile-first.** Write the phone layout unconditionally, then layer wider
    screens with `t.mq()`. Min-width queries only. Above `md`, reflow — don't
    just stretch a max-width.
-5. **Server Components by default.** Add `'use client'` only when something
-   actually needs interactivity or browser APIs, at the smallest scope.
-6. **No `any`, no non-null `!`.** `strict` is on; keep it meaningful.
-7. **Copy follows `docs/design-system.md` §4.** Sentence case, verb-first
-   buttons, no exclamation marks, errors say what happened and what to do next.
-8. **Never run `playwright install`** and never bump `@playwright/test` off
-   1.56.1 — it is pinned to the provisioned Chromium build. See
-   `docs/adr/0002-pin-playwright-to-browser-build.md`.
-9. **`CLAUDE.md` is ours, `AGENTS.md` is Next's.** `next dev` rewrites the
-   marked block in `AGENTS.md`. Never put project rules there.
-10. **Never commit secrets.** `.env.example` documents the shape; real values
+7. **Server Components by default.** Add `'use client'` only when something
+   actually needs interactivity or browser APIs, at the smallest scope. The
+   layout primitives are server components — keep them that way.
+8. **No `any`, no non-null `!`.** `strict` is on; keep it meaningful.
+9. **Copy follows `docs/design-system.md` §5.** Dry engineering-team humour,
+   second person, short sentences. Sentence case, verb-first buttons, no
+   exclamation stacking, no mascot-speak. Errors say what happened and what to
+   do next.
+10. **Blocked is not disabled.** An unavailable action keeps its control live
+    and focusable, and says what's missing in the label ("Pick 2 more"). That's
+    `Button`'s `blocked` prop.
+11. **Never run `playwright install`** and never bump `@playwright/test` off
+    1.56.1 — it is pinned to the provisioned Chromium build. See
+    `docs/adr/0002-pin-playwright-to-browser-build.md`.
+12. **`CLAUDE.md` is ours, `AGENTS.md` is Next's.** `next dev` rewrites the
+    marked block in `AGENTS.md`. Never put project rules there.
+13. **Never commit secrets.** `.env.example` documents the shape; real values
     live in `.env.local`.
 
 ## Architecture
 
-One route (`/`), statically prerendered. `app/layout.tsx` owns fonts and global
-CSS. Components are tiered atoms → molecules → organisms by *dependency*, not
-size; pages compose and hold almost no markup.
+One route (`/`), statically prerendered — the round flow above is designed but
+not built. `app/layout.tsx` owns fonts, global CSS and `app/tokens.scss` (which
+publishes the token custom properties). Components are tiered atoms → molecules
+→ organisms by *dependency*, not size; pages compose and hold almost no markup.
+
+Tokens flow Sass → CSS custom properties → `theme/tokens.ts`, so values exist
+once. `theme/tokens.ts` holds names only. `e2e/tokens.spec.ts` guards the bridge.
 
 Full map, diagrams, and what's deliberately not built yet:
 `docs/architecture.md`. Tier rules: `components/README.md`.
@@ -83,7 +114,7 @@ Do not report a feature complete until all of these hold:
       new behaviour
 - [ ] New components are in the right tier and appended to the inventory table
       in `docs/design-system.md`
-- [ ] Copy was reviewed against `docs/design-system.md` §4
+- [ ] Copy was reviewed against `docs/design-system.md` §5
 - [ ] Interactive elements are keyboard-reachable with a visible focus ring and
       clear 44px touch targets
 - [ ] A design artifact or screenshot was shared for anything visual

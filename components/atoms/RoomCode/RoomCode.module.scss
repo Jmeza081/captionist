@@ -1,7 +1,7 @@
 @use 'theme' as t;
 
 .roomCode {
-  @include t.codeText;
+  @include t.roomCodeText;
 
   margin: 0;
   text-align: center;

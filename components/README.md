@@ -13,6 +13,26 @@ atom, and a 10-line component that subscribes to Ably is an organism.
 Pages in `app/` compose organisms and molecules. They should hold almost no
 markup of their own.
 
+## Layout primitives
+
+`Stack`, `Inline`, `Box` and `Grid` are atoms that exist so spacing is a prop
+instead of a re-declaration:
+
+```tsx
+<Stack gap={26} align="center">      // vertical, 26px between children
+<Inline gap={8} justify="between">   // horizontal, wraps by default
+<Box padding={20} radius="card" background="card">
+<Grid columns={1} mdColumns={3} gap={12}>
+```
+
+`gap` and `padding` take a token from the scale, type-checked — `gap={13}` is a
+compile error because 13px isn't in the design. All four are server components
+and take an `as` prop, so the markup stays semantic (`as="section"`, `as="ul"`).
+
+Reach for one before writing `display: flex` in a `.module.scss`. What belongs
+in the stylesheet is what a primitive can't express: a `max-width` measure, a
+type mixin, a bespoke background.
+
 ## Before you add a component
 
 Search first. Every new component is a maintenance cost and a chance for two

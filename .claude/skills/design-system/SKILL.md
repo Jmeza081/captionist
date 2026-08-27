@@ -52,35 +52,46 @@ Always:
 @use 'theme' as t;
 ```
 
-That one path forwards colours, typography, spacing, and breakpoints — so
-compliance is greppable. A `.module.scss` without it isn't using the system.
+That one path forwards colours, typography, spacing, breakpoints, elevation and
+motion — so compliance is greppable. A `.module.scss` without it isn't using the
+system.
 
-- **Spacing, colour, radius:** tokens only (`t.$space-4`, `t.$charcoal-900`,
-  `t.$radius-md`). Missing a value? Add it to `theme/` and document it in
-  `docs/design-system.md` *before* you use it. Optical one-offs — a `1px`
-  border, a small `translateY` nudge — are fine.
-- **Type:** the mixins, not ad-hoc sizes — `t.bodyText`, `t.titleText`,
-  `t.codeText`. They're `clamp()`-based, so one declaration covers phone
-  through desktop.
+- **Layout first:** before writing `display: flex`, reach for `Stack`,
+  `Inline`, `Box` or `Grid`. Spacing is a prop on the container
+  (`<Stack gap={26}>`), not a re-declaration in a stylesheet. What's left in a
+  `.module.scss` should be what a primitive can't express.
+- **Spacing, colour, radius:** tokens only (`t.$space-12`, `t.$surface-card`,
+  `t.$radius-card`). Missing a value? Check the design first — if it isn't there
+  either, add it to `theme/` and document it in `docs/design-system.md` *before*
+  you use it. Optical one-offs — a `1px` border, a small `translateY` nudge —
+  are fine.
+- **The scale is not a 4px grid.** It's `2/5/6/8/10/12/14/20/26/34/44/52`, and
+  each token is named for its own pixel value. Never round to a grid.
+- **Type:** the mixins, not ad-hoc sizes — `t.bodyText`, `t.screenTitleText`,
+  `t.cardTitleText`, `t.eyebrowText`, `t.roomCodeText`. They're `clamp()`-based,
+  so one declaration covers phone through desktop. Nothing below 12px.
 - **Breakpoints:** `@include t.mq('md') { ... }`, min-width only. Write the
   phone layout unconditionally first.
-- **Spacing lives on the container:** `gap` on the flex/grid parent, not
-  margins on each child.
 - **Full-height:** `min-height: 100vh` then `min-height: 100dvh`.
 - **Touch targets:** at least `t.$tap-target-min` in both dimensions.
-- **Focus:** every interactive element gets a visible `:focus-visible` ring —
-  `2px solid t.$honey-mustard`, `2px` offset.
+- **Focus:** every interactive element gets a visible ring — `@include
+  t.focusRing`, which is `inset 0 0 0 2px t.$accent`.
+- **Overlays:** place by the z-index ladder in `theme/_elevation.scss`
+  (`$z-rail` 40 → `$z-snackbar` 95), never by picking a bigger number.
 
-`$honey-mustard` means focus or live. `$massacre` means the primary action.
-Neither is decorative.
+`$accent` means the primary action, focus, or selection. `$winner` means first
+place. `$urgent` means urgency or destruction. None is decorative.
 
 ## 5. Copy
 
-Write the strings as carefully as the markup — see `docs/design-system.md` §4.
-Sentence case everywhere. Buttons start with a verb and name the outcome
-("Join room", not "Submit"). No exclamation marks. Mobile headings are six
-words or fewer. Errors say what happened, then what to do next. Terms specific
-to Captionist go in the glossary.
+Write the strings as carefully as the markup — see `docs/design-system.md` §5.
+Dry engineering-team humour, second person, short sentences — deploys, prod,
+on-call, retros are the shared vocabulary. Sentence case everywhere. Buttons
+start with a verb and name the outcome ("Start round", not "Submit"). No
+exclamation stacking, no mascot-speak. Mobile headings are six words or fewer.
+Errors say what happened, then what to do next. A blocked action says what's
+missing in its label ("Pick 2 more") rather than going grey. Game-specific terms
+go in the glossary.
 
 ## 6. Finishing
 

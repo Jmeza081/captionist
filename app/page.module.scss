@@ -1,19 +1,14 @@
 @use 'theme' as t;
 
 .main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
   // dvh tracks the mobile browser's collapsing toolbar; vh is the fallback.
   min-height: 100vh;
   min-height: 100dvh;
 
-  padding: t.$space-7 t.$space-4;
-  background-color: t.$charcoal-900;
+  padding: t.$screen-pad-v t.$screen-pad-h;
+  background-color: t.$surface-canvas;
 
   @include t.mq('md') {
-    padding: t.$space-8 t.$space-6;
+    padding: t.$screen-pad-v-lg t.$screen-pad-h-lg;
   }
 }

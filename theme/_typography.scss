@@ -1,80 +1,115 @@
 @use 'colors';
 
-// Type scale — fluid, mobile-first.
+// Type — taken verbatim from DESIGNSYSTEM.md §2.
 //
-// Every size uses clamp(min, preferred, max) so a heading that reads well on a
-// 393px phone doesn't have to be re-declared at each breakpoint. Inter is
-// loaded once in app/layout.tsx via next/font and exposed as --font-inter.
+// Mixins, not variables, so a call site gets family, size, weight, tracking,
+// line-height and colour together. Where the spec gives a size range, it is
+// expressed as `clamp()` so one declaration covers phone through desktop —
+// the low end of the range is what a 393px phone gets.
+//
+// Inter is loaded once in app/layout.tsx via next/font and exposed as
+// --font-inter. Nothing here goes below 12px, per the spec.
 
 $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
   Roboto, sans-serif;
-$font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
-  'Liberation Mono', monospace;
+
+// The hero number on the podium and the room code. Inter's tabular figures
+// keep columns of scores from shifting as they count up.
+@mixin tabularFigures {
+  font-variant-numeric: tabular-nums;
+}
 
 @mixin displayText {
   font-family: $font-sans;
-  font-size: clamp(2.5rem, 12vw, 6rem);
+  font-size: clamp(38px, 7.2vw, 98px);
   font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  color: colors.$white-100;
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  color: colors.$text-primary;
+  text-wrap: balance;
 }
 
-@mixin titleText {
+@mixin screenTitleText {
   font-family: $font-sans;
-  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: colors.$text-primary;
+  text-wrap: balance;
+}
+
+@mixin cardTitleText {
+  font-family: $font-sans;
+  font-size: clamp(20px, 2.4vw, 22px);
   font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  color: colors.$white-100;
+  line-height: 1.2;
+  color: colors.$text-primary;
 }
 
-@mixin headingText {
+@mixin sectionHeadingText {
   font-family: $font-sans;
-  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.25;
-  color: colors.$white-100;
+  color: colors.$text-primary;
 }
 
 @mixin bodyText {
   font-family: $font-sans;
-  font-size: 1rem;
-  font-weight: 400;
+  font-size: clamp(16px, 2vw, 21px);
+  font-weight: 500;
   line-height: 1.5;
-  color: colors.$white-75;
+  color: colors.$text-body;
+  text-wrap: pretty;
+}
+
+@mixin chatBodyText {
+  font-family: $font-sans;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: colors.$text-chat;
+  text-wrap: pretty;
 }
 
 @mixin labelText {
   font-family: $font-sans;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: clamp(13px, 1.6vw, 15px);
+  font-weight: 600;
   line-height: 1.4;
-  color: colors.$white-75;
+  color: colors.$text-primary;
 }
 
-@mixin captionText {
+// Small, wide, uppercase — the `PROMPT` and `ROUND 3` markers. Uppercase is
+// applied here, so the string in the .tsx stays sentence case and readable.
+@mixin eyebrowText {
   font-family: $font-sans;
-  font-size: 0.75rem;
-  font-weight: 400;
-  line-height: 1.4;
-  color: colors.$white-50;
+  font-size: clamp(10px, 1.2vw, 14px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: colors.$accent-text;
 }
 
-// Room codes are read aloud and typed by hand, so they get tabular, widely
-// tracked monospace to keep character boundaries unambiguous.
-@mixin codeText {
-  font-family: $font-mono;
-  font-size: clamp(2rem, 10vw, 4rem);
-  font-weight: 700;
+@mixin scoreText {
+  font-family: $font-sans;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  line-height: 1.1;
+  color: colors.$text-primary;
+  @include tabularFigures;
+}
+
+// Room codes are read aloud and typed by hand, so they get tabular figures and
+// wide tracking to keep character boundaries unambiguous.
+@mixin roomCodeText {
+  font-family: $font-sans;
+  font-size: clamp(44px, 7vw, 58px);
+  font-weight: 800;
   line-height: 1.1;
   letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
-  color: colors.$white-100;
-}
-
-// Deprecated alias kept so existing call sites keep compiling. Use
-// `displayText` in new code.
-@mixin heroText {
-  @include displayText;
+  color: colors.$text-primary;
+  @include tabularFigures;
 }

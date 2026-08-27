@@ -1,0 +1,69 @@
+@use 'colors';
+
+// Elevation and effects — taken verbatim from DESIGNSYSTEM.md §2.
+//
+// Shadows are named for the surface they lift, not for a depth number, because
+// they aren't a ramp — the modal glow and the winner ring do different jobs
+// and are not interchangeable.
+
+$shadow-popover: 0 20px 50px rgba(0, 0, 0, 0.65);
+$shadow-toolbox: 0 24px 60px rgba(0, 0, 0, 0.6);
+$shadow-snackbar: 0 18px 44px rgba(0, 0, 0, 0.6);
+
+// The modal's purple glow. Disconnect and error modals swap it for the
+// destructive variant below.
+$shadow-modal: 0 0 90px rgba(123, 97, 255, 0.28), 0 30px 80px rgba(0, 0, 0, 0.7);
+$shadow-modal-error: 0 0 90px rgba(255, 120, 125, 0.28),
+  0 30px 80px rgba(0, 0, 0, 0.7);
+
+// First place: a solid ring, not a glow.
+$shadow-winner: 0 0 0 4px colors.$winner, 0 24px 60px rgba(0, 0, 0, 0.6);
+
+// Focus sits inside the element so it never shifts layout or clips against a
+// neighbour. Every interactive element gets it — see docs/design-system.md §5.
+$focus-ring: inset 0 0 0 2px colors.$accent;
+
+@mixin focusRing {
+  &:focus-visible {
+    outline: none;
+    box-shadow: $focus-ring;
+  }
+}
+
+// Hairlines are borders, not shadows, but they belong to the same "how do I
+// separate two surfaces" decision, so they live here too.
+@mixin hairline($side: 'bottom') {
+  @if $side == 'bottom' {
+    border-bottom: 1px solid colors.$line-hairline;
+  } @else if $side == 'top' {
+    border-top: 1px solid colors.$line-hairline;
+  } @else if $side == 'left' {
+    border-left: 1px solid colors.$line-hairline;
+  } @else if $side == 'right' {
+    border-right: 1px solid colors.$line-hairline;
+  } @else if $side == 'all' {
+    border: 1px solid colors.$line-hairline;
+  } @else {
+    @error "Unknown hairline side `#{$side}`. Use top, right, bottom, left or all.";
+  }
+}
+
+// Modal and overlay backdrop.
+@mixin backdrop {
+  background-color: colors.$scrim-backdrop;
+  backdrop-filter: blur(10px);
+}
+
+// --- Z-index ladder ---------------------------------------------------------
+//
+// The whole ladder in one place, so a new overlay is placed by reading it
+// rather than by guessing a number bigger than the last one.
+
+$z-rail: 40;
+$z-toolbox: 50;
+$z-toast: 65;
+$z-reaction-picker: 70;
+$z-floater: 75;
+$z-interstitial: 80;
+$z-help-modal: 90;
+$z-snackbar: 95;

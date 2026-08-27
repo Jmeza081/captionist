@@ -1,0 +1,13 @@
+@use 'theme' as t;
+
+// Publishes the spacing and radius scales as CSS custom properties so the
+// React layout primitives can reference them by name, and declares the shared
+// keyframes once. See theme/_css-vars.scss for why the indirection exists.
+//
+// Global (not a module) and imported once from app/layout.tsx.
+
+:root {
+  @include t.rootVars;
+}
+
+@include t.keyframes;

@@ -1,28 +1,27 @@
 @use 'theme' as t;
 
+// Specs from DESIGNSYSTEM.md §3, "Button".
+
 .button {
   @include t.labelText;
+  @include t.focusRing;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: t.$space-2;
+  gap: t.$space-8;
 
   // Every interactive element clears the minimum touch target.
   min-height: t.$tap-target-min;
-  padding: t.$space-3 t.$space-5;
+  padding: t.$space-14 t.$space-34;
 
   border: 1px solid transparent;
-  border-radius: t.$radius-md;
+  border-radius: t.$radius-pill;
   cursor: pointer;
   text-align: center;
+  white-space: nowrap;
   transition: background-color 120ms ease, border-color 120ms ease,
     opacity 120ms ease;
-
-  &:focus-visible {
-    outline: 2px solid t.$honey-mustard;
-    outline-offset: 2px;
-  }
 
   &:disabled {
     cursor: not-allowed;
@@ -31,42 +30,70 @@
 }
 
 .primary {
-  background-color: t.$massacre;
-  color: t.$white-100;
+  background-color: t.$accent;
+  color: t.$text-primary;
 
   &:hover:not(:disabled) {
-    background-color: t.$rose-petal;
+    background-color: t.$accent-hover;
   }
 }
 
 .secondary {
-  background-color: t.$charcoal-700;
-  border-color: t.$white-25;
-  color: t.$white-100;
+  background-color: t.$fill-secondary;
+  color: t.$text-primary;
 
   &:hover:not(:disabled) {
-    border-color: t.$white-50;
+    background-color: t.$fill-secondary-hover;
+  }
+}
+
+.outline {
+  background-color: transparent;
+  border-color: t.$line-outline;
+  color: t.$text-primary;
+
+  &:hover:not(:disabled) {
+    background-color: t.$fill-secondary;
+  }
+}
+
+.destructive {
+  background-color: t.$urgent-fill;
+  color: t.$urgent;
+
+  &:hover:not(:disabled) {
+    border-color: t.$urgent;
   }
 }
 
 .ghost {
   background-color: transparent;
-  color: t.$white-75;
+  color: t.$text-body;
 
   &:hover:not(:disabled) {
-    color: t.$white-100;
+    color: t.$text-primary;
   }
 }
 
-.md {
-  font-size: 0.875rem;
+// Toolbox variant: squarer, tighter, and never wraps.
+.toolbox {
+  border-radius: t.$radius-toolbox;
+  padding: t.$space-12 t.$space-20;
 }
 
-.lg {
-  font-size: 1rem;
-  padding: t.$space-4 t.$space-6;
+// Form CTAs are a fixed 51px tall; inline buttons keep the token padding.
+.form {
+  min-height: 51px;
+  padding: t.$space-14 t.$space-44;
 }
 
 .fullWidth {
   width: 100%;
+}
+
+// Blocked is not disabled: the control stays live and the label says what's
+// missing, so the tint drops but the pointer and focus ring stay real.
+// See DESIGNSYSTEM.md §4.7.
+.blocked {
+  opacity: 0.3;
 }
