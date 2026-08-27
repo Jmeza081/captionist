@@ -207,8 +207,8 @@ primitives.
 
 | Component | Tier | Use when |
 | --- | --- | --- |
-| `Icon` | atom | Any glyph. Ten stroked paths traced from the design; `currentColor` by default |
-| `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why" |
+| `Icon` | atom | Any glyph. Eleven stroked paths traced from the design; `currentColor` by default |
+| `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why" |
 | `Eyebrow` | atom | The small uppercase marker above a heading. Uppercases in CSS, so the string stays sentence case |
 | `Tag` | atom | A role or ownership marker — HOST, YOU, 1st |
 | `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected |
@@ -224,7 +224,7 @@ primitives.
 | `SegmentedControl` | atom | A small exclusive choice. A real radiogroup |
 | `Snackbar` | atom | Confirms an action with no other visible result |
 | `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+` |
-| `RoomCode` | atom | A room code, for reading aloud or typing |
+| `RoomCode` | atom | A room code, for reading aloud or typing. `display` on the entry screen, `compact` beside the lobby's QR |
 
 **Molecules**
 

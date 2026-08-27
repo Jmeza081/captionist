@@ -83,7 +83,12 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const urgent = Boolean(state && (isUrgent(state) || countdown.seconds <= URGENT_AT))
   const showRail = Boolean(state && showsProgressRail(state) && countdown.running)
 
-  const shellApi = useMemo<RoomShellApi>(() => ({ notify }), [notify])
+  const openHelp = useCallback(() => {
+    setHelpStep(0)
+    setOverlay('help')
+  }, [])
+
+  const shellApi = useMemo<RoomShellApi>(() => ({ notify, openHelp }), [notify, openHelp])
 
   const toolbox = useMemo(
     () => ({
@@ -173,10 +178,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
             notify(`Mode set to ${modeName(otherMode)}`)
           }}
           switchModeLabel={otherMode === 'react' ? 'Switch to prompts' : 'Switch to captions'}
-          onHelp={() => {
-            setHelpStep(0)
-            setOverlay('help')
-          }}
+          onHelp={openHelp}
           onForceTie={() => send({ type: 'host/forcedTie' })}
           onJumpToFinal={() => send({ type: 'host/jumpedToPodium' })}
           onRestart={() => send({ type: 'host/restarted' })}

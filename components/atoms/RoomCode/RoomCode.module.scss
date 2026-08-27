@@ -1,11 +1,19 @@
 @use 'theme' as t;
 
 .roomCode {
-  @include t.roomCodeText;
-
   margin: 0;
   text-align: center;
   word-break: break-all;
+}
+
+.display {
+  @include t.roomCodeText;
+}
+
+.compact {
+  @include t.roomCodeCompactText;
+
+  text-align: left;
 }
 
 .srOnly {

@@ -22,7 +22,12 @@ test.describe('the room', () => {
     await page.goto(HARNESS)
 
     const room = page.locator('main[data-phase]')
-    await expect(room).toHaveAttribute('data-phase', 'lobby')
+
+    // The lobby is deliberately not asserted here. With `?bots=` the autopilot
+    // starts the game the moment the fifth player lands, so whether the lobby
+    // is still on screen by the time this query runs is a race against the
+    // room's own first paint. `lobby.spec.ts` covers it without bots, which is
+    // the only way it holds still.
 
     // Generous: this asserts the room never stalls, not that it hits a
     // particular wall-clock time. Untimed phases (reveal, score) only advance

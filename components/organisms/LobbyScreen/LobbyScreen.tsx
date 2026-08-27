@@ -3,7 +3,7 @@
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
-import { Grid } from '@/components/atoms/Grid'
+import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { SegmentedControl } from '@/components/atoms/SegmentedControl'
 import { Stack } from '@/components/atoms/Stack'
@@ -41,7 +41,7 @@ function joinUrlFor(code: string): string {
 
 export function LobbyScreen() {
   const { state, isHost, send } = useRoom()
-  const { notify } = useRoomShell()
+  const { notify, openHelp } = useRoomShell()
   if (!state) return null
 
   const copy = lobbyCopy(state)
@@ -55,8 +55,8 @@ export function LobbyScreen() {
   }
 
   return (
-    <Grid columns={1} mdColumns={2} gap={44} className={styles.lobby}>
-      <Stack gap={26}>
+    <Inline gap={44} align="start" className={styles.lobby}>
+      <Stack gap={26} className={styles.share}>
         <Stack gap={12}>
           <Eyebrow>Scan or type the code</Eyebrow>
           <RoomShare
@@ -73,14 +73,24 @@ export function LobbyScreen() {
           />
         </Stack>
 
-        {isHost && (
-          <SegmentedControl
-            label="Game mode"
-            value={state.settings.mode}
-            onChange={setMode}
-            options={MODES}
-          />
-        )}
+        <Inline gap={10}>
+          {isHost && (
+            <SegmentedControl
+              label="Game mode"
+              value={state.settings.mode}
+              onChange={setMode}
+              options={MODES}
+            />
+          )}
+          <button
+            type="button"
+            className={styles.help}
+            onClick={openHelp}
+            aria-label="How Captionist works"
+          >
+            <Icon name="help" size={17} color="#A18FFF" />
+          </button>
+        </Inline>
 
         <Stack gap={10}>
           <h1 className={styles.heading}>{copy.heading}</h1>
@@ -102,7 +112,7 @@ export function LobbyScreen() {
         </Stack>
       </Stack>
 
-      <Box background="card" radius="card" padding={20}>
+      <Box background="card" radius="card" padding={20} className={styles.rosterCard}>
         <Stack gap={14}>
           <Inline justify="between" align="baseline">
             <h2 className={styles.rosterTitle}>Player list</h2>
@@ -111,7 +121,7 @@ export function LobbyScreen() {
             </span>
           </Inline>
 
-          <Stack gap={10} as="ul" className={styles.roster}>
+          <ul className={styles.roster}>
             {state.players.map((player) => (
               <li key={player.id}>
                 <PlayerRow player={toAvatarProps(player)} host={player.isHost} />
@@ -125,9 +135,9 @@ export function LobbyScreen() {
                 </div>
               </li>
             )}
-          </Stack>
+          </ul>
         </Stack>
       </Box>
-    </Grid>
+    </Inline>
   )
 }

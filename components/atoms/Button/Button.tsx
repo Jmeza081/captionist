@@ -11,7 +11,7 @@ export type ButtonVariant =
   | 'ghost'
 
 /** `form` is the 51px CTA that advances a phase; `toolbox` is the host's compact key. */
-export type ButtonSize = 'inline' | 'form' | 'toolbox'
+export type ButtonSize = 'inline' | 'small' | 'form' | 'toolbox'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual weight. Use exactly one `primary` per screen — the one that advances the phase. */

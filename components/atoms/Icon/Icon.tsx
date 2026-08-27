@@ -6,7 +6,7 @@ import styles from './Icon.module.scss'
  * These are the design's own paths rather than `@phosphor-icons/react` — the
  * smiley in particular is specific (the reaction affordance is always this
  * face plus a plus, never a bare `+`), and matching stroke weights across a
- * mixed set is harder than carrying nine paths.
+ * mixed set is harder than carrying eleven paths.
  */
 export type IconName =
   | 'search'
@@ -19,6 +19,7 @@ export type IconName =
   | 'chevronRight'
   | 'chat'
   | 'close'
+  | 'help'
 
 interface PathSpec {
   d: string[]
@@ -69,6 +70,11 @@ const PATHS: Record<IconName, PathSpec> = {
   close: {
     d: ['M6 6l12 12M18 6 6 18'],
     width: 2.2,
+  },
+  help: {
+    circles: [{ cx: 12, cy: 12, r: 9 }],
+    d: ['M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.3M12 17.1v.5'],
+    width: 2.1,
   },
 }
 

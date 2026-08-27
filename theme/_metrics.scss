@@ -173,6 +173,14 @@ $gif-board-tile: 200px;
 // renders at the size the vote grid will show it.
 $compose-preview-width: 520px;
 
+// The lobby's two columns, and the round help key beside the mode toggle.
+// The share side is a fixed measure so the roster takes whatever is left.
+$lobby-share-width: 420px;
+$lobby-roster-min: 360px;
+$lobby-player-min: 230px;
+$lobby-help-key: 36px;
+$share-qr: 142px;
+
 // --- Reveal reaction bar --------------------------------------------------
 
 $reveal-tile: 34px;

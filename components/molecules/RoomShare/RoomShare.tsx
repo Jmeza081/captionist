@@ -46,15 +46,15 @@ export function RoomShare({
       </Box>
 
       <div className={styles.body}>
-        <RoomCode code={code} />
+        <RoomCode code={code} size="compact" />
         <span className={styles.url}>{readable}</span>
 
         <div className={styles.actions}>
-          <Button variant="secondary" size="inline" onClick={onCopyLink}>
+          <Button variant="secondary" size="small" onClick={onCopyLink}>
             Copy link
           </Button>
           {onShareToSlack && (
-            <Button variant="secondary" size="inline" onClick={onShareToSlack}>
+            <Button variant="secondary" size="small" onClick={onShareToSlack}>
               Share to Slack
             </Button>
           )}

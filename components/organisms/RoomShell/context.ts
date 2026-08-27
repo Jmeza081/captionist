@@ -12,9 +12,15 @@ import { createContext, useContext } from 'react'
 export interface RoomShellApi {
   /** Confirm an action that has no other visible result. DESIGNSYSTEM.md §4.2. */
   notify: (message: string) => void
+  /**
+   * Open the how-it-works walkthrough. The shell owns it because it is an
+   * overlay, and only one of those may be open at a time — and because it must
+   * never pause the room, whoever asks for it.
+   */
+  openHelp: () => void
 }
 
-const NOOP: RoomShellApi = { notify: () => {} }
+const NOOP: RoomShellApi = { notify: () => {}, openHelp: () => {} }
 
 export const RoomShellContext = createContext<RoomShellApi>(NOOP)
 

@@ -2,7 +2,55 @@
 
 .lobby {
   width: 100%;
-  align-items: start;
+}
+
+/**
+ * The share column is a fixed measure and the roster takes the rest — roughly
+ * a third to two thirds on a laptop. Equal halves left the roster cramped and
+ * the QR block swimming in space.
+ */
+.share {
+  flex: none;
+  width: 100%;
+
+  @include t.mq('md') {
+    width: t.$lobby-share-width;
+  }
+}
+
+.rosterCard {
+  flex: 1;
+  width: 100%;
+  // Without this the card refuses to shrink below its content and pushes the
+  // column off a phone.
+  min-width: 0;
+
+  @include t.mq('md') {
+    min-width: t.$lobby-roster-min;
+  }
+}
+
+// A round key beside the mode toggle. Both sit on one row, which is also what
+// stops the toggle stretching to the full column.
+.help {
+  @include t.focusRing;
+
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$lobby-help-key;
+  height: t.$lobby-help-key;
+  padding: 0;
+  border: 0;
+  border-radius: t.$radius-avatar;
+  background-color: t.$fill-subtle;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: t.$accent-fill;
+  }
 }
 
 .heading {
@@ -34,7 +82,14 @@
   color: t.$text-meta;
 }
 
+/**
+ * Players read left to right and wrap, rather than one per row: a room of
+ * twenty would otherwise be a column you have to scroll to count.
+ */
 .roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(t.$lobby-player-min, 1fr));
+  gap: t.$space-10;
   margin: 0;
   padding: 0;
   list-style: none;

@@ -75,6 +75,14 @@
   }
 }
 
+// The share pills the lobby draws beside the room code: narrow enough that a
+// pair of them fits the column. Height still clears the 44px touch target —
+// the design draws them shorter, and that is the one place we don't follow it.
+.small {
+  padding: t.$btn-small-pad-y t.$btn-small-pad-x;
+  font-size: 13px;
+}
+
 // Toolbox variant: squarer, tighter, and never wraps.
 .toolbox {
   border-radius: t.$radius-toolbox;
