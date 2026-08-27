@@ -26,6 +26,12 @@ notes (inline styles, `<sc-if>` templates, `DCLogic`) describe the prototype,
 **not** this app — here it's React, Sass modules and the primitives. See
 [`design/README.md`](design/README.md) before working from it.
 
+**Where we stand:** [`docs/roadmap.md`](docs/roadmap.md) — the numbered build
+phases 0–6, what each one ships, and which are done. **Read it at the start of
+every session, before planning anything.** It is the answer to "where do we
+stand" after a context clear, and "phase N" always means its numbering, never
+the `/feature` skill's.
+
 This Next version postdates your training data. Read
 `node_modules/next/dist/docs/` before writing framework code — do not rely on
 recalled APIs.
