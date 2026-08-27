@@ -1,14 +1,91 @@
 @use 'theme' as t;
 
-.main {
-  // dvh tracks the mobile browser's collapsing toolbar; vh is the fallback.
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-
-  padding: t.$screen-pad-v t.$screen-pad-h;
+  overflow: hidden;
   background-color: t.$surface-canvas;
+}
+
+// Above the wall. `position: relative` alone is enough — the wall makes its
+// own stacking context and never leaves it.
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+
+.hero {
+  flex: 1;
+  justify-content: center;
+  padding: t.$space-34 t.$space-20 t.$landing-hero-pad-b;
+  text-align: center;
 
   @include t.mq('md') {
-    padding: t.$screen-pad-v-lg t.$screen-pad-h-lg;
+    padding: t.$space-44 t.$landing-pad-h t.$landing-hero-pad-b;
   }
+}
+
+/**
+ * The largest type in the product, and deliberately the LCP element: a
+ * full-viewport background is not an LCP candidate, so the headline is what
+ * the metric actually measures. It is text, so it paints with the font.
+ */
+.headline {
+  margin: 0;
+  @include t.displayText;
+}
+
+.lead {
+  margin: t.$space-26 0 0;
+  max-width: t.$landing-lead-width;
+  @include t.bodyText;
+  color: t.$text-caption;
+  text-wrap: pretty;
+}
+
+.cta {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: t.$space-44;
+}
+
+.proof {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-12;
+  margin-top: t.$space-44;
+
+  @include t.mq('md') {
+    flex-direction: row;
+    gap: t.$space-14;
+  }
+}
+
+.faces {
+  display: flex;
+}
+
+// Overlapped, each ringed in the canvas so the stack reads as depth.
+.face {
+  display: flex;
+  border-radius: t.$radius-avatar;
+  box-shadow: 0 0 0 3px t.$surface-canvas;
+
+  & + & {
+    margin-left: -(t.$space-10);
+  }
+}
+
+.proofText {
+  @include t.labelText;
+  color: t.$text-meta;
+  text-wrap: balance;
 }

@@ -23,6 +23,8 @@ export class GiphyError extends Error {}
 
 interface GiphyImage {
   url?: string
+  mp4?: string
+  webp?: string
 }
 
 interface GiphyItem {
@@ -31,6 +33,7 @@ interface GiphyItem {
   alt_text?: string
   images?: {
     fixed_width?: GiphyImage
+    fixed_width_still?: GiphyImage
     original?: GiphyImage
   }
 }
@@ -45,7 +48,8 @@ function keywordsFor(title: string, query: string | undefined): string[] {
 }
 
 function toResult(item: GiphyItem, query: string | undefined): GifResult | undefined {
-  const src = item.images?.fixed_width?.url ?? item.images?.original?.url
+  const rendition = item.images?.fixed_width ?? item.images?.original
+  const src = rendition?.url ?? item.images?.original?.url
   if (!item.id || !src) return undefined
 
   // Never empty: this becomes the accessible name here, the vote card's `alt`
@@ -53,7 +57,15 @@ function toResult(item: GiphyItem, query: string | undefined): GifResult | undef
   const title = (item.alt_text ?? item.title ?? '').trim()
   const alt = title.length > 0 ? title : 'A GIF'
 
-  return { id: item.id, src, alt, keywords: keywordsFor(alt, query) }
+  return {
+    id: item.id,
+    src,
+    alt,
+    keywords: keywordsFor(alt, query),
+    mp4: rendition?.mp4,
+    webp: rendition?.webp,
+    still: item.images?.fixed_width_still?.url,
+  }
 }
 
 export async function searchGiphy(query: GiphyQuery, apiKey: string): Promise<GifResult[]> {

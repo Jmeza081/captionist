@@ -208,7 +208,7 @@ primitives.
 | Component | Tier | Use when |
 | --- | --- | --- |
 | `Icon` | atom | Any glyph. Eleven stroked paths traced from the design; `currentColor` by default |
-| `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why" |
+| `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why"; `href` renders it as a link when the action is really a navigation |
 | `Eyebrow` | atom | The small uppercase marker above a heading. Uppercases in CSS, so the string stays sentence case |
 | `Tag` | atom | A role or ownership marker — HOST, YOU, 1st |
 | `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected |
@@ -249,6 +249,8 @@ primitives.
 | `AppHeader` | molecule | The bar on every in-room screen — phase left, clock right |
 | `CodeEntry` | molecule | Typing a room code. One real input behind the slots |
 | `RoomShare` | molecule | The lobby share block — QR, code, copy and Slack |
+| `LandingNav` | molecule | The public front door's bar. Not `AppHeader` — that one is live room state, this is static links and a way in |
+| `HeroWall` | molecule | The landing page's tilted wall of looping GIFs. Video over GIF, still-first, and stoppable |
 | `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
 
 **Organisms**
@@ -261,6 +263,7 @@ primitives.
 | `BriefScreen` | organism | Setting the round up, and watching someone else do it — all four `viewKey` faces |
 | `ComposeScreen` | organism | Captioning an image, answering a prompt, or sitting the round out |
 | `PhasePending` | organism | Temporary. The phases with no screen yet, with their real roster and the host's advance control |
+| `LandingActions` | organism | The two ways into a room, side by side — start one, or type a code. Routes, which is what puts it at this tier |
 
 An organism is anything that calls `useRoom()` — that is what puts these here
 rather than in `molecules/`. `RoomShell` owns everything outside the content

@@ -1,9 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200" role="img" aria-label="standup">
+  <style>
+    /* Stand-in for a GIF, so it moves like one. Transform and opacity only —
+       a wall runs twenty of these at once. The page swaps to the `-still`
+       companion for reduced motion rather than relying on this query, because
+       an SVG used as an image does not reliably inherit the host page's
+       preferences. */
+    .glyph { transform-origin: 160px 92px; animation: bob 4.2s -2.49s ease-in-out infinite; }
+    .wash { animation: drift 9s -2.49s ease-in-out infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-7px) scale(1.06); } }
+    @keyframes drift { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .glyph, .wash { animation: none; } }
+  </style>
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="#1B3A4D"/><stop offset="1" stop-color="#0E0F10"/>
   </linearGradient></defs>
-  <rect width="320" height="200" fill="url(#g)"/>
-  <text x="160" y="92" font-size="54" text-anchor="middle" dominant-baseline="central">💀</text>
+  <rect width="320" height="200" fill="#0E0F10"/>
+  <rect class="wash" width="320" height="200" fill="url(#g)"/>
+  <text class="glyph" x="160" y="92" font-size="54" text-anchor="middle" dominant-baseline="central">💀</text>
   <text x="160" y="150" font-size="15" font-family="Inter, system-ui, sans-serif" font-weight="600"
         fill="rgba(255,255,255,.62)" text-anchor="middle">standup</text>
 </svg>

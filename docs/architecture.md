@@ -6,8 +6,9 @@ feature — if this file disagrees with the code, the file is the bug.
 Companion docs: [design system](./design-system.md) · [roadmap](./roadmap.md) ·
 [decisions](./adr/) · [component tiers](../components/README.md)
 
-Current as of phase 2: the room renders real screens for four of its ten
-phases.
+Current as of phase 2, plus the landing page pulled forward from phase 4: the
+room renders real screens for four of its ten phases, and `/` is a real front
+door rather than a placeholder.
 
 The roadmap owns *what is being built next*, in phases. This file owns *what is
 here now*. Where they overlap, this file links rather than repeats.
@@ -27,6 +28,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Room runtime | `lib/room/` — `RoomTransport` + `HostEngine` | The host browser is the server — see [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md) |
 | Realtime | Ably v2 (installed, unwired) | `LocalTransport` is the only implementation of `RoomTransport` today |
 | GIF search | Giphy, proxied by `/api/gifs` | `GIPHY_API_KEY` is server-only; `lib/gifs/` holds the fetcher, the offline shelf and the shared types |
+| GIF renditions | `fixed_width` MP4 · WebP · GIF, plus `fixed_width_still` | `GifResult` carries all four. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
 
@@ -45,7 +47,10 @@ here now*. Where they overlap, this file links rather than repeats.
 No key is needed to run any of these. Without `GIPHY_API_KEY` the GIF route
 serves the offline shelf outside production, so a fresh clone gets a working
 picker rather than an error; `GIFS_STUB=1` forces the same thing with a key
-present. `.env.example` documents both.
+present. `.env.example` documents both. The landing wall reads the same two
+switches in `lib/gifs/wall.ts` and falls back to the shelf on a thrown request
+as well — the first page anyone sees renders with stand-in art rather than not
+rendering.
 
 ---
 
@@ -54,21 +59,34 @@ present. `.env.example` documents both.
 Four routes of ours plus Next's own not-found, as `next build` reports them:
 
 ```
-○ /              ○ /_not-found     ƒ /api/gifs     ○ /components     ƒ /room/[code]
+Route (app)       Revalidate  Expire
+○ /                      1h      1y
+○ /_not-found
+ƒ /api/gifs
+○ /components
+ƒ /room/[code]
 ```
 
-`/` and `/components` are prerendered at build time. `/room/[code]` is dynamic
-and everything inside it is client-driven. `/api/gifs` is a route handler — no
-layout, no React, JSON only.
+`/` and `/components` are prerendered at build time. `/` is still static even
+though it awaits remote data: `wallTiles()` reaches Giphy through a `fetch`
+carrying `next: { revalidate: 3600 }`, so the page is built once and refreshed
+hourly rather than rendered per request. The revalidate column only appears in
+`next build` when a `GIPHY_API_KEY` is present — with no key the wall resolves
+from the offline shelf, nothing is fetched, and `/` is plain static.
+`/room/[code]` is dynamic and everything inside it is client-driven.
+`/api/gifs` is a route handler — no layout, no React, JSON only.
 
 ```mermaid
 graph TD
   L["app/layout.tsx<br/><i>root layout · Inter · globals.css + tokens.scss</i>"]
-  P["app/page.tsx<br/><i>/ — join screen · static ○</i>"]
+  P["app/page.tsx<br/><i>/ — landing · static ○ · revalidate 1h</i>"]
   C["app/components/page.tsx<br/><i>/components — the gallery · static ○</i>"]
   R["app/room/[code]/page.tsx<br/><i>/room/[code] — dynamic ƒ</i>"]
   A["app/api/gifs/route.ts<br/><i>/api/gifs — route handler ƒ</i>"]
   NF["app/_not-found<br/><i>Next default</i>"]
+  W["lib/gifs/wall.ts<br/><i>wallTiles() — server only</i>"]
+  GY["Giphy"]
+  LA["LandingActions<br/><i>'use client' · generateCode · router.push</i>"]
   RP["lib/room/RoomProvider<br/><i>'use client' · builds the room</i>"]
   SH["RoomShell<br/><i>chrome · overlays · one snackbar</i>"]
   SC["screens.ts<br/><i>RoomPhase → ComponentType</i>"]
@@ -78,20 +96,39 @@ graph TD
   L --> C
   L --> R
   L --> NF
+  P -->|"await wallTiles()"| W
+  W -.->|"searchGiphy · cached 1h"| GY
+  P --> LA
+  LA -->|"router.push → /room/CODE"| R
   R --> RP --> SH
   SC -->|"screens={SCREENS}"| SH
   SH -->|"screens[state.phase]"| SCR
   SCR -.->|"useGifSearch() → fetch"| A
+  A -.->|"searchGiphy"| GY
 ```
 
-The page reads the segment and hands off; `screens.ts` is the only place that
-knows which component a phase renders, so adding phase 3's screens is one line
-each and `RoomShell` keeps no opinion about what it wraps. A phase with no
-entry in the map falls back to `PhasePending`.
+`/` is the only page that reaches a third party from the server render; every
+other Giphy call goes through the route handler. Both doors are the same
+function, `searchGiphy()`, and the key stops at the server in both.
 
-`/components` renders every built component in its states. It's the design
+**`/` is the landing page from artboard 1a**, and it composes three things:
+`LandingNav`, the hero copy, and `LandingActions`. It holds no markup of its
+own beyond the headline, the lead and the avatar proof row. Both ways into a
+room end at the same URL — "Start a game" calls `generateCode(Date.now())` and
+pushes `/room/[code]`; the code field normalises what was typed and pushes the
+same shape. Nothing asks a server for a code, because under
+[ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md) there is no
+server to ask: the host's browser is it, so a code only has to be well-formed
+and unlikely to collide. `normalizeCode` now folds the ambiguous **digits** as
+well as the letters (`0→Q`, `1→J`, `2→4`, `5→3`), so a code read aloud down a
+call survives whichever half of each pair the listener reaches for.
+
+`/components` renders the reusable library in its states. It's the design
 review surface and what `e2e/components.spec.ts` drives — the components are
-verified against a real browser rather than a snapshot.
+verified against a real browser rather than a snapshot. `JoinPanel` lives here
+now rather than on `/`. The three landing components are the gap in it:
+`HeroWall`, `LandingNav` and `LandingActions` are single-use and page-shaped,
+so `e2e/landing.spec.ts` covers them on the real page instead.
 
 **`/room/[code]` is one route for the whole room; the phase is a render switch
 inside it, not a URL.** A route per phase was rejected on purpose: transitions
@@ -101,6 +138,11 @@ button would become a time machine into a phase the room has already left. The
 route is dynamic because it awaits `searchParams` (`params` and `searchParams`
 are Promises in Next 16); the segment resolves through
 `normalizeCode` or 404s, with `DEV` reserved as the harness room `C-DEV000`.
+
+The room page reads the segment and hands off; `screens.ts` is the only place
+that knows which component a phase renders, so adding phase 3's screens is one
+line each and `RoomShell` keeps no opinion about what it wraps. A phase with no
+entry in the map falls back to `PhasePending`.
 
 The phase is on the DOM as well as in state: `RoomShell` renders
 `<main data-phase={state.phase}>`, and every room spec drives
@@ -139,10 +181,10 @@ graph LR
   U["components/organisms/ + app/<br/><i>markup only</i>"]
   R["lib/room/<br/><i>transport · HostEngine · GuestClient<br/>store · RoomProvider · useRoom · useCountdown</i>"]
   G["lib/game/<br/><i>pure — types · reducer · authorize<br/>selectors · project · rng</i>"]
-  F["lib/gifs/<br/><i>types · samples · giphy · useGifSearch</i>"]
+  F["lib/gifs/<br/><i>types · samples · giphy · wall · useGifSearch</i>"]
   API["app/api/gifs"]
   U -->|"useRoom() · send(action)"| R
-  U -->|"useGifSearch()"| F
+  U -->|"useGifSearch() in the browser<br/>wallTiles() on the server"| F
   U -->|"selectors · constants"| G
   R -->|"reduce · authorize · project"| G
   API --> F
@@ -163,10 +205,13 @@ the screen is left holding markup. The mutable half is reached only through
 and `useCountdown()`.
 
 `lib/gifs/` is the second lib, and it sits beside the room rather than under it.
-The route handler and the browser hook both import it, which is exactly why
-`GifResult` is declared there: a route reaching into `components/` would be the
-wrong direction. `toMediaRef()` is the one-way door between a search result and
-game state — `id` and `keywords` are dropped, because `MediaRef` has no id and
+The route handler, the browser hook and now the landing page's server render all
+import it, which is exactly why `GifResult` is declared there: a route reaching
+into `components/` would be the wrong direction. `wall.ts` is the third caller
+and the only server-side one outside a route handler — it turns `GifResult`s
+into `WallTile`s, a smaller shape carrying just a poster, a motion source and
+alt text, so `HeroWall` never sees a search result. `toMediaRef()` is the
+one-way door between a search result and game state — `id` and `keywords` are dropped, because `MediaRef` has no id and
 inventing one for a future upload would be a lie.
 
 ### Host authority
@@ -310,15 +355,17 @@ graph BT
     Overlay["Modal · RoundOpener · HostToolbox<br/>Dropzone · ReactionToolbar · GifPanel"]
     Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
     Lobby["CodeEntry · RoomShare · Podium"]
+    Landing["HeroWall · LandingNav"]
   end
-  subgraph organisms["organisms/ — anything that calls useRoom()"]
+  subgraph organisms["organisms/ — room state or routing"]
     Shell["RoomShell<br/>+ context (notify)"]
     Screens["LobbyScreen · BriefScreen<br/>ComposeScreen"]
     Pending["PhasePending"]
     Gallery["ComponentGallery"]
+    Actions["LandingActions<br/><i>routes — no useRoom</i>"]
   end
   subgraph pages["app/ — composition only"]
-    Home["page.tsx"]
+    Home["page.tsx<br/><i>awaits wallTiles()</i>"]
     Comp["components/page.tsx"]
     RoomPage["room/[code]/page.tsx<br/>+ screens.ts"]
   end
@@ -329,7 +376,13 @@ graph BT
   Ident --> Chat
   Controls --> Overlay
   Feedback --> Chat
-  Room --> Home
+  Controls --> Landing
+  Controls --> Actions
+  Lobby -->|"CodeEntry"| Actions
+  Landing --> Home
+  Actions --> Home
+  Layout -->|"Stack"| Home
+  Ident -->|"Avatar"| Home
   Room --> Gallery
   Media --> Gallery
   Chat --> Gallery
@@ -357,10 +410,14 @@ graph BT
   Pending --> RoomPage
 ```
 
-`organisms/` is the tier that grew. **An organism is anything that calls
-`useRoom()`** — that, not size, is why a 90-line `PhasePending` is one and a
-190-line `GifPanel` is not. `RoomShell` owns everything outside the content
-column: the header and its clock, the docked rail, the host toolbox, the help
+`organisms/` is the tier that grew. **An organism is anything that reaches
+outside itself — room state or routing** — which, not size, is why a 90-line
+`PhasePending` is one and a 190-line `GifPanel` is not. Until the landing page
+every organism qualified on `useRoom()`; `LandingActions` is the first to
+qualify on the other half of
+[`components/README.md`](../components/README.md)'s rule, since it does no more
+than take two clicks and `router.push`. `RoomShell` owns everything outside
+the content column: the header and its clock, the docked rail, the host toolbox, the help
 modal, the round-opener overlay and one snackbar at a time. A screen owns its
 content column and nothing else, which is what stops ten screens each growing
 their own header. The only thing a screen may ask of the chrome is
@@ -382,6 +439,19 @@ server components, so using them costs no client JS.
 input is `'use client'` and **controlled** — it owns no state, so the same
 `Toggle` works in the setup screen and the host toolbox without either one
 fighting it for ownership.
+
+The three landing components are the first tier placements decided by something
+other than room state. `LandingNav` is a server component and a molecule
+because it composes `Button` — and it is **not** a variant of `AppHeader`, which
+is 88px of live room state redrawn on every broadcast. They share a wordmark and
+nothing else, so a shared component would have each carrying props the other
+never sets; that is the one case where the *variant is a prop* rule does not
+apply. `HeroWall` is `'use client'` only for the reduced-motion query and the
+pause control — its markup still server-renders, which is what puts the whole
+wall in the first HTML. `Button` gained an `href` that renders a `next/link`
+wearing the button's classes, for the case where an action is really a
+navigation: an anchor previews on hover, opens in a new tab and works before
+hydration, none of which a `<button onClick>` does.
 
 ## Token flow
 
@@ -419,8 +489,9 @@ not inlined, and no component owns a second copy of the number.
 
 ## Rendering path
 
-Three paths now. `/` and `/components` are built at compile time and served as
-static HTML.
+Four paths now. `/components` is the simple one: built at compile time and
+served as static HTML, with hydration reaching only the `'use client'` islands
+inside the gallery.
 
 ```mermaid
 sequenceDiagram
@@ -429,13 +500,12 @@ sequenceDiagram
   participant S as Static output
 
   Note over N,S: build time
-  N->>S: prerender / (RSC → HTML)
+  N->>S: prerender /components (RSC → HTML)
 
   Note over B,S: request time
-  B->>N: GET /
+  B->>N: GET /components
   N-->>B: prerendered HTML + RSC payload
   B->>B: hydrate (only 'use client' islands)
-  Note right of B: react-qr-code renders<br/>server-side, so the join<br/>screen needs no client JS
 ```
 
 `/room/[code]` is the second path and it is the opposite shape: the server
@@ -448,8 +518,58 @@ below that guard may read `state`. The first render a player sees comes from
 the host's own broadcast arriving over the transport, which on a host-only room
 is a loop straight back to itself.
 
-The third path is the only one that leaves the machine, and it belongs to the
-GIF picker rather than to a page.
+The third path is `/`, and it is the third shape: a Server Component that
+**awaits remote data before it answers at all**, with a client island for the
+part that has to move.
+
+```mermaid
+sequenceDiagram
+  participant B as Browser
+  participant N as Next server
+  participant W as lib/gifs/wall
+  participant G as Giphy
+  participant P as lib/gifs/samples
+
+  Note over N,P: build, then once an hour
+  N->>W: await wallTiles()
+  alt no key, or GIFS_STUB=1, or the request throws
+    W->>P: SAMPLE_GIFS + their -still companions
+  else
+    W->>G: searchGiphy 'reaction' · limit 20 · revalidate 3600
+    G-->>W: mp4 · webp · gif · fixed_width_still
+  end
+  W-->>N: WallTile[] — poster always set
+  N->>N: render HeroWall · LandingNav · LandingActions
+
+  Note over B,N: request time
+  B->>N: GET /
+  N-->>B: full HTML — 20 tiles, posters in place
+  B->>B: hydrate HeroWall + LandingActions
+  B->>B: read prefers-reduced-motion
+  alt no preference
+    B->>B: play the videos · swap each img to its motion src
+  else reduce
+    B->>B: stay on the poster · no pause control offered
+  end
+```
+
+The order matters. **Every tile has a poster in the first response**, so the
+wall is complete and correctly sized before a byte of script runs and nothing
+shifts under the headline. Motion is added afterwards and only after the
+preference has been read — playback starts `false`, and the effect that flips
+it is the same one that reads the media query, so a visitor who asked for
+stillness never sees a frame. A background this size is not an LCP candidate,
+which leaves the 98px headline as what the metric actually measures, and it is
+text.
+
+`preload="none"` on the `<video>` elements is what keeps twenty tiles from
+being twenty parallel downloads on first paint; the poster is already there, so
+there is nothing to wait for. Twenty MP4s are roughly what two GIFs would cost,
+which is why `wall.ts` prefers the `mp4` rendition and falls back to the
+animated image only when a source has none.
+
+The fourth path is the only one that leaves the machine at request time, and it
+belongs to the GIF picker rather than to a page.
 
 ```mermaid
 sequenceDiagram
@@ -478,9 +598,11 @@ There is no debounce anywhere in that path, on purpose: the design's picker says
 "Enter to search", so a request fires on submit and on a suggestion chip, which
 deletes the debounce-and-race question entirely. What is left is the stale
 guard. A picked result becomes a `MediaRef` through `toMediaRef()` and is
-broadcast to the room — which is why the sample shelf is twelve SVGs under
+broadcast to the room — which is why the sample shelf is SVG files under
 `public/media/` rather than data URIs, since a full-state message has to fit
-inside Ably's 64KB cap.
+inside Ably's 64KB cap. `public/media/` now holds 24 of them: twelve animated
+tiles and a `-still` companion for each, because stopping an animated image
+means swapping the file.
 
 ---
 
@@ -495,7 +617,7 @@ repeated here.
 | Area | What exists | What doesn't |
 | --- | --- | --- |
 | The round-flow screens | Four of the ten phases render for real — `lobby`, `opener` (the `RoundOpener` overlay), `brief` and `compose` — inside the `RoomShell` chrome drawn above | `waiting`, `vote`, `tiebreak`, `reveal`, `score` and `podium` all render `PhasePending` — real data, real advance control, none of the designed layout |
-| Joining a room | `normalizeCode`, `player/joined`, seat-holding, and `?as=p2` driving a genuine guest endpoint | Landing, `/join`, `/join/[code]`, `/host`. Every room is created by, and for, its host. The code on `/` is still hardcoded, and `LobbyScreen`'s guest face (settings read-only, no controls) waits on real joining |
+| Joining a room | The landing page at `/` — see the [route map](#routes) and its [rendering path](#rendering-path). Both entries route to `/room/[code]` with a real generated or normalised code. Plus `player/joined`, seat-holding, and `?as=p2` driving a genuine guest endpoint | `/join`, `/join/[code]`, `/host`. Typing someone else's code lands you in a room *you* then host, because a room still only exists in the browser that opened it — joining one that already exists waits on a transport that crosses tabs. Nickname and avatar entry, and `LobbyScreen`'s guest face (settings read-only, no controls), wait on the same thing |
 | Realtime transport | `RoomTransport` + `LocalTransport` (one tab) | `BroadcastTransport`, `AblyTransport`, `/api/ably/token`, presence UI, reconnect overlay |
 | Player avatars | `avatarSeed` travels in state; `Avatar` falls back to the initial on the player's colour | `@dicebear/*` is installed and unused — nothing turns a seed into art, and `Player.src` is never populated |
 | Iconography | `Icon` ships the design's own SVG paths | `@phosphor-icons/react` is installed and unused |
@@ -505,8 +627,9 @@ repeated here.
 The component library is complete — see the inventory in
 [design-system.md](./design-system.md#component-inventory). The design's
 prototype has **16 state branches**. Three of them — landing, join and setup —
-are routes rather than phases, because no room exists during them; the
-remaining 13, plus the round opener overlay, are the **14 in-room states**.
+are routes rather than phases, because no room exists during them; landing is
+built, the other two are not. The remaining 13, plus the round opener overlay,
+are the **14 in-room states**.
 Those normalise to the **10 room phases** in `RoomPhase`
 (`lib/game/types.ts`): `pick`/`pickwait`/`prompt`/`promptwait` are one phase
 (`brief`) rendered four ways, and `caption`/`submit` are another (`compose`).
@@ -548,19 +671,31 @@ already recorded in
    asserts the words and the specs assert the wiring. `/api/gifs` is tested
    through Playwright's `request` fixture rather than a browser, against the
    stub — a spec that depends on a live third party is not a test.
-6. **Anything that calls `useRoom()` is an organism.** That is the whole test —
-   not size, not how much markup it holds. A component that needs room state
-   belongs in `components/organisms/`, and one that only needs props stays a
-   molecule so the gallery can still render it.
-7. **Selectors passed to `useRoomSelector` must be module-level.** The cache is
+6. **Room state or routing makes an organism.** That is the whole test — not
+   size, not how much markup it holds. A component that calls `useRoom()` or
+   pushes a route belongs in `components/organisms/`; one that only needs props
+   stays a molecule so the gallery can still render it. `LandingActions` is the
+   routing case and `RoomShell` the state case.
+7. **Media that can move ships a still, and motion is opt-in after the
+   preference is read.** Anything animated carries a companion still frame —
+   `GifResult.still`, `WallTile.poster`, the `-still` SVGs in `public/media/` —
+   and it is that frame the first render shows. Playback is enabled only inside
+   the effect that reads `prefers-reduced-motion`, so it never starts and then
+   gets cancelled. This is a rule rather than a preference because CSS cannot
+   reach inside an animated image to stop it, and an SVG used as an `<img>` does
+   not reliably inherit the page's motion preference — the only reliable stop is
+   swapping the file (or pausing a `<video>`). Anything that stops for a
+   preference also gets a visible control, since some people want stillness
+   without having set the system flag.
+8. **Selectors passed to `useRoomSelector` must be module-level.** The cache is
    keyed on snapshot identity, so an inline closure that changes meaning
    between renders would be served from cache.
-8. **The phase-2 screens use `useRoom()`, not `useRoomSelector`, on purpose.**
+9. **The phase-2 screens use `useRoom()`, not `useRoomSelector`, on purpose.**
    Nothing they render is a list long enough to pay for the cache — a lobby
    roster is twenty rows that all change together anyway. `useRoomSelector`
    exists for phase 3's vote grid, where twenty live cards would otherwise
    re-render on every broadcast. Reach for it when there is a list; until then
    the whole snapshot is one subscription and one render.
-9. **Nothing time-varying goes in the store.** `getSnapshot()` must return a
+10. **Nothing time-varying goes in the store.** `getSnapshot()` must return a
    stable reference or React 19 loops. Clocks are derived in `useCountdown`,
    and refusals are delivered as a subscription rather than parked in state.

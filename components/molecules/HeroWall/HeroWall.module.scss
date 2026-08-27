@@ -1,0 +1,89 @@
+@use 'theme' as t;
+
+.wall {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  // Its own stacking context, so the scrim and the tiles can never interleave
+  // with the hero content in front of them.
+  isolation: isolate;
+  pointer-events: none;
+}
+
+/**
+ * Tilted and oversized, so no tile edge is ever visible inside the viewport.
+ * The overhang is in `vw` rather than pixels because the rotation means a
+ * wider screen needs proportionally more of it.
+ */
+.grid {
+  position: absolute;
+  inset: -(t.$wall-overhang);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(t.$wall-tile, 1fr));
+  grid-auto-rows: t.$wall-tile-height;
+  gap: t.$wall-gap;
+  transform: rotate(t.$wall-tilt);
+  // The wall never animates its own layout; only its contents move.
+  will-change: transform;
+}
+
+.tile {
+  overflow: hidden;
+  border: 1px solid t.$line-hairline;
+  border-radius: t.$radius-media;
+  background-color: t.$surface-card;
+}
+
+.media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/**
+ * The design's 75% black with a 6px blur. It is what makes 98px type legible
+ * over arbitrary media — the wall cannot be trusted to be dark.
+ */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.toggle {
+  @include t.focusRing;
+
+  // Positioned against the page, not the wall — it is a sibling of both the
+  // wall and the content, and has to sit above the latter to be clickable.
+  position: absolute;
+  right: t.$space-20;
+  bottom: t.$space-20;
+  z-index: 2;
+  padding: t.$space-8 t.$space-14;
+  border: 1px solid t.$line-hairline-strong;
+  border-radius: t.$radius-pill;
+  background-color: t.$surface-card;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 600;
+  color: t.$text-body;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

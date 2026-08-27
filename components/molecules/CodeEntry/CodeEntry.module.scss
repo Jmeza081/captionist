@@ -24,7 +24,9 @@
 
 .slots {
   display: flex;
-  flex-wrap: wrap;
+  // Never wrap: seven slots on one line is the whole point of the pattern, and
+  // a code broken across two lines stops reading as a code.
+  flex-wrap: nowrap;
   gap: t.$space-8;
 }
 
@@ -32,6 +34,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   width: t.$slot-width;
   height: t.$slot-height;
   border-radius: t.$radius-field;
@@ -47,6 +50,31 @@
   width: t.$slot-width-lg;
   height: t.$slot-height-lg;
   font-size: 30px;
+}
+
+/**
+ * On a phone the seven slots share the row instead of claiming a fixed width.
+ * Seven times 60px is wider than any phone, and a code broken across two lines
+ * stops reading as a code. Scoped to the narrow end rather than expressed as a
+ * flex basis, because the row it sits in has no width of its own — a basis
+ * there collapses to nothing.
+ */
+@media (max-width: 420px) {
+  .slots {
+    width: 100%;
+  }
+
+  .slot,
+  .lg .slot {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+
+  .lg .slot {
+    height: t.$slot-height;
+    font-size: 22px;
+  }
 }
 
 // The fixed `C-`, always there, never typed.

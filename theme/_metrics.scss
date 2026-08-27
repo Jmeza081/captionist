@@ -181,6 +181,22 @@ $lobby-player-min: 230px;
 $lobby-help-key: 36px;
 $share-qr: 142px;
 
+// The landing page. One-off measures, so they live here rather than on the
+// gap scale — that set is the design's own and is not ours to extend.
+$landing-nav-height: 88px;
+$landing-mark: 34px;
+$landing-pad-h: 56px;
+$landing-hero-pad-b: 60px;
+$landing-pill-gap: 30px;
+$landing-lead-width: 640px;
+// The wall: five 300px columns, tilted, overhanging the viewport on every side
+// so no tile edge is ever visible.
+$wall-tile: 300px;
+$wall-tile-height: 290px;
+$wall-gap: 26px;
+$wall-tilt: -8deg;
+$wall-overhang: 12vw;
+
 // --- Reveal reaction bar --------------------------------------------------
 
 $reveal-tile: 34px;

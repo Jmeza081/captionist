@@ -30,6 +30,7 @@ import { Composer } from '@/components/molecules/Composer'
 import { Dropzone } from '@/components/molecules/Dropzone'
 import { GifPanel, type GifResult } from '@/components/molecules/GifPanel'
 import { HostToolbox } from '@/components/molecules/HostToolbox'
+import { JoinPanel } from '@/components/molecules/JoinPanel'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { Modal } from '@/components/molecules/Modal'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
@@ -546,6 +547,9 @@ export function ComponentGallery() {
               onCopyLink={() => undefined}
               onShareToSlack={() => undefined}
             />
+          </Case>
+          <Case label="Both ways into a room — the guest's entry panel">
+            <JoinPanel code="C-F34213" joinUrl="https://captionist.fun/C-F34213" />
           </Case>
         </Grid>
       </Section>

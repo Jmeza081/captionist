@@ -29,6 +29,10 @@ const TILES: ReadonlyArray<[slug: string, title: string]> = [
 export const SAMPLE_GIFS: readonly GifResult[] = TILES.map(([slug, title]) => ({
   id: `sample-${slug}`,
   src: `/media/stub-${slug}.svg`,
+  // The same art with its animation removed. An SVG used as an image does not
+  // reliably inherit the page's `prefers-reduced-motion`, so stillness has to
+  // be a different file rather than a media query inside this one.
+  still: `/media/stub-${slug}-still.svg`,
   alt: title,
   keywords: [slug, ...title.split(' ')],
 }))

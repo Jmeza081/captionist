@@ -36,7 +36,7 @@ test.describe('design tokens', () => {
   test('a Stack resolves its gap prop to a real computed gap', async ({
     page,
   }) => {
-    await page.goto('/')
+    await page.goto('/components')
 
     // JoinPanel renders <Stack gap={26}> as its root.
     const gap = await page

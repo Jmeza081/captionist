@@ -82,6 +82,14 @@ describe('room codes', () => {
     expect(normalizeCode('C-IOSZAB')).toBe('C-JQ34AB')
   })
 
+  it('folds both halves of a collision, not just the letter', () => {
+    // Someone reading `Q` down a call says "oh", and the person typing it
+    // reaches for zero. Handling only the letters would catch one of the two
+    // people in every pair.
+    expect(normalizeCode('C-1052AB')).toBe('C-JQ34AB')
+    expect(normalizeCode('C-IOSZAB')).toBe(normalizeCode('C-1052AB'))
+  })
+
   it('rejects a code that is the wrong length or has no chance of being real', () => {
     expect(normalizeCode('C-ABC')).toBeNull()
     expect(normalizeCode('')).toBeNull()

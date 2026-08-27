@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+import type React from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import styles from './Button.module.scss'
 
@@ -25,6 +27,16 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * This is not `disabled`; see DESIGNSYSTEM.md §4.7.
    */
   blocked?: boolean
+  /**
+   * Renders a link that looks like a button, for an action that is really a
+   * navigation. An anchor rather than a `router.push` so it opens in a new
+   * tab, previews on hover, and works before hydration — none of which a
+   * `<button>` with an onClick gives you.
+   *
+   * `blocked` still tints the control but means nothing on a link: there is no
+   * "not yet" state for somewhere you can simply go.
+   */
+  href?: string
   children: ReactNode
 }
 
@@ -40,6 +52,7 @@ export function Button({
   fullWidth = false,
   blocked = false,
   type = 'button',
+  href,
   className,
   children,
   ...rest
@@ -54,6 +67,26 @@ export function Button({
   ]
     .filter(Boolean)
     .join(' ')
+
+  if (href) {
+    // Everything else is forwarded: dropping `onClick`, `id` or a `data-`
+    // attribute here would typecheck and then silently do nothing, which is a
+    // worse trap than not supporting them. `disabled` and `type` are the two
+    // that genuinely have no meaning on an anchor.
+    // `disabled` is pulled out precisely so it cannot reach the anchor, where
+    // it would be meaningless.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { disabled, ...anchor } = rest
+    return (
+      <Link
+        {...(anchor as Omit<React.ComponentPropsWithoutRef<typeof Link>, 'href'>)}
+        href={href}
+        className={classes}
+      >
+        {children}
+      </Link>
+    )
+  }
 
   return (
     <button type={type} className={classes} {...rest}>

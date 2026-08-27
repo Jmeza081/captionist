@@ -1,0 +1,50 @@
+@use 'theme' as t;
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: t.$space-20;
+  width: 100%;
+  max-width: t.$landing-lead-width;
+
+  // Side by side once there is room. Below that they stack, and the primary
+  // stays first — a phone visitor is usually a guest, but starting a room is
+  // still the page's one primary action.
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    max-width: none;
+  }
+}
+
+/**
+ * The design's glass pill. It sits over moving media, so it needs its own
+ * blur and an inset highlight — a flat fill reads as a hole punched in the
+ * wall rather than something resting on it.
+ */
+.join {
+  display: flex;
+  // Stacked on a phone: seven slots and a button do not share 393px, and a
+  // pill wrapped around two rows stops looking like one control.
+  flex-direction: column;
+  align-items: stretch;
+  gap: t.$space-10;
+  width: 100%;
+  padding: t.$space-10;
+  border: 1px solid t.$line-outline;
+  border-radius: t.$radius-card;
+  background-color: t.$fill-secondary;
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: center;
+    gap: t.$space-12;
+    width: auto;
+    padding: t.$space-6;
+    border-radius: t.$radius-pill;
+  }
+}

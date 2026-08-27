@@ -357,6 +357,17 @@ test.describe('compositions', () => {
     expect(boxes[0]).toBeLessThan(boxes[2])
   })
 
+  test('a room code is announced to screen readers character by character', async ({
+    page,
+  }) => {
+    await page.goto('/components')
+
+    // Read aloud far more often than it is typed, so it is spelled out rather
+    // than left for a screen reader to pronounce as a word.
+    await expect(page.getByText(/Room code: C - F 3 4 2 1 3/).first()).toBeAttached()
+    await expect(page.getByRole('heading', { name: 'Scan to join' })).toBeVisible()
+  })
+
   test('the app header states the mode first in its settings line', async ({
     page,
   }) => {

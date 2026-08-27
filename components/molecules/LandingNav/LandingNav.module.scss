@@ -1,0 +1,70 @@
+@use 'theme' as t;
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$space-14;
+  flex: none;
+  width: 100%;
+  min-height: t.$landing-nav-height;
+  padding: t.$space-14 t.$space-20;
+
+  @include t.mq('md') {
+    padding: 0 t.$landing-pad-h;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  min-width: 0;
+}
+
+// Stands in for the logo until the asset lands, same as the in-room header.
+.mark {
+  flex: none;
+  width: t.$landing-mark;
+  height: t.$landing-mark;
+  border-radius: t.$radius-media-lg;
+  background: linear-gradient(135deg, t.$accent, t.$accent-text);
+}
+
+.wordmark {
+  font-family: t.$font-sans;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: t.$text-primary;
+  white-space: nowrap;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: t.$space-14;
+
+  @include t.mq('md') {
+    gap: t.$space-26;
+  }
+}
+
+// The two text links stand down on a phone: the bar has room for the wordmark
+// and the way in, and nothing else worth crowding them.
+.link {
+  display: none;
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 500;
+  color: t.$text-caption;
+  text-decoration: none;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+
+  @include t.mq('md') {
+    display: inline;
+  }
+}

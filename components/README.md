@@ -10,6 +10,11 @@ atom, and a 10-line component that calls `useRoom()` is an organism.
 | `molecules/` | Atoms, layout, local UI state | Data fetching, realtime subscriptions, routing side effects |
 | `organisms/` | Molecules, atoms, data fetching, room state (`useRoom()`), routing | — |
 
+**The gallery at `/components` holds the reusable library, not every file in
+here.** A component built for exactly one page — `HeroWall`, `LandingNav`,
+`LandingActions` — is covered by that page's own spec instead. Anything another
+screen could plausibly want belongs in the gallery, and in the inventory.
+
 **`Icon` is the one exception**, and it's deliberate. It's a leaf that renders a
 single `<svg>` — no state, no props beyond name/size/colour, and nothing it
 could ever import. Forbidding it would push genuinely atomic components like

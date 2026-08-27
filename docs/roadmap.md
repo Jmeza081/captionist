@@ -29,12 +29,19 @@ not.** So the state machine went first.
 | **1** | `lib/room/*` — `LocalTransport` (async), `HostEngine`, `GuestClient`, `BotDriver`, store, `RoomProvider`, `useRoom`. Host-death mitigations. | `/room/DEV?seed=42&bots=4` walks the whole flow as raw state JSON — no UI. | ✅ done |
 | **2** | `RoomShell` chrome, `LobbyScreen`, `BriefScreen`, `ComposeScreen`, `/api/gifs` + Giphy search. | Play to `waiting` on a phone viewport; timer, rail offset and toolbox all real. | ✅ done |
 | **3** | `WaitingScreen`, `VoteScreen`, `TiebreakScreen`, `RevealScreen`, `ScoreScreen`, `PodiumScreen`. | **A complete 5-round game, solo, vs 4 bots, both modes.** The milestone that matters. | ◻️ next |
-| **4** | Landing, `/join`, `/join/[code]`, `/host`, real room codes, join + nickname + avatar, `BroadcastTransport`. | Two tabs, one host one guest, a real game with no network. | ◻️ |
+| **4** | ~~Landing~~, `/join`, `/join/[code]`, `/host`, real room codes, join + nickname + avatar, `BroadcastTransport`. | Two tabs, one host one guest, a real game with no network. | ◻️ (landing done early) |
 | **5** | `AblyTransport`, `/api/ably/token`, presence, reconnect overlay. Plus the ADR and the client↔API-route↔Ably diagram. | Two devices on the same wifi. | ◻️ |
 | **6** | Chat + live reaction tallies on the event lane. | `ChatRail` fills; vote-card tallies go live. | ◻️ |
 
 Nothing in phases 2–3 knows a transport exists beyond `useRoom()`, so **phase 5
 changes exactly one line**: which implementation `RoomProvider` constructs.
+
+**The landing page landed out of order.** It was pulled forward from phase 4 in
+response to a direct request. It is standalone — no dependency on the room
+spine, and nothing in phase 3 depends on it — so it cost phase 3 nothing. The
+rest of phase 4 is untouched: joining a room someone else opened still does not
+exist, and `/` routes both of its buttons at a room the visitor's own browser
+will host.
 
 ## Decisions already taken
 

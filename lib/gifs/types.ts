@@ -13,6 +13,19 @@ export interface GifResult {
   alt: string
   /** Lowercased words the panel filters a fetched page against. */
   keywords: string[]
+  /**
+   * The same animation as video, when the source has one.
+   *
+   * A GIF is the wrong format for anything showing many at once — an MP4 of
+   * the same clip is roughly a tenth the bytes and decodes on the video path
+   * instead of the main thread. The picker still uses `src`, because one
+   * animation in a grid you are reading is cheap; the landing wall runs twenty
+   * at once and uses these.
+   */
+  mp4?: string
+  webp?: string
+  /** A single frame. What a paused or reduced-motion viewer sees. */
+  still?: string
 }
 
 export interface GifSearchResponse {

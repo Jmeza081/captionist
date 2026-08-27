@@ -39,10 +39,13 @@ export function normalizeCode(input: string): RoomCode | null {
     .toUpperCase()
     .replace(/[^0-9A-Z]/g, '')
     .replace(/^C/, '')
-    .replace(/[IL]/g, 'J')
-    .replace(/O/g, 'Q')
-    .replace(/S/g, '3')
-    .replace(/Z/g, '4')
+    // Both halves of every collision fold the same way. Handling only the
+    // letters would be half a job: someone reading `C-F3Q783` down a call says
+    // "oh" and the person typing it reaches for zero.
+    .replace(/[IL1]/g, 'J')
+    .replace(/[O0]/g, 'Q')
+    .replace(/[S5]/g, '3')
+    .replace(/[Z2]/g, '4')
   if (cleaned.length !== BODY_LENGTH) return null
   const code = CODE_PREFIX + cleaned
   return CODE_PATTERN.test(code) ? code : null
