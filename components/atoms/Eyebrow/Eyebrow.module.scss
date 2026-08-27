@@ -1,0 +1,15 @@
+@use 'theme' as t;
+
+.eyebrow {
+  @include t.eyebrowText;
+  display: inline-block;
+}
+
+.accent {
+  color: t.$accent-text;
+}
+
+.muted {
+  color: t.$text-caption;
+  letter-spacing: 0.14em;
+}

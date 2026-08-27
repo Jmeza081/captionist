@@ -1,0 +1,12 @@
+@use 'theme' as t;
+
+.main {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: t.$screen-pad-v t.$space-20;
+  background-color: t.$surface-canvas;
+
+  @include t.mq('md') {
+    padding: t.$screen-pad-v-lg t.$screen-pad-h;
+  }
+}

@@ -1,0 +1,39 @@
+@use 'theme' as t;
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: t.$radius-avatar;
+  flex: none;
+  overflow: hidden;
+}
+
+.art {
+  display: block;
+}
+
+.initial {
+  font-family: t.$font-sans;
+  font-weight: 800;
+  line-height: 1;
+  // The player colours are mid-to-light, so the initial sits dark on them.
+  color: t.$surface-vote;
+}
+
+.selected {
+  box-shadow: 0 0 0 2px t.$accent;
+}
+
+.dimmed {
+  opacity: 0.55;
+}
+
+.overflow {
+  background-color: t.$fill-field;
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 800;
+  color: t.$text-body;
+  font-variant-numeric: tabular-nums;
+}

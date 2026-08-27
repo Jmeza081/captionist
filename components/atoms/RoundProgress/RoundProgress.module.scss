@@ -1,0 +1,45 @@
+@use 'theme' as t;
+
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+}
+
+.pips {
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+}
+
+.pip {
+  width: t.$pip-width;
+  height: t.$pip-height;
+  border-radius: t.$radius-pip;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.played {
+  background-color: t.$accent;
+}
+
+.label {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  color: t.$text-body;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

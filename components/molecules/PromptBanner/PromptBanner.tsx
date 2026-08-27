@@ -1,0 +1,39 @@
+import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Eyebrow } from '@/components/atoms/Eyebrow'
+import styles from './PromptBanner.module.scss'
+
+export interface PromptBannerProps {
+  /** The prompt text, without quotes — the component adds curly ones. */
+  prompt: string
+  /** The Prompter. Omit for the compact variant. */
+  author?: Pick<AvatarProps, 'name' | 'color' | 'src'>
+  /** `lg` is the round's hero banner; `sm` sits above a vote grid. */
+  size?: 'sm' | 'lg'
+}
+
+/**
+ * React mode's stand-in for the shared image.
+ *
+ * Always its own full-width line, never inline beside a heading — it is the
+ * thing every answer in the round is responding to.
+ */
+export function PromptBanner({
+  prompt,
+  author,
+  size = 'sm',
+}: PromptBannerProps) {
+  return (
+    <div className={`${styles.banner} ${styles[size]}`}>
+      {author ? (
+        <div className={styles.author}>
+          <Avatar {...author} size={size === 'lg' ? 40 : 30} />
+          <Eyebrow>{author.name}&rsquo;s prompt</Eyebrow>
+        </div>
+      ) : (
+        <Eyebrow>Prompt</Eyebrow>
+      )}
+
+      <p className={styles.quote}>&ldquo;{prompt}&rdquo;</p>
+    </div>
+  )
+}

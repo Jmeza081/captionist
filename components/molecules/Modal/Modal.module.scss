@@ -1,0 +1,170 @@
+@use 'theme' as t;
+
+.backdrop {
+  @include t.backdrop;
+
+  position: fixed;
+  inset: 0;
+  z-index: t.$z-help-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-20;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  max-height: 100%;
+  overflow: auto;
+  border: 1px solid t.$accent-border-weak;
+  border-radius: t.$radius-modal;
+  background-color: t.$surface-modal;
+  box-shadow: t.$shadow-modal;
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  // Above md the media rail sits beside the copy rather than under it.
+  @include t.mq('md') {
+    flex-direction: row;
+  }
+}
+
+.error {
+  border-color: rgba(255, 120, 125, 0.3);
+  box-shadow: t.$shadow-modal-error;
+}
+
+.copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: t.$modal-pad;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+}
+
+.stepCount {
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 700;
+  color: t.$text-meta;
+  white-space: nowrap;
+}
+
+.close {
+  @include t.focusRing;
+
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+  border: 0;
+  border-radius: t.$radius-media-lg;
+  background: none;
+  color: t.$text-meta;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}
+
+.eyebrow {
+  @include t.eyebrowText;
+  margin-top: t.$space-20;
+}
+
+.heading {
+  @include t.screenTitleText;
+  margin: t.$space-10 0 0;
+}
+
+.body {
+  margin: t.$space-10 0 0;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: t.$text-body;
+  text-wrap: pretty;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: t.$space-14;
+  margin-top: t.$space-26;
+  flex-wrap: wrap;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: t.$space-6;
+}
+
+.dot {
+  width: t.$modal-dot;
+  height: t.$modal-dot;
+  border-radius: t.$radius-pip;
+  background-color: rgba(255, 255, 255, 0.14);
+  transition: width 160ms ease;
+}
+
+.dotActive {
+  width: t.$modal-dot-active;
+  background-color: t.$accent;
+}
+
+// Grouped as a pair on the right, never spread across the card.
+.nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+}
+
+.rail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-14;
+  background-color: t.$surface-header;
+  border-top: 1px solid t.$line-hairline;
+
+  img {
+    display: block;
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: t.$radius-field;
+  }
+
+  @include t.mq('md') {
+    width: t.$modal-media-rail;
+    border-top: 0;
+    border-left: 1px solid t.$line-hairline;
+
+    img {
+      max-height: 260px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    transition: none;
+  }
+}

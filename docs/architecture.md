@@ -34,17 +34,23 @@ Companion docs: [design system](./design-system.md) ·
 
 ## Routes
 
-Only one route exists. Every page is statically prerendered; nothing fetches
+Two routes exist. Every page is statically prerendered; nothing fetches
 data yet.
 
 ```mermaid
 graph TD
-  L["app/layout.tsx<br/><i>root layout · Inter via next/font · metadata</i>"]
+  L["app/layout.tsx<br/><i>root layout · Inter · globals.css + tokens.scss</i>"]
   P["app/page.tsx<br/><i>/ — join screen · static</i>"]
+  C["app/components/page.tsx<br/><i>/components — the gallery · static</i>"]
   NF["app/_not-found<br/><i>Next default</i>"]
   L --> P
+  L --> C
   L --> NF
 ```
+
+`/components` renders every built component in its states. It's the design
+review surface and what `e2e/components.spec.ts` drives — the components are
+verified against a real browser rather than a snapshot.
 
 `app/layout.tsx` is the only place fonts and global CSS are loaded. Inter is
 pulled by `next/font/google` and exposed to Sass as the `--font-inter` custom
@@ -57,40 +63,51 @@ Tier is decided by dependencies, not size. Full rules in
 
 ```mermaid
 graph BT
-  subgraph atoms["atoms/ — no app state, no repo imports"]
-    Stack["Stack"]
-    Inline["Inline"]
-    Box["Box"]
-    Grid["Grid"]
-    Button["Button"]
-    RoomCode["RoomCode"]
+  subgraph atoms["atoms/ — no app state, no repo imports (Icon excepted)"]
+    Layout["Stack · Inline · Box · Grid"]
+    Icon["Icon"]
+    Controls["Button · TextField · Toggle<br/>Stepper · SegmentedControl · Chip"]
+    Status["TimerPill · TallyPill · PresencePill<br/>Tag · Eyebrow · RoundProgress · ProgressRail"]
+    Ident["Avatar · RoomCode"]
+    Feedback["Snackbar · ReactionCTA"]
   end
   subgraph molecules["molecules/ — compose atoms"]
-    JoinPanel["JoinPanel"]
+    Room["JoinPanel · PlayerRow · PromptBanner"]
+    Media["MediaCard"]
+    Chat["ChatMessage · UnreadDivider · ChatRail"]
+    Overlay["Modal · RoundOpener · HostToolbox<br/>Dropzone · ReactionToolbar"]
   end
   subgraph organisms["organisms/ — may fetch or subscribe"]
-    Empty["(none yet)"]
+    Gallery["ComponentGallery"]
   end
   subgraph pages["app/ — composition only"]
     Home["page.tsx"]
+    Comp["components/page.tsx"]
   end
 
-  RoomCode --> JoinPanel
-  Stack --> JoinPanel
-  Box --> JoinPanel
-  JoinPanel --> Home
-  Stack --> Home
-
-  style organisms stroke-dasharray: 5 5
-  style Empty stroke-dasharray: 5 5
+  Icon --> Feedback
+  Layout --> Room
+  Ident --> Room
+  Ident --> Chat
+  Controls --> Overlay
+  Feedback --> Chat
+  Room --> Home
+  Room --> Gallery
+  Media --> Gallery
+  Chat --> Gallery
+  Overlay --> Gallery
+  Gallery --> Comp
 ```
 
 `Stack`, `Inline`, `Box` and `Grid` are the layout primitives. They hold no
 state and render no text, so they're atoms by the dependency rule — and they're
 server components, so using them costs no client JS.
 
-`Button`, `Inline` and `Grid` aren't used by a page yet. `Button` is the
-canonical file-shape template for new atoms.
+`Icon` is the one component atoms may import; the reasoning is in
+[`components/README.md`](../components/README.md). Everything that takes user
+input is `'use client'` and **controlled** — it owns no state, so the same
+`Toggle` works in the setup screen and the host toolbox without either one
+fighting it for ownership.
 
 ## Token flow
 
@@ -155,11 +172,11 @@ it. What's missing is the code.
 | Iconography | `@phosphor-icons/react` | Unused |
 | GIF search + upload | — | Giphy search and a shared dropzone, both modes |
 
-Eighteen components are specified and unbuilt — segmented control, text field,
-toggle, stepper, dropzone, timer pill, avatar, media card, prompt banner, chat
-message, reaction CTA, reaction toolbar, tally pill, snackbar, modal,
-round-opener interstitial, chat rail, host toolbox. They're listed under the
-inventory in [design-system.md](./design-system.md#component-inventory).
+The component library is largely built — see the inventory in
+[design-system.md](./design-system.md#component-inventory). Still unbuilt: the
+chat composer, the GIF attach panel, the reveal reaction bar, reaction
+floaters, the app header, the code-entry slots, the room share block, and the
+podium block.
 
 When the first realtime feature lands, add a data-flow diagram here covering
 the client ↔ API-route ↔ Ably channel path, and record the decision in an ADR.

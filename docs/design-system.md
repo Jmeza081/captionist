@@ -91,6 +91,22 @@ renders any normal-height button as a true pill), `$radius-modal` (24),
 `$radius-card` (16), `$radius-field` (12) / `-lg` (14), `$radius-toolbox` (10),
 `$radius-media` (8) / `-lg` (9), `$radius-pip` (99), `$radius-avatar` (50%).
 
+### Component metrics — `theme/_metrics.scss`
+
+The design has **two** spacing systems, and conflating them is what makes a
+component drift:
+
+1. The gap scale above — distance *between* things, and what the layout
+   primitives take as props.
+2. `_metrics.scss` — the paddings, heights and insets each component is drawn
+   at (`$btn-pad-y` 15px, `$timer-pad-x` 15px, `$field-height-caption` 62px).
+   These are per-component values from the component library, not steps on a
+   scale, and there is no arithmetic relationship between them.
+
+Keeping them apart means nobody reaches for `$space-14` because a button
+happens to be 14px padded, then "fixes" the scale when a different button
+isn't.
+
 ### Type — `theme/_typography.scss`
 
 Mixins, not variables, so a call site gets family, size, weight, tracking,
@@ -178,20 +194,64 @@ primitives.
 
 ### Component inventory
 
-| Component | Tier | Path | Use when |
-| --- | --- | --- | --- |
-| `Stack` | atom | `components/atoms/Stack` | Vertical layout. The default way to space a column — `gap`, `padding`, `align`, `justify`, `as` |
-| `Inline` | atom | `components/atoms/Inline` | Horizontal layout. Wraps by default; same props as `Stack` plus `wrap` |
-| `Box` | atom | `components/atoms/Box` | A surface — `padding`, `radius`, and a named `background` from the palette |
-| `Grid` | atom | `components/atoms/Grid` | Two-dimensional layout. `columns` / `mdColumns` reflow at `md` |
-| `Button` | atom | `components/atoms/Button` | Any clickable action. Variants: `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`. Sizes: `inline`, `form` (51px CTA), `toolbox`. `blocked` for "not yet, and here's why" |
-| `RoomCode` | atom | `components/atoms/RoomCode` | Displaying a room code for reading aloud or typing |
-| `JoinPanel` | molecule | `components/molecules/JoinPanel` | Offering both ways into a room — scan the QR, or type the code |
+**Layout primitives**
 
-Not yet built, specified in the design: segmented control, text field, toggle,
-stepper, dropzone, timer pill, avatar, media card, prompt banner, chat message,
-reaction CTA, reaction toolbar, tally pill, snackbar, modal, round-opener
-interstitial, chat rail, host toolbox.
+| Component | Tier | Use when |
+| --- | --- | --- |
+| `Stack` | atom | Vertical layout. The default way to space a column — `gap`, `padding`, `align`, `justify`, `as` |
+| `Inline` | atom | Horizontal layout. Wraps by default; same props as `Stack` plus `wrap` |
+| `Box` | atom | A surface — `padding`, `radius`, and a named `background` from the palette |
+| `Grid` | atom | Two-dimensional layout. `columns` / `mdColumns` reflow at `md` |
+
+**Atoms**
+
+| Component | Tier | Use when |
+| --- | --- | --- |
+| `Icon` | atom | Any glyph. Ten stroked paths traced from the design; `currentColor` by default |
+| `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why" |
+| `Eyebrow` | atom | The small uppercase marker above a heading. Uppercases in CSS, so the string stays sentence case |
+| `Tag` | atom | A role or ownership marker — HOST, YOU, 1st |
+| `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected |
+| `TimerPill` | atom | The round clock. Flips to urgent at ≤15s, or on demand for sudden death |
+| `ProgressRail` | atom | The 3px rail under the header that drains with the timer |
+| `TallyPill` | atom | One reaction's running count. Carries its own scrim over media |
+| `PresencePill` | atom | "7 here" — live room presence |
+| `RoundProgress` | atom | How far through the game the room is, as pips |
+| `Avatar` / `AvatarOverflow` | atom | A player, at one of eight sizes. Falls back to an initial when art is absent |
+| `TextField` | atom | Every text input — `caption` (62px), `search` (52), `composer` (46), `popover` (34) |
+| `Toggle` | atom | A room setting, on or off. Controlled |
+| `Stepper` | atom | A bounded numeric setting — timer, round count |
+| `SegmentedControl` | atom | A small exclusive choice. A real radiogroup |
+| `Snackbar` | atom | Confirms an action with no other visible result |
+| `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+` |
+| `RoomCode` | atom | A room code, for reading aloud or typing |
+
+**Molecules**
+
+| Component | Tier | Use when |
+| --- | --- | --- |
+| `JoinPanel` | molecule | Both ways into a room — scan the QR, or type the code |
+| `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line |
+| `PlayerRow` | molecule | One player in a list — `roster`, `tracker`, or `standing` |
+| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes |
+| `ChatMessage` | molecule | One chat message, or a host announcement with `announcement` |
+| `UnreadDivider` | molecule | Where you stopped reading |
+| `ReactionToolbar` | molecule | The searchable reaction picker. Ten defaults, then keyword search |
+| `Dropzone` | molecule | Upload. Empty, drag-over and file-ready in one component |
+| `RoundOpener` | molecule | The interstitial before each round |
+| `Modal` | molecule | The multi-step walkthrough. Escape closes; Back/Next stay paired |
+| `HostToolbox` | molecule | The host's controls, fixed bottom-right, collapsing to a FAB |
+| `ChatRail` | molecule | Room chat, docked beside content. Collapses to a 64px strip |
+
+**Organisms**
+
+| Component | Tier | Use when |
+| --- | --- | --- |
+| `ComponentGallery` | organism | The review surface at `/components` — every component in its states |
+
+Still unbuilt from the design: the composer, the GIF attach panel, the reveal
+reaction bar, reaction floaters, the app header, the code-entry slots, the room
+share block, and the podium block.
 
 ---
 

@@ -1,0 +1,48 @@
+@use 'theme' as t;
+
+.banner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background-color: t.$accent-fill-weak;
+  border: 1px solid t.$accent-border-weak;
+}
+
+.sm {
+  gap: t.$space-14;
+  padding: t.$space-14 t.$space-20;
+  border-radius: t.$radius-field;
+
+  .quote {
+    font-size: 18px;
+    line-height: 1.35;
+  }
+}
+
+.lg {
+  gap: t.$space-20;
+  padding: t.$space-20 t.$space-26;
+  border-radius: t.$radius-card;
+
+  .quote {
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+  flex: none;
+}
+
+.quote {
+  flex: 1;
+  margin: 0;
+  font-family: t.$font-sans;
+  font-weight: 700;
+  color: t.$text-primary;
+  text-wrap: pretty;
+}

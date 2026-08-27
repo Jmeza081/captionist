@@ -1,0 +1,103 @@
+@use 'theme' as t;
+
+.message {
+  display: flex;
+  gap: t.$chat-gap;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-5;
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: t.$space-8;
+}
+
+.name {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.time {
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 500;
+  color: t.$text-timestamp;
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  @include t.chatBodyText;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.attachment {
+  margin-top: t.$space-2;
+  width: t.$chat-attachment-width;
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: t.$radius-toolbox;
+  overflow: hidden;
+
+  img {
+    display: block;
+    width: 100%;
+    height: t.$chat-attachment-height;
+    object-fit: cover;
+  }
+}
+
+.tallies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-6;
+  margin-top: t.$space-2;
+}
+
+// --- host announcement ---
+
+.announcement {
+  display: flex;
+  gap: t.$chat-gap;
+  padding: t.$space-12 t.$space-14;
+  border: 1px solid rgba(123, 97, 255, 0.28);
+  border-radius: t.$radius-field;
+  background-color: rgba(123, 97, 255, 0.12);
+}
+
+.announceIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: t.$space-26;
+  height: t.$space-26;
+  border-radius: t.$radius-media-lg;
+  background-color: t.$accent-fill-strong;
+  color: t.$accent-on-fill;
+}
+
+.announceBody {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+  min-width: 0;
+}
+
+.announceText {
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: t.$text-primary;
+  text-wrap: pretty;
+}

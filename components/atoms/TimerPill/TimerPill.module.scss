@@ -1,0 +1,24 @@
+@use 'theme' as t;
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-8;
+  padding: t.$timer-pad-y t.$timer-pad-x;
+  border-radius: t.$radius-pill;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.neutral {
+  background-color: t.$surface-timer;
+  color: t.$text-primary;
+}
+
+.urgent {
+  background-color: t.$urgent-fill;
+  color: t.$urgent;
+}

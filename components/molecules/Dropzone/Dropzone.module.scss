@@ -1,0 +1,104 @@
+@use 'theme' as t;
+
+.zone {
+  @include t.focusRing;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: t.$space-8;
+  width: 100%;
+  height: t.$dropzone-height;
+  padding: t.$space-20;
+  border: t.$dropzone-border dashed t.$line-dashed;
+  border-radius: t.$radius-card;
+  background-color: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.over {
+  border-color: t.$accent;
+  background-color: rgba(123, 97, 255, 0.08);
+
+  .zoneTitle {
+    color: t.$accent-on-fill;
+  }
+}
+
+.zoneTitle {
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.zoneHint {
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$text-meta;
+}
+
+// Visually hidden, but still a real input the click handler can open.
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// --- file-ready card ---
+
+.ready {
+  display: flex;
+  gap: t.$space-14;
+  padding: t.$space-14;
+  border: 1px solid t.$fill-field;
+  border-radius: t.$radius-card;
+  background-color: t.$surface-card;
+}
+
+.preview {
+  flex: none;
+  width: 120px;
+  height: 100px;
+  border-radius: t.$radius-toolbox;
+  object-fit: cover;
+  display: block;
+}
+
+.readyBody {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-5;
+  min-width: 0;
+}
+
+.fileName {
+  font-family: t.$font-sans;
+  font-size: 16px;
+  font-weight: 700;
+  color: t.$text-primary;
+  overflow-wrap: anywhere;
+}
+
+.fileMeta {
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$text-meta;
+}
+
+.readyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-8;
+  margin-top: t.$space-6;
+}

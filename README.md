@@ -8,10 +8,10 @@ code or typing a short room code.
 Two modes share one round engine — **caption** (caption a GIF) and **react**
 (answer a text prompt with a GIF).
 
-> **Early.** The design system is fully specified and ported to `theme/`, and
-> the layout primitives are built. The join screen is the only screen that
-> exists; the round flow, rooms, and realtime are not implemented yet — see
-> [Not yet built](docs/architecture.md#not-yet-built).
+> **Early.** The design system is ported to `theme/` and most of the component
+> library is built — browse it at `/components`. The join screen is the only
+> real screen; the round flow, rooms, and realtime are not implemented yet —
+> see [Not yet built](docs/architecture.md#not-yet-built).
 
 ## Getting started
 
@@ -32,7 +32,7 @@ npm run test:e2e
 
 | Command | Does |
 | --- | --- |
-| `npm run dev` | Dev server |
+| `npm run dev` | Dev server — the component gallery is at `/components` |
 | `npm run verify` | `lint` + `typecheck` + `build` — run before pushing |
 | `npm run test:e2e` | Playwright across mobile and desktop |
 | `npm run test:e2e:ui` | Playwright's interactive runner |

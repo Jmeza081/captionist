@@ -1,0 +1,74 @@
+@use 'theme' as t;
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-10;
+  width: t.$toolbar-width;
+  max-width: 100%;
+  padding: t.$space-12;
+  border: 1px solid t.$fill-secondary-hover;
+  border-radius: t.$radius-field-lg;
+  background-color: t.$surface-card;
+  box-shadow: t.$shadow-popover;
+}
+
+// Anchored from the bottom when it sits low in a list.
+.flipped {
+  flex-direction: column-reverse;
+}
+
+.title {
+  @include t.eyebrowText;
+  color: t.$text-meta;
+  letter-spacing: 0.07em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: t.$space-5;
+  max-height: t.$toolbar-scroll-cap;
+  overflow-y: auto;
+}
+
+.tile {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: t.$toolbar-tile;
+  border: 0;
+  border-radius: t.$radius-media-lg;
+  background-color: rgba(255, 255, 255, 0.05);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: t.$accent-fill;
+  }
+}
+
+.chosen {
+  background-color: rgba(123, 97, 255, 0.24);
+}
+
+.gif {
+  width: t.$gif-thumb;
+  height: t.$gif-thumb;
+  border-radius: t.$gif-thumb-radius;
+  object-fit: cover;
+}
+
+.empty {
+  margin: 0;
+  padding: t.$space-12 0;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: t.$text-caption;
+  text-align: center;
+}

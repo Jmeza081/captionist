@@ -1,0 +1,135 @@
+@use 'theme' as t;
+
+.rail,
+.strip {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  z-index: t.$z-rail;
+  height: 100vh;
+  height: 100dvh;
+  background-color: t.$surface-header;
+  border-left: 1px solid t.$line-hairline;
+  flex: none;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  width: t.$rail-width;
+  max-width: 100%;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+  height: t.$chat-header-height;
+  padding: 0 t.$rail-pad;
+  border-bottom: 1px solid t.$line-hairline;
+  flex: none;
+}
+
+.title {
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.collapse {
+  @include t.focusRing;
+
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+  border: 0;
+  border-radius: t.$radius-media-lg;
+  background: none;
+  color: t.$text-label;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: t.$space-12;
+}
+
+// --- collapsed strip ---
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-10;
+  width: t.$rail-width-collapsed;
+  padding: t.$space-12 0;
+}
+
+.openKey {
+  @include t.focusRing;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+  border: 1px solid t.$accent-border;
+  border-radius: t.$radius-field;
+  background-color: rgba(123, 97, 255, 0.18);
+  color: t.$accent-on-fill;
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 t.$space-5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid t.$surface-header;
+  border-radius: t.$radius-pip;
+  background-color: t.$urgent;
+  font-family: t.$font-sans;
+  font-size: 10px;
+  font-weight: 800;
+  color: t.$surface-canvas;
+  font-variant-numeric: tabular-nums;
+}
+
+.stripRule {
+  width: t.$space-26;
+  height: 1px;
+  background-color: t.$fill-field;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-6;
+}
+
+.vertical {
+  margin-top: auto;
+  writing-mode: vertical-rl;
+  font-family: t.$font-sans;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: t.$text-timestamp;
+}

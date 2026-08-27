@@ -1,0 +1,160 @@
+@use 'theme' as t;
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-10;
+  margin: 0;
+  width: 100%;
+}
+
+.frame {
+  position: relative;
+  border-radius: t.$radius-media;
+  overflow: hidden;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: t.$media-height;
+  object-fit: cover;
+  // Unselected cards sit slightly back so a ranked one comes forward.
+  opacity: 0.85;
+}
+
+.selected .image,
+.rank1 .image,
+.rank2 .image,
+.rank3 .image,
+.winner .image {
+  opacity: 1;
+}
+
+// --- caption overlays ---
+//
+// Four-way black shadow rather than a scrim, so the image stays visible
+// behind the text.
+.overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 0 t.$space-10;
+  text-align: center;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: t.$text-primary;
+  text-shadow: 0 1.5px 0 #000, 0 -1.5px 0 #000, 1.5px 0 0 #000,
+    -1.5px 0 0 #000;
+}
+
+.top {
+  top: t.$space-10;
+}
+
+.bottom {
+  bottom: t.$space-10;
+}
+
+// --- ranking ---
+
+.rank1 {
+  box-shadow: 0 0 0 t.$media-ring t.$winner;
+}
+
+.rank2,
+.rank3 {
+  box-shadow: 0 0 0 t.$media-ring t.$line-rank;
+}
+
+.selected {
+  box-shadow: 0 0 0 t.$media-ring t.$accent;
+}
+
+.winner {
+  border-radius: t.$radius-field;
+  box-shadow: t.$shadow-winner;
+}
+
+.badge {
+  position: absolute;
+  right: t.$space-10;
+  top: t.$space-10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$media-rank-badge;
+  height: t.$media-rank-badge;
+  border-radius: t.$radius-avatar;
+  background-color: t.$text-primary;
+  color: t.$surface-vote;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.rank1 .badge {
+  background-color: t.$winner;
+}
+
+.yours {
+  position: absolute;
+  left: t.$space-10;
+  top: t.$space-10;
+  padding: t.$space-6 t.$space-12;
+  border-radius: t.$radius-pill;
+  background-color: t.$accent;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+// --- own entry, locked out of voting ---
+
+.own {
+  opacity: 0.4;
+}
+
+.ownScrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: t.$scrim-own-entry;
+}
+
+.ownLabel {
+  padding: t.$space-6 t.$space-12;
+  border-radius: t.$radius-pill;
+  background-color: rgba(10, 10, 11, 0.85);
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.tallies {
+  position: absolute;
+  left: t.$space-10;
+  bottom: t.$space-10;
+  display: flex;
+  gap: t.$space-5;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+}
+
+.captionText {
+  flex: 1;
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 700;
+  color: t.$text-primary;
+}

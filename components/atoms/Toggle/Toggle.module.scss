@@ -1,0 +1,73 @@
+@use 'theme' as t;
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$space-20;
+}
+
+.label {
+  font-family: t.$font-sans;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.toggle {
+  @include t.focusRing;
+
+  position: relative;
+  width: t.$toggle-width;
+  height: t.$toggle-height;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  flex: none;
+  border-radius: t.$radius-pill;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.track {
+  position: absolute;
+  left: 0;
+  top: calc((#{t.$toggle-height} - #{t.$toggle-track-height}) / 2);
+  width: t.$toggle-width;
+  height: t.$toggle-track-height;
+  border-radius: t.$radius-pill;
+  background-color: #1e1e1f;
+  transition: background-color t.$duration-toggle ease;
+}
+
+.knob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: t.$toggle-knob;
+  height: t.$toggle-knob;
+  border-radius: t.$radius-avatar;
+  background-color: t.$text-primary;
+  transition: left t.$duration-toggle ease;
+}
+
+.on {
+  .track {
+    background-color: t.$accent;
+  }
+
+  .knob {
+    left: calc(#{t.$toggle-width} - #{t.$toggle-knob});
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .knob {
+    transition: none;
+  }
+}

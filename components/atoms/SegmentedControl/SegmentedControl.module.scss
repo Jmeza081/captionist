@@ -1,0 +1,63 @@
+@use 'theme' as t;
+
+.track {
+  display: inline-flex;
+  gap: t.$segmented-inset;
+  padding: t.$segmented-inset;
+  border-radius: t.$segmented-radius;
+  background-color: t.$surface-track;
+}
+
+// On a card the track drops a step so it still reads as inset.
+.card {
+  border-radius: t.$segmented-radius-card;
+  background-color: t.$surface-card;
+
+  .item {
+    border-radius: t.$segmented-item-radius-card;
+    padding-left: t.$segmented-item-pad-x-icon;
+    padding-right: t.$segmented-item-pad-x-icon;
+    font-size: 14px;
+  }
+}
+
+.item {
+  @include t.focusRing;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-8;
+  padding: t.$segmented-item-pad-y t.$segmented-item-pad-x;
+  border: 0;
+  border-radius: t.$segmented-item-radius;
+  background: none;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: t.$text-label;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover:not(.active) {
+    color: t.$text-chat;
+  }
+}
+
+.active {
+  background-color: t.$surface-field;
+  color: t.$text-primary;
+  font-weight: 600;
+}
+
+// Marks the room's real mode when the control is being used to compare.
+.marker {
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  width: t.$space-6;
+  height: t.$space-6;
+  border-radius: t.$radius-avatar;
+  background-color: t.$success;
+}

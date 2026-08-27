@@ -6,9 +6,17 @@ atom, and a 10-line component that subscribes to Ably is an organism.
 
 | Tier | May contain | May **not** contain |
 | --- | --- | --- |
-| `atoms/` | Markup, tokens, its own props | App state, data fetching, other components from this repo |
+| `atoms/` | Markup, tokens, its own props, `Icon` | App state, data fetching, any other component from this repo |
 | `molecules/` | Atoms, layout, local UI state | Data fetching, realtime subscriptions, routing side effects |
 | `organisms/` | Molecules, atoms, data fetching, Ably subscriptions, routing | — |
+
+**`Icon` is the one exception**, and it's deliberate. It's a leaf that renders a
+single `<svg>` — no state, no props beyond name/size/colour, and nothing it
+could ever import. Forbidding it would push genuinely atomic components like
+`ReactionCTA` (a smiley and a plus, and that is the whole component) into
+`molecules/` on a technicality, which would make the tier say less, not more.
+Nothing else gets this exemption: if a component imports anything from
+`components/` other than `Icon`, it is a molecule.
 
 Pages in `app/` compose organisms and molecules. They should hold almost no
 markup of their own.
