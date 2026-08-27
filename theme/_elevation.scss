@@ -17,6 +17,10 @@ $shadow-modal-error: 0 0 90px rgba(255, 120, 125, 0.28),
   0 30px 80px rgba(0, 0, 0, 0.7);
 
 // First place: a solid ring, not a glow.
+// Frosted glass: a lit top edge plus a soft drop, so the pill reads as resting
+// on the media behind it rather than cut out of it.
+$shadow-glass: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 24px rgba(0, 0, 0, 0.35);
+
 $shadow-winner: 0 0 0 4px colors.$winner, 0 24px 60px rgba(0, 0, 0, 0.6);
 
 // Focus sits inside the element so it never shifts layout or clips against a
@@ -67,3 +71,12 @@ $z-floater: 75;
 $z-interstitial: 80;
 $z-help-modal: 90;
 $z-snackbar: 95;
+
+// The frosted surface, in one place. `saturate` is what keeps colour in the
+// media showing through — blur alone turns it grey.
+@mixin glass {
+  background-color: colors.$glass-fill;
+  border: 1px solid colors.$glass-line;
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: $shadow-glass;
+}

@@ -197,6 +197,15 @@ $wall-gap: 26px;
 $wall-tilt: -8deg;
 $wall-overhang: 12vw;
 
+// The landing page's join pill. Its own control, not the `/join` route's slots:
+// one is a glance-and-go field beside a headline, the other is a thumb-sized
+// grid that is the whole screen.
+$quickjoin-pad-y: 6px;
+$quickjoin-pad-l: 24px;
+$quickjoin-key-pad-y: 12px;
+$quickjoin-key-pad-x: 22px;
+$quickjoin-tracking: 0.18em;
+
 // --- Reveal reaction bar --------------------------------------------------
 
 $reveal-tile: 34px;

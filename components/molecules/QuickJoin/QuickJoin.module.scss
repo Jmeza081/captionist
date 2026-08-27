@@ -1,0 +1,83 @@
+@use 'theme' as t;
+
+.pill {
+  @include t.glass;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  padding: t.$quickjoin-pad-y;
+  padding-left: t.$quickjoin-pad-l;
+  border-radius: t.$radius-pill;
+
+  // The real input is invisible, so the ring has to belong to the pill or
+  // there is no visible focus at all.
+  &:focus-within {
+    box-shadow: t.$shadow-glass, t.$focus-ring;
+  }
+}
+
+.field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: text;
+}
+
+/**
+ * The visible code. `C-` is fixed and never typed; the underscores are a rail
+ * showing how much is left, so the pill does not grow as characters land.
+ */
+.mask {
+  font-family: t.$font-sans;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: t.$quickjoin-tracking;
+  color: t.$glass-text;
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+  // Reserves the caret's width so the first character does not nudge the rail.
+  pointer-events: none;
+}
+
+.typed {
+  color: t.$text-primary;
+}
+
+.rest {
+  color: t.$glass-text;
+}
+
+/**
+ * The one real control, invisible and on top of the mask, so a tap anywhere on
+ * the code opens the keyboard.
+ */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: transparent;
+  caret-color: t.$accent;
+  // Stops iOS zooming the page on focus.
+  font-size: 16px;
+  letter-spacing: t.$quickjoin-tracking;
+  cursor: text;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.error {
+  position: absolute;
+  top: calc(100% + #{t.$space-8});
+  left: t.$quickjoin-pad-l;
+  right: 0;
+  @include t.labelText;
+  color: t.$urgent;
+}

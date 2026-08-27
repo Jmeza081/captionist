@@ -73,6 +73,17 @@ $line-dashed: rgba(255, 255, 255, 0.16);
 $line-outline: rgba(255, 255, 255, 0.22);
 $line-rank: rgba(255, 255, 255, 0.55); //      2nd–3rd place ring
 
+// --- Frosted glass ----------------------------------------------------------
+//
+// The landing page's join pill rests on top of moving media rather than on the
+// canvas, so it needs its own fill, edge and key. A flat surface there reads as
+// a hole punched in the wall instead of something sitting on it.
+
+$glass-fill: rgba(255, 255, 255, 0.08);
+$glass-line: rgba(255, 255, 255, 0.16);
+$glass-key: rgba(255, 255, 255, 0.1); //   the action inside the pill
+$glass-text: rgba(255, 255, 255, 0.6); //  the code mask
+
 // Scrim over a player's own entry, and the modal backdrop.
 $scrim-own-entry: rgba(10, 10, 11, 0.5);
 $scrim-tally: rgba(10, 10, 11, 0.8);

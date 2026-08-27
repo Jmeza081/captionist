@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@/components/atoms/Button'
-import { CodeEntry } from '@/components/molecules/CodeEntry'
+import { QuickJoin } from '@/components/molecules/QuickJoin'
 import { generateCode, normalizeCode } from '@/lib/game/codes'
 import styles from './LandingActions.module.scss'
 
@@ -58,28 +58,20 @@ export function LandingActions({ roomBase = '/room' }: LandingActionsProps) {
         Start a game — it’s free
       </Button>
 
-      <form
-        className={styles.join}
-        onSubmit={(e) => {
-          e.preventDefault()
-          join()
+      {/* The landing page's own control, not the `/join` route's slots — see
+          `QuickJoin`. Blocked, not disabled: the key stays live and its label
+          carries what is missing. */}
+      <QuickJoin
+        value={code}
+        onChange={(next) => {
+          setCode(next)
+          if (error) setError(undefined)
         }}
-      >
-        <CodeEntry
-          value={code}
-          onChange={(next) => {
-            setCode(next)
-            if (error) setError(undefined)
-          }}
-          onComplete={join}
-          error={error}
-          size="lg"
-        />
-        {/* Blocked, not disabled: the label carries what is missing. */}
-        <Button type="submit" variant="secondary" size="form" blocked={!ready}>
-          {ready ? 'Join the room' : `Enter ${short} more`}
-        </Button>
-      </form>
+        onSubmit={join}
+        actionLabel={ready ? 'Join' : `Enter ${short} more`}
+        blocked={!ready}
+        error={error}
+      />
     </div>
   )
 }

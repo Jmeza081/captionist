@@ -36,11 +36,24 @@ test.describe('the landing page', () => {
 
     // Typed with the ambiguous digits a person actually reaches for when a
     // code is read to them: 0 for Q, 1 for J. The normaliser folds both.
-    await page.getByRole('textbox').first().fill('F01783')
-    await expect(page.getByRole('button', { name: 'Join the room' })).toBeVisible()
+    await page.getByRole('textbox', { name: 'Room code' }).fill('F01783')
+    await expect(page.getByRole('button', { name: 'Join', exact: true })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Join the room' }).click()
+    await page.getByRole('button', { name: 'Join', exact: true }).click()
     await expect(page).toHaveURL(/\/room\/C-FQJ783$/)
+  })
+
+  test('masks the code as one field, not the join route’s slots', async ({ page }) => {
+    await page.goto('/')
+
+    // The landing control is a single masked field on glass. `/join`'s
+    // seven-slot grid is a different component for a different job — one is a
+    // glance beside a headline, the other is the whole screen.
+    await expect(page.getByRole('textbox', { name: 'Room code' })).toHaveCount(1)
+
+    await page.getByRole('textbox', { name: 'Room code' }).fill('F34')
+    // What is typed, then a rail for what is left, so the pill never resizes.
+    await expect(page.getByText('C-F34___')).toBeVisible()
   })
 
   test('renders the whole wall in the first response, not after hydration', async ({

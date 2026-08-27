@@ -247,7 +247,8 @@ primitives.
 | `RevealReactionBar` | molecule | Five one-tap reactions on the reveal, plus the CTA to the full toolbar |
 | `ReactionFloaters` | molecule | The decorative emoji burst. `pointer-events: none`, hidden from assistive tech |
 | `AppHeader` | molecule | The bar on every in-room screen — phase left, clock right |
-| `CodeEntry` | molecule | Typing a room code. One real input behind the slots |
+| `CodeEntry` | molecule | Typing a room code on `/join`, where it is the whole screen. Seven thumb-sized slots, one real input behind them |
+| `QuickJoin` | molecule | Typing a room code on the landing page, where it sits beside a headline on glass. One masked field, `C-______`, with an inline key — not `CodeEntry` at another size |
 | `RoomShare` | molecule | The lobby share block — QR, code, copy and Slack |
 | `LandingNav` | molecule | The public front door's bar. Not `AppHeader` — that one is live room state, this is static links and a way in |
 | `HeroWall` | molecule | The landing page's tilted wall of looping GIFs. Video over GIF, still-first, and stoppable |

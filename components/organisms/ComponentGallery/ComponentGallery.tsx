@@ -31,6 +31,7 @@ import { Dropzone } from '@/components/molecules/Dropzone'
 import { GifPanel, type GifResult } from '@/components/molecules/GifPanel'
 import { HostToolbox } from '@/components/molecules/HostToolbox'
 import { JoinPanel } from '@/components/molecules/JoinPanel'
+import { QuickJoin } from '@/components/molecules/QuickJoin'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { Modal } from '@/components/molecules/Modal'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
@@ -161,6 +162,7 @@ export function ComponentGallery() {
   const [gifPanelOpen, setGifPanelOpen] = useState(false)
   const [attached, setAttached] = useState<GifResult | null>(null)
   const [roomCode, setRoomCode] = useState('F34')
+  const [quickCode, setQuickCode] = useState('F34')
   const [revealChosen, setRevealChosen] = useState<string[]>([])
   const [burst, setBurst] = useState<{ glyph: string; key: number } | null>(null)
 
@@ -550,6 +552,15 @@ export function ComponentGallery() {
           </Case>
           <Case label="Both ways into a room — the guest's entry panel">
             <JoinPanel code="C-F34213" joinUrl="https://captionist.fun/C-F34213" />
+          </Case>
+          <Case label="The landing page's one-line join — a different control, on glass">
+            <QuickJoin
+              value={quickCode}
+              onChange={setQuickCode}
+              onSubmit={() => undefined}
+              actionLabel={quickCode.length === 6 ? 'Join' : `Enter ${6 - quickCode.length} more`}
+              blocked={quickCode.length < 6}
+            />
           </Case>
         </Grid>
       </Section>
