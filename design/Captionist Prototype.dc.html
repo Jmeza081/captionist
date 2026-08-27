@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;background:#0A0A0B;font-family:Inter,system-ui,sans-serif;color:#fff}a{color:#A18FFF}a:hover{color:#7B61FF}input{font-family:inherit}@keyframes pop{0%{transform:scale(.9);opacity:0}100%{transform:scale(1);opacity:1}}@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}@keyframes gcy{0%,22%{opacity:1}26%,96%{opacity:0}100%{opacity:1}}@keyframes rise{0%{opacity:0;transform:translate(0,0) scale(.6)}14%{opacity:1;transform:translate(0,-34px) scale(1.06)}100%{opacity:0;transform:translate(var(--dx,0px),-430px) scale(.9)}}@keyframes toastin{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:none}}</style></helmet>
+
+<div style="min-height:100vh;background:#0A0A0B;display:flex;align-items:stretch">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+<sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;position:relative;overflow:hidden;min-height:100vh">
+  <div style="position:absolute;left:-10%;top:-14%;width:130%;height:135%;transform:rotate(-8deg);display:grid;grid-template-columns:repeat(5,1fr);gap:24px;opacity:1">
+    <img src="assets/gif2-memes-1.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-developer-1.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-hacker-1.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-reaction-1.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-memes-2.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px">
+    <img src="assets/gif2-developer-2.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-hacker-2.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-reaction-2.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-memes-3.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-developer-3.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px">
+    <img src="assets/gif2-hacker-3.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-reaction-3.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-memes-4.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-developer-4.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-hacker-4.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px">
+    <img src="assets/gif2-reaction-4.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-memes-5.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-developer-5.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-hacker-5.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px"><img src="assets/gif2-reaction-5.gif" style="display:block;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;width:100%;height:270px">
+  </div>
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)"></div>
+  <div style="position:relative;min-height:100vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:26px 56px">
+      <div style="display:flex;align-items:center;gap:13px"><img src="assets/captionist-logo.png" style="width:34px;height:34px;display:block"><span style="font-size:20px;font-weight:800;letter-spacing:-.02em">Captionist!</span></div>
+      <div style="display:flex;align-items:center;gap:26px"><span onClick="{{ openHelp }}" style="font-size:15px;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer">How it works</span><span style="font-size:15px;font-weight:700">GitHub</span><div onClick="{{ goJoin }}" style="padding:11px 22px;border-radius:143px;border:1px solid rgba(255,255,255,.22);font-size:15px;font-weight:600;cursor:pointer" style-hover="background:rgba(255,255,255,.08)">Join a room</div></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px 90px">
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-radius:143px;background:rgba(123,97,255,.14);border:1px solid rgba(123,97,255,.3);margin-bottom:30px"><div style="width:7px;height:7px;border-radius:50%;background:#7B61FF"></div><span style="font-size:13px;font-weight:600;color:#A18FFF">4,112 captions shipped to prod this week</span></div>
+      <h1 style="margin:0;font-size:clamp(48px,7.2vw,98px);font-weight:800;line-height:.94;letter-spacing:-.04em;text-align:center;text-wrap:balance">Caption this.<br>Ship that.</h1>
+      <p style="margin:26px 0 0;max-width:640px;font-size:20px;font-weight:500;line-height:1.5;color:rgba(255,255,255,.55);text-align:center;text-wrap:pretty">The five-minute standup warmup for engineering teams. Someone picks a GIF, everyone writes the worst possible caption, and the room decides who commits straight to main.</p>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px;margin-top:44px">
+        <div onClick="{{ goSetup }}" style="padding:18px 38px;border-radius:143px;background:#7B61FF;font-size:17px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Start a game — it's free</div>
+        <div onClick="{{ goJoin }}" style="display:flex;align-items:center;gap:12px;padding:6px 6px 6px 24px;border-radius:143px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(18px) saturate(160%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.35);cursor:pointer"><span style="font-size:16px;font-weight:600;color:rgba(255,255,255,.6);letter-spacing:.18em">C-______</span><div style="padding:12px 22px;border-radius:143px;background:rgba(255,255,255,.1);font-size:15px;font-weight:700">Join</div></div>
+      </div>
+      <span style="margin-top:50px;font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">3–20 players · no install · works in a Zoom share</span>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isJoin }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;padding:40px 24px">
+  <div style="display:flex;align-items:center;gap:18px"><img src="assets/captionist-logo.png" style="width:60px;height:60px;display:block"><span style="font-size:52px;font-weight:700;letter-spacing:-.03em">Captionist</span></div>
+  <div style="width:100%;max-width:560px;padding:44px 44px 38px;border-radius:24px;background:#1B1C1C;display:flex;flex-direction:column;align-items:center">
+    <h2 style="margin:0;font-size:25px;font-weight:700;line-height:1.3;text-align:center;text-wrap:balance">Enter your Captionist room ID<br>or create your own game</h2>
+    <div style="display:flex;gap:10px;margin-top:32px">
+      <div style="width:60px;height:76px;border-radius:12px;background:#303031;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:rgba(255,255,255,.32)">C</div>
+      <sc-for list="{{ codeSlots }}" as="s" hint-placeholder-count="6"><div style="width:60px;height:76px;border-radius:12px;background:{{ s.bg }};box-shadow:{{ s.ring }};display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:{{ s.color }}">{{ s.ch }}</div></sc-for>
+    </div>
+    <div onClick="{{ joinRoom }}" style="width:100%;height:51px;margin-top:30px;border-radius:143px;background:#7B61FF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer" style-hover="background:#8B74FF">Join the room</div>
+    <div onClick="{{ goSetup }}" style="margin-top:22px;font-size:16px;font-weight:500;color:#A18FFF;cursor:pointer">Make your own</div>
+  </div>
+  <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.3)">Codes are 7 characters and always start with C</span>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSetup }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;background:#131415;display:flex;flex-direction:column;align-items:center;padding:44px 24px 60px">
+  <div style="display:flex;align-items:center;gap:16px"><img src="assets/captionist-logo.png" style="width:52px;height:52px;display:block"><span style="font-size:42px;font-weight:700;letter-spacing:-.03em">Captionist</span></div>
+  <div style="width:100%;max-width:600px;margin-top:32px;padding:34px 32px 30px;border-radius:24px;background:#1B1C1C">
+    <span style="font-size:20px;font-weight:600">Host info</span>
+    <div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:20px">
+      <sc-for list="{{ avatarChoices }}" as="a" hint-placeholder-count="7"><div onClick="{{ a.pick }}" style="width:48px;height:48px;border-radius:50%;background:{{ a.bg }};display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:{{ a.ring }};opacity:{{ a.op }}"><img src="{{ a.img }}" style="width:36px;height:36px"></div></sc-for>
+    </div>
+    <div style="height:48px;margin-top:16px;border-radius:12px;background:#303031;box-shadow:inset 0 0 0 2px #7B61FF;display:flex;align-items:center;padding:0 16px"><input value="{{ nickname }}" onChange="{{ setNickname }}" style="flex:1;background:none;border:none;outline:none;font-size:16px;font-weight:500;color:rgba(255,255,255,.9)"></div>
+    <span style="display:block;font-size:20px;font-weight:600;margin-top:30px">Game mode</span>
+    <span style="display:block;font-size:14px;font-weight:500;color:rgba(255,255,255,.4);margin-top:5px">Who supplies the image, and who supplies the words.</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <div onClick="{{ setModeCaption }}" style="display:flex;flex-direction:column;gap:9px;padding:16px;border-radius:14px;background:{{ modeCapBg }};border:1px solid {{ modeCapBorder }};cursor:pointer">
+        <div style="display:flex;align-items:center;gap:9px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A18FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 15.5h18M7.5 18.8h9"/></svg><span style="font-size:15px;font-weight:700">Caption the image</span></div>
+        <span style="font-size:13px;font-weight:500;line-height:1.45;color:rgba(255,255,255,.5);text-wrap:pretty">One player picks a GIF. Everyone else writes the caption.</span>
+        <span style="font-size:10px;font-weight:800;letter-spacing:.08em;color:{{ modeCapTag }}">{{ modeCapTagLabel }}</span>
+      </div>
+      <div onClick="{{ setModeReact }}" style="display:flex;flex-direction:column;gap:9px;padding:16px;border-radius:14px;background:{{ modeReactBg }};border:1px solid {{ modeReactBorder }};cursor:pointer">
+        <div style="display:flex;align-items:center;gap:9px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A18FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16M4 10h11"/><rect x="4" y="13.5" width="16" height="7.5" rx="2"/></svg><span style="font-size:15px;font-weight:700">React to the caption</span></div>
+        <span style="font-size:13px;font-weight:500;line-height:1.45;color:rgba(255,255,255,.5);text-wrap:pretty">One player writes a prompt. Everyone else answers with a GIF.</span>
+        <span style="font-size:10px;font-weight:800;letter-spacing:.08em;color:{{ modeReactTag }}">{{ modeReactTagLabel }}</span>
+      </div>
+    </div>
+    <div onClick="{{ openHelp }}" style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A18FFF" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.3M12 17.1v.5"/></svg><span style="font-size:14px;font-weight:600;color:#A18FFF">How this mode works</span></div>
+    <span style="display:block;font-size:20px;font-weight:600;margin-top:30px">Room settings</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px"><span style="font-size:16px;font-weight:500;color:rgba(255,255,255,.9)">Let the picked player search Giphy</span><div onClick="{{ toggleGiphy }}" style="position:relative;width:44px;height:24px;cursor:pointer"><div style="position:absolute;left:0;top:4px;width:44px;height:16px;border-radius:24px;background:{{ giphyTrack }}"></div><div style="position:absolute;left:{{ giphyKnob }};top:0;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .16s"></div></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px"><span style="font-size:16px;font-weight:500;color:rgba(255,255,255,.9)">Enforce unique nicknames</span><div onClick="{{ toggleUnique }}" style="position:relative;width:44px;height:24px;cursor:pointer"><div style="position:absolute;left:0;top:4px;width:44px;height:16px;border-radius:24px;background:{{ uniqueTrack }}"></div><div style="position:absolute;left:{{ uniqueKnob }};top:0;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .16s"></div></div></div>
+    <div style="height:1px;background:rgba(255,255,255,.07);margin:24px 0"></div>
+    <div style="display:{{ captionFormatShow }};align-items:center;justify-content:space-between"><span style="font-size:16px;font-weight:500;color:rgba(255,255,255,.9)">Caption format</span><div style="display:flex;padding:3px;border-radius:10px;background:#242425;gap:3px"><div onClick="{{ setFormatTB }}" style="padding:8px 14px;border-radius:8px;background:{{ fmtTBbg }};font-size:13px;font-weight:600;color:{{ fmtTBcolor }};cursor:pointer">Top + bottom</div><div onClick="{{ setFormatOne }}" style="padding:8px 14px;border-radius:8px;background:{{ fmtOnebg }};font-size:13px;font-weight:600;color:{{ fmtOnecolor }};cursor:pointer">One line</div></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px"><span style="font-size:16px;font-weight:500;color:rgba(255,255,255,.9)">Voting</span><div style="display:flex;padding:3px;border-radius:10px;background:#242425;gap:3px"><div style="padding:8px 14px;border-radius:8px;background:#303031;font-size:13px;font-weight:600">Rank top 3</div><div style="padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;color:rgba(255,255,255,.45)">Single vote</div></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px"><span style="font-size:16px;font-weight:500;color:rgba(255,255,255,.9)">Submission time limit</span><div style="display:flex;align-items:center;gap:8px"><div onClick="{{ capMinus }}" style="width:36px;height:44px;border-radius:10px;background:#303031;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;cursor:pointer">−</div><div style="width:88px;height:44px;border-radius:12px;background:#303031;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">{{ capLimitLabel }}</div><div onClick="{{ capPlus }}" style="width:36px;height:44px;border-radius:10px;background:#303031;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;cursor:pointer">+</div></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px"><span style="font-size:16px;font-weight:500;color:rgba(255,255,255,.9)">Number of rounds</span><div style="display:flex;align-items:center;gap:8px"><div onClick="{{ roundsMinus }}" style="width:36px;height:44px;border-radius:10px;background:#303031;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;cursor:pointer">−</div><div style="width:88px;height:44px;border-radius:12px;background:#303031;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">{{ totalRounds }}</div><div onClick="{{ roundsPlus }}" style="width:36px;height:44px;border-radius:10px;background:#303031;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;cursor:pointer">+</div></div></div>
+    <div onClick="{{ openRoom }}" style="height:51px;margin-top:28px;border-radius:143px;background:#7B61FF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer" style-hover="background:#8B74FF">Open the room</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isLobby }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;background:#0D0E0F;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="padding:4px 10px;border-radius:6px;background:rgba(123,97,255,.16);font-size:11px;font-weight:700;color:#A18FFF;letter-spacing:.06em">HOST</span></div>
+    <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.35)">{{ settingsLine }}</span>
+  </div>
+  <div style="flex:1;display:flex;flex-wrap:wrap;gap:48px;padding:56px 72px">
+    <div style="flex:none;width:420px;max-width:100%">
+      <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.08em">SCAN OR TYPE THE CODE</span>
+      <div style="display:flex;gap:24px;align-items:flex-start;margin-top:18px"><img src="assets/qr.png" style="width:132px;height:132px;border-radius:8px;image-rendering:pixelated"><div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1">C-F34213</span><span style="font-size:15px;font-weight:700;color:rgba(255,255,255,.5)">captionist.fun/C-F34213</span><div style="display:flex;gap:8px;margin-top:6px"><div onClick="{{ copyLink }}" style="padding:9px 16px;border-radius:143px;background:rgba(255,255,255,.08);font-size:13px;font-weight:600;cursor:pointer" style-hover="background:rgba(255,255,255,.14)">Copy link</div><div onClick="{{ shareSlack }}" style="padding:9px 16px;border-radius:143px;background:rgba(255,255,255,.08);font-size:13px;font-weight:600;cursor:pointer" style-hover="background:rgba(255,255,255,.14)">Share to Slack</div></div></div></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:26px"><div style="display:flex;padding:3px;border-radius:11px;background:#242425;gap:3px"><div onClick="{{ setModeCaption }}" style="padding:9px 15px;border-radius:8px;background:{{ modeCapPillBg }};font-size:13px;font-weight:600;color:{{ modeCapPillColor }};cursor:pointer">Caption the image</div><div onClick="{{ setModeReact }}" style="padding:9px 15px;border-radius:8px;background:{{ modeReactPillBg }};font-size:13px;font-weight:600;color:{{ modeReactPillColor }};cursor:pointer">React to the caption</div></div><div onClick="{{ openHelp }}" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(123,97,255,.2)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A18FFF" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.3M12 17.1v.5"/></svg></div></div>
+      <p style="margin:20px 0 0;font-size:19px;line-height:1.55;color:rgba(255,255,255,.6);text-wrap:pretty">{{ lobbyModeBlurb }} Loser buys the postmortem donuts.</p>
+      <div onClick="{{ startGame }}" style="height:51px;margin-top:32px;border-radius:143px;background:#7B61FF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer" style-hover="background:#8B74FF">{{ startLabel }}</div>
+      <div onClick="{{ addBot }}" style="height:44px;margin-top:10px;border-radius:143px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:rgba(255,255,255,.7);cursor:pointer">Simulate another player joining</div>
+    </div>
+    <div style="flex:1;min-width:360px;border-radius:24px;background:#1B1C1C;padding:26px;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:20px;font-weight:600">Player list</span><span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">{{ playerCountLabel }}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:20px">
+        <sc-for list="{{ roster }}" as="p" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.05)"><div style="width:40px;height:40px;border-radius:50%;background:{{ p.bg }};display:flex;align-items:center;justify-content:center"><img src="{{ p.img }}" style="width:32px;height:32px"></div><span style="font-size:16px;font-weight:600">{{ p.name }}</span><span style="margin-left:auto;font-size:11px;font-weight:700;color:#A18FFF;letter-spacing:.05em">{{ p.tag }}</span></div></sc-for>
+      </div>
+      <div style="margin-top:auto;padding-top:22px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,.06)"><div style="width:8px;height:8px;border-radius:50%;background:#83D06C"></div><span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.45)">{{ lobbyActivity }}</span></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPick }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }}</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }} to pick</span></div>
+  </div>
+  <div style="padding:34px 60px 0">
+    <div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:{{ meBg }};display:flex;align-items:center;justify-content:center"><img src="{{ meImg }}" style="width:24px;height:24px"></div><span style="font-size:13px;font-weight:800;color:#A18FFF;letter-spacing:.07em">{{ pickEyebrow }}</span></div>
+    <h1 style="margin:12px 0 0;font-size:42px;font-weight:800;letter-spacing:-.03em">Pick the GIF everyone has to suffer through.</h1>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:26px">
+      <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em">Where's it coming from?</h2>
+      <div style="display:flex;padding:3px;border-radius:11px;background:#242425;gap:3px;margin-left:auto">
+        <div onClick="{{ pickTabGiphy }}" style="display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;background:{{ pickGiphyTabBg }};font-size:13px;font-weight:600;color:{{ pickGiphyTabColor }};cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2 21 21"/></svg>Search Giphy</div>
+        <div onClick="{{ pickTabUpload }}" style="display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;background:{{ pickUploadTabBg }};font-size:13px;font-weight:600;color:{{ pickUploadTabColor }};cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V4.5M8 8.5 12 4.5l4 4M4.5 15.5v3A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-3"/></svg>Upload your own</div>
+      </div>
+    </div>
+    <div style="display:{{ pickUploadPaneShow }};flex-direction:column;margin-top:20px">
+      <div onClick="{{ fakePickUpload }}" style="display:{{ pickDropzoneShow }};flex-direction:column;align-items:center;justify-content:center;gap:12px;height:300px;border-radius:16px;background:rgba(255,255,255,.03);border:2px dashed rgba(255,255,255,.16);cursor:pointer" style-hover="background:rgba(123,97,255,.08)">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#A18FFF" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V4.5M8 8.5 12 4.5l4 4M4.5 15.5v3A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-3"/></svg>
+        <span style="font-size:18px;font-weight:700">Drop a GIF, PNG or screenshot</span>
+        <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">or click to browse · 12MB max · stays in this room</span>
+      </div>
+      <div style="display:{{ pickPreviewShow }};flex-wrap:wrap;gap:26px;padding:22px;border-radius:16px;background:#1B1C1C;border:1px solid rgba(255,255,255,.08)">
+        <img src="{{ pickUploadSrc }}" style="flex:none;width:300px;height:260px;object-fit:cover;border-radius:12px;display:block">
+        <div style="flex:1;min-width:260px;display:flex;flex-direction:column">
+          <span style="font-size:11px;font-weight:800;color:#83D06C;letter-spacing:.07em">READY FOR THE ROOM</span>
+          <span style="margin-top:10px;font-size:20px;font-weight:700">server-rack.png</span>
+          <span style="margin-top:5px;font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">2.4MB · 1200×900 · uploaded just now</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:24px"><div onClick="{{ usePickUpload }}" style="padding:14px 28px;border-radius:143px;background:#7B61FF;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Use this image</div><div onClick="{{ clearPickUpload }}" style="padding:14px 24px;border-radius:143px;background:rgba(255,255,255,.07);font-size:15px;font-weight:600;color:rgba(255,255,255,.7);cursor:pointer">Replace</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:{{ pickGiphyPaneShow }}">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px">
+      <div style="flex:1;min-width:320px;height:56px;border-radius:14px;background:#1B1C1C;box-shadow:inset 0 0 0 2px #7B61FF;display:flex;align-items:center;gap:12px;padding:0 20px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><input value="{{ query }}" onChange="{{ setQuery }}" placeholder="search giphy…" style="flex:1;background:none;border:none;outline:none;font-size:17px;font-weight:500;color:#fff"></div>
+      <div onClick="{{ shuffleGifs }}" style="padding:0 26px;height:56px;border-radius:14px;background:rgba(255,255,255,.06);display:flex;align-items:center;font-size:15px;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer">Surprise me</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+      <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="6"><div onClick="{{ s.pick }}" style="padding:8px 15px;border-radius:143px;background:{{ s.bg }};font-size:13px;font-weight:600;color:{{ s.color }};cursor:pointer">{{ s.label }}</div></sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:24px">
+      <sc-for list="{{ gifGrid }}" as="g" hint-placeholder-count="8"><div onClick="{{ g.pick }}" style="position:relative;border-radius:10px;overflow:hidden;cursor:pointer;box-shadow:{{ g.ring }}"><img src="{{ g.src }}" style="display:block;width:100%;height:200px;object-fit:cover"><div style="position:absolute;left:10px;top:10px;padding:6px 12px;border-radius:143px;background:#7B61FF;font-size:12px;font-weight:700;display:{{ g.badge }};align-items:center">Selected</div></div></sc-for>
+    </div>
+    </div>
+  </div>
+  <div style="position:sticky;bottom:0;margin-top:26px;padding:20px 60px;background:linear-gradient(to top,#0A0A0B 60%,rgba(10,10,11,0));display:flex;align-items:center;justify-content:space-between;gap:20px">
+    <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,.4)">If the clock runs out we'll pick for you — and our taste is questionable.</span>
+    <div onClick="{{ lockGif }}" style="padding:15px 40px;border-radius:143px;background:#7B61FF;font-size:16px;font-weight:700;cursor:pointer;flex:none" style-hover="background:#8B74FF">{{ lockLabelPick }}</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPickWait }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }}</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }}</span></div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px 90px">
+    <div style="position:relative;width:112px;height:112px"><div style="position:absolute;inset:0;border-radius:50%;background:rgba(123,97,255,.16);animation:pulse 1.8s ease-in-out infinite"></div><div style="position:absolute;inset:12px;border-radius:50%;background:{{ captionistBg }};display:flex;align-items:center;justify-content:center"><img src="{{ captionistImg }}" style="width:70px;height:70px"></div><div style="position:absolute;right:-4px;bottom:-2px;padding:5px 11px;border-radius:143px;background:#7B61FF;font-size:11px;font-weight:800;letter-spacing:.05em">PICKING</div></div>
+    <h1 style="margin:32px 0 0;font-size:clamp(38px,5vw,58px);font-weight:800;letter-spacing:-.035em;text-align:center">{{ pickWaitHeadline }}<br><span style="font-size:32px;font-weight:700;color:rgba(255,255,255,.38)">Or rummaging through their screenshots.</span></h1>
+    <p style="margin:16px 0 0;font-size:21px;color:rgba(255,255,255,.5);text-align:center;max-width:620px;text-wrap:pretty">Brace yourself. Last time they picked a 4-second clip of a burning server rack.</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:46px"><div style="position:relative;width:214px;height:150px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;flex:none"><img src="assets/gif2-memes-1.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear 0s infinite"><img src="assets/gif2-developer-2.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -3s infinite"><img src="assets/gif2-hacker-3.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -6s infinite"><img src="assets/gif2-reaction-4.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -9s infinite"></div><div style="position:relative;width:214px;height:150px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;flex:none"><img src="assets/gif2-memes-2.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -0.6s infinite"><img src="assets/gif2-developer-3.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -3.6s infinite"><img src="assets/gif2-hacker-4.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -6.6s infinite"><img src="assets/gif2-reaction-5.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -9.6s infinite"></div><div style="position:relative;width:214px;height:150px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;flex:none"><img src="assets/gif2-memes-3.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -1.2s infinite"><img src="assets/gif2-developer-4.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -4.2s infinite"><img src="assets/gif2-hacker-5.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -7.2s infinite"><img src="assets/gif2-reaction-6.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -10.2s infinite"></div><div style="position:relative;width:214px;height:150px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-sizing:border-box;flex:none"><img src="assets/gif2-memes-4.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -1.8s infinite"><img src="assets/gif2-developer-5.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -4.8s infinite"><img src="assets/gif2-hacker-6.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -7.8s infinite"><img src="assets/gif2-reaction-7.gif" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:gcy 12s linear -10.8s infinite"></div></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPrompt }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }} · Write the prompt</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }} to write</span></div>
+  </div>
+  <div style="flex:1;display:flex;flex-wrap:wrap;gap:52px;padding:44px 60px 60px">
+    <div style="flex:1;min-width:380px;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:{{ meBg }};display:flex;align-items:center;justify-content:center"><img src="{{ meImg }}" style="width:24px;height:24px"></div><span style="font-size:13px;font-weight:800;color:#A18FFF;letter-spacing:.07em">YOU'RE THE PROMPTER</span></div>
+      <h1 style="margin:14px 0 0;font-size:42px;font-weight:800;letter-spacing:-.03em;line-height:1.04">Write one line.<br>Let them find the GIF.</h1>
+      <p style="margin:14px 0 0;font-size:18px;line-height:1.55;color:rgba(255,255,255,.5);max-width:520px;text-wrap:pretty">No image from you this round. Everyone else answers your prompt with something they had to search for.</p>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:32px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.07em">THE PROMPT</span><span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.3)">{{ promptCount }} / 90</span></div>
+        <div style="min-height:76px;border-radius:10px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 2px #7B61FF;display:flex;align-items:center;padding:14px 20px"><input value="{{ promptText }}" onChange="{{ setPromptText }}" placeholder="when the deploy succeeds on the first try…" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:19px;font-weight:600;color:#fff"></div>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.07em;margin-top:26px">NEED A STARTER</span>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        <sc-for list="{{ promptSuggestions }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.pick }}" style="padding:9px 15px;border-radius:143px;background:{{ p.bg }};font-size:13px;font-weight:600;color:{{ p.color }};cursor:pointer">{{ p.label }}</div></sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:auto;padding-top:34px">
+        <div onClick="{{ lockPrompt }}" style="padding:16px 40px;border-radius:143px;background:#7B61FF;font-size:16px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Send it to the room</div>
+        <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">If the clock runs out we'll send a starter for you.</span>
+      </div>
+    </div>
+    <div style="flex:none;width:420px;max-width:100%">
+      <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.08em">WHAT THE ROOM SEES</span>
+      <div style="margin-top:16px;padding:28px 26px;border-radius:18px;background:#1B1C1C;border:1px solid rgba(255,255,255,.08)">
+        <span style="font-size:11px;font-weight:800;color:#A18FFF;letter-spacing:.08em">{{ promptByLabel }}</span>
+        <p style="margin:14px 0 0;font-size:27px;font-weight:700;line-height:1.28;letter-spacing:-.02em;color:{{ promptPreviewColor }};text-wrap:pretty">"{{ promptPreview }}"</p>
+        <div style="display:flex;align-items:center;gap:9px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)"><div style="width:8px;height:8px;border-radius:50%;background:#83D06C"></div><span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.45)">{{ answerMeta }}</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+        <div style="position:relative;border-radius:8px;overflow:hidden;height:96px"><img src="assets/gif2-memes-2.gif" style="display:block;width:100%;height:96px;object-fit:cover;opacity:.5"></div>
+        <div style="position:relative;border-radius:8px;overflow:hidden;height:96px"><img src="assets/gif2-developer-3.gif" style="display:block;width:100%;height:96px;object-fit:cover;opacity:.5"></div>
+        <div style="position:relative;border-radius:8px;overflow:hidden;height:96px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05)"><span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.35);text-align:center;padding:0 8px">their answers land here</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPromptWait }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }}</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }}</span></div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px 90px">
+    <div style="position:relative;width:112px;height:112px"><div style="position:absolute;inset:0;border-radius:50%;background:rgba(123,97,255,.16);animation:pulse 1.8s ease-in-out infinite"></div><div style="position:absolute;inset:12px;border-radius:50%;background:{{ captionistBg }};display:flex;align-items:center;justify-content:center"><img src="{{ captionistImg }}" style="width:70px;height:70px"></div><div style="position:absolute;right:-8px;bottom:-2px;padding:5px 11px;border-radius:143px;background:#7B61FF;font-size:11px;font-weight:800;letter-spacing:.05em">WRITING</div></div>
+    <h1 style="margin:32px 0 0;font-size:clamp(38px,5vw,58px);font-weight:800;letter-spacing:-.035em;text-align:center">{{ promptWaitHeadline }}<br><span style="font-size:32px;font-weight:700;color:rgba(255,255,255,.38)">Start warming up your search history.</span></h1>
+    <p style="margin:16px 0 0;font-size:21px;color:rgba(255,255,255,.5);text-align:center;max-width:620px;text-wrap:pretty">You'll answer it with a GIF — Giphy, or something regrettable from your screenshots folder.</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:40px;padding:12px 20px;border-radius:143px;background:rgba(255,255,255,.05)"><div style="width:7px;height:7px;border-radius:50%;background:#7B61FF;animation:pulse 1.2s ease-in-out infinite"></div><span style="font-size:14px;font-weight:600;color:rgba(255,255,255,.55)">typing…</span></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSubmit }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }} · Answer the prompt</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }} left</span></div>
+  </div>
+  <div style="height:3px;background:rgba(255,255,255,.06)"><div style="width:{{ timerPct }};height:3px;background:{{ timerColor }};transition:width 1s linear"></div></div>
+  <div style="padding:30px 60px 0">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:22px;padding:22px 26px;border-radius:16px;background:rgba(123,97,255,.1);border:1px solid rgba(123,97,255,.26)">
+      <div style="display:flex;align-items:center;gap:11px;flex:none"><div style="width:38px;height:38px;border-radius:50%;background:{{ captionistBg }};display:flex;align-items:center;justify-content:center"><img src="{{ captionistImg }}" style="width:30px;height:30px"></div><span style="font-size:11px;font-weight:800;color:#A18FFF;letter-spacing:.07em">{{ promptByLabel }}</span></div>
+      <span style="flex:1;min-width:280px;font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.25;text-wrap:pretty">"{{ livePrompt }}"</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:26px">
+      <h1 style="margin:0;font-size:30px;font-weight:800;letter-spacing:-.025em">Answer it with a GIF.</h1>
+      <div style="display:flex;padding:3px;border-radius:11px;background:#242425;gap:3px;margin-left:auto">
+        <div onClick="{{ submitTabGiphy }}" style="display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;background:{{ giphyTabBg }};font-size:13px;font-weight:600;color:{{ giphyTabColor }};cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2 21 21"/></svg>Search Giphy</div>
+        <div onClick="{{ submitTabUpload }}" style="display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;background:{{ uploadTabBg }};font-size:13px;font-weight:600;color:{{ uploadTabColor }};cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V4.5M8 8.5 12 4.5l4 4M4.5 15.5v3A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-3"/></svg>Upload your own</div>
+      </div>
+    </div>
+    <div style="display:{{ giphyPaneShow }};margin-top:20px">
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        <div style="flex:1;min-width:320px;height:52px;border-radius:14px;background:#1B1C1C;box-shadow:inset 0 0 0 2px #7B61FF;display:flex;align-items:center;gap:12px;padding:0 20px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><input value="{{ query }}" onChange="{{ setQuery }}" placeholder="search giphy…" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:16px;font-weight:500;color:#fff"></div>
+        <div onClick="{{ shuffleGifs }}" style="padding:0 24px;height:52px;border-radius:14px;background:rgba(255,255,255,.06);display:flex;align-items:center;font-size:15px;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer">Surprise me</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="6"><div onClick="{{ s.pick }}" style="padding:8px 15px;border-radius:143px;background:{{ s.bg }};font-size:13px;font-weight:600;color:{{ s.color }};cursor:pointer">{{ s.label }}</div></sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:20px">
+        <sc-for list="{{ answerGrid }}" as="g" hint-placeholder-count="12"><div onClick="{{ g.pick }}" style="position:relative;border-radius:10px;overflow:hidden;cursor:pointer;box-shadow:{{ g.ring }}"><img src="{{ g.src }}" style="display:block;width:100%;height:170px;object-fit:cover"><div style="position:absolute;left:10px;top:10px;display:{{ g.badge }};align-items:center;gap:6px;padding:6px 12px;border-radius:143px;background:#7B61FF;font-size:12px;font-weight:700">Your answer</div></div></sc-for>
+      </div>
+    </div>
+    <div style="display:{{ uploadPaneShow }};flex-direction:column;margin-top:20px">
+      <div onClick="{{ fakeUpload }}" style="display:{{ dropzoneShow }};flex-direction:column;align-items:center;justify-content:center;gap:12px;height:300px;border-radius:16px;background:rgba(255,255,255,.03);border:2px dashed rgba(255,255,255,.16);cursor:pointer" style-hover="background:rgba(123,97,255,.08)">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#A18FFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
+        <span style="font-size:18px;font-weight:700">Drop a GIF, PNG or screenshot</span>
+        <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">or click to browse · 12MB max · stays in this room</span>
+      </div>
+      <div style="display:{{ uploadPreviewShow }};flex-wrap:wrap;gap:26px;padding:22px;border-radius:16px;background:#1B1C1C;border:1px solid rgba(255,255,255,.08)">
+        <img src="{{ uploadedSrc }}" style="flex:none;width:300px;height:260px;object-fit:cover;border-radius:12px;display:block">
+        <div style="flex:1;min-width:260px;display:flex;flex-direction:column">
+          <span style="font-size:11px;font-weight:800;color:#83D06C;letter-spacing:.07em">READY TO SEND</span>
+          <span style="margin-top:10px;font-size:20px;font-weight:700">standup-face.png</span>
+          <span style="margin-top:5px;font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">1.2MB · 800×720 · uploaded just now</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:24px"><div onClick="{{ useUpload }}" style="padding:14px 28px;border-radius:143px;background:#7B61FF;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Use this answer</div><div onClick="{{ clearUpload }}" style="padding:14px 24px;border-radius:143px;background:rgba(255,255,255,.07);font-size:15px;font-weight:600;color:rgba(255,255,255,.7);cursor:pointer">Replace</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="position:sticky;bottom:0;margin-top:26px;padding:20px 60px;background:linear-gradient(to top,#0A0A0B 60%,rgba(10,10,11,0));display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px">
+    <div style="display:flex;align-items:center;gap:14px"><img src="{{ myAnswer }}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;display:block;flex:none"><span style="font-size:15px;font-weight:500;color:rgba(255,255,255,.45)">Anonymous until the reveal. You can swap it until the clock runs out.</span></div>
+    <div onClick="{{ submitAnswer }}" style="padding:15px 40px;border-radius:143px;background:#7B61FF;font-size:16px;font-weight:700;cursor:pointer;flex:none" style-hover="background:#8B74FF">Lock in my answer</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCaption }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }} · Caption this</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }} left</span></div>
+  </div>
+  <div style="height:3px;background:rgba(255,255,255,.06)"><div style="width:{{ timerPct }};height:3px;background:{{ timerColor }};transition:width 1s linear"></div></div>
+  <div style="flex:1;display:flex;flex-wrap:wrap;gap:44px;padding:40px 60px 60px">
+    <div style="flex:none;width:520px;max-width:100%">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.08em">{{ pickedByLabel }}</span><div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div></div>
+      <div style="position:relative;border-radius:8px;overflow:hidden;background:#131415">
+        <img src="{{ chosenGif }}" style="display:block;width:100%;height:520px;object-fit:cover">
+        <span style="position:absolute;left:0;right:0;top:20px;text-align:center;font-size:32px;font-weight:800;text-transform:uppercase;padding:0 20px;color:{{ topPreviewColor }};text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ topPreview }}</span>
+        <span style="position:absolute;left:0;right:0;bottom:20px;text-align:center;font-size:32px;font-weight:800;text-transform:uppercase;padding:0 20px;color:{{ bottomPreviewColor }};text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ bottomPreview }}</span>
+      </div>
+    </div>
+    <div style="flex:1;min-width:340px;display:flex;flex-direction:column">
+      <h1 style="margin:0;font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.05">Make it hurt.<br>Make it funny.</h1>
+      <p style="margin:14px 0 0;font-size:18px;line-height:1.55;color:rgba(255,255,255,.5);max-width:520px;text-wrap:pretty">Your colleagues will rank the top three captions. Yours is anonymous until the reveal, so go ahead and roast the deploy process.</p>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:34px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.07em">TOP TEXT</span><span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.3)">{{ topCount }} / 60</span></div>
+        <div style="height:62px;border-radius:8px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 2px #7B61FF;display:flex;align-items:center;padding:0 20px"><input value="{{ topText }}" onChange="{{ setTopText }}" placeholder="When prod goes down…" style="flex:1;background:none;border:none;outline:none;font-size:17px;font-weight:600;color:#fff"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.07em">BOTTOM TEXT</span><span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.3)">{{ bottomCount }} / 60</span></div>
+        <div style="height:62px;border-radius:8px;background:rgba(255,255,255,.08);display:flex;align-items:center;padding:0 20px"><input value="{{ bottomText }}" onChange="{{ setBottomText }}" placeholder="…and I'm the only one on call" style="flex:1;background:none;border:none;outline:none;font-size:17px;font-weight:500;color:#fff"></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:30px">
+        <div onClick="{{ submitCaption }}" style="padding:17px 44px;border-radius:8px;background:#7B61FF;font-size:16px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Submit caption</div>
+        <div onClick="{{ skipRound }}" style="padding:17px 26px;border-radius:8px;background:rgba(255,255,255,.07);font-size:16px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer">Skip this round</div>
+      </div>
+      <div style="margin-top:auto;padding:18px 20px;border-radius:12px;background:rgba(255,255,255,.04);display:flex;align-items:center;gap:14px"><span style="font-size:15px;font-weight:500;color:rgba(255,255,255,.5)">{{ submissionsLine }}</span></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isWaiting }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }}</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }} left</span></div>
+  </div>
+  <div style="flex:1;display:flex;flex-wrap:wrap;gap:52px;align-items:center;justify-content:center;padding:60px">
+    <div style="flex:none;position:relative;border-radius:8px;overflow:hidden;width:420px;max-width:100%">
+      <img src="{{ waitSrc }}" style="display:block;width:100%;height:420px;object-fit:cover">
+      <span style="display:{{ waitTextShow }};position:absolute;left:0;right:0;top:18px;text-align:center;font-size:26px;font-weight:800;text-transform:uppercase;padding:0 18px;text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ myTop }}</span>
+      <span style="display:{{ waitTextShow }};position:absolute;left:0;right:0;bottom:52px;text-align:center;font-size:26px;font-weight:800;text-transform:uppercase;padding:0 18px;text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ myBottom }}</span>
+      <div style="position:absolute;left:14px;bottom:14px;display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:143px;background:rgba(10,10,11,.75)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#83D06C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg><span style="font-size:12px;font-weight:700">Locked in</span></div>
+    </div>
+    <div style="flex:none;width:520px;max-width:100%">
+      <div style="display:flex;align-items:center;gap:9px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#83D06C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg><span style="font-size:14px;font-weight:700;color:#83D06C;letter-spacing:.07em">{{ waitEyebrow }}</span></div>
+      <h1 style="margin:12px 0 0;font-size:52px;font-weight:800;letter-spacing:-.035em;line-height:1.02">{{ waitHeadline }}<br>Now we wait.</h1>
+      <p style="margin:16px 0 0;font-size:19px;line-height:1.5;color:rgba(255,255,255,.5);text-wrap:pretty">{{ waitBody }}</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:32px 0 12px"><span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.07em">SUBMISSIONS</span><span style="font-size:14px;font-weight:700">{{ submittedCountLabel }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ submissionRows }}" as="r" hint-placeholder-count="7"><div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;background:rgba(255,255,255,.05)"><div style="width:32px;height:32px;border-radius:50%;background:{{ r.bg }};display:flex;align-items:center;justify-content:center;opacity:{{ r.op }}"><img src="{{ r.img }}" style="width:26px;height:26px"></div><span style="font-size:15px;font-weight:600;color:{{ r.nameColor }}">{{ r.name }}</span><span style="margin-left:auto;font-size:13px;font-weight:600;color:{{ r.statusColor }}">{{ r.status }}</span></div></sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px"><div onClick="{{ waitEdit }}" style="padding:14px 28px;border-radius:143px;background:rgba(255,255,255,.07);font-size:15px;font-weight:600;cursor:pointer">{{ waitEditLabel }}</div><div onClick="{{ goVote }}" style="padding:14px 28px;border-radius:143px;background:#7B61FF;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Everyone's in — start voting</div></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isVote }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;background:#131415;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;background:#0E0F10">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }} · Vote</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:{{ timerBg }}"><span style="font-size:14px;font-weight:700;color:{{ timerColor }}">{{ timerText }} left</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:20px;padding:24px 60px;background:#0E0F10">
+    <div style="display:{{ votePromptShow }};align-items:center;gap:14px;padding:14px 20px;border-radius:12px;background:rgba(123,97,255,.12);border:1px solid rgba(123,97,255,.26)"><span style="flex:none;font-size:11px;font-weight:800;color:#A18FFF;letter-spacing:.07em">PROMPT</span><span style="font-size:18px;font-weight:700;line-height:1.35;text-wrap:pretty">"{{ livePrompt }}"</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:20px">
+      <img src="{{ chosenGif }}" style="display:{{ voteGifShow }};width:88px;height:88px;object-fit:cover;border-radius:8px;flex:none">
+      <div><h1 style="margin:0;font-size:32px;font-weight:800;letter-spacing:-.025em;white-space:nowrap">Rank your top three.</h1><span style="font-size:16px;font-weight:500;color:rgba(255,255,255,.45)">{{ voteSubline }}</span></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:22px">
+      <div style="display:flex;gap:8px">
+        <sc-for list="{{ rankSlots }}" as="r" hint-placeholder-count="3"><div onClick="{{ r.clear }}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:143px;background:{{ r.bg }};border:{{ r.border }};cursor:pointer;flex:none"><span style="font-size:13px;font-weight:800;color:{{ r.numColor }};white-space:nowrap">{{ r.num }}</span><span style="font-size:13px;font-weight:600;color:{{ r.color }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">{{ r.label }}</span></div></sc-for>
+      </div>
+      <div onClick="{{ lockVotes }}" style="padding:16px 32px;border-radius:143px;background:{{ lockBg }};font-size:16px;font-weight:700;color:{{ lockColor }};cursor:pointer;white-space:nowrap;flex:none">{{ lockLabel }}</div>
+    </div>
+    </div>
+  </div>
+  <div style="padding:28px 60px 60px">
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px"><span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.4)">{{ voteMeta }}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px">
+      <sc-for list="{{ voteCards }}" as="c" hint-placeholder-count="7"><div style="display:flex;flex-direction:column;gap:11px"><div onClick="{{ c.click }}" style="position:relative;border-radius:8px;overflow:hidden;cursor:{{ c.cursor }};box-shadow:{{ c.ring }};opacity:{{ c.op }}"><img src="{{ c.src }}" style="display:block;width:100%;height:210px;object-fit:cover"><span style="display:{{ c.textShow }};position:absolute;left:0;right:0;top:10px;text-align:center;font-size:16px;font-weight:800;text-transform:uppercase;padding:0 10px;text-shadow:0 1.5px 0 #000,0 -1.5px 0 #000,1.5px 0 0 #000,-1.5px 0 0 #000">{{ c.top }}</span><span style="display:{{ c.textShow }};position:absolute;left:0;right:0;bottom:{{ c.capBottom }};text-align:center;font-size:16px;font-weight:800;text-transform:uppercase;padding:0 10px;text-shadow:0 1.5px 0 #000,0 -1.5px 0 #000,1.5px 0 0 #000,-1.5px 0 0 #000">{{ c.bottom }}</span><div style="position:absolute;right:10px;top:10px;width:32px;height:32px;border-radius:50%;background:{{ c.badgeBg }};display:{{ c.badgeShow }};align-items:center;justify-content:center;font-size:15px;font-weight:800;color:{{ c.badgeColor }}">{{ c.badgeNum }}</div><div style="position:absolute;inset:0;background:rgba(10,10,11,.55);display:{{ c.ownShow }};align-items:center;justify-content:center"><span style="padding:7px 15px;border-radius:143px;background:rgba(10,10,11,.85);font-size:12px;font-weight:700">{{ c.ownLabel }}</span></div><div style="position:absolute;left:10px;bottom:10px;display:{{ c.reactShow }};gap:5px;flex-wrap:wrap;max-width:calc(100% - 20px)"><sc-for list="{{ c.reacts }}" as="r" hint-placeholder-count="1"><div style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:143px;background:rgba(10,10,11,.8);backdrop-filter:blur(6px);border:1px solid {{ r.border }}"><img src="{{ r.gif }}" style="display:{{ r.gifShow }};width:14px;height:14px;border-radius:4px;object-fit:cover;flex:none"><span style="display:{{ r.emojiShow }};font-size:12px;line-height:1">{{ r.emoji }}</span><span style="font-size:11px;font-weight:700">{{ r.n }}</span></div></sc-for></div></div><div style="position:relative;display:flex;align-items:center;gap:10px"><span style="flex:1;min-width:0;font-size:15px;font-weight:700;color:{{ c.labelColor }}">{{ c.label }}</span><div onClick="{{ c.openPicker }}" style="flex:none;display:flex;align-items:center;gap:2px;height:32px;padding:0 10px;border-radius:143px;background:{{ c.plusBg }};cursor:pointer" style-hover="background:rgba(123,97,255,.28)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ c.plusColor }}" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="12" r="8.2"/><path d="M8 15s1.2 1.4 3 1.4S14 15 14 15M8.4 9.8v.7M13.6 9.8v.7"/></svg><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{ c.plusColor }}" stroke-width="3.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div><div style="position:absolute;right:0;bottom:42px;width:262px;padding:12px;border-radius:14px;background:#1B1C1C;border:1px solid rgba(255,255,255,.14);box-shadow:0 20px 50px rgba(0,0,0,.65);display:{{ c.pickerShow }};flex-direction:column;gap:10px;z-index:30"><span style="font-size:11px;font-weight:800;color:rgba(255,255,255,.38);letter-spacing:.07em">REACT TO THIS CAPTION</span><div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 11px;box-sizing:border-box;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2L21 21"/></svg><input value="{{ pickerQuery }}" onChange="{{ setPickerQuery }}" placeholder="Search all emoji" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:13px;font-weight:400;color:#fff"></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"><sc-for list="{{ c.pickerOptions }}" as="o" hint-placeholder-count="10"><div onClick="{{ o.fire }}" style="height:36px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(123,97,255,.24)"><img src="{{ o.gif }}" style="display:{{ o.gifShow }};width:22px;height:22px;border-radius:4px;object-fit:cover"><span style="display:{{ o.emojiShow }};font-size:18px;line-height:1">{{ o.emoji }}</span></div></sc-for></div><span style="display:{{ pickerEmptyShow }};font-size:12px;font-weight:500;color:rgba(255,255,255,.35);padding:2px 0">No emoji match that.</span></div></div></div></sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTiebreak }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;position:relative;overflow:hidden;display:flex;flex-direction:column">
+  <div style="position:absolute;left:50%;top:-200px;width:1000px;height:800px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,120,125,.16),rgba(255,120,125,0) 66%)"></div>
+  <div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">Round {{ round }} · sudden death</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:143px;background:rgba(255,120,125,.14)"><span style="font-size:14px;font-weight:700;color:#FF787D">{{ timerText }} left!</span></div>
+  </div>
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 40px 60px">
+    <span style="font-size:14px;font-weight:800;color:#FF787D;letter-spacing:.11em">{{ tieEyebrow }}</span>
+    <h1 style="margin:14px 0 0;font-size:clamp(42px,5.6vw,68px);font-weight:800;letter-spacing:-.04em;line-height:1;text-align:center;animation:pop .35s ease">Somebody has to<br>break this tie.</h1>
+    <p style="margin:16px 0 0;font-size:19px;font-weight:400;color:rgba(255,255,255,.5);text-align:center;max-width:700px;text-wrap:pretty">{{ tieSub }}</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:34px;margin-top:36px">
+      <sc-for list="{{ tieCards }}" as="c" hint-placeholder-count="2">
+        <div style="display:flex;align-items:flex-start;gap:34px">
+          <div style="display:flex;flex-direction:column;gap:16px;align-items:center">
+            <div style="position:relative;border-radius:12px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,255,255,.16)">
+              <img src="{{ c.src }}" style="display:block;width:392px;height:330px;object-fit:cover">
+              <span style="display:{{ c.textShow }};position:absolute;left:0;right:0;top:16px;text-align:center;font-size:26px;font-weight:800;text-transform:uppercase;padding:0 14px;text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ c.top }}</span>
+              <span style="display:{{ c.textShow }};position:absolute;left:0;right:0;bottom:16px;text-align:center;font-size:26px;font-weight:800;text-transform:uppercase;padding:0 14px;text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ c.bottom }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px"><div style="width:36px;height:36px;border-radius:50%;background:{{ c.bg }};display:flex;align-items:center;justify-content:center"><img src="{{ c.img }}" style="width:29px;height:29px"></div><span style="font-size:18px;font-weight:700">{{ c.name }}</span></div>
+            <div onClick="{{ c.vote }}" style="padding:15px 44px;border-radius:143px;background:#7B61FF;font-size:16px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Vote this one</div>
+          </div>
+          <div style="display:{{ c.vsShow }};flex-direction:column;align-items:center;gap:6px;padding-top:120px"><span style="font-size:15px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:.1em">VS</span><div style="width:1px;height:200px;background:rgba(255,255,255,.1)"></div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isReveal }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;position:relative;overflow:hidden;display:flex;flex-direction:column">
+  <div style="position:absolute;left:50%;top:-260px;width:1000px;height:1000px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(123,97,255,.22),rgba(123,97,255,0) 68%)"></div>
+  <div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ roundLabel }} · Reveal</span></div>
+    <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.35)">Room C-F34213</span>
+  </div>
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 40px 70px">
+    <div style="display:flex;align-items:center;gap:9px"><svg width="20" height="15" viewBox="0 0 24 18" fill="#F6E338"><path d="M2 17 0 3l6 4 6-7 6 7 6-4-2 14z"/></svg><span style="font-size:14px;font-weight:800;color:#F6E338;letter-spacing:.1em">{{ revealEyebrow }}</span></div>
+    <h1 style="margin:14px 0 0;font-size:clamp(46px,6vw,72px);font-weight:800;letter-spacing:-.04em;line-height:1;text-align:center;animation:pop .4s ease">{{ revealHeadline }}</h1>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:52px;align-items:center;margin-top:36px">
+      <div style="position:relative;border-radius:12px;overflow:hidden;box-shadow:0 0 0 4px #F6E338,0 24px 60px rgba(0,0,0,.6);animation:pop .5s ease">
+        <img src="{{ revealSrc }}" style="display:block;width:400px;height:400px;object-fit:cover">
+        <span style="display:{{ winnerTextShow }};position:absolute;left:0;right:0;top:18px;text-align:center;font-size:28px;font-weight:800;text-transform:uppercase;padding:0 16px;text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ winnerTop }}</span>
+        <span style="display:{{ winnerTextShow }};position:absolute;left:0;right:0;bottom:18px;text-align:center;font-size:28px;font-weight:800;text-transform:uppercase;padding:0 16px;text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000">{{ winnerBottom }}</span>
+      </div>
+      <div style="width:440px;max-width:100%">
+        <div style="display:{{ revealPromptShow }};align-items:center;gap:12px;margin-bottom:14px;padding:14px 18px;border-radius:12px;background:rgba(123,97,255,.12);border:1px solid rgba(123,97,255,.26)"><span style="font-size:11px;font-weight:800;color:#A18FFF;letter-spacing:.07em;flex:none">PROMPT</span><span style="font-size:15px;font-weight:600;line-height:1.35;text-wrap:pretty">"{{ livePrompt }}"</span></div>
+        <div style="display:flex;align-items:center;gap:16px;padding:20px;border-radius:16px;background:rgba(246,227,56,.1);border:1px solid rgba(246,227,56,.28)">
+          <div style="width:56px;height:56px;border-radius:50%;background:{{ winnerBg }};display:flex;align-items:center;justify-content:center"><img src="{{ winnerImg }}" style="width:44px;height:44px"></div>
+          <div><div style="font-size:22px;font-weight:700">{{ winnerName }}</div><div style="font-size:15px;font-weight:500;color:rgba(255,255,255,.5)">{{ winnerSub }}</div></div>
+          <span style="margin-left:auto;font-size:32px;font-weight:800;color:#F6E338">+3</span>
+        </div>
+        <span style="display:block;font-size:13px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.08em;margin:26px 0 12px">RUNNERS UP</span>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ runnersUp }}" as="r" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:13px;padding:13px 16px;border-radius:12px;background:rgba(255,255,255,.05)"><span style="width:22px;font-size:15px;font-weight:800;color:rgba(255,255,255,.4)">{{ r.rank }}</span><div style="width:34px;height:34px;border-radius:50%;background:{{ r.bg }};display:flex;align-items:center;justify-content:center"><img src="{{ r.img }}" style="width:27px;height:27px"></div><div><div style="font-size:15px;font-weight:700">{{ r.caption }}</div><div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.4)">{{ r.name }}</div></div><span style="margin-left:auto;font-size:17px;font-weight:800;color:rgba(255,255,255,.6)">{{ r.pts }}</span></div></sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:26px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)">
+          <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,.35);letter-spacing:.07em;flex:none">REACT</span>
+          <sc-for list="{{ reactBarShort }}" as="r" hint-placeholder-count="5"><div onClick="{{ r.fire }}" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="background:rgba(123,97,255,.24)"><img src="{{ r.gif }}" style="display:{{ r.gifShow }};width:24px;height:24px;border-radius:5px;object-fit:cover"><span style="display:{{ r.emojiShow }};font-size:20px;line-height:1">{{ r.emoji }}</span></div></sc-for>
+          <div onClick="{{ togglePicker }}" style="margin-left:auto;flex:none;display:flex;align-items:center;gap:2px;height:34px;padding:0 11px;border-radius:143px;background:{{ pickerBtnBg }};cursor:pointer" style-hover="background:rgba(123,97,255,.24)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ pickerCtaColor }}" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="12" r="8.2"/><path d="M8 15s1.2 1.4 3 1.4S14 15 14 15M8.4 9.8v.7M13.6 9.8v.7"/></svg><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{ pickerCtaColor }}" stroke-width="3.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div onClick="{{ goScore }}" style="margin-top:16px;padding:16px 34px;border-radius:143px;background:#7B61FF;font-size:16px;font-weight:700;text-align:center;cursor:pointer" style-hover="background:#8B74FF">See the scoreboard</div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isScore }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;background:#0D0E0F;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">Scoreboard</span></div>
+    <div style="display:flex;align-items:center;gap:9px"><sc-for list="{{ roundPips }}" as="p" hint-placeholder-count="5"><div style="width:26px;height:8px;border-radius:99px;background:{{ p.bg }}"></div></sc-for><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.5)">{{ roundsProgress }}</span></div>
+  </div>
+  <div style="padding:48px 80px 70px">
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between">
+      <div><h1 style="margin:0;font-size:52px;font-weight:800;letter-spacing:-.035em">Standings</h1><p style="margin:10px 0 0;font-size:19px;color:rgba(255,255,255,.5)">{{ standingsSub }}</p></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px"><span style="font-size:15px;font-weight:500;color:rgba(255,255,255,.4)">{{ nextCaptionistLine }}</span><div onClick="{{ nextRound }}" style="padding:16px 32px;border-radius:143px;background:#7B61FF;font-size:16px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">{{ nextRoundLabel }}</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:40px">
+      <sc-for list="{{ standings }}" as="s" hint-placeholder-count="7"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:18px 24px;border-radius:16px;background:{{ s.bg }};border:{{ s.border }}"><span style="width:32px;font-size:24px;font-weight:800;color:{{ s.rankColor }}">{{ s.rank }}</span><div style="width:46px;height:46px;border-radius:50%;background:{{ s.avBg }};display:flex;align-items:center;justify-content:center"><img src="{{ s.img }}" style="width:36px;height:36px"></div><span style="font-size:21px;font-weight:700">{{ s.name }}</span><span style="padding:3px 9px;border-radius:5px;background:rgba(255,255,255,.1);font-size:11px;font-weight:700;display:{{ s.tagShow }}">{{ s.tag }}</span><div style="flex:1;min-width:120px;height:10px;border-radius:99px;background:rgba(255,255,255,.07)"><div style="width:{{ s.pct }};height:10px;border-radius:99px;background:{{ s.barColor }};transition:width .5s"></div></div><span style="font-size:15px;font-weight:500;color:rgba(255,255,255,.4);min-width:120px;text-align:right">{{ s.note }}</span><span style="width:60px;text-align:right;font-size:26px;font-weight:800">{{ s.score }}</span></div></sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPodium }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:100vh;position:relative;overflow:hidden;display:flex;flex-direction:column">
+  <div style="position:absolute;left:50%;top:-340px;width:1300px;height:1200px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(123,97,255,.24),rgba(123,97,255,0) 64%)"></div>
+  <div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 40px">
+    <div style="display:flex;align-items:center;gap:12px"><img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block"><span style="font-size:18px;font-weight:800">Captionist!</span><span style="margin-left:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.4)">{{ gameOverLabel }}</span></div>
+    <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.35)">Room C-F34213</span>
+  </div>
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;padding:16px 40px 70px">
+    <div style="display:flex;align-items:center;gap:9px"><svg width="22" height="16" viewBox="0 0 24 18" fill="#F6E338"><path d="M2 17 0 3l6 4 6-7 6 7 6-4-2 14z"/></svg><span style="font-size:14px;font-weight:800;color:#F6E338;letter-spacing:.11em">CAPTIONIST OF THE SPRINT</span></div>
+    <h1 style="margin:12px 0 0;font-size:clamp(48px,7vw,82px);font-weight:800;letter-spacing:-.04em;line-height:1;text-align:center;animation:pop .5s ease">{{ champHeadline }}</h1>
+    <p style="margin:14px 0 0;font-size:20px;color:rgba(255,255,255,.5);text-align:center">{{ champSub }}</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:20px;margin-top:46px">
+      <sc-for list="{{ podium }}" as="p" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;align-items:center;gap:14px"><div style="width:{{ p.avSize }};height:{{ p.avSize }};border-radius:50%;background:{{ p.avBg }};display:flex;align-items:center;justify-content:center;box-shadow:{{ p.avRing }}"><img src="{{ p.img }}" style="width:{{ p.imgSize }};height:{{ p.imgSize }}"></div><div style="width:{{ p.blockW }};height:{{ p.blockH }};border-radius:16px 16px 0 0;background:{{ p.blockBg }};border:{{ p.blockBorder }};border-bottom:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><span style="font-size:{{ p.rankSize }};font-weight:800;color:{{ p.rankColor }}">{{ p.rank }}</span><span style="font-size:{{ p.nameSize }};font-weight:800">{{ p.name }}</span><span style="font-size:16px;font-weight:600;color:rgba(255,255,255,.55)">{{ p.pts }}</span></div></div></sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:38px">
+      <div onClick="{{ rematch }}" style="padding:17px 34px;border-radius:143px;background:#7B61FF;font-size:16px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">Rematch with the same crew</div>
+      <div onClick="{{ reset }}" style="padding:17px 28px;border-radius:143px;background:rgba(255,255,255,.07);font-size:16px;font-weight:600;cursor:pointer">Back to the start</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showToolbox }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;right:{{ fabRight }};bottom:24px;width:340px;border-radius:20px;background:#1B1C1C;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.6);overflow:hidden;z-index:50">
+  <div style="display:flex;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid rgba(255,255,255,.07)"><img src="assets/captionist-logo.png" style="width:24px;height:24px;display:block"><span style="font-size:15px;font-weight:700">Host toolbox</span><div onClick="{{ toggleToolbox }}" style="margin-left:auto;font-size:18px;font-weight:600;color:rgba(255,255,255,.4);cursor:pointer">×</div></div>
+  <div style="padding:14px 20px 20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0"><span style="font-size:14px;font-weight:600">Round timer</span><div style="display:flex;align-items:center;gap:8px"><div onClick="{{ timeMinus }}" style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer">−</div><span style="width:52px;text-align:center;font-size:15px;font-weight:700">{{ timerText }}</span><div onClick="{{ timePlus }}" style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer">+</div></div></div>
+    <div style="height:1px;background:rgba(255,255,255,.06);margin:8px 0"></div>
+    <div style="display:flex;gap:8px;padding:8px 0"><div onClick="{{ togglePause }}" style="flex:1;padding:11px 16px;border-radius:10px;background:rgba(255,255,255,.07);text-align:center;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer">{{ pauseLabel }}</div><div onClick="{{ skipPhase }}" style="flex:1;padding:11px 16px;border-radius:10px;background:#7B61FF;text-align:center;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer">Skip ahead</div></div>
+    <div style="height:1px;background:rgba(255,255,255,.06);margin:8px 0"></div>
+    <div style="display:flex;gap:8px;padding:8px 0"><div onClick="{{ swapMode }}" style="flex:1;padding:11px 16px;border-radius:10px;background:rgba(123,97,255,.18);text-align:center;font-size:14px;font-weight:700;color:#C9BCFF;white-space:nowrap;cursor:pointer">{{ swapModeLabel }}</div><div onClick="{{ openHelp }}" style="flex:none;padding:11px 18px;border-radius:10px;background:rgba(255,255,255,.07);text-align:center;font-size:14px;font-weight:600;cursor:pointer">Help</div></div>
+    <div style="height:1px;background:rgba(255,255,255,.06);margin:8px 0"></div>
+    <div style="display:flex;gap:8px;padding-top:8px"><div onClick="{{ forceTie }}" style="flex:1;padding:11px 16px;border-radius:10px;background:rgba(255,120,125,.14);text-align:center;font-size:14px;font-weight:700;color:#FF787D;white-space:nowrap;cursor:pointer">Force a tie</div><div onClick="{{ jumpPodium }}" style="flex:1;padding:11px 16px;border-radius:10px;background:rgba(255,255,255,.07);text-align:center;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer">Jump to final</div></div>
+    <div onClick="{{ reset }}" style="margin-top:8px;padding:11px 18px;border-radius:10px;background:rgba(255,120,125,.14);text-align:center;font-size:14px;font-weight:700;color:#FF787D;cursor:pointer">Restart game</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showToolboxFab }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ toggleToolbox }}" style="position:fixed;right:{{ fabRight }};bottom:24px;display:flex;align-items:center;gap:10px;padding:14px 22px;border-radius:143px;background:#1B1C1C;border:1px solid rgba(255,255,255,.12);box-shadow:0 14px 40px rgba(0,0,0,.5);cursor:pointer;z-index:50"><img src="assets/captionist-logo.png" style="width:20px;height:20px;display:block"><span style="font-size:14px;font-weight:700">Host toolbox</span></div>
+</sc-if>
+</div>
+
+<sc-if value="{{ railOpen }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;width:360px;align-self:flex-start;position:sticky;top:0;height:100vh;background:#0E0F10;border-left:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;box-sizing:border-box;z-index:40">
+  <div style="flex:none;display:flex;align-items:center;gap:10px;height:72px;padding:0 16px;box-sizing:border-box;border-bottom:1px solid rgba(255,255,255,.07)">
+    <span style="font-size:15px;font-weight:700">Room chat</span>
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:143px;background:rgba(255,255,255,.06)"><div style="width:6px;height:6px;border-radius:50%;background:#83D06C"></div><span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55)">{{ hereLabel }}</span></div>
+    <div onClick="{{ toggleChat }}" style="margin-left:auto;width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(255,255,255,.07)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding:16px;box-sizing:border-box;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:9px;padding:2px 0"><div style="flex:1;height:1px;background:rgba(255,255,255,.06)"></div><span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.3);white-space:nowrap">{{ chatContextLine }}</span><div style="flex:1;height:1px;background:rgba(255,255,255,.06)"></div></div>
+    <sc-for list="{{ messages }}" as="m" hint-placeholder-count="5">
+      <div style="display:{{ m.rowShow }};gap:10px">
+        <div style="width:30px;height:30px;border-radius:50%;background:{{ m.bg }};display:flex;align-items:center;justify-content:center;flex:none"><img src="{{ m.img }}" style="width:23px;height:23px"></div>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1">
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:700">{{ m.name }}</span><span style="font-size:11px;font-weight:500;color:rgba(255,255,255,.28)">{{ m.time }}</span></div>
+          <span style="display:{{ m.textShow }};font-size:14px;font-weight:400;line-height:1.45;color:rgba(255,255,255,.78);text-wrap:pretty">{{ m.text }}</span>
+          <div style="display:{{ m.gifShow }};margin-top:3px;width:180px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.1)"><img src="{{ m.gif }}" style="display:block;width:180px;height:120px;object-fit:cover"></div>
+          <div style="display:{{ m.reactShow }};gap:6px;margin-top:2px;flex-wrap:wrap">
+            <sc-for list="{{ m.reacts }}" as="r" hint-placeholder-count="1"><div onClick="{{ r.bump }}" style="display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:143px;background:{{ r.bg }};border:1px solid {{ r.border }};cursor:pointer"><img src="{{ r.gif }}" style="display:{{ r.gifShow }};width:14px;height:14px;border-radius:4px;object-fit:cover;flex:none"><span style="display:{{ r.emojiShow }};font-size:13px;line-height:1">{{ r.emoji }}</span><span style="font-size:11px;font-weight:700;color:{{ r.color }}">{{ r.n }}</span></div></sc-for>
+          </div>
+        </div>
+        <div style="flex:none;position:relative">
+          <div onClick="{{ m.openPicker }}" style="display:flex;align-items:center;gap:1px;height:28px;padding:0 8px;border-radius:143px;background:{{ m.ctaBg }};cursor:pointer" style-hover="background:rgba(255,255,255,.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ m.ctaColor }}" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="12" r="8.2"/><path d="M8 15s1.2 1.4 3 1.4S14 15 14 15M8.4 9.8v.7M13.6 9.8v.7"/></svg><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="{{ m.ctaColor }}" stroke-width="3.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div style="position:absolute;right:0;top:{{ m.pickerTop }};bottom:{{ m.pickerBottom }};width:262px;padding:12px;border-radius:14px;background:#1B1C1C;border:1px solid rgba(255,255,255,.14);box-shadow:0 20px 50px rgba(0,0,0,.65);display:{{ m.pickerShow }};flex-direction:column;gap:10px;z-index:30">
+            <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,.38);letter-spacing:.07em">REACT TO THIS MESSAGE</span>
+            <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 11px;box-sizing:border-box;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2L21 21"/></svg><input value="{{ pickerQuery }}" onChange="{{ setPickerQuery }}" placeholder="Search all emoji" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:13px;font-weight:500;color:#fff"></div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;max-height:132px;overflow-y:auto">
+              <sc-for list="{{ m.pickerOptions }}" as="o" hint-placeholder-count="10"><div onClick="{{ o.fire }}" style="height:36px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(123,97,255,.24)"><img src="{{ o.gif }}" style="display:{{ o.gifShow }};width:22px;height:22px;border-radius:4px;object-fit:cover"><span style="display:{{ o.emojiShow }};font-size:18px;line-height:1">{{ o.emoji }}</span></div></sc-for>
+            </div>
+            <span style="display:{{ pickerEmptyShow }};font-size:12px;font-weight:500;color:rgba(255,255,255,.35)">Nothing matches that.</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:{{ m.hostShow }};gap:10px;padding:11px 13px;border-radius:12px;background:rgba(123,97,255,.12);border:1px solid rgba(123,97,255,.28)">
+        <div style="width:26px;height:26px;border-radius:7px;background:rgba(123,97,255,.3);display:flex;align-items:center;justify-content:center;flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9BCFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-7-7 18-2-9z"/></svg></div>
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:11px;font-weight:700;color:#A18FFF;letter-spacing:.06em">{{ m.hostTag }}</span><span style="font-size:14px;font-weight:500;line-height:1.45;text-wrap:pretty">{{ m.text }}</span></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="flex:none;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.07);background:#0E0F10">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px">
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:2px;overflow:hidden">
+        <sc-for list="{{ quickReacts }}" as="q" hint-placeholder-count="6"><div onClick="{{ q.fire }}" style="width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="background:rgba(255,255,255,.09)"><img src="{{ q.gif }}" style="display:{{ q.gifShow }};width:20px;height:20px;border-radius:4px;object-fit:cover"><span style="display:{{ q.emojiShow }};font-size:17px;line-height:1">{{ q.emoji }}</span></div></sc-for>
+      </div>
+      <div onClick="{{ togglePicker }}" style="flex:none;display:flex;align-items:center;gap:2px;height:28px;padding:0 9px;border-radius:143px;background:{{ pickerBtnBg }};cursor:pointer" style-hover="background:rgba(123,97,255,.2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ pickerCtaColor }}" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="12" r="8.2"/><path d="M8 15s1.2 1.4 3 1.4S14 15 14 15M8.4 9.8v.7M13.6 9.8v.7"/></svg><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="{{ pickerCtaColor }}" stroke-width="3.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div onClick="{{ toggleGifPanel }}" style="flex:none;display:flex;align-items:center;height:28px;padding:0 10px;border-radius:143px;background:{{ gifBtnBg }};font-size:11px;font-weight:800;letter-spacing:.04em;color:{{ gifBtnColor }};cursor:pointer" style-hover="background:rgba(123,97,255,.2)">GIF</div>
+    </div>
+    <sc-if value="{{ gifPanelShow }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-bottom:10px;padding:12px;border-radius:14px;background:#1B1C1C;border:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:800;color:rgba(255,255,255,.38);letter-spacing:.07em">ATTACH A GIF</span><span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.25)">via Giphy</span><div onClick="{{ toggleGifPanel }}" style="margin-left:auto;font-size:15px;font-weight:600;color:rgba(255,255,255,.4);cursor:pointer">×</div></div>
+      <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 11px;box-sizing:border-box;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2 21 21"/></svg><input value="{{ gifQuery }}" onChange="{{ setGifQuery }}" placeholder="Search Giphy…" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:13px;font-weight:500;color:#fff"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:196px;overflow-y:auto">
+        <sc-for list="{{ gifResults }}" as="g" hint-placeholder-count="6"><div onClick="{{ g.pick }}" style="border-radius:9px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,255,255,.08)" style-hover="border-color:#7B61FF"><img src="{{ g.src }}" style="display:block;width:100%;height:86px;object-fit:cover"></div></sc-for>
+      </div>
+      <span style="display:{{ gifEmptyShow }};font-size:12px;font-weight:500;color:rgba(255,255,255,.35)">No GIFs match that.</span>
+    </div>
+    </sc-if>
+    <div style="display:{{ pendingGifShow }};align-items:center;gap:10px;margin-bottom:10px;padding:8px 10px;border-radius:12px;background:rgba(123,97,255,.12);border:1px solid rgba(123,97,255,.3)">
+      <img src="{{ pendingGif }}" style="flex:none;width:52px;height:40px;border-radius:7px;object-fit:cover;display:block">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:11px;font-weight:800;color:#A18FFF;letter-spacing:.06em">GIF ATTACHED</span><span style="font-size:12px;font-weight:500;color:rgba(255,255,255,.5)">Sends with your next message</span></div>
+      <div onClick="{{ clearPendingGif }}" style="margin-left:auto;flex:none;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:rgba(255,255,255,.45);cursor:pointer" style-hover="background:rgba(255,255,255,.08)">×</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;height:46px;padding:0 6px 0 14px;box-sizing:border-box;border-radius:12px;background:#1B1C1C;border:1px solid rgba(255,255,255,.09)">
+      <input value="{{ draft }}" onChange="{{ setDraft }}" onKeyDown="{{ draftKey }}" placeholder="Say something regrettable…" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:14px;font-weight:400;color:#fff">
+      <div onClick="{{ sendMsg }}" style="flex:none;width:34px;height:34px;border-radius:9px;background:{{ sendBg }};display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{ sendColor }}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-7-7 18-2-9z"/></svg></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ railClosed }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;width:64px;align-self:flex-start;position:sticky;top:0;height:100vh;background:#0E0F10;border-left:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;padding:16px 0;box-sizing:border-box;gap:12px;z-index:40">
+  <div onClick="{{ toggleChat }}" style="position:relative;width:44px;height:44px;border-radius:12px;background:rgba(123,97,255,.18);border:1px solid rgba(123,97,255,.45);display:flex;align-items:center;justify-content:center;cursor:pointer">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9BCFF" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-8 8H7l-3 3v-5.5A8 8 0 1 1 20 12z"/></svg>
+    <div style="display:{{ unreadShow }};position:absolute;right:-5px;top:-5px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:99px;background:#FF787D;border:2px solid #0E0F10;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#0A0A0B">{{ unread }}</div>
+  </div>
+  <div onClick="{{ togglePicker }}" style="width:44px;height:44px;border-radius:12px;background:{{ pickerBtnBg }};display:flex;align-items:center;justify-content:center;gap:1px;cursor:pointer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ pickerCtaColor }}" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="12" r="8.2"/><path d="M8 15s1.2 1.4 3 1.4S14 15 14 15M8.4 9.8v.7M13.6 9.8v.7"/></svg><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{ pickerCtaColor }}" stroke-width="3.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+  <div style="width:32px;height:1px;background:rgba(255,255,255,.08)"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:7px">
+    <sc-for list="{{ railAvatars }}" as="a" hint-placeholder-count="3"><div style="width:30px;height:30px;border-radius:50%;background:{{ a.bg }};display:flex;align-items:center;justify-content:center"><img src="{{ a.img }}" style="width:24px;height:24px"></div></sc-for>
+    <div style="display:{{ railMoreShow }};width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.08);align-items:center;justify-content:center;font-size:11px;font-weight:800;color:rgba(255,255,255,.5)">{{ railMore }}</div>
+  </div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,.28);letter-spacing:.08em;writing-mode:vertical-rl">CHAT</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;right:{{ roomPickerRight }};bottom:{{ roomPickerBottom }};width:274px;padding:14px;border-radius:16px;background:#1B1C1C;border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 60px rgba(0,0,0,.6);z-index:70">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px"><span style="font-size:11px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:.07em">REACT TO THE ROOM</span><div onClick="{{ togglePicker }}" style="margin-left:auto;font-size:16px;font-weight:600;color:rgba(255,255,255,.4);cursor:pointer">×</div></div>
+  <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 11px;box-sizing:border-box;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);margin-bottom:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2L21 21"/></svg><input value="{{ pickerQuery }}" onChange="{{ setPickerQuery }}" placeholder="Search all emoji" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:13px;font-weight:500;color:#fff"></div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-height:142px;overflow-y:auto">
+    <sc-for list="{{ roomPickerOptions }}" as="r" hint-placeholder-count="10"><div onClick="{{ r.fire }}" style="height:42px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(123,97,255,.22)"><img src="{{ r.gif }}" style="display:{{ r.gifShow }};width:26px;height:26px;border-radius:5px;object-fit:cover"><span style="display:{{ r.emojiShow }};font-size:21px;line-height:1">{{ r.emoji }}</span></div></sc-for>
+  </div>
+  <span style="display:{{ pickerEmptyShow }};margin-top:8px;font-size:12px;font-weight:500;color:rgba(255,255,255,.35)">Nothing matches that.</span>
+</div>
+</sc-if>
+
+<sc-if value="{{ toastsShow }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;right:{{ toastRight }};bottom:24px;width:330px;display:flex;flex-direction:column;gap:10px;z-index:65">
+  <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="1"><div onClick="{{ openChat }}" style="border-radius:14px;background:#1B1C1C;border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 50px rgba(0,0,0,.6);overflow:hidden;cursor:pointer;animation:toastin .22s ease">
+    <div style="display:flex;gap:10px;padding:13px 14px">
+      <div style="width:28px;height:28px;border-radius:50%;background:{{ t.bg }};display:flex;align-items:center;justify-content:center;flex:none"><img src="{{ t.img }}" style="width:22px;height:22px"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><div style="display:flex;align-items:baseline;gap:7px"><span style="font-size:13px;font-weight:700">{{ t.name }}</span><span style="font-size:10px;font-weight:500;color:rgba(255,255,255,.28)">now</span></div><span style="font-size:13px;font-weight:400;line-height:1.4;color:rgba(255,255,255,.72);text-wrap:pretty">{{ t.text }}</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;padding:9px 14px;border-top:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03)"><span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.35)">{{ t.more }}</span><span style="margin-left:auto;font-size:12px;font-weight:700;color:#A18FFF">Open chat</span></div>
+  </div></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ introOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;background:rgba(6,6,7,.82);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:80">
+  <div style="position:relative;width:560px;max-width:calc(100vw - 48px);padding:44px 44px 36px;border-radius:24px;background:#17181A;border:1px solid rgba(123,97,255,.34);box-shadow:0 0 90px rgba(123,97,255,.28),0 30px 80px rgba(0,0,0,.7);text-align:center;animation:pop .34s ease">
+    <span style="font-size:12px;font-weight:800;color:rgba(255,255,255,.35);letter-spacing:.14em">{{ introRound }}</span>
+    <div style="display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:7px 15px;border-radius:143px;background:rgba(123,97,255,.16);border:1px solid rgba(123,97,255,.34)"><div style="width:7px;height:7px;border-radius:50%;background:#7B61FF"></div><span style="font-size:12px;font-weight:700;color:#A18FFF;letter-spacing:.04em">{{ introMode }}</span></div>
+    <h1 style="margin:22px 0 0;font-size:38px;font-weight:800;letter-spacing:-.035em;line-height:1.06;text-wrap:balance">{{ introHeadline }}</h1>
+    <p style="margin:14px 0 0;font-size:17px;font-weight:500;line-height:1.5;color:rgba(255,255,255,.52);text-wrap:pretty">{{ introBody }}</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:11px;margin-top:28px;padding:12px 18px;border-radius:14px;background:rgba(255,255,255,.04)">
+      <div style="width:34px;height:34px;border-radius:50%;background:{{ introBg }};display:flex;align-items:center;justify-content:center;flex:none"><img src="{{ introImg }}" style="width:27px;height:27px"></div>
+      <span style="font-size:12px;font-weight:800;color:rgba(255,255,255,.5);letter-spacing:.07em">{{ introRole }}</span>
+    </div>
+    <div onClick="{{ skipIntro }}" style="margin-top:26px;font-size:14px;font-weight:600;color:#A18FFF;cursor:pointer">Skip the intro</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ helpOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;background:rgba(6,6,7,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;z-index:90">
+  <div style="width:820px;max-width:100%;border-radius:24px;background:#17181A;border:1px solid rgba(123,97,255,.3);box-shadow:0 0 100px rgba(123,97,255,.26),0 30px 80px rgba(0,0,0,.7);overflow:hidden;display:flex;flex-wrap:wrap;animation:pop .3s ease">
+    <div style="flex:1;min-width:320px;padding:34px 34px 28px;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="assets/captionist-logo.png" style="width:26px;height:26px;display:block">
+        <span style="font-size:12px;font-weight:700;color:rgba(255,255,255,.4)">{{ helpStepLabel }}</span>
+        <div style="display:flex;padding:3px;border-radius:10px;background:#242425;gap:3px;margin-left:6px">
+          <div onClick="{{ helpSetCaption }}" style="position:relative;padding:7px 12px;border-radius:7px;background:{{ helpCapBg }};font-size:12px;font-weight:600;color:{{ helpCapColor }};cursor:pointer;white-space:nowrap">Caption the image<div style="display:{{ helpCapRoomShow }};position:absolute;right:-3px;top:-3px;width:7px;height:7px;border-radius:50%;background:#83D06C"></div></div>
+          <div onClick="{{ helpSetReact }}" style="position:relative;padding:7px 12px;border-radius:7px;background:{{ helpReactBg }};font-size:12px;font-weight:600;color:{{ helpReactColor }};cursor:pointer;white-space:nowrap">React to the caption<div style="display:{{ helpReactRoomShow }};position:absolute;right:-3px;top:-3px;width:7px;height:7px;border-radius:50%;background:#83D06C"></div></div>
+        </div>
+        <div onClick="{{ closeHelp }}" style="margin-left:auto;flex:none;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:rgba(255,255,255,.4);cursor:pointer" style-hover="background:rgba(255,255,255,.07)">×</div>
+      </div>
+      <span style="margin-top:28px;font-size:11px;font-weight:800;color:#A18FFF;letter-spacing:.1em">{{ helpEyebrow }}</span>
+      <h2 style="margin:12px 0 0;font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1.1;text-wrap:balance">{{ helpTitle }}</h2>
+      <p style="margin:14px 0 0;font-size:17px;font-weight:500;line-height:1.55;color:rgba(255,255,255,.55);text-wrap:pretty">{{ helpBody }}</p>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:auto;padding-top:32px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <sc-for list="{{ helpDots }}" as="d" hint-placeholder-count="4"><div onClick="{{ d.go }}" style="width:{{ d.w }};height:8px;border-radius:99px;background:{{ d.bg }};cursor:pointer;transition:width .2s"></div></sc-for>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <div onClick="{{ helpBack }}" style="display:{{ helpBackShow }};padding:13px 22px;border-radius:143px;background:rgba(255,255,255,.07);font-size:15px;font-weight:600;color:rgba(255,255,255,.7);cursor:pointer">Back</div>
+          <div onClick="{{ helpNext }}" style="padding:13px 30px;border-radius:143px;background:#7B61FF;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#8B74FF">{{ helpNextLabel }}</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:none;width:300px;max-width:100%;background:#0E0F10;border-left:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;padding:24px">
+      <img src="{{ helpIllo }}" style="width:100%;height:300px;object-fit:cover;border-radius:14px;display:block">
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ snackShow }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;left:{{ snackLeft }};bottom:28px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:13px 20px 13px 16px;border-radius:143px;background:#232426;border:1px solid rgba(255,255,255,.14);box-shadow:0 18px 44px rgba(0,0,0,.6);z-index:95;animation:toastin .2s ease;max-width:calc(100vw - 48px)">
+  <div style="flex:none;width:24px;height:24px;border-radius:50%;background:rgba(131,208,108,.18);display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#83D06C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg></div>
+  <span style="font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ snackText }}</span>
+</div>
+</sc-if>
+
+<div style="position:fixed;inset:0;pointer-events:none;z-index:75">{{ floatLayer }}</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+const P = [
+  { name: 'Jesse', img: 'assets/avatar-red.png', bg: '#FF787D' },
+  { name: 'Vic', img: 'assets/avatar-yellow1.png', bg: '#F6E338' },
+  { name: 'Jack', img: 'assets/avatar-purple.png', bg: '#9B7BFF' },
+  { name: 'Jesska', img: 'assets/avatar-turquoise.png', bg: '#86E6F9' },
+  { name: 'Melania', img: 'assets/avatar-yellow2.png', bg: '#FFC24B' },
+  { name: 'Lukasz', img: 'assets/avatar-olive.png', bg: '#B4C36A' },
+  { name: 'Roberto', img: 'assets/avatar-green.png', bg: '#83D06C' }
+];
+const GIFS = ['assets/meme-1.png','assets/meme-2.png','assets/meme-3.png','assets/meme-4.png','assets/meme-5.png'];
+const TAGS = ['deploy on friday','merge conflict','it works on my machine','standup','prod is down','legacy code'];
+const BOT = [
+  ['Nuff said!','ship it on friday'],['Me when I deploy prod','on a friday'],['QA engineers','during prod'],
+  ['Git is sacred','rebase is not'],['Am I doing this right?','no?'],['The great masterpiece','merged with 1 approval'],
+  ['Never tell me the odds','said the intern'],['Hello world','goodbye world'],['LGTM','did not read'],
+  ['It works on my machine','ship the machine'],['Standup is 15 minutes','it is 47']
+];
+
+const EMO = ['\u{1F525}', '\u{1F480}', '\u{1F602}', '\u{1F440}', '\u{1FAE0}', '\u{1F3AF}'];
+const EMO_NAMES = ['fire hot lit', 'skull dead dying', 'joy laugh lol cry', 'eyes look watching', 'melt melting hot embarrassed', 'bullseye target exact accurate'];
+const GEMO = ['assets/gif2-memes-1.gif','assets/gif2-developer-2.gif','assets/gif2-reaction-4.gif','assets/gif2-hacker-7.gif'];
+const GEMO_NAMES = ['meme gif reaction', 'developer gif dev code', 'reaction gif mood', 'hacker gif typing'];
+const EXTRA = [
+  ['\u{1F44F}', 'clap applause praise'], ['\u{1F62D}', 'sob cry crying weep'], ['\u{1F921}', 'clown foolish'],
+  ['\u{1F480}', 'skull dead'], ['\u{1F44C}', 'ok perfect chef'], ['\u{1F9E0}', 'brain smart galaxy'],
+  ['\u{1F6A8}', 'siren alert alarm warning'], ['\u{1F41B}', 'bug defect broken'], ['\u{1F680}', 'rocket ship launch'],
+  ['\u{1F389}', 'party tada celebrate'], ['\u{1F979}', 'pleading emotional touched'], ['\u{1F634}', 'sleep bored tired'],
+  ['\u{1F975}', 'hot sweat heat'], ['\u{1F52A}', 'knife brutal savage'], ['\u{1F44D}', 'thumbsup yes approve'],
+  ['\u{1F44E}', 'thumbsdown no reject'], ['\u{2764}\u{FE0F}', 'heart love red'], ['\u{1F9CD}', 'standing standup meeting'],
+  ['\u{1F4A3}', 'bomb explode disaster'], ['\u{1F3AF}', 'dart target bullseye']
+];
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+const UPLOADED = 'assets/meme-5.png';
+const UPLOADED_PICK = 'assets/meme-1.png';
+const CHAT_GIFS = [
+  ['assets/gif2-reaction-2.gif', 'standup face confused meeting'],
+  ['assets/gif2-memes-3.gif', 'panic friday deploy chaos'],
+  ['assets/gif2-developer-4.gif', 'typing code hacker keyboard'],
+  ['assets/gif2-hacker-5.gif', 'mainframe legacy terminal'],
+  ['assets/gif2-reaction-6.gif', 'shocked surprised eyes'],
+  ['assets/gif2-memes-7.gif', 'masterpiece proud chef'],
+  ['assets/gif2-developer-8.gif', 'rebase merge conflict git'],
+  ['assets/gif2-hacker-2.gif', 'incident sev fire outage'],
+  ['assets/gif2-reaction-3.gif', 'clapping applause nice'],
+  ['assets/gif2-memes-8.gif', 'dead skull rip done'],
+  ['assets/gif2-developer-6.gif', 'qa testing prod bug'],
+  ['assets/gif2-hacker-8.gif', 'shipping deploy launch']
+];
+const RGIFS = [
+  'assets/gif2-memes-2.gif','assets/gif2-developer-3.gif','assets/gif2-hacker-4.gif','assets/gif2-reaction-5.gif',
+  'assets/gif2-memes-6.gif','assets/gif2-developer-7.gif','assets/gif2-hacker-8.gif','assets/gif2-reaction-1.gif',
+  'assets/gif2-memes-4.gif','assets/gif2-developer-5.gif','assets/gif2-hacker-6.gif','assets/gif2-reaction-7.gif'
+];
+const PROMPTS = [
+  'when the deploy succeeds on the first try',
+  'me explaining the outage to leadership',
+  'the intern pushing straight to main',
+  'reading the PR description after approving it',
+  'day four of the migration'
+];
+const PROMPT_TAGS = ['friday deploy', 'sev-1', 'code review', 'standup', 'migration'];
+const HELP = {
+  caption: [
+    ['THE ROLE', 'One player gets handed the GIF', 'Each round a different player becomes the Captionist. They search Giphy \u2014 or upload something worse \u2014 and lock in an image for the room.'],
+    ['THE WRITING', 'Everybody captions it', 'Top text, bottom text, one clock. Your caption stays anonymous until the reveal, so aim for the joke you would not say in the retro.'],
+    ['THE VOTE', 'Rank your top three', '3 points for first, 2 for second, 1 for third. You cannot vote for your own \u2014 we checked.'],
+    ['THE SCORE', 'Five rounds, one champion', 'Points stack across rounds, the role rotates, and whoever ends on top gets to be unbearable about it until next sprint.']
+  ],
+  react: [
+    ['THE ROLE', 'One player writes the prompt', 'Each round a different player becomes the Prompter. They type one line \u2014 no image \u2014 and the room has to answer it.'],
+    ['THE ANSWER', 'Everybody answers with a GIF', 'Search Giphy or upload your own screenshot. Your answer stays anonymous until the reveal.'],
+    ['THE VOTE', 'Rank your top three', '3 points for first, 2 for second, 1 for third. You cannot vote for your own answer.'],
+    ['THE SCORE', 'Five rounds, one champion', 'Points stack across rounds, the Prompter role rotates, and whoever ends on top picks the next retro snack.']
+  ]
+};
+const SEED = [
+  { id: 1, who: 2, time: '2:14', text: 'whoever wrote \u201cQA during prod\u201d I am watching you' },
+  { id: 2, who: 3, time: '2:15', text: 'that one is mine and I stand by it', reacts: [{ val: GEMO[1], isGif: true, n: 3, mine: true }, { val: EMO[1], isGif: false, n: 5 }] },
+  { id: 3, who: 0, time: '2:15', host: true, text: '30 seconds left on voting. No lobbying.' },
+  { id: 4, who: 6, time: '2:16', text: 'my exact face during standup', gif: 'assets/gif2-reaction-2.gif' },
+  { id: 5, who: 4, time: '2:17', text: 'ok that got me' }
+];
+const CHATTER = [
+  'this room has no ethics and I love it',
+  'I would like to formally object to whoever picked this GIF',
+  'reading these during a customer call was a mistake',
+  'someone check on Roberto he has not blinked',
+  'I am screenshotting this for the retro',
+  'bold of you all to peak in round two'
+];
+
+class Component extends DCLogic {
+  state = {
+    chatOpen: true, unread: 0, draft: '', msgs: SEED, toasts: [], picker: false, pickerCard: null, pickerMsg: null, pickerQuery: '',
+    gifPanel: false, gifQuery: '', pendingGif: null,
+    cardReacts: { 1: [{ val: EMO[1], isGif: false, n: 4 }], 2: [{ val: GEMO[0], isGif: true, n: 6 }, { val: EMO[0], isGif: false, n: 9 }] },
+    floaters: [],
+    screen: 'landing', round: 1, totalRounds: 5, capLimit: 90, timeLeft: 30, paused: false,
+    playerCount: 5, avatar: 0, nickname: 'TheCaptionist109', giphy: true, unique: true, format: 'tb',
+    captionistIdx: 1, chosenGif: 2, query: 'deploy on friday', top: '', bottom: '',
+    mode: 'caption', promptText: '', myGif: 3, myAnswerSrc: RGIFS[3], submitTab: 'giphy', uploaded: false,
+    pickTab: 'giphy', pickUploaded: false, chosenSrc: null,
+    help: false, helpStep: 0, helpMode: 'caption', intro: false,
+    tied: null, pendingScores: null, pendingLast: null, snack: null,
+    ranks: [null, null, null], scores: {}, roundWins: {}, lastRound: {}, winnerIdx: 2, showToolbox: false,
+    narrow: typeof window !== 'undefined' ? window.innerWidth < 1180 : false
+  };
+
+  componentDidMount() {
+    this._t = setInterval(() => {
+      const s = this.state;
+      if (s.paused) return;
+      if (s.intro || s.help) return;
+      if (!['pick','pickwait','prompt','promptwait','caption','submit','waiting','vote','tiebreak'].includes(s.screen)) return;
+      if (s.timeLeft <= 1) { this.advance(); return; }
+      this.setState({ timeLeft: s.timeLeft - 1 });
+    }, 1000);
+    this._rs = () => {
+      const n = window.innerWidth < 1180;
+      if (n !== this.state.narrow) this.setState({ narrow: n, showToolbox: n ? false : this.state.showToolbox });
+    };
+    window.addEventListener('resize', this._rs);
+    this._rs();
+    this._chat = setInterval(() => {
+      if (!this.inRoom() || this.state.paused) return;
+      const who = 1 + Math.floor(Math.random() * Math.max(1, this.state.playerCount - 1));
+      const text = CHATTER[Math.floor(Math.random() * CHATTER.length)];
+      this.pushMsg({ who: who, text: text });
+    }, 13000);
+  }
+  componentWillUnmount() { clearInterval(this._t); clearInterval(this._chat); window.removeEventListener('resize', this._rs); }
+
+  players() { return P.slice(0, this.state.playerCount); }
+  me() { return P[0]; }
+  captionist() { return P[this.state.captionistIdx % this.state.playerCount]; }
+  iAmCaptionist() { return (this.state.captionistIdx % this.state.playerCount) === 0; }
+  fmt(n) { const m = Math.floor(n / 60), s = n % 60; return m + ':' + (s < 10 ? '0' + s : s); }
+
+  set(o) { this.setState(o); }
+
+  advance() {
+    const s = this.state;
+    if (s.screen === 'pick' || s.screen === 'pickwait') return this.set({ screen: 'caption', timeLeft: s.capLimit });
+    if (s.screen === 'prompt' || s.screen === 'promptwait') return this.set({ screen: 'submit', timeLeft: s.capLimit });
+    if (s.screen === 'caption' || s.screen === 'submit') return this.set({ screen: 'waiting', timeLeft: 12 });
+    if (s.screen === 'waiting') return this.startVote();
+    if (s.screen === 'vote') return this.tally();
+    if (s.screen === 'tiebreak') return this.resolveTie(this.state.tied[0]);
+  }
+
+  roundImage() {
+    const s = this.state;
+    return s.chosenSrc || GIFS[[0,1,2,3,4,2,0,3][s.chosenGif] || 0];
+  }
+
+  roundOpener() {
+    const react = this.state.mode === 'react';
+    const mineNow = this.iAmCaptionist();
+    return react ? (mineNow ? 'prompt' : 'promptwait') : (mineNow ? 'pick' : 'pickwait');
+  }
+
+  beginRound(extra) {
+    const o = Object.assign({ screen: this.roundOpener(), timeLeft: 30, intro: true }, extra || {});
+    this.setState(o);
+    clearTimeout(this._intro);
+    this._intro = setTimeout(() => this.setState({ intro: false }), 3800);
+  }
+
+  setMode(mode) {
+    if (mode === this.state.mode) return;
+    this.setState({ mode: mode, helpStep: 0 });
+    this.toast(mode === 'react' ? 'Mode set to React to the caption' : 'Mode set to Caption the image');
+    this.pushMsg({ who: 0, host: true, text: mode === 'react'
+      ? 'Mode switched \u2014 I write the prompt, you answer with GIFs.'
+      : 'Mode switched \u2014 I pick the GIF, you write the captions.' });
+  }
+
+  startVote() { this.set({ screen: 'vote', timeLeft: 60, ranks: [null, null, null] }); }
+
+  entries() {
+    const s = this.state;
+    const list = [];
+    this.players().forEach((p, i) => {
+      const gif = i === 0 ? (s.myAnswerSrc || RGIFS[s.myGif % RGIFS.length]) : RGIFS[(i * 5 + s.round * 3) % RGIFS.length];
+      if (i === 0) {
+        list.push({ i, name: p.name, gif: gif, top: s.top || 'Prod\u2019s down again', bottom: s.bottom || 'and I\u2019m the only one on call', mine: true });
+      } else {
+        const b = BOT[(i * 3 + s.round * 2) % BOT.length];
+        list.push({ i, name: p.name, gif: gif, top: b[0], bottom: b[1], mine: false });
+      }
+    });
+    return list;
+  }
+
+  tally() {
+    const s = this.state;
+    const ents = this.entries();
+    const pts = {};
+    ents.forEach(e => { pts[e.i] = 1 + ((e.i * 5 + s.round * 3) % 6); });
+    s.ranks.forEach((idx, k) => { if (idx !== null) pts[idx] = (pts[idx] || 0) + (3 - k); });
+    pts[0] = Math.max(0, (pts[0] || 0) - 2);
+    const scores = Object.assign({}, s.scores), last = {};
+    Object.keys(pts).forEach(k => { scores[k] = (scores[k] || 0) + pts[k]; last[k] = pts[k]; });
+    let best = -1;
+    ents.forEach(e => { if (pts[e.i] > best) best = pts[e.i]; });
+    const tied = ents.filter(e => pts[e.i] === best).map(e => e.i);
+    if (tied.length > 1) {
+      return this.set({ screen: 'tiebreak', tied: tied.slice(0, 3), pendingScores: scores, pendingLast: last, timeLeft: 15 });
+    }
+    this.commitRound(tied[0], scores, last);
+  }
+
+  commitRound(win, scores, last) {
+    const wins = Object.assign({}, this.state.roundWins);
+    wins[win] = (wins[win] || 0) + 1;
+    this.set({ screen: 'reveal', scores: scores, lastRound: last, roundWins: wins, winnerIdx: win, tied: null, pendingScores: null, pendingLast: null, timeLeft: 0 });
+  }
+
+  forceTie() {
+    const s = this.state;
+    const ents = this.entries();
+    const pts = {};
+    ents.forEach(e => { pts[e.i] = 1 + ((e.i * 5 + s.round * 3) % 6); });
+    const pick = ents.filter(e => e.i !== 0).slice(0, 2).map(e => e.i);
+    const level = 6;
+    const scores = Object.assign({}, s.scores), last = {};
+    ents.forEach(e => { const v = pick.indexOf(e.i) > -1 ? level : pts[e.i]; scores[e.i] = (scores[e.i] || 0) + v; last[e.i] = v; });
+    this.set({ screen: 'tiebreak', tied: pick, pendingScores: scores, pendingLast: last, timeLeft: 15, showToolbox: false });
+  }
+
+  resolveTie(win) {
+    const s = this.state;
+    const scores = Object.assign({}, s.pendingScores);
+    const last = Object.assign({}, s.pendingLast);
+    scores[win] = (scores[win] || 0) + 1;
+    last[win] = (last[win] || 0) + 1;
+    this.commitRound(win, scores, last);
+  }
+
+  ordered() {
+    const s = this.state;
+    return this.players().map((p, i) => ({ p, i, score: s.scores[i] || 0 })).sort((a, b) => b.score - a.score);
+  }
+
+  sendChat() {
+    const s = this.state;
+    if (!s.draft.trim() && !s.pendingGif) return;
+    this.pushMsg({ who: 0, text: s.draft.trim(), gif: s.pendingGif || null });
+    this.setState({ draft: '', pendingGif: null, gifPanel: false });
+  }
+
+  toast(text, kind) {
+    this._sid = (this._sid || 0) + 1;
+    const id = this._sid;
+    this.setState({ snack: { id: id, text: text, kind: kind || 'ok' } });
+    clearTimeout(this._snack);
+    this._snack = setTimeout(() => {
+      if (this.state.snack && this.state.snack.id === id) this.setState({ snack: null });
+    }, 2800);
+  }
+
+  inRoom() { return !['landing','join','setup'].includes(this.state.screen); }
+
+  pushMsg(m) {
+    this._mid = (this._mid || 100) + 1;
+    const msg = Object.assign({ id: this._mid, time: 'now' }, m);
+    const o = { msgs: this.state.msgs.concat([msg]).slice(-12) };
+    if (!this.state.chatOpen) {
+      o.unread = this.state.unread + 1;
+      o.toasts = this.state.toasts.concat([msg]).slice(-2);
+      setTimeout(() => this.setState(st => ({ toasts: st.toasts.filter(t => t.id !== msg.id) })), 5200);
+    }
+    this.setState(o);
+  }
+
+  fire(val, isGif, n) {
+    this._fid = this._fid || 0;
+    const add = [];
+    for (let k = 0; k < (n || 5); k++) {
+      this._fid += 1;
+      add.push({ id: this._fid, val: val, isGif: isGif,
+        left: 6 + Math.random() * 74, dur: 1.9 + Math.random() * 1.3, delay: Math.random() * 0.45,
+        size: 20 + Math.random() * 18, drift: (Math.random() * 2 - 1) * 60 });
+    }
+    this.setState(st => ({ floaters: st.floaters.concat(add) }));
+    const ids = add.map(a => a.id);
+    setTimeout(() => this.setState(st => ({ floaters: st.floaters.filter(f => ids.indexOf(f.id) < 0) })), 3600);
+  }
+
+  reactCard(i, val, isGif) {
+    const cr = Object.assign({}, this.state.cardReacts);
+    const list = (cr[i] || []).slice();
+    let at = -1;
+    list.forEach((r, k) => { if (r.val === val) at = k; });
+    if (at > -1) list[at] = Object.assign({}, list[at], { n: list[at].n + 1, mine: true });
+    else list.push({ val: val, isGif: isGif, n: 1, mine: true });
+    cr[i] = list;
+    this.setState({ cardReacts: cr, pickerCard: null });
+    this.fire(val, isGif, 4);
+  }
+
+  reactMsg(id, val, isGif) {
+    const msgs = this.state.msgs.map(m => {
+      if (m.id !== id) return m;
+      const list = (m.reacts || []).slice();
+      let at = -1;
+      list.forEach((r, k) => { if (r.val === val) at = k; });
+      if (at > -1) list[at] = Object.assign({}, list[at], { n: list[at].n + 1, mine: true });
+      else list.push({ val: val, isGif: isGif, n: 1, mine: true });
+      return Object.assign({}, m, { reacts: list });
+    });
+    this.setState({ msgs: msgs });
+    this.fire(val, isGif, 3);
+  }
+
+  reactOptions(onPick, query) {
+    const q = (query || '').trim().toLowerCase();
+    const base = EMO.map((e, i) => ({ val: e, isGif: false, name: EMO_NAMES[i] }))
+      .concat(GEMO.map((g, i) => ({ val: g, isGif: true, name: GEMO_NAMES[i] })));
+    const pool = q ? base.concat(EXTRA.map(x => ({ val: x[0], isGif: false, name: x[1] }))) : base;
+    return pool.filter(o => !q || o.name.indexOf(q) > -1).slice(0, 15).map(o => ({
+      emoji: o.isGif ? '' : o.val, gif: o.isGif ? o.val : BLANK,
+      emojiShow: o.isGif ? 'none' : 'block', gifShow: o.isGif ? 'block' : 'none',
+      fire: () => onPick(o.val, o.isGif)
+    }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const scr = s.screen;
+    const me = this.me(), cap = this.captionist(), mine = this.iAmCaptionist();
+    const ents = this.entries();
+    const ranked = s.ranks.filter(x => x !== null).length;
+    const ord = this.ordered();
+    const top = ord[0] || { p: P[0], score: 0 };
+    const winner = P[s.winnerIdx];
+    const winEnt = ents.find(e => e.i === s.winnerIdx) || ents[0];
+    const runners = ents.filter(e => e.i !== s.winnerIdx)
+      .sort((a, b) => (s.lastRound[b.i] || 0) - (s.lastRound[a.i] || 0)).slice(0, 2)
+      .map((e, k) => ({ rank: k + 2, bg: P[e.i].bg, img: P[e.i].img, caption: e.top, name: e.name, pts: '+' + (2 - k) }));
+    const maxScore = Math.max(1, top.score);
+    const low = (s.timeLeft <= 15 && ['pick','pickwait','prompt','promptwait','caption','submit','vote','waiting'].includes(scr)) || scr === 'tiebreak';
+
+    const room = this.inRoom();
+    const railW = room ? (s.chatOpen ? 360 : 64) : 0;
+    const others = this.players().slice(1);
+
+    return {
+      railOpen: room && s.chatOpen,
+      railClosed: room && !s.chatOpen,
+      toggleChat: () => this.set({ chatOpen: !s.chatOpen, unread: 0, toasts: [], picker: false }),
+      openChat: () => this.set({ chatOpen: true, unread: 0, toasts: [] }),
+      unread: s.unread, unreadShow: s.unread > 0 ? 'flex' : 'none',
+      hereLabel: s.playerCount + ' here',
+      chatContextLine: scr === 'vote' ? 'Round ' + s.round + ' \u00b7 voting is open'
+        : scr === 'caption' ? 'Round ' + s.round + ' \u00b7 captions in progress'
+        : scr === 'reveal' ? 'Round ' + s.round + ' \u00b7 results are in'
+        : scr === 'lobby' ? 'Waiting room' : 'Round ' + s.round,
+      messages: s.msgs.map((m, mi) => {
+        const p = P[m.who] || P[0];
+        const up = mi >= s.msgs.length - 3;
+        return {
+          name: p.name, img: p.img, bg: p.bg, time: m.time, text: m.text,
+          rowShow: m.host ? 'none' : 'flex', hostShow: m.host ? 'flex' : 'none',
+          hostTag: p.name.toUpperCase() + ' \u00b7 HOST',
+          gifShow: m.gif ? 'block' : 'none', gif: m.gif || BLANK,
+          textShow: m.text ? 'block' : 'none',
+          reactShow: (m.reacts && m.reacts.length) ? 'flex' : 'none',
+          reacts: (m.reacts || []).map(r => ({
+            n: r.n, emoji: r.isGif ? '' : r.val, gif: r.isGif ? r.val : BLANK,
+            emojiShow: r.isGif ? 'none' : 'block', gifShow: r.isGif ? 'block' : 'none',
+            bg: r.mine ? 'rgba(123,97,255,.2)' : 'rgba(255,255,255,.06)',
+            border: r.mine ? 'rgba(123,97,255,.45)' : 'transparent',
+            color: r.mine ? '#C9BCFF' : 'rgba(255,255,255,.5)',
+            bump: () => this.reactMsg(m.id, r.val, !!r.isGif)
+          })),
+          openPicker: () => this.set({ pickerMsg: s.pickerMsg === m.id ? null : m.id, pickerQuery: '', pickerCard: null, picker: false, gifPanel: false }),
+          pickerShow: s.pickerMsg === m.id ? 'flex' : 'none',
+          pickerTop: up ? 'auto' : '34px',
+          pickerBottom: up ? '34px' : 'auto',
+          ctaBg: s.pickerMsg === m.id ? 'rgba(123,97,255,.28)' : 'rgba(255,255,255,.05)',
+          ctaColor: s.pickerMsg === m.id ? '#C9BCFF' : 'rgba(255,255,255,.4)',
+          pickerOptions: this.reactOptions((v, g) => { this.set({ pickerMsg: null }); this.reactMsg(m.id, v, g); }, s.pickerQuery)
+        };
+      }),
+      draft: s.draft,
+      setDraft: e => this.set({ draft: e.target.value }),
+      draftKey: e => { if (e.key === 'Enter') this.sendChat(); },
+      sendMsg: () => this.sendChat(),
+      sendBg: (s.draft.trim() || s.pendingGif) ? '#7B61FF' : 'rgba(255,255,255,.07)',
+      sendColor: (s.draft.trim() || s.pendingGif) ? '#fff' : 'rgba(255,255,255,.35)',
+      gifBtnBg: s.gifPanel ? 'rgba(123,97,255,.22)' : 'rgba(255,255,255,.06)',
+      gifBtnColor: s.gifPanel ? '#C9BCFF' : 'rgba(255,255,255,.5)',
+      toggleGifPanel: () => this.set({ gifPanel: !s.gifPanel, gifQuery: '', picker: false, pickerMsg: null, pickerCard: null }),
+      gifPanelShow: s.gifPanel,
+      gifQuery: s.gifQuery,
+      setGifQuery: e => this.set({ gifQuery: e.target.value }),
+      gifResults: (function (self) {
+        const q = s.gifQuery.trim().toLowerCase();
+        return CHAT_GIFS.filter(g => !q || g[1].indexOf(q) > -1).map(g => ({
+          src: g[0], pick: () => self.set({ pendingGif: g[0], gifPanel: false, gifQuery: '' })
+        }));
+      })(this),
+      gifEmptyShow: (s.gifQuery.trim() && CHAT_GIFS.filter(g => g[1].indexOf(s.gifQuery.trim().toLowerCase()) > -1).length === 0) ? 'block' : 'none',
+      pendingGifShow: s.pendingGif ? 'flex' : 'none',
+      pendingGif: s.pendingGif || BLANK,
+      clearPendingGif: () => this.set({ pendingGif: null }),
+      quickReacts: this.reactOptions((v, g) => this.fire(v, g, 6)).slice(0, 6),
+      reactBar: this.reactOptions((v, g) => this.fire(v, g, 7)),
+      reactBarShort: this.reactOptions((v, g) => this.fire(v, g, 7)).slice(0, 5),
+      pickerQuery: s.pickerQuery,
+      setPickerQuery: e => this.set({ pickerQuery: e.target.value }),
+      pickerEmptyShow: (s.pickerQuery.trim() && this.reactOptions(() => {}, s.pickerQuery).length === 0) ? 'block' : 'none',
+      togglePicker: () => this.set({ picker: !s.picker, pickerQuery: '', pickerMsg: null, pickerCard: null, gifPanel: false }),
+      pickerOpen: room && s.picker,
+      pickerBtnBg: s.picker ? 'rgba(123,97,255,.18)' : 'transparent',
+      pickerCtaColor: s.picker ? '#C9BCFF' : 'rgba(255,255,255,.5)',
+      roomPickerOptions: this.reactOptions((v, g) => { this.set({ picker: false }); this.fire(v, g, 7); }, s.pickerQuery),
+      roomPickerRight: s.chatOpen ? '376px' : '80px',
+      roomPickerBottom: s.chatOpen ? '96px' : '24px',
+      railAvatars: others.slice(0, 3).map(p => ({ bg: p.bg, img: p.img })),
+      railMore: '+' + Math.max(0, others.length - 3),
+      railMoreShow: others.length > 3 ? 'flex' : 'none',
+      toastsShow: room && !s.chatOpen && s.toasts.length > 0,
+      toasts: s.toasts.map((t, k) => ({
+        name: (P[t.who] || P[0]).name, img: (P[t.who] || P[0]).img, bg: (P[t.who] || P[0]).bg,
+        text: t.text, more: s.unread > 1 ? (s.unread - 1) + ' more in chat' : 'Room chat',
+        opacity: k === s.toasts.length - 1 ? '1' : '.55'
+      })),
+      toastRight: (railW + 16) + 'px',
+      fabRight: room ? (railW + 24) + 'px' : '24px',
+      floatLayer: s.floaters.map(f => React.createElement('div', {
+        key: f.id,
+        style: { position: 'absolute', left: f.left + '%', bottom: '96px', '--dx': f.drift + 'px',
+          animation: 'rise ' + f.dur + 's ' + f.delay + 's ease-out forwards' }
+      }, f.isGif
+        ? React.createElement('img', { src: f.val, style: { width: (f.size + 16) + 'px', height: (f.size + 16) + 'px', borderRadius: '6px', objectFit: 'cover', display: 'block' } })
+        : React.createElement('span', { style: { fontSize: (f.size + 14) + 'px', lineHeight: 1 } }, f.val))),
+
+      isLanding: scr === 'landing', isJoin: scr === 'join', isSetup: scr === 'setup', isLobby: scr === 'lobby',
+      isPick: scr === 'pick' && mine, isPickWait: scr === 'pick' && !mine || scr === 'pickwait',
+      isPrompt: scr === 'prompt' && mine, isPromptWait: scr === 'prompt' && !mine || scr === 'promptwait',
+      isSubmit: scr === 'submit',
+      isCaption: scr === 'caption', isWaiting: scr === 'waiting', isVote: scr === 'vote',
+      isReveal: scr === 'reveal', isScore: scr === 'score', isPodium: scr === 'podium',
+      isTiebreak: scr === 'tiebreak',
+      tieEyebrow: 'DEAD HEAT \u2014 ' + ((s.pendingLast && s.tied ? s.pendingLast[s.tied[0]] : 0) || 0) + ' POINTS EACH',
+      tieSub: s.mode === 'react'
+        ? 'One vote each. No abstaining, no diplomacy. The Prompter gets the deciding vote if it\u2019s still level.'
+        : 'One vote each. No abstaining, no diplomacy. The Captionist gets the deciding vote if it\u2019s still level.',
+      tieCards: (s.tied || []).map((idx, k) => {
+        const e = ents.find(x => x.i === idx) || ents[0];
+        return {
+          src: s.mode === 'react' ? e.gif : this.roundImage(),
+          top: e.top, bottom: e.bottom,
+          textShow: s.mode === 'react' ? 'none' : 'block',
+          entLabel: s.mode === 'react' ? 'Answer ' + (ents.indexOf(e) + 1) : e.top,
+          name: e.name, img: P[idx].img, bg: P[idx].bg,
+          vsShow: k < (s.tied || []).length - 1 ? 'flex' : 'none',
+          vote: () => this.resolveTie(idx)
+        };
+      }),
+      showToolbox: s.showToolbox && !s.narrow, showToolboxFab: (!s.showToolbox || s.narrow) && !['landing','join','setup'].includes(scr),
+
+      goJoin: () => this.set({ screen: 'join' }),
+      goSetup: () => this.set({ screen: 'setup' }),
+      joinRoom: () => this.set({ screen: 'lobby' }),
+      openRoom: () => this.set({ screen: 'lobby' }),
+      addBot: () => this.set({ playerCount: Math.min(7, s.playerCount + 1) }),
+      startGame: () => { this.setState({ captionistIdx: 1 }, () => this.beginRound()); },
+
+      react: s.mode === 'react',
+      modeLabel: s.mode === 'react' ? 'React to the caption' : 'Caption the image',
+      roleName: s.mode === 'react' ? 'Prompter' : 'Captionist',
+      setModeCaption: () => this.setMode('caption'),
+      setModeReact: () => this.setMode('react'),
+      modeCapBg: s.mode === 'caption' ? 'rgba(123,97,255,.12)' : 'rgba(255,255,255,.04)',
+      modeCapBorder: s.mode === 'caption' ? 'rgba(123,97,255,.5)' : 'rgba(255,255,255,.08)',
+      modeCapTag: s.mode === 'caption' ? '#A18FFF' : 'rgba(255,255,255,.3)',
+      modeCapTagLabel: s.mode === 'caption' ? 'SELECTED' : 'CLASSIC',
+      modeReactBg: s.mode === 'react' ? 'rgba(123,97,255,.12)' : 'rgba(255,255,255,.04)',
+      modeReactBorder: s.mode === 'react' ? 'rgba(123,97,255,.5)' : 'rgba(255,255,255,.08)',
+      modeReactTag: s.mode === 'react' ? '#A18FFF' : 'rgba(255,255,255,.3)',
+      modeReactTagLabel: s.mode === 'react' ? 'SELECTED' : 'REVERSED',
+      modeCapPillBg: s.mode === 'caption' ? '#303031' : 'transparent',
+      modeCapPillColor: s.mode === 'caption' ? '#fff' : 'rgba(255,255,255,.45)',
+      modeReactPillBg: s.mode === 'react' ? '#303031' : 'transparent',
+      modeReactPillColor: s.mode === 'react' ? '#fff' : 'rgba(255,255,255,.45)',
+
+      snackShow: !!s.snack,
+      snackLeft: room ? 'calc(50% - ' + (railW / 2) + 'px)' : '50%',
+      snackText: s.snack ? s.snack.text : '',
+      copyLink: () => this.toast('Room link copied \u2014 captionist.fun/C-F34213'),
+      shareSlack: () => this.toast('Invite posted to #eng-standup'),
+      copyCode: () => this.toast('Room code C-F34213 copied'),
+      openHelp: () => this.set({ help: true, helpStep: 0, helpMode: s.mode }),
+      helpSetCaption: () => this.set({ helpMode: 'caption', helpStep: 0 }),
+      helpSetReact: () => this.set({ helpMode: 'react', helpStep: 0 }),
+      helpCapBg: s.helpMode === 'caption' ? '#303031' : 'transparent',
+      helpCapColor: s.helpMode === 'caption' ? '#fff' : 'rgba(255,255,255,.45)',
+      helpReactBg: s.helpMode === 'react' ? '#303031' : 'transparent',
+      helpReactColor: s.helpMode === 'react' ? '#fff' : 'rgba(255,255,255,.45)',
+      helpCapRoomShow: s.mode === 'caption' ? 'block' : 'none',
+      helpReactRoomShow: s.mode === 'react' ? 'block' : 'none',
+      closeHelp: () => this.set({ help: false }),
+      helpOpen: s.help,
+      helpEyebrow: HELP[s.helpMode][s.helpStep][0],
+      helpTitle: HELP[s.helpMode][s.helpStep][1],
+      helpBody: HELP[s.helpMode][s.helpStep][2],
+      helpStepLabel: 'Step ' + (s.helpStep + 1) + ' of 4',
+      helpDots: [0,1,2,3].map(i => ({
+        bg: i === s.helpStep ? '#7B61FF' : 'rgba(255,255,255,.14)',
+        w: i === s.helpStep ? '26px' : '8px',
+        go: () => this.set({ helpStep: i })
+      })),
+      helpBackShow: s.helpStep > 0 ? 'flex' : 'none',
+      helpNextLabel: s.helpStep === 3 ? 'Got it' : 'Next',
+      helpBack: () => this.set({ helpStep: Math.max(0, s.helpStep - 1) }),
+      helpNext: () => { if (s.helpStep === 3) this.set({ help: false }); else this.set({ helpStep: s.helpStep + 1 }); },
+      helpIllo: [RGIFS[0], RGIFS[3], RGIFS[6], RGIFS[9]][s.helpStep],
+
+      introOpen: s.intro && !s.help,
+      introRound: 'ROUND ' + s.round + ' OF ' + s.totalRounds,
+      introMode: s.mode === 'react' ? 'React to the caption' : 'Caption the image',
+      introHeadline: s.mode === 'react'
+        ? (mine ? 'You write the prompt.' : cap.name + ' writes the prompt.')
+        : (mine ? 'You pick the GIF.' : cap.name + ' picks the GIF.'),
+      introBody: s.mode === 'react'
+        ? (mine ? 'One line, no image. Everyone else answers it with a GIF.' : 'Then you answer it with the worst possible GIF.')
+        : (mine ? 'Find something the room has to caption.' : 'Then you caption whatever they inflict on you.'),
+      introRole: (s.mode === 'react' ? 'PROMPTER' : 'CAPTIONIST') + ' \u00b7 ' + cap.name.toUpperCase(),
+      introImg: cap.img, introBg: cap.bg,
+      skipIntro: () => { clearTimeout(this._intro); this.set({ intro: false }); },
+
+      promptText: s.promptText,
+      setPromptText: e => this.set({ promptText: e.target.value.slice(0, 90) }),
+      promptCount: s.promptText.length,
+      promptPreview: s.promptText || PROMPTS[s.round % PROMPTS.length],
+      promptPreviewColor: s.promptText ? '#fff' : 'rgba(255,255,255,.34)',
+      promptSuggestions: PROMPTS.map(p => ({
+        label: p, pick: () => this.set({ promptText: p }),
+        bg: p === s.promptText ? 'rgba(123,97,255,.18)' : 'rgba(255,255,255,.05)',
+        color: p === s.promptText ? '#A18FFF' : 'rgba(255,255,255,.5)'
+      })),
+      lockPrompt: () => this.set({ screen: 'submit', timeLeft: s.capLimit, promptText: s.promptText || PROMPTS[s.round % PROMPTS.length] }),
+      promptWaitHeadline: cap.name + ' is typing a prompt.',
+      livePrompt: s.promptText || PROMPTS[s.round % PROMPTS.length],
+      promptByLabel: (mine ? 'YOUR PROMPT' : cap.name.toUpperCase() + '\u2019S PROMPT'),
+
+      submitTabGiphy: () => this.set({ submitTab: 'giphy' }),
+      submitTabUpload: () => this.set({ submitTab: 'upload' }),
+      giphyTabBg: s.submitTab === 'giphy' ? '#303031' : 'transparent',
+      giphyTabColor: s.submitTab === 'giphy' ? '#fff' : 'rgba(255,255,255,.45)',
+      uploadTabBg: s.submitTab === 'upload' ? '#303031' : 'transparent',
+      uploadTabColor: s.submitTab === 'upload' ? '#fff' : 'rgba(255,255,255,.45)',
+      giphyPaneShow: s.submitTab === 'giphy' ? 'block' : 'none',
+      uploadPaneShow: s.submitTab === 'upload' ? 'flex' : 'none',
+      dropzoneShow: s.uploaded ? 'none' : 'flex',
+      uploadPreviewShow: s.uploaded ? 'flex' : 'none',
+      fakeUpload: () => this.set({ uploaded: true }),
+      clearUpload: () => this.set({ uploaded: false, submitTab: 'upload' }),
+      answerGrid: RGIFS.map((g, i) => ({
+        src: g, ring: s.myGif === i ? '0 0 0 3px #7B61FF' : 'none',
+        badge: s.myGif === i && !s.uploaded ? 'flex' : 'none', pick: () => this.set({ myGif: i, myAnswerSrc: RGIFS[i], uploaded: false })
+      })),
+      myAnswer: s.myAnswerSrc || RGIFS[s.myGif % RGIFS.length],
+      useUpload: () => { this.toast('standup-face.png submitted as your answer'); this.set({ myAnswerSrc: UPLOADED, screen: 'waiting', timeLeft: 12 }); },
+      uploadedSrc: UPLOADED,
+      submitAnswer: () => this.set({ screen: 'waiting', timeLeft: 12, myAnswerSrc: s.uploaded ? UPLOADED : (s.myAnswerSrc || RGIFS[s.myGif % RGIFS.length]) }),
+      answerMeta: s.playerCount + ' answering \u00b7 ' + PROMPT_TAGS[s.round % PROMPT_TAGS.length] + ' energy',
+      editAnswer: () => this.set({ screen: 'submit', timeLeft: Math.max(15, s.timeLeft) }),
+
+      reset: () => this.set({ screen: 'landing', round: 1, scores: {}, roundWins: {}, showToolbox: false }),
+      rematch: () => this.set({ screen: 'lobby', round: 1, scores: {}, roundWins: {}, captionistIdx: 1 }),
+      toggleToolbox: () => this.set({ showToolbox: !s.showToolbox, narrow: s.showToolbox ? s.narrow : false }),
+      togglePause: () => this.set({ paused: !s.paused }),
+      pauseLabel: s.paused ? 'Resume' : 'Pause',
+      skipPhase: () => this.advance(),
+      jumpPodium: () => this.set({ screen: 'podium', showToolbox: false }),
+      forceTie: () => this.forceTie(),
+      timeMinus: () => this.set({ timeLeft: Math.max(1, s.timeLeft - 10) }),
+      timePlus: () => this.set({ timeLeft: s.timeLeft + 10 }),
+
+      codeSlots: 'F34213'.split('').map((ch, i) => ({
+        ch, bg: '#242425', ring: i === 0 ? 'inset 0 0 0 2px #7B61FF' : 'none',
+        color: i === 0 ? '#fff' : 'rgba(255,255,255,.14)'
+      })),
+      avatarChoices: P.map((p, i) => ({
+        bg: p.bg, img: p.img, op: i === s.avatar ? '1' : '.55',
+        ring: i === s.avatar ? '0 0 0 2px #7B61FF' : 'none', pick: () => this.set({ avatar: i })
+      })),
+      nickname: s.nickname,
+      setNickname: e => this.set({ nickname: e.target.value }),
+      giphy: s.giphy, giphyTrack: s.giphy ? '#7B61FF' : '#1E1E1F', giphyKnob: s.giphy ? '20px' : '0px',
+      toggleGiphy: () => this.set({ giphy: !s.giphy }),
+      uniqueTrack: s.unique ? '#7B61FF' : '#1E1E1F', uniqueKnob: s.unique ? '20px' : '0px',
+      toggleUnique: () => this.set({ unique: !s.unique }),
+      captionFormatShow: s.mode === 'react' ? 'none' : 'flex',
+      fmtTBbg: s.format === 'tb' ? '#303031' : 'transparent',
+      fmtTBcolor: s.format === 'tb' ? '#fff' : 'rgba(255,255,255,.45)',
+      fmtOnebg: s.format === 'one' ? '#303031' : 'transparent',
+      fmtOnecolor: s.format === 'one' ? '#fff' : 'rgba(255,255,255,.45)',
+      setFormatTB: () => this.set({ format: 'tb' }), setFormatOne: () => this.set({ format: 'one' }),
+      capLimitLabel: s.capLimit + ' sec', totalRounds: s.totalRounds,
+      capMinus: () => this.set({ capLimit: Math.max(30, s.capLimit - 15) }),
+      capPlus: () => this.set({ capLimit: Math.min(180, s.capLimit + 15) }),
+      roundsMinus: () => this.set({ totalRounds: Math.max(1, s.totalRounds - 1) }),
+      roundsPlus: () => this.set({ totalRounds: Math.min(10, s.totalRounds + 1) }),
+
+      settingsLine: (s.mode === 'react' ? 'React to the caption' : 'Caption the image') + ' \u00b7 ' + s.totalRounds + ' rounds \u00b7 ' + s.capLimit + 's \u00b7 rank top 3',
+      swapMode: () => this.setMode(s.mode === 'react' ? 'caption' : 'react'),
+      swapModeLabel: s.mode === 'react' ? 'Switch to captions' : 'Switch to prompts',
+      lobbyModeBlurb: s.mode === 'react'
+        ? 'Everybody in? One of you gets handed a prompt to write, the rest answer it with the worst GIF they can find.'
+        : 'Everybody in? One of you gets handed a GIF to pick, the rest fight over who captions it best.',
+      roster: this.players().map((p, i) => ({ name: p.name, img: p.img, bg: p.bg, tag: i === 0 ? 'HOST' : '' })),
+      playerCountLabel: s.playerCount + ' of 20',
+      startLabel: 'Start game \u2014 ' + s.playerCount + ' players ready',
+      lobbyActivity: this.players()[s.playerCount - 1].name + ' joined a few seconds ago',
+
+      roundLabel: 'Round ' + s.round + ' of ' + s.totalRounds,
+      round: s.round,
+      timerText: this.fmt(s.timeLeft),
+      timerPct: Math.round((s.timeLeft / Math.max(1, s.capLimit)) * 100) + '%',
+      timerBg: low ? 'rgba(255,120,125,.14)' : '#1D1E1F',
+      timerColor: low ? '#FF787D' : '#fff',
+
+      meBg: me.bg, meImg: me.img,
+      pickEyebrow: 'YOU\u2019RE UP, ' + me.name.toUpperCase(),
+      query: s.query, setQuery: e => this.set({ query: e.target.value }),
+      suggestions: TAGS.map((t, i) => ({
+        label: t, bg: t === s.query ? 'rgba(123,97,255,.18)' : 'rgba(255,255,255,.05)',
+        color: t === s.query ? '#A18FFF' : 'rgba(255,255,255,.5)', pick: () => this.set({ query: t })
+      })),
+      gifGrid: [0,1,2,3,4,2,0,3].map((g, i) => ({
+        src: GIFS[g], ring: s.chosenGif === i && !s.pickUploaded ? '0 0 0 3px #7B61FF' : 'none',
+        badge: s.chosenGif === i && !s.pickUploaded ? 'flex' : 'none',
+        pick: () => this.set({ chosenGif: i, chosenSrc: GIFS[g], pickUploaded: false })
+      })),
+      pickTabGiphy: () => this.set({ pickTab: 'giphy' }),
+      pickTabUpload: () => this.set({ pickTab: 'upload' }),
+      pickGiphyTabBg: s.pickTab === 'giphy' ? '#303031' : 'transparent',
+      pickGiphyTabColor: s.pickTab === 'giphy' ? '#fff' : 'rgba(255,255,255,.45)',
+      pickUploadTabBg: s.pickTab === 'upload' ? '#303031' : 'transparent',
+      pickUploadTabColor: s.pickTab === 'upload' ? '#fff' : 'rgba(255,255,255,.45)',
+      pickGiphyPaneShow: s.pickTab === 'giphy' ? 'block' : 'none',
+      pickUploadPaneShow: s.pickTab === 'upload' ? 'flex' : 'none',
+      pickDropzoneShow: s.pickUploaded ? 'none' : 'flex',
+      pickPreviewShow: s.pickUploaded ? 'flex' : 'none',
+      fakePickUpload: () => this.set({ pickUploaded: true }),
+      clearPickUpload: () => this.set({ pickUploaded: false }),
+      usePickUpload: () => { this.toast('server-rack.png is the round image'); this.set({ chosenSrc: UPLOADED_PICK, pickUploaded: true, screen: 'caption', timeLeft: s.capLimit }); },
+      pickUploadSrc: UPLOADED_PICK,
+      lockLabelPick: s.pickUploaded ? 'Lock in my upload' : 'Lock it in',
+      shuffleGifs: () => this.set({ chosenGif: Math.floor(Math.random() * 8) }),
+      lockGif: () => this.set({ screen: 'caption', timeLeft: s.capLimit, chosenSrc: s.pickUploaded ? UPLOADED_PICK : (s.chosenSrc || GIFS[[0,1,2,3,4,2,0,3][s.chosenGif] || 0]) }),
+      chosenGif: this.roundImage(),
+
+      captionistBg: cap.bg, captionistImg: cap.img,
+      pickWaitHeadline: cap.name + ' is scrolling Giphy.',
+      pickedByLabel: (mine ? 'YOU PICKED THIS' : cap.name.toUpperCase() + ' PICKED THIS'),
+
+      topText: s.top, bottomText: s.bottom,
+      setTopText: e => this.set({ top: e.target.value.slice(0, 60) }),
+      setBottomText: e => this.set({ bottom: e.target.value.slice(0, 60) }),
+      topCount: s.top.length, bottomCount: s.bottom.length,
+      topPreview: s.top || 'Top text\u2026', bottomPreview: s.bottom || 'Bottom text\u2026',
+      topPreviewColor: s.top ? '#fff' : 'rgba(255,255,255,.35)',
+      bottomPreviewColor: s.bottom ? '#fff' : 'rgba(255,255,255,.35)',
+      submitCaption: () => this.set({ screen: 'waiting', timeLeft: 12 }),
+      skipRound: () => this.set({ screen: 'waiting', timeLeft: 12, top: '', bottom: '' }),
+      editCaption: () => this.set({ screen: 'caption', timeLeft: Math.max(15, s.timeLeft) }),
+      goVote: () => this.startVote(),
+      submissionsLine: Math.max(1, s.playerCount - 2) + ' of ' + s.playerCount + ' have submitted \u00b7 ' + P[4].name + ' is typing furiously',
+      myTop: s.top || 'Prod\u2019s down again', myBottom: s.bottom || 'and I\u2019m the only one on call',
+      submittedCountLabel: Math.max(1, s.playerCount - 2) + ' of ' + s.playerCount,
+      submissionRows: this.players().map((p, i) => {
+        const done = i < s.playerCount - 2;
+        return {
+          name: p.name, img: p.img, bg: p.bg, op: done ? '1' : '.5',
+          nameColor: done ? '#fff' : 'rgba(255,255,255,.45)',
+          status: done ? 'submitted' : (i === s.playerCount - 2 ? 'typing\u2026' : 'still thinking'),
+          statusColor: done ? '#83D06C' : 'rgba(255,255,255,.3)'
+        };
+      }),
+
+      voteMeta: s.playerCount + ' submissions \u00b7 shuffled so nobody games the order',
+      voteGifShow: s.mode === 'react' ? 'none' : 'block',
+      votePromptShow: s.mode === 'react' ? 'flex' : 'none',
+      voteSubline: s.mode === 'react'
+        ? '3 points for first, 2 for second, 1 for third. Answers are anonymous until the reveal.'
+        : '3 points for first, 2 for second, 1 for third. You can\u2019t vote for your own \u2014 we checked.',
+      rankSlots: [0,1,2].map(k => {
+        const idx = s.ranks[k];
+        const filled = idx !== null;
+        const ent = filled ? ents.find(e => e.i === idx) : null;
+        return {
+          num: ['1st','2nd','3rd'][k],
+          label: filled ? (s.mode === 'react' ? (ent.mine ? 'Your answer' : 'Answer ' + (ents.indexOf(ent) + 1)) : ent.top) : '',
+          bg: filled ? (k === 0 ? 'rgba(246,227,56,.14)' : 'rgba(255,255,255,.07)') : 'rgba(255,255,255,.03)',
+          border: filled ? 'none' : '1px dashed rgba(255,255,255,.16)',
+          numColor: filled ? (k === 0 ? '#F6E338' : 'rgba(255,255,255,.6)') : 'rgba(255,255,255,.3)',
+          color: filled ? '#fff' : 'rgba(255,255,255,.3)',
+          clear: () => { const r = s.ranks.slice(); r[k] = null; this.set({ ranks: r }); }
+        };
+      }),
+      voteCards: ents.map((e, i) => {
+        const rk = s.ranks.indexOf(e.i);
+        const sel = rk > -1;
+        const rx = s.mode === 'react';
+        return {
+          src: rx ? e.gif : this.roundImage(),
+          top: e.top, bottom: e.bottom,
+          textShow: rx ? 'none' : 'block',
+          label: rx ? (e.mine ? 'Your answer' : 'Answer ' + (i + 1)) : e.top,
+          labelColor: e.mine ? 'rgba(255,255,255,.4)' : '#fff',
+          cursor: e.mine ? 'not-allowed' : 'pointer',
+          op: e.mine ? '.4' : '1',
+          ring: sel ? (rk === 0 ? '0 0 0 3px #F6E338' : '0 0 0 3px rgba(255,255,255,.55)') : 'none',
+          badgeShow: sel ? 'flex' : 'none', badgeNum: rk + 1,
+          badgeBg: rk === 0 ? '#F6E338' : '#fff', badgeColor: '#131415',
+          ownShow: e.mine ? 'flex' : 'none',
+          ownLabel: rx ? 'Your own answer' : 'Your own caption',
+          reacts: (s.cardReacts[e.i] || []).map(r => ({
+            n: r.n, emoji: r.isGif ? '' : r.val, gif: r.isGif ? r.val : BLANK,
+            emojiShow: r.isGif ? 'none' : 'block', gifShow: r.isGif ? 'block' : 'none',
+            border: r.mine ? 'rgba(123,97,255,.55)' : 'transparent'
+          })),
+          reactShow: (s.cardReacts[e.i] || []).length ? 'flex' : 'none',
+          capBottom: (s.cardReacts[e.i] || []).length ? '42px' : '10px',
+          openPicker: () => this.set({ pickerCard: s.pickerCard === e.i ? null : e.i, pickerQuery: '', pickerMsg: null, picker: false, gifPanel: false }),
+          pickerShow: s.pickerCard === e.i ? 'flex' : 'none',
+          plusBg: s.pickerCard === e.i ? 'rgba(123,97,255,.28)' : 'rgba(255,255,255,.06)',
+          plusColor: s.pickerCard === e.i ? '#C9BCFF' : 'rgba(255,255,255,.35)',
+          pickerOptions: this.reactOptions((v, g) => this.reactCard(e.i, v, g), s.pickerQuery),
+          click: () => {
+            if (e.mine) return;
+            const r = s.ranks.slice();
+            const at = r.indexOf(e.i);
+            if (at > -1) { r[at] = null; } else { const slot = r.indexOf(null); if (slot > -1) r[slot] = e.i; }
+            this.set({ ranks: r });
+          }
+        };
+      }),
+      lockLabel: ranked === 3 ? 'Lock my ranking' : 'Pick ' + (3 - ranked) + ' more',
+      lockBg: ranked === 3 ? '#7B61FF' : 'rgba(123,97,255,.3)',
+      lockColor: ranked === 3 ? '#fff' : 'rgba(255,255,255,.55)',
+      lockVotes: () => { if (ranked === 3) this.tally(); },
+
+      revealSrc: s.mode === 'react' ? winEnt.gif : this.roundImage(),
+      winnerTextShow: s.mode === 'react' ? 'none' : 'block',
+      revealPromptShow: s.mode === 'react' ? 'flex' : 'none',
+      waitSrc: s.mode === 'react' ? (s.myAnswerSrc || RGIFS[s.myGif % RGIFS.length]) : this.roundImage(),
+      waitTextShow: s.mode === 'react' ? 'none' : 'block',
+      waitEyebrow: s.mode === 'react' ? 'ANSWER LOCKED' : 'SUBMITTED',
+      waitHeadline: s.mode === 'react' ? 'Bold choice.' : 'Nice one. Now',
+      waitBody: s.mode === 'react'
+        ? 'You can swap your GIF until the clock hits zero. After that it goes up anonymously next to everyone else\u2019s.'
+        : 'You can still edit until the clock hits zero. After that it goes up anonymously and the roasting begins.',
+      waitEditLabel: s.mode === 'react' ? 'Swap my GIF' : 'Edit my caption',
+      waitEdit: () => s.mode === 'react'
+        ? this.set({ screen: 'submit', timeLeft: Math.max(15, s.timeLeft) })
+        : this.set({ screen: 'caption', timeLeft: Math.max(15, s.timeLeft) }),
+      revealEyebrow: 'ROUND ' + s.round + ' WINNER',
+      revealHeadline: winner.name + (s.winnerIdx === 0 ? ', you legend.' : ', you monster.'),
+      winnerTop: winEnt.top, winnerBottom: winEnt.bottom,
+      winnerName: winner.name, winnerBg: winner.bg, winnerImg: winner.img,
+      winnerSub: (s.lastRound[s.winnerIdx] || 0) + ' ranking points this round',
+      runnersUp: runners,
+      goScore: () => this.set({ screen: 'score' }),
+
+      roundPips: Array.from({ length: s.totalRounds }).map((_, i) => ({ bg: i < s.round ? '#7B61FF' : 'rgba(255,255,255,.12)' })),
+      roundsProgress: s.round + ' of ' + s.totalRounds + ' rounds',
+      standingsSub: top.p.name + ' has taken the lead and is being unbearable about it.',
+      nextCaptionistLine: s.round >= s.totalRounds ? 'Last round done' : 'Next captionist: ' + P[(s.captionistIdx + 1) % s.playerCount].name,
+      nextRoundLabel: s.round >= s.totalRounds ? 'Crown the winner' : 'Start round ' + (s.round + 1),
+      nextRound: () => {
+        if (s.round >= s.totalRounds) return this.set({ screen: 'podium' });
+        this.setState({ round: s.round + 1, captionistIdx: s.captionistIdx + 1, top: '', bottom: '', promptText: '', uploaded: false, pickUploaded: false, chosenSrc: null, myAnswerSrc: RGIFS[s.myGif % RGIFS.length], ranks: [null,null,null] }, () => this.beginRound());
+      },
+      standings: ord.map((o, k) => ({
+        rank: k + 1, name: o.p.name, img: o.p.img, avBg: o.p.bg, score: o.score,
+        pct: Math.round((o.score / maxScore) * 100) + '%',
+        barColor: k === 0 ? '#F6E338' : '#7B61FF',
+        rankColor: k === 0 ? '#F6E338' : 'rgba(255,255,255,.45)',
+        bg: k === 0 ? 'rgba(246,227,56,.09)' : (o.i === 0 ? 'rgba(123,97,255,.1)' : 'rgba(255,255,255,.05)'),
+        border: k === 0 ? '1px solid rgba(246,227,56,.26)' : (o.i === 0 ? '1px solid rgba(123,97,255,.3)' : '1px solid transparent'),
+        tag: o.i === 0 ? 'YOU' : '', tagShow: o.i === 0 ? 'block' : 'none',
+        note: (s.roundWins[o.i] ? s.roundWins[o.i] + (s.roundWins[o.i] === 1 ? ' round won' : ' rounds won') : '+' + (s.lastRound[o.i] || 0) + ' this round')
+      })),
+
+      gameOverLabel: 'Game over \u00b7 ' + s.totalRounds + ' rounds',
+      champHeadline: top.p.name + ' takes the crown.',
+      champSub: (function(){ const p = top.score, w = s.roundWins[top.i] || 0;
+        return p + (p === 1 ? ' point, ' : ' points, ') + w + (w === 1 ? ' round won' : ' rounds won') + ', and zero remorse.'; })(),
+      podium: [ord[1], ord[0], ord[2]].filter(Boolean).map((o) => {
+        const first = o === ord[0];
+        const rank = ord.indexOf(o) + 1;
+        return {
+          name: o.p.name, img: o.p.img, avBg: o.p.bg, pts: o.score + ' pts', rank,
+          avSize: first ? '108px' : '76px', imgSize: first ? '86px' : '60px',
+          avRing: first ? '0 0 0 5px #F6E338' : 'none',
+          blockW: first ? '280px' : '240px', blockH: first ? '262px' : (rank === 2 ? '190px' : '150px'),
+          blockBg: first ? 'rgba(246,227,56,.11)' : 'rgba(255,255,255,.06)',
+          blockBorder: first ? '1px solid rgba(246,227,56,.3)' : '1px solid rgba(255,255,255,.08)',
+          rankSize: first ? '54px' : '38px', nameSize: first ? '27px' : '20px',
+          rankColor: first ? '#F6E338' : 'rgba(255,255,255,.35)'
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

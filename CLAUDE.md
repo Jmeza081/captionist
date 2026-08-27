@@ -19,10 +19,12 @@ caption|submit → waiting → vote → (tiebreak) → reveal → score → … 
 Sass modules over `theme/` tokens · Playwright for E2E · Ably v2 (installed,
 not yet wired).
 
-**Design source of truth:** the design project's `DESIGNSYSTEM.md` and the three
-`.dc.html` files. `theme/` copies its values verbatim. The design's own
-implementation notes (inline styles, `<sc-if>` templates, `DCLogic`) describe the
-prototype, **not** this app — here it's React, Sass modules and the primitives.
+**Design source of truth:** [`design/`](design/) — `DESIGNSYSTEM.md` plus the
+three `.dc.html` files, as delivered. `theme/` copies its values verbatim; if
+code and design disagree, the code is the bug. The design's own implementation
+notes (inline styles, `<sc-if>` templates, `DCLogic`) describe the prototype,
+**not** this app — here it's React, Sass modules and the primitives. See
+[`design/README.md`](design/README.md) before working from it.
 
 This Next version postdates your training data. Read
 `node_modules/next/dist/docs/` before writing framework code — do not rely on

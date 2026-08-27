@@ -42,6 +42,7 @@ npm run test:e2e
 
 | Doc | What's in it |
 | --- | --- |
+| [design/](design/) | **The design as delivered** — the source of truth for every token and component spec |
 | [architecture.md](docs/architecture.md) | Stack, routes, component tiers, rendering path |
 | [design-system.md](docs/design-system.md) | Tokens, layout primitives, component usage, interaction rules, copy and voice |
 | [components/README.md](components/README.md) | The atomic tier boundary and when to add a component |
