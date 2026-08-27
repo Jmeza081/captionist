@@ -200,7 +200,7 @@ $wall-overhang: 12vw;
 // The landing page's join pill. Its own control, not the `/join` route's slots:
 // one is a glance-and-go field beside a headline, the other is a thumb-sized
 // grid that is the whole screen.
-$quickjoin-pad-y: 6px;
+$quickjoin-pad-y: 5px;
 $quickjoin-pad-l: 24px;
 $quickjoin-key-pad-y: 12px;
 $quickjoin-key-pad-x: 22px;
@@ -211,6 +211,17 @@ $quickjoin-cell: 15px;
 // Wide enough for the longest label the key ever shows, so it does not resize
 // as the count comes down.
 $quickjoin-key-min: 118px;
+
+/**
+ * The landing hero's two calls to action share one height.
+ *
+ * Taller than the 51px form CTA on purpose: the join pill wraps a real button,
+ * and that button cannot go below the 44px touch target. 44 plus 5px of glass
+ * either side plus the 1px edge is 56 — so this is the shortest the pill can
+ * honestly be, and the primary beside it matches rather than the other way
+ * round. It is also closer to artboard 1a, which draws both at about this size.
+ */
+$landing-cta-height: 56px;
 
 // --- Reveal reaction bar --------------------------------------------------
 

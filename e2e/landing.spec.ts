@@ -72,6 +72,19 @@ test.describe('the landing page', () => {
     expect(widths.size).toBe(1)
   })
 
+  test('sits the two calls to action at the same height', async ({ page }) => {
+    await page.goto('/')
+
+    const start = (await page.getByRole('button', { name: /Start a game/ }).boundingBox())!
+    const pill = (await page.locator('form[class*="QuickJoin"]').boundingBox())!
+    expect(Math.round(pill.height)).toBe(Math.round(start.height))
+
+    // The key inside the pill still clears the 44px touch target — matching
+    // the heights must not be done by shrinking what people tap.
+    const key = (await page.getByRole('button', { name: /Enter|^Join$/ }).boundingBox())!
+    expect(key.height).toBeGreaterThanOrEqual(44)
+  })
+
   test('carries the caret on the cell that fills next', async ({ page }) => {
     await page.goto('/')
     const field = page.getByRole('textbox', { name: 'Room code' })

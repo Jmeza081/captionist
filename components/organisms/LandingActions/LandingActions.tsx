@@ -54,7 +54,8 @@ export function LandingActions({ roomBase = '/room' }: LandingActionsProps) {
 
   return (
     <div className={styles.actions}>
-      <Button size="form" onClick={start}>
+      {/* Matched to the join pill beside it — see `$landing-cta-height`. */}
+      <Button size="form" className={styles.start} onClick={start}>
         Start a game — it’s free
       </Button>
 

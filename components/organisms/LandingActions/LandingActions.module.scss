@@ -20,3 +20,7 @@
 }
 
 /* The join pill brings its own surface — see `QuickJoin`. */
+
+.start {
+  min-height: t.$landing-cta-height;
+}

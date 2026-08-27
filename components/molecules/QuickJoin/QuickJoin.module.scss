@@ -7,8 +7,11 @@
   display: flex;
   align-items: center;
   gap: t.$space-12;
+  // 5px of glass around a 44px key comes to exactly `$landing-cta-height`, so
+  // the pill lines up with the primary action beside it.
   padding: t.$quickjoin-pad-y;
   padding-left: t.$quickjoin-pad-l;
+  min-height: t.$landing-cta-height;
   border-radius: t.$radius-pill;
 
   // The real input is invisible, so the ring has to belong to the pill or
