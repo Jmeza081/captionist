@@ -52,8 +52,43 @@ test.describe('the landing page', () => {
     await expect(page.getByRole('textbox', { name: 'Room code' })).toHaveCount(1)
 
     await page.getByRole('textbox', { name: 'Room code' }).fill('F34')
-    // What is typed, then a rail for what is left, so the pill never resizes.
-    await expect(page.getByText('C-F34___')).toBeVisible()
+    // What is typed, then a rail for what is left.
+    await expect(page.locator('form[class*="QuickJoin"]')).toContainText('C-F34___')
+  })
+
+  test('never changes width as the code is typed', async ({ page }) => {
+    await page.goto('/')
+    const pill = page.locator('form[class*="QuickJoin"]')
+    const field = page.getByRole('textbox', { name: 'Room code' })
+
+    const widths = new Set<number>()
+    // `W` and `I` are the widest and narrowest glyphs in a proportional face,
+    // and the key's label counts down from "Enter 6 more" to "Join" — every
+    // one of those is a chance for the pill to move under someone's cursor.
+    for (const code of ['', 'F', 'F34', 'F34783', 'WWWWWW', 'IIIIII']) {
+      await field.fill(code)
+      widths.add(Math.round((await pill.boundingBox())!.width))
+    }
+    expect(widths.size).toBe(1)
+  })
+
+  test('carries the caret on the cell that fills next', async ({ page }) => {
+    await page.goto('/')
+    const field = page.getByRole('textbox', { name: 'Room code' })
+    await field.click()
+    await field.fill('F34')
+
+    // The native caret is hidden — a transparent input places it by its own
+    // text layout, which is nowhere near the mask.
+    await expect(field).toHaveCSS('caret-color', 'rgba(0, 0, 0, 0)')
+
+    // Exactly one cell is marked, and it is the fourth.
+    const cells = page.locator('form[class*="QuickJoin"] span[class*="cell"]')
+    await expect(cells).toHaveCount(6)
+    const marked = await cells.evaluateAll((els) =>
+      els.map((el) => el.className.includes('caret')),
+    )
+    expect(marked).toEqual([false, false, false, true, false, false])
   })
 
   test('renders the whole wall in the first response, not after hydration', async ({

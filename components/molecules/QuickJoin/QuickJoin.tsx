@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useRef } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Button } from '@/components/atoms/Button'
 import styles from './QuickJoin.module.scss'
 
@@ -51,13 +51,19 @@ export function QuickJoin({
   error,
 }: QuickJoinProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [focused, setFocused] = useState(false)
   const id = useId()
   const errorId = `${id}-error`
 
   // The design's `C-______`: what is typed, then a rail of underscores for
-  // what is not. Fixed width either way, so the pill never resizes as you go.
+  // what is not. Every character sits in a cell of its own fixed width —
+  // Inter is proportional, so an `F` and an `_` are not the same size and the
+  // pill would resize on every keypress otherwise.
   const typed = value.slice(0, LENGTH)
-  const mask = typed.padEnd(LENGTH, '_')
+  const cells = Array.from({ length: LENGTH }, (_, i) => typed[i])
+  // Which cell fills next. The native caret is hidden: it sits wherever the
+  // transparent input's own text lands, which is nowhere near the mask.
+  const caret = typed.length
 
   return (
     <form
@@ -69,9 +75,21 @@ export function QuickJoin({
     >
       <span className={styles.field} onClick={() => inputRef.current?.focus()}>
         <span className={styles.mask} aria-hidden="true">
-          {PREFIX}
-          <span className={styles.typed}>{typed}</span>
-          <span className={styles.rest}>{mask.slice(typed.length)}</span>
+          <span className={styles.prefix}>{PREFIX}</span>
+          {cells.map((char, i) => (
+            <span
+              key={i}
+              className={[
+                styles.cell,
+                char ? styles.filled : '',
+                focused && i === caret ? styles.caret : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {char ?? '_'}
+            </span>
+          ))}
         </span>
 
         <input
@@ -86,6 +104,8 @@ export function QuickJoin({
                 .slice(0, LENGTH),
             )
           }
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           aria-label="Room code"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
@@ -97,7 +117,13 @@ export function QuickJoin({
         />
       </span>
 
-      <Button type="submit" variant="secondary" size="small" blocked={blocked}>
+      <Button
+        type="submit"
+        variant="secondary"
+        size="small"
+        blocked={blocked}
+        className={styles.key}
+      >
         {actionLabel}
       </Button>
 

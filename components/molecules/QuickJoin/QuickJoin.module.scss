@@ -27,26 +27,56 @@
 
 /**
  * The visible code. `C-` is fixed and never typed; the underscores are a rail
- * showing how much is left, so the pill does not grow as characters land.
+ * showing how much is left.
  */
 .mask {
+  display: flex;
+  align-items: center;
   font-family: t.$font-sans;
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: t.$quickjoin-tracking;
   color: t.$glass-text;
-  white-space: pre;
   font-variant-numeric: tabular-nums;
-  // Reserves the caret's width so the first character does not nudge the rail.
   pointer-events: none;
 }
 
-.typed {
+.prefix {
+  letter-spacing: t.$quickjoin-tracking;
+}
+
+/**
+ * One cell per character, each a fixed width.
+ *
+ * Inter is proportional — an `F` and an `_` do not have the same advance — so
+ * letting the characters set their own width makes the pill jump on every
+ * keypress. The cell is the fix: the mask is exactly as wide with nothing
+ * typed as with all six.
+ */
+.cell {
+  display: inline-block;
+  width: t.$quickjoin-cell;
+  text-align: center;
+  color: t.$glass-text;
+}
+
+.filled {
   color: t.$text-primary;
 }
 
-.rest {
-  color: t.$glass-text;
+/**
+ * The caret. The native one is hidden because a transparent input places it by
+ * its own text layout, which does not line up with the mask — so the cell
+ * about to be filled carries it instead.
+ */
+.caret {
+  color: t.$accent-text;
+  animation: caret 1.1s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
 }
 
 /**
@@ -62,10 +92,10 @@
   border: 0;
   background: none;
   color: transparent;
-  caret-color: t.$accent;
+  // Hidden: the cell being filled next carries the caret instead.
+  caret-color: transparent;
   // Stops iOS zooming the page on focus.
   font-size: 16px;
-  letter-spacing: t.$quickjoin-tracking;
   cursor: text;
 
   &:focus {
@@ -80,4 +110,13 @@
   right: 0;
   @include t.labelText;
   color: t.$urgent;
+}
+
+/**
+ * A fixed floor for the action, so "Enter 6 more" and "Join" occupy the same
+ * space. Blocked still has to say what is missing, and a label that changes
+ * length would move the whole pill while someone is typing into it.
+ */
+.key {
+  min-width: t.$quickjoin-key-min;
 }

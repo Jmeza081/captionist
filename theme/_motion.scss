@@ -42,6 +42,20 @@
     }
   }
 
+  // The caret on the landing page's code mask. The native one is hidden,
+  // because a transparent input's caret has no idea where the mask's
+  // characters are — so the cell being filled next carries it instead.
+  @keyframes caret {
+    0%,
+    45% {
+      opacity: 1;
+    }
+    55%,
+    100% {
+      opacity: 0.15;
+    }
+  }
+
   @keyframes toastin {
     0% {
       opacity: 0;

@@ -205,6 +205,12 @@ $quickjoin-pad-l: 24px;
 $quickjoin-key-pad-y: 12px;
 $quickjoin-key-pad-x: 22px;
 $quickjoin-tracking: 0.18em;
+// Each character sits in a fixed cell. Inter is proportional, so `F` and `_`
+// have different advances — without a cell the pill resizes on every keypress.
+$quickjoin-cell: 15px;
+// Wide enough for the longest label the key ever shows, so it does not resize
+// as the count comes down.
+$quickjoin-key-min: 118px;
 
 // --- Reveal reaction bar --------------------------------------------------
 
