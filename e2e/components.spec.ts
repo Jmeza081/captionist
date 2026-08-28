@@ -154,7 +154,11 @@ test.describe('component gallery', () => {
     await expect(tiles).toHaveCount(4)
 
     await toolbar.getByRole('button', { name: 'Objects' }).click()
-    await expect(tiles.locator('img')).toHaveCount(0)
+    // Not "this pack has no pictures" any more — the imported catalog put 88 of
+    // them in here. What still holds is that the Slackmojis are their own pack,
+    // and that a curated character tile keeps its place among them.
+    await expect(toolbar.getByRole('button', { name: 'Fire', exact: true })).toBeVisible()
+    await expect(tiles.locator('img[src^="/media/slackmoji-"]')).toHaveCount(0)
 
     // A search overrides whichever pack is open, rather than being narrowed
     // by it — §4.4 makes search the long-tail answer.

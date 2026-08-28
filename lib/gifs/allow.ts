@@ -16,8 +16,17 @@
  * where this app's art comes from, not about how a room talks.
  */
 
-/** The app's own art: the offline sample GIFs and the reaction tiles. */
-const SAME_ORIGIN = /^\/media\/[a-z0-9-]+\.svg$/
+/**
+ * The app's own art: the offline sample GIFs, the reaction tiles, and the
+ * imported emoji catalog one directory down.
+ *
+ * One optional path segment, not a general `.*` — `/media/emoji/1f600.svg`
+ * passes and `/media/anything/else/x.svg` does not, so the surface this opens
+ * is exactly the one directory the importer writes. Still `.svg` only: the
+ * catalog's stills are SVG by design, and widening the extension would admit
+ * formats nothing here serves.
+ */
+const SAME_ORIGIN = /^\/media\/(?:emoji\/)?[a-z0-9-]+\.svg$/
 
 /**
  * Giphy's CDN.

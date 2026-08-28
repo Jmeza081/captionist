@@ -1,3 +1,5 @@
+import { NOTO_REACTIONS } from './reactions.catalog'
+
 /**
  * One reaction, as both the picker and the room understand it.
  *
@@ -26,13 +28,15 @@ export interface Reaction {
  * appear under no tab, which is a hole nobody would notice. Make the compiler
  * ask instead.
  */
-export type ReactionPack = 'slackmojis' | 'smileys' | 'objects'
+export type ReactionPack = 'slackmojis' | 'smileys' | 'objects' | 'nature' | 'places'
 
 /**
- * The room's reaction set.
+ * The curated head of the reaction set.
  *
- * One list, read by the picker, the composer's one-tap row, the reveal bar and
- * the component gallery.
+ * Hand-written, and first in `REACTIONS` — read by the picker, the composer's
+ * one-tap row, the reveal bar and the component gallery. The imported catalog
+ * in `reactions.catalog.ts` follows it; see `REACTIONS` below for why the two
+ * are concatenated rather than merged.
  *
  * **The order is load-bearing, and three rules pin it.** Positions 1–6 are
  * emoji, because `QUICK_REACTIONS` and `REVEAL_REACTIONS` slice off the front
@@ -52,7 +56,7 @@ export type ReactionPack = 'slackmojis' | 'smileys' | 'objects'
  * one honest deviation left is that they are SVG rather than animated GIF —
  * the same deviation `stub-*.svg` already makes.
  */
-export const REACTIONS: readonly Reaction[] = [
+const CURATED: readonly Reaction[] = [
   // 1–6: the one-tap row and the reveal bar. Emoji, always.
   { id: 'fire', glyph: '🔥', keywords: ['fire', 'hot', 'burn', 'heat'], label: 'Fire', pack: 'objects' },
   { id: 'skull', glyph: '💀', keywords: ['skull', 'dead', 'rip', 'killed'], label: 'Skull', pack: 'smileys' },
@@ -125,6 +129,47 @@ export const REACTIONS: readonly Reaction[] = [
 ]
 
 /**
+ * The room's reaction set: the curated head, then the imported catalog.
+ *
+ * Concatenated rather than interleaved, because every slice in this file counts
+ * from the front. `QUICK_REACTIONS` takes six, `REVEAL_REACTIONS` five, and the
+ * picker's default grid ten — so the hand-written 32 keep their positions and
+ * the 584 imported emoji land behind them, reachable by tab and by search.
+ * `lib/reactions.test.ts` asserts the head is still what DESIGNSYSTEM §4.4
+ * draws rather than trusting this paragraph.
+ */
+export const REACTIONS: readonly Reaction[] = [...CURATED, ...NOTO_REACTIONS]
+
+/**
+ * Lookups by id and by glyph.
+ *
+ * `find` over 32 was free. Over 616 it is not: `labelFor` and `idFor` run once
+ * per tally per render, and a busy event lane renders a lot of tallies. Built
+ * once at module load, which is also the last moment anything here changes.
+ */
+const BY_ID = new Map(REACTIONS.map((r) => [r.id, r]))
+const BY_GLYPH = new Map(REACTIONS.map((r) => [r.glyph, r]))
+
+/**
+ * One lowercase haystack per reaction, built once.
+ *
+ * The picker re-filters on every keystroke, and it is handed a fresh array each
+ * render — so anything derived per-render is derived ~616 times per character
+ * typed. Keyed by id rather than memoised in the component for that reason.
+ */
+const SEARCH_TEXT = new Map(REACTIONS.map((r) => [r.id, r.keywords.join(' ').toLowerCase()]))
+
+/**
+ * Whether a reaction answers to a search.
+ *
+ * `query` must already be trimmed and lowercased — the caller does it once per
+ * keystroke instead of this doing it once per reaction.
+ */
+export function matchesQuery(reaction: Reaction, query: string): boolean {
+  return SEARCH_TEXT.get(reaction.id)?.includes(query) ?? false
+}
+
+/**
  * The one-tap row in the composer, and the five on the reveal screen.
  *
  * Taken from the head of the same list rather than typed out again, so adding
@@ -140,7 +185,7 @@ export const REVEAL_REACTIONS: readonly { id: string; glyph: string; label: stri
 
 /** The emoji a reaction id stands for, for anything that carries only the id. */
 export function glyphFor(id: string): string {
-  return REACTIONS.find((r) => r.id === id)?.glyph ?? id
+  return BY_ID.get(id)?.glyph ?? id
 }
 
 /**
@@ -151,7 +196,7 @@ export function glyphFor(id: string): string {
  * on the id, so this is the one hop between the two.
  */
 export function idFor(glyph: string): string {
-  return REACTIONS.find((r) => r.glyph === glyph)?.id ?? glyph
+  return BY_GLYPH.get(glyph)?.id ?? glyph
 }
 
 /**
@@ -162,7 +207,7 @@ export function idFor(glyph: string): string {
  * name rather than having its path read out character by character.
  */
 export function labelFor(glyph: string): string {
-  const known = REACTIONS.find((r) => r.glyph === glyph)
+  const known = BY_GLYPH.get(glyph)
   if (known) return known.label
   return isImageGlyph(glyph) ? 'A reaction' : glyph
 }

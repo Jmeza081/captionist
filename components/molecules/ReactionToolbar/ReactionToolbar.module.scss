@@ -24,14 +24,23 @@
   letter-spacing: 0.07em;
 }
 
+// Six chips no longer fit 262px, so the row scrolls sideways rather than
+// wrapping — the panel keeps one height whichever tab is open.
 .tabs {
   display: flex;
   gap: t.$space-2;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .tab {
   @include t.focusRing;
 
+  flex: 0 0 auto;
   padding: t.$reaction-tab-pad-y t.$reaction-tab-pad-x;
   border: 0;
   border-radius: t.$segmented-item-radius;
@@ -81,11 +90,18 @@
   background-color: rgba(123, 97, 255, 0.24);
 }
 
-.gif {
-  width: t.$gif-thumb;
-  height: t.$gif-thumb;
-  border-radius: t.$gif-thumb-radius;
-  object-fit: cover;
+.face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+// A full-width row at the end of the grid. Scrolling it into view loads the
+// next page, so a 224-tile pack arrives as fast as it's actually looked at.
+.sentinel {
+  grid-column: 1 / -1;
+  height: 1px;
 }
 
 .empty {

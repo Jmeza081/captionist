@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { WallTile } from '@/lib/gifs/wall'
+import { useReducedMotion } from '@/lib/useReducedMotion'
 import styles from './HeroWall.module.scss'
 
 /**
@@ -36,22 +37,14 @@ export interface HeroWallProps {
 
 export function HeroWall({ tiles, label = 'a wall of looping reaction GIFs' }: HeroWallProps) {
   const videos = useRef<HTMLVideoElement[]>([])
-  // Starts paused so nothing plays before we know whether it should.
-  const [playing, setPlaying] = useState(false)
+  // `useReducedMotion` reports stillness until it knows otherwise, so this
+  // starts paused and nothing plays before we know whether it should.
+  const stillPreferred = useReducedMotion()
+  const [paused, setPaused] = useState(false)
+  const playing = !stillPreferred && !paused
   // No point offering a pause control to someone who has already asked for
   // stillness at the system level.
-  const [offered, setOffered] = useState(false)
-
-  useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const apply = () => {
-      setPlaying(!query.matches)
-      setOffered(!query.matches)
-    }
-    apply()
-    query.addEventListener('change', apply)
-    return () => query.removeEventListener('change', apply)
-  }, [])
+  const offered = !stillPreferred
 
   useEffect(() => {
     for (const video of videos.current) {
@@ -109,7 +102,7 @@ export function HeroWall({ tiles, label = 'a wall of looping reaction GIFs' }: H
           stacking context, so a control inside it can neither be clicked
           through the content layer nor raised above it. */}
       {offered && (
-        <button type="button" className={styles.toggle} onClick={() => setPlaying((on) => !on)}>
+        <button type="button" className={styles.toggle} onClick={() => setPaused((off) => !off)}>
           {playing ? 'Pause' : 'Play'} background
           <span className={styles.srOnly}>. Shows {label}.</span>
         </button>

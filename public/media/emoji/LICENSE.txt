@@ -1,0 +1,15 @@
+Noto Animated Emoji
+Copyright Google Inc.
+
+The SVG files in this directory are the still renditions of Google's Noto
+Animated Emoji, licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0).
+
+  Source:  https://googlefonts.github.io/noto-emoji-animation/
+  License: https://creativecommons.org/licenses/by/4.0/
+
+They were downloaded, minified and indexed by scripts/import-noto-emoji.mjs.
+The art is unmodified beyond stripping XML prologs, comments and inter-tag
+whitespace.
+
+Attribution is shown in the app on /components.

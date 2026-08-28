@@ -23,9 +23,26 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     launchOptions: {
-      // CI images and this dev container run as root, where the Chromium
-      // sandbox refuses to start. /dev/shm is small in containers too.
-      args: ['--no-sandbox', '--disable-dev-shm-usage'],
+      args: [
+        // CI images and this dev container run as root, where the Chromium
+        // sandbox refuses to start. /dev/shm is small in containers too.
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+        /**
+         * The browser resolves nothing but the dev server.
+         *
+         * `webServer.env` below stops the *server* calling a third party. This
+         * is the other half, and it became load-bearing when reaction tiles
+         * started reaching for their animation on Google's CDN: without it a
+         * full run quietly fetches a few hundred 369KB files, and every spec
+         * would pass whether or not the committed stills actually work.
+         *
+         * Blocking everything rather than that one host, so the suite's claim
+         * is enforced by the network layer rather than by remembering to add
+         * the next hostname here.
+         */
+        '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1',
+      ],
     },
   },
 

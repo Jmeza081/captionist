@@ -1,10 +1,14 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { isAllowedImageSrc } from './gifs/allow'
+import { NOTO_REACTIONS } from './reactions.catalog'
 import {
   isImageGlyph,
   labelFor,
   idFor,
   glyphFor,
+  matchesQuery,
   QUICK_REACTIONS,
   REACTIONS,
   REVEAL_REACTIONS,
@@ -33,8 +37,9 @@ describe('the reaction set', () => {
 
   it('gives every reaction a pack, so none is unreachable by tab', () => {
     for (const r of REACTIONS) expect(r.pack).toBeTruthy()
-    // And each tab holds a grid rather than a handful.
-    for (const pack of ['smileys', 'objects'] as const) {
+    // And each tab holds a grid rather than a handful. `slackmojis` is the
+    // exception by design: four authored tiles, not an imported pack.
+    for (const pack of ['smileys', 'objects', 'nature', 'places'] as const) {
       expect(REACTIONS.filter((r) => r.pack === pack).length).toBeGreaterThanOrEqual(10)
     }
     expect(REACTIONS.filter((r) => r.pack === 'slackmojis')).toHaveLength(4)
@@ -60,6 +65,58 @@ describe('the reaction set', () => {
 
   it('gives every reaction searchable words', () => {
     for (const r of REACTIONS) expect(r.keywords.length).toBeGreaterThan(0)
+  })
+})
+
+describe('the imported catalog', () => {
+  it('sits behind the curated head, so every slice still counts from the front', () => {
+    // `QUICK_REACTIONS`, `REVEAL_REACTIONS` and the picker's default grid all
+    // read the first n. An import that prepended itself would silently turn the
+    // composer's one-tap row into pictures.
+    expect(REACTIONS.slice(0, 10).every((r) => !r.id.startsWith('noto-'))).toBe(true)
+    expect(REACTIONS.at(-1)?.id.startsWith('noto-')).toBe(true)
+    expect(REACTIONS).toHaveLength(32 + NOTO_REACTIONS.length)
+  })
+
+  it('ships a still for every glyph it names', () => {
+    // The catalog and the files are written by one pass of one script, so they
+    // are only ever right together — and a glyph with no file is a broken image
+    // in twenty browsers, not a failed import anybody would notice.
+    for (const r of NOTO_REACTIONS) {
+      const file = join(process.cwd(), 'public', r.glyph.replace(/^\/media\//, 'media/'))
+      expect(existsSync(file), `missing still for ${r.id}`).toBe(true)
+    }
+  })
+
+  it('keeps every tile inside the one directory the allowlist opened', () => {
+    for (const r of NOTO_REACTIONS) {
+      expect(r.glyph).toMatch(/^\/media\/emoji\/[a-z0-9-]+\.svg$/)
+      expect(r.kind).toBe('image')
+    }
+  })
+
+  it('never duplicates a curated reaction', () => {
+    // 25 of the curated 32 are also in Noto. The importer drops them by
+    // codepoint; this is what says so if that ever stops working.
+    const curated = new Set(REACTIONS.slice(0, 32).map((r) => r.label.toLowerCase()))
+    for (const r of NOTO_REACTIONS) {
+      expect(curated.has(r.label.toLowerCase()), `${r.id} duplicates a curated label`).toBe(false)
+    }
+  })
+})
+
+describe('searching', () => {
+  it('matches on keywords, and takes an already-lowercased query', () => {
+    const shipit = REACTIONS.find((r) => r.id === 'shipit')
+    expect(shipit && matchesQuery(shipit, 'squirrel')).toBe(true)
+    expect(shipit && matchesQuery(shipit, 'deploy')).toBe(true)
+    expect(shipit && matchesQuery(shipit, 'aardvark')).toBe(false)
+  })
+
+  it('reaches the imported catalog too', () => {
+    const hits = REACTIONS.filter((r) => matchesQuery(r, 'cat'))
+    expect(hits.length).toBeGreaterThan(1)
+    expect(hits.some((r) => r.id.startsWith('noto-'))).toBe(true)
   })
 })
 

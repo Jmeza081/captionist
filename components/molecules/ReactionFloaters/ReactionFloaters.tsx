@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import styles from './ReactionFloaters.module.scss'
 
 export interface Floater {
@@ -31,6 +32,10 @@ const MAX = 7
  * intercepts a click meant for the card underneath or narrates itself to a
  * screen reader. Each floater is keyed so React keeps its DOM node across
  * re-renders and the animation isn't restarted mid-flight.
+ *
+ * The glyph goes through `ReactionGlyph` like every other surface that renders
+ * one off the wire. It didn't, once, and a burst of Slackmojis printed
+ * `/media/slackmoji-lgtm.svg` up the screen in 30px text.
  */
 export function ReactionFloaters({ burst }: ReactionFloatersProps) {
   const [floaters, setFloaters] = useState<Floater[]>([])
@@ -78,7 +83,7 @@ export function ReactionFloaters({ burst }: ReactionFloatersProps) {
             ['--dx' as string]: `${f.dx}px`,
           }}
         >
-          {f.glyph}
+          <ReactionGlyph glyph={f.glyph} size={f.size} />
         </span>
       ))}
     </div>

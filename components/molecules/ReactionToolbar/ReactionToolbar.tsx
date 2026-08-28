@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@/components/atoms/Icon'
+import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import { TextField } from '@/components/atoms/TextField'
 import { pushRecent, readRecent } from '@/lib/recent-reactions'
-import type { Reaction, ReactionPack } from '@/lib/reactions'
+import { matchesQuery, type Reaction, type ReactionPack } from '@/lib/reactions'
 import styles from './ReactionToolbar.module.scss'
 
 // The room's own type, not this component's. `lib/` owns state and
@@ -28,17 +29,40 @@ export interface ReactionToolbarProps {
 const DEFAULT_COUNT = 10
 
 /**
+ * How many tiles a pack or a search renders before the next scroll extends it.
+ *
+ * The packs used to render whole, which was right at fourteen tiles and is not
+ * at 224: every tile near the viewport reaches for a ~369KB animation, so an
+ * uncapped grid is the difference between a picker and a stall. Twelve rows of
+ * five, so there is always more below the fold to scroll toward.
+ */
+const PAGE = 60
+
+/** Extend the grid slightly before the sentinel is actually reached. */
+const ROOT_MARGIN = '120px'
+
+/** The tile art, matching `$gif-thumb`. */
+const TILE_GLYPH = 22
+
+/**
  * The tabs, in the design's order.
  *
  * `recent` is not a `ReactionPack` because nothing is *authored* into it — it
  * is this browser's own history, so it lives beside the packs rather than
  * among them.
+ *
+ * `nature` and `places` arrived with the imported catalog: Noto's nine
+ * categories fold into four packs, because the row has room for six chips and
+ * not for eleven. The row scrolls sideways rather than wrapping, so the panel
+ * keeps its height whatever is in it.
  */
 const TABS: readonly { id: 'recent' | ReactionPack; label: string }[] = [
   { id: 'recent', label: 'Recent' },
   { id: 'slackmojis', label: 'Slackmojis' },
   { id: 'smileys', label: 'Smileys' },
+  { id: 'nature', label: 'Nature' },
   { id: 'objects', label: 'Objects' },
+  { id: 'places', label: 'Places' },
 ]
 
 /**
@@ -52,8 +76,7 @@ const TABS: readonly { id: 'recent' | ReactionPack; label: string }[] = [
  *
  * - nothing chosen → the first ten, which DESIGNSYSTEM §4.4 defines as 6 emoji
  *   plus the 4 Slackmojis;
- * - a tab → the whole pack, uncapped, because the point of a tab is to see the
- *   pack and capping it at ten would defeat it;
+ * - a tab → the whole pack, a page at a time;
  * - a query → the full set matched on keywords, with the tab cleared. §4.4
  *   makes search the long-tail answer, so it cannot be narrowed by a tab.
  *
@@ -79,9 +102,10 @@ export function ReactionToolbar({
    */
   const [recent, setRecent] = useState<readonly string[]>([])
 
+  const trimmed = query.trim().toLowerCase()
+
   const shown = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (q) return reactions.filter((r) => r.keywords.some((k) => k.toLowerCase().includes(q)))
+    if (trimmed) return reactions.filter((r) => matchesQuery(r, trimmed))
     if (tab === 'recent') {
       return recent
         .map((id) => reactions.find((r) => r.id === id))
@@ -89,7 +113,39 @@ export function ReactionToolbar({
     }
     if (tab) return reactions.filter((r) => r.pack === tab)
     return reactions.slice(0, DEFAULT_COUNT)
-  }, [query, tab, recent, reactions])
+  }, [trimmed, tab, recent, reactions])
+
+  /**
+   * How far into the current view we've scrolled.
+   *
+   * Stamped with the view it belongs to rather than reset in an effect, so
+   * switching tab or typing starts from the top by derivation instead of by a
+   * render-then-correct.
+   */
+  const view = trimmed ? `q:${trimmed}` : tab ? `t:${tab}` : 'default'
+  const [paged, setPaged] = useState({ view, limit: PAGE })
+  const limit = paged.view === view ? paged.limit : PAGE
+
+  const visible = shown.slice(0, limit)
+  const more = shown.length > limit
+
+  const sentinel = useRef<HTMLDivElement>(null)
+  const grid = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!more) return
+    const el = sentinel.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setPaged({ view, limit: limit + PAGE })
+      },
+      { root: grid.current, rootMargin: ROOT_MARGIN },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [more, view, limit])
 
   return (
     <div
@@ -140,8 +196,8 @@ export function ReactionToolbar({
           )}
         </p>
       ) : (
-        <div className={styles.grid} role="group" aria-label="Reactions">
-          {shown.map((r) => (
+        <div className={styles.grid} ref={grid} role="group" aria-label="Reactions">
+          {visible.map((r) => (
             <button
               key={r.id}
               type="button"
@@ -155,15 +211,16 @@ export function ReactionToolbar({
               aria-label={r.label}
               aria-pressed={chosen.includes(r.id)}
             >
-              {r.kind === 'image' ? (
-                // The app's own art — next/image would rasterise the animation.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={r.glyph} alt="" className={styles.gif} />
-              ) : (
-                <span aria-hidden="true">{r.glyph}</span>
-              )}
+              {/*
+                The atom, not a second copy of its branch. This component having
+                its own was how the burst layer ended up printing URLs as text.
+              */}
+              <span className={styles.face} aria-hidden="true">
+                <ReactionGlyph glyph={r.glyph} size={TILE_GLYPH} />
+              </span>
             </button>
           ))}
+          {more && <div ref={sentinel} className={styles.sentinel} aria-hidden="true" />}
         </div>
       )}
     </div>

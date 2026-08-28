@@ -33,10 +33,33 @@ describe('what a player may point the room at', () => {
     expect(isAllowedImageSrc('http://media.giphy.com/x.gif')).toBe(false)
   })
 
+  it('accepts the imported emoji catalog, one directory down', () => {
+    expect(isAllowedImageSrc('/media/emoji/1f600.svg')).toBe(true)
+    // Multi-codepoint tiles spell the joiner with a dash for exactly this.
+    expect(isAllowedImageSrc('/media/emoji/1f3f3-fe0f.svg')).toBe(true)
+  })
+
+  it('opens that one directory and no others', () => {
+    // The point of `(?:emoji\/)?` over `.*`: one known segment, not any path.
+    expect(isAllowedImageSrc('/media/emoji/nested/x.svg')).toBe(false)
+    expect(isAllowedImageSrc('/media/anything/x.svg')).toBe(false)
+    expect(isAllowedImageSrc('/media/emoji/1f600.png')).toBe(false)
+    expect(isAllowedImageSrc('/media/emoji/../../etc/passwd.svg')).toBe(false)
+  })
+
   it('refuses a same-origin path that is not the app’s own art', () => {
     expect(isAllowedImageSrc('/media/../../etc/passwd')).toBe(false)
     expect(isAllowedImageSrc('/api/ably/token')).toBe(false)
     expect(isAllowedImageSrc('//evil.example/x.gif')).toBe(false)
+  })
+
+  it('still trusts no remote host but Giphy', () => {
+    // The catalog's animations come from Google's CDN, but that URL is derived
+    // in the browser from a same-origin still — it never travels, so nothing
+    // here needs to trust it. If this ever starts passing, check why.
+    expect(isAllowedImageSrc('https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.webp')).toBe(
+      false,
+    )
   })
 
   it('refuses nonsense without throwing', () => {
