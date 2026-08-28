@@ -39,6 +39,7 @@ decision the name has to make for you.
 | `$surface-timer` | `#1D1E1F` | Timer pill (neutral) |
 | `$surface-snackbar` | `#232426` | Snackbar |
 | `$surface-track` | `#242425` | Segmented-control track |
+| `$surface-tab-active` | `#2A2B2C` | The reaction picker's selected pack tab |
 | `$surface-field` | `#303031` | Fields, active segment |
 
 Accents:
@@ -106,6 +107,19 @@ component drift:
 Keeping them apart means nobody reaches for `$space-14` because a button
 happens to be 14px padded, then "fixes" the scale when a different button
 isn't.
+
+The quoted-caption block a reply carries is drawn from
+`$chat-quote-radius` (9px), `$chat-quote-rule` (2px),
+`$chat-quote-thumb` (30px) and `$chat-quote-thumb-radius` (5px), and the
+picker's pack tabs from `$reaction-tab-pad-y` (6px) and `$reaction-tab-pad-x`
+(11px). 11px is off the gap scale on purpose: the scale is the uneven set the
+design specifies, and this is a component metric, not a step on it.
+
+Three colours came with them — `$fill-quote` (`rgba(255,255,255,.04)`),
+`$text-quote` (`rgba(255,255,255,.7)`) and `$accent-border-quote`
+(`rgba(123,97,255,.6)`). The last is a shade heavier than
+`$accent-border-strong` because the design distinguishes a rule that *marks a
+quote* from one that edges a surface.
 
 ### Type — `theme/_typography.scss`
 
@@ -214,6 +228,9 @@ primitives.
 | `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected |
 | `TimerPill` | atom | The round clock. Flips to urgent at ≤15s, or on demand for sudden death |
 | `ProgressRail` | atom | The 3px rail under the header that drains with the timer |
+| `StatusPill` | atom | A short statement of where the room is — "Locked in" over media, "4 of 7 have voted" on the canvas |
+| `RankSlot` | atom | One place in a ranked ballot. Dashed when empty, gold at first, clears when tapped. A single-vote room draws one, named rather than numbered |
+| `ReactionGlyph` | atom | One reaction's face — an emoji character or a Slackmoji image, from one glyph string. The wire carries the glyph, and three surfaces render it; the branch lives here so none of them prints a URL as text |
 | `TallyPill` | atom | One reaction's running count. Carries its own scrim over media |
 | `PresencePill` | atom | "7 here" — live room presence |
 | `RoundProgress` | atom | How far through the game the room is, as pips |
@@ -230,19 +247,20 @@ primitives.
 
 | Component | Tier | Use when |
 | --- | --- | --- |
-| `JoinPanel` | molecule | Both ways into a room — scan the QR, or type the code |
+| `JoinPanel` | molecule | A room's code and QR on their own, for a screen shared to a wall. **No caller today** — `/join` is built from `CodeEntry` + `AvatarPicker`, and the lobby's own share block is `RoomShare` |
 | `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line |
 | `PlayerRow` | molecule | One player in a list — `roster`, `tracker`, or `standing` |
-| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes |
-| `ChatMessage` | molecule | One chat message, or a host announcement with `announcement` |
+| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Its foot takes `caption`, `reply`, `reaction` and `action` as peers |
+| `ChatMessage` | molecule | One chat message, or a host announcement with `announcement`. Carries an attached GIF at 180×120, and the caption it answers quoted under the body |
 | `UnreadDivider` | molecule | Where you stopped reading |
-| `ReactionToolbar` | molecule | The searchable reaction picker. Ten defaults, then keyword search |
+| `ReactionToolbar` | molecule | The searchable reaction picker. Six emoji and four Slackmojis by default, then pack tabs, then keyword search across the whole set |
 | `Dropzone` | molecule | Upload. Empty, drag-over and file-ready in one component |
 | `RoundOpener` | molecule | The interstitial before each round |
 | `Modal` | molecule | The multi-step walkthrough. Escape closes; Back/Next stay paired |
 | `HostToolbox` | molecule | The host's controls, fixed bottom-right, collapsing to a FAB |
-| `ChatRail` | molecule | Room chat, docked beside content. Collapses to a 64px strip |
-| `Composer` | molecule | The chat composer. Sends on text *or* an attachment |
+| `ChatRail` | molecule | Room chat: docked beside content above `md`, a sheet over it below. Collapses to a 64px strip, or one floating key on a phone. Both sizes are one component and the branch is entirely CSS |
+| `ChatToast` | molecule | An arriving message while chat is shut. Not `Snackbar` — that one is the room's single centred voice for something *you* did and carries no author |
+| `Composer` | molecule | The chat composer. Sends on text *or* an attachment, and carries the staged reply above them |
 | `GifPanel` | molecule | Giphy search above the composer. Picking attaches and closes; it never sends |
 | `RevealReactionBar` | molecule | Five one-tap reactions on the reveal, plus the CTA to the full toolbar |
 | `ReactionFloaters` | molecule | The decorative emoji burst. `pointer-events: none`, hidden from assistive tech |
@@ -253,6 +271,9 @@ primitives.
 | `LandingNav` | molecule | The public front door's bar. Not `AppHeader` — that one is live room state, this is static links and a way in |
 | `HeroWall` | molecule | The landing page's tilted wall of looping GIFs. Video over GIF, still-first, and stoppable |
 | `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
+| `AvatarPicker` | molecule | Choosing a face on `/join` and `/host`. Owns the seed-to-preview-colour mapping so two screens cannot drift |
+| `ModeCard` | molecule | One of the two game modes, as a card with the sentence that explains it — a format, not a setting |
+| `ReconnectOverlay` | molecule | The room is still there; you are not attached to it. Red rather than purple, over the blurred room rather than instead of it. **Not in this gallery** — it is `position: fixed` with no dismiss, so it would cover the page; `e2e/reconnect.spec.ts` covers it against a real room |
 
 **Organisms**
 
@@ -260,10 +281,18 @@ primitives.
 | --- | --- | --- |
 | `ComponentGallery` | organism | The review surface at `/components` — every component in its states |
 | `RoomShell` | organism | The chrome around every in-room screen — header, clock, rail, host toolbox, snackbar |
+| `ChatPanel` | organism | The message list and composer inside the rail. An organism because it composes four molecules and reads the room; `ChatRail` is only the container and has no idea what a message is |
 | `LobbyScreen` | organism | The room before it starts: share block, roster, and the one button |
 | `BriefScreen` | organism | Setting the round up, and watching someone else do it — all four `viewKey` faces |
 | `ComposeScreen` | organism | Captioning an image, answering a prompt, or sitting the round out |
-| `PhasePending` | organism | Temporary. The phases with no screen yet, with their real roster and the host's advance control |
+| `WaitingScreen` | organism | Your entry is locked and the room is not — your card, and who everyone is still on |
+| `VoteScreen` | organism | Ranking the room's entries. The ranking is local until you lock it |
+| `TiebreakScreen` | organism | Sudden death. The one pre-reveal screen that names people |
+| `RevealScreen` | organism | Where anonymity ends: the winner, the runners-up, and a reaction |
+| `ScoreScreen` | organism | Standings between rounds, and the advance that starts the next one |
+| `PodiumScreen` | organism | The champion, the final three, and the two ways on |
+| `JoinScreen` | organism | Entering somebody else's room: the code, a face and a name, before a seat is asked for |
+| `HostSetupScreen` | organism | The only screen where a room's rules are set — and its defaults are playable untouched |
 | `LandingActions` | organism | The two ways into a room, side by side — start one, or type a code. Routes, which is what puts it at this tier |
 
 An organism is anything that calls `useRoom()` — that is what puts these here
@@ -271,9 +300,9 @@ rather than in `molecules/`. `RoomShell` owns everything outside the content
 column; a screen owns its column and nothing else, which is what stops ten
 screens each growing a header.
 
-Every component the design library specifies is built, and four of the ten room
-phases now have a screen. `PhasePending` stands in for the rest and is deleted a
-screen at a time as phase 3 lands. See
+Every component the design library specifies is built, and **every room phase
+now has a screen** — which is what retired `PhasePending`, the stand-in that
+covered the six unbuilt ones. See
 [architecture.md](./architecture.md#not-yet-built) for how the design's 16 state
 branches normalise to 10 phases, and [the roadmap](./roadmap.md#phases) for the
 order they arrive in.
@@ -323,6 +352,41 @@ something regrettable…"* · *"Somebody has to break this tie."*
 8. **Numbers and codes are formatted for reading**: room codes tracked and
    tabular, timestamps relative ("2 minutes ago") in live views.
 
+### Where the copy deliberately departs from the design
+
+Two strings do not match `design/`, and both are deliberate. Recorded here so
+the next person reads this rather than "fixing" them back.
+
+| What the design says | What we ship | Why |
+| --- | --- | --- |
+| Waiting: *"You can still edit until the clock hits zero…"*, with an "Edit my caption" / "Swap my GIF" button | *"It goes up anonymously when the clock hits zero, and the roasting begins."*, with no edit | Phase is room-wide and authoritative, so a guest cannot rewind the room to `compose`. An inline editor here would be a second composer to hold in step with the real one. The copy had to stop promising the button. |
+| Submission tracker: `submitted` / `typing…` / `still thinking` | `submitted` / `still thinking` | `typing…` needs live keystroke presence, which is the phase-6 event lane. Two honest states beat three with one of them guessed. |
+
+| Reconnect: `Reconnecting… attempt 3` | `Reconnecting…` | The transport retries internally and reports no count. A number here would be one the screen invented from a timer — the same reason the reveal's `auto-advancing in 6s` was dropped. |
+| Reconnect: the 60-second countdown, always | Only when a seat is genuinely held | A seat is held by the *host*. When the host is what vanished there is no grace window, so the bar and the countdown are absent and the body says "Nothing is lost" instead of promising a deadline nobody is keeping. |
+
+**The Slackmoji tiles are ours, and they are SVG.** DESIGNSYSTEM §4.4 draws the
+picker's four non-emoji defaults as animated Slackmoji GIFs. Phase 6 left them
+out on the grounds that Slackmoji are a workspace's own uploads and this app has
+no storage target — but that is the *uploader's* blocker, and the design's own
+2b heading reads `SLACKMOJIS · SHIPS WITH CAPTIONIST`. So phase 7 drew four
+(`public/media/slackmoji-*.svg`), in the same authored-SVG style as the 26
+offline sample GIFs, and the deviation left is medium rather than content: SVG
+with a CSS animation, not a GIF.
+
+**The picker's default view follows §4.4, not Screens 2b.** §4.4 says the
+unsearched grid is "6 emoji + 4 Slackmoji GIFs"; 2b draws the same picker with
+the *Slackmojis* tab selected. Those are two different views, and the system
+spec wins over one instance of it — so the default tab is the mixed ten, and a
+pack is something you choose. Recorded here so it is not re-litigated.
+
+Three more designed elements are drawn but not built, and are listed with the
+rest of the gap in [architecture.md](./architecture.md#not-yet-built): the
+reveal's `auto-advancing in 6s` label (reveal is untimed — a label with no timer
+behind it would break "timers are honest"), the podium's awards row and its
+`Download the highlight reel` / `Post to Slack` buttons, and per-card reactions
+on the vote grid.
+
 ### Glossary
 
 | Term | Means |
@@ -353,3 +417,20 @@ Not aspirational — these are merged-or-not conditions.
 - The whole join and vote flow is operable by keyboard alone.
 - Codes and IDs are exposed to screen readers spelled out, not as words — see
   `RoomCode` for the pattern.
+- **A control's hit area is at least 44px, even when the control is not.**
+  DESIGNSYSTEM.md draws several below the floor deliberately — the reaction CTA
+  is a 28–34px pill, a picker tile 36–42px — and the design decides how big a
+  thing *looks*. `@include t.tapTarget;` separates the two: the control keeps
+  its drawn size and a centred pseudo-element gives the finger its 44px.
+- **Never apply `tapTarget` inside a dense row or grid.** Two grown areas that
+  overlap steal each other's taps, which is worse than the small target it set
+  out to fix — where the design packs controls tightly, the spacing has to grow
+  first. `e2e/targets.spec.ts` measures the real hit areas on a phone and fails
+  on any overlap; it is the load-bearing half of this rule.
+
+Applied so far to the vote card's foot row (the reply key and the reaction CTA).
+Still below the floor and knowingly so: the composer's six one-tap keys and its
+GIF key, the picker's tiles and pack tabs, and the reveal bar's five — all of
+them sit in rows too tight to grow without overlapping. Widening those means
+changing the spacing the design specifies, which is a design decision rather
+than a CSS one.
