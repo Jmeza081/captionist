@@ -25,6 +25,9 @@ export interface ComposerProps {
   /** A GIF staged to send with the next message. */
   attachment?: ComposerAttachment
   onClearAttachment?: () => void
+  /** The caption this message will answer, staged and cancellable. */
+  replyTo?: { src?: string; caption: string }
+  onClearReply?: () => void
   /** The GIF panel, rendered above the composer inside the rail. */
   panel?: ReactNode
 }
@@ -45,6 +48,8 @@ export function Composer({
   onAttachGif,
   attachment,
   onClearAttachment,
+  replyTo,
+  onClearReply,
   panel,
 }: ComposerProps) {
   const fieldId = useId()
@@ -55,6 +60,27 @@ export function Composer({
       {panel}
 
       <div className={styles.composer}>
+        {replyTo && (
+          <div className={styles.replying}>
+            {replyTo.src && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img className={styles.replyingThumb} src={replyTo.src} alt="" />
+            )}
+            <div className={styles.attachedBody}>
+              <span className={styles.attachedLabel}>Replying to</span>
+              <span className={styles.replyingCaption}>{replyTo.caption}</span>
+            </div>
+            <button
+              type="button"
+              className={styles.attachedClose}
+              onClick={onClearReply}
+              aria-label="Stop replying"
+            >
+              <Icon name="close" size={13} />
+            </button>
+          </div>
+        )}
+
         {attachment && (
           <div className={styles.attached}>
             {/* eslint-disable-next-line @next/next/no-img-element */}

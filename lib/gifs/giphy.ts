@@ -47,15 +47,28 @@ function keywordsFor(title: string, query: string | undefined): string[] {
   return [...new Set(words)]
 }
 
+/** The first of these that actually says something. */
+function firstWords(...candidates: (string | undefined)[]): string | undefined {
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim()
+    if (trimmed) return trimmed
+  }
+  return undefined
+}
+
 function toResult(item: GiphyItem, query: string | undefined): GifResult | undefined {
   const rendition = item.images?.fixed_width ?? item.images?.original
   const src = rendition?.url ?? item.images?.original?.url
   if (!item.id || !src) return undefined
 
-  // Never empty: this becomes the accessible name here, the vote card's `alt`
-  // in phase 3, and `MediaRef.alt` in game state for the rest of the round.
-  const title = (item.alt_text ?? item.title ?? '').trim()
-  const alt = title.length > 0 ? title : 'A GIF'
+  // Never empty: this becomes the accessible name here, the vote card's `alt`,
+  // and `MediaRef.alt` in game state for the rest of the round.
+  //
+  // First *non-empty* of the two, not first present. Giphy sends
+  // `alt_text: ''` on most results rather than omitting it, so `??` never
+  // reaches `title` and every GIF in the app was called "A GIF" — including to
+  // a screen reader, and including the one the whole round is about.
+  const alt = firstWords(item.alt_text, item.title) ?? 'A GIF'
 
   return {
     id: item.id,

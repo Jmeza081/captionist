@@ -59,12 +59,56 @@ test.describe('the room', () => {
     expect(response?.status()).toBe(404)
   })
 
-  test('does not scroll horizontally at mobile width', async ({ page }) => {
-    await page.goto('/room/DEV?seed=42&phase=score')
-    await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'score')
-    const overflows = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-    )
-    expect(overflows).toBe(false)
-  })
+  /**
+   * Every phase, not just one.
+   *
+   * Reveal, tiebreak and podium each draw a decorative radial glow far wider
+   * than a phone. Sized in viewport units it does not merely overflow — it
+   * widens the page, and the whole room scrolls sideways. That shipped once and
+   * only showed up in a full-page screenshot, so it is asserted per phase now.
+   */
+  for (const phase of ['waiting', 'vote', 'tiebreak', 'reveal', 'score', 'podium'] as const) {
+    test(`does not scroll horizontally at ${phase}`, async ({ page }) => {
+      await page.goto(`/room/DEV?seed=42&phase=${phase}&gifs=stub`)
+      await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', phase)
+      const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }))
+      expect(scrollWidth, `${phase}: ${scrollWidth} > ${clientWidth}`).toBeLessThanOrEqual(
+        clientWidth + 1,
+      )
+    })
+  }
+})
+
+/**
+ * Phase 3's milestone, stated as a test: a complete five-round game, in both
+ * modes, ending on a real podium rather than a phase attribute.
+ *
+ * The caption lane is covered above. This is the reversed one, which is
+ * otherwise unreachable — every fixture and fresh room takes
+ * `DEFAULT_SETTINGS.mode`.
+ */
+test('plays the reversed lane all the way to a champion', async ({ page }) => {
+  test.setTimeout(90_000)
+  await page.goto('/room/DEV?seed=42&bots=4&fast=80&mode=react&gifs=stub')
+
+  const room = page.locator('main[data-phase]')
+  await expect(room).toHaveAttribute('data-phase', 'podium', { timeout: 60_000 })
+  await expect(page.getByRole('heading', { name: / takes the crown\./ })).toBeVisible()
+})
+
+test('a room with nobody but the host still finishes', async ({ page }) => {
+  // No `?bots=`, so no autopilot: `reveal` and `score` are untimed and nothing
+  // advances them but a person. This is the check that the two screens carry
+  // the button `PhasePending` used to.
+  await page.goto('/room/DEV?seed=42&phase=reveal&gifs=stub')
+  const room = page.locator('main[data-phase]')
+
+  await page.getByRole('button', { name: 'See the scoreboard' }).click()
+  await expect(room).toHaveAttribute('data-phase', 'score')
+
+  await page.getByRole('button', { name: 'Start round 2' }).click()
+  await expect(room).toHaveAttribute('data-phase', 'opener')
 })

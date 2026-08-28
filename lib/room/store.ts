@@ -19,6 +19,15 @@ export interface RoomSnapshot {
   readonly status: TransportStatus
   readonly selfId: PlayerId
   readonly isHost: boolean
+  /**
+   * Why the room never opened at all.
+   *
+   * Distinct from `status`, which is a connection that exists and is unwell.
+   * This is a room that could not be built — no realtime configured, most
+   * likely — and without it that case renders as "Joining the room…" forever,
+   * which is the one thing a misconfigured server must not do.
+   */
+  readonly error?: string
 }
 
 export interface RoomStore {
@@ -28,6 +37,17 @@ export interface RoomStore {
   getServerSnapshot(): RoomSnapshot
   setState(state: PublicState): void
   setStatus(status: TransportStatus): void
+  /**
+   * Who this tab turned out to be.
+   *
+   * Both were constructor arguments while every tab hosted its own room. They
+   * are no longer knowable at mount: `isHost` is the answer to a claim probe
+   * that has not resolved yet, and a tab whose id collides with another's takes
+   * a suffixed one. Screens read both, so the store has to be able to learn
+   * them rather than be told at birth.
+   */
+  setIdentity(selfId: PlayerId, isHost: boolean): void
+  setError(error: string): void
 }
 
 export function createRoomStore(selfId: PlayerId, isHost: boolean): RoomStore {
@@ -59,6 +79,16 @@ export function createRoomStore(selfId: PlayerId, isHost: boolean): RoomStore {
     setStatus(status) {
       if (snapshot.status === status) return
       snapshot = { ...snapshot, status }
+      emit()
+    },
+    setError(error) {
+      if (snapshot.error === error) return
+      snapshot = { ...snapshot, error }
+      emit()
+    },
+    setIdentity(nextSelfId, nextIsHost) {
+      if (snapshot.selfId === nextSelfId && snapshot.isHost === nextIsHost) return
+      snapshot = { ...snapshot, selfId: nextSelfId, isHost: nextIsHost }
       emit()
     },
   }

@@ -77,3 +77,34 @@ test.describe('composing', () => {
     await expect(page.getByRole('textbox', { name: 'Top text' })).toHaveCount(0)
   })
 })
+
+/**
+ * The other setting that was offered and never honoured.
+ *
+ * `ComposeScreen` never read `settings.format` at all — "One line" was a live
+ * control in `/host` that changed a summary label and nothing else.
+ */
+test.describe('a one-line room', () => {
+  test('asks for one caption instead of two', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=compose&as=p2&format=one&gifs=stub')
+
+    await expect(page.getByRole('textbox', { name: 'Caption' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Top text' })).toBeHidden()
+    await expect(page.getByRole('textbox', { name: 'Bottom text' })).toBeHidden()
+
+    await page.getByRole('textbox', { name: 'Caption' }).fill('Ship it on Friday')
+    // The preview is the card the room will vote on, so one line in means one
+    // overlay out — nothing downstream needed changing for that to be true.
+    await expect(page.locator('figure').getByText('Ship it on Friday')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Submit caption' }).click()
+    await expect(page.getByRole('status')).toHaveText('Caption submitted')
+  })
+
+  test('still writes two lines when the room did not ask for one', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=compose&as=p2&gifs=stub')
+    await expect(page.getByRole('textbox', { name: 'Top text' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Bottom text' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Caption', exact: true })).toBeHidden()
+  })
+})

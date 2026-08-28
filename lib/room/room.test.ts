@@ -61,7 +61,9 @@ function harness(mode: GameMode, bots: number, seed = 42): Harness {
     onRefused: (intent, reason) => refusals.push({ intent, reason }),
   })
 
-  const autopilot = createAutopilot({ engine, waitFor: bots + 1 })
+  // No dwell: this harness runs on a virtual clock, and the dwell is a
+  // product beat for a room someone is watching, not part of the protocol.
+  const autopilot = createAutopilot({ engine, waitFor: bots + 1, dwellMs: 0 })
 
   // The host plays too, so it needs a bot brain of its own for compose/vote.
   const hostBot = new BotDriver({ id: 'p0', name: 'Jesse', index: 0, send: (a) => engine.apply(a, 'p0') })

@@ -20,6 +20,10 @@
 }
 
 .pill {
+  // DESIGNSYSTEM 4.4 draws this at 28-34px and that is what it stays; only the
+  // hit area grows. `rail` is already 44px square and needs none of this.
+  @include t.tapTarget;
+
   height: 32px;
   padding: 0 t.$space-10;
   border-radius: t.$radius-pill;

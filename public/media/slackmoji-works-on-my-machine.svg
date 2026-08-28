@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Works on my machine">
+  <style>
+    .blink { animation: blink 2.2s steps(1, end) infinite; }
+    @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .25; } }
+    @media (prefers-reduced-motion: reduce) { .blink { animation: none; opacity: 1; } }
+  </style>
+  <rect x="12" y="16" width="40" height="27" rx="3" fill="#303031"/>
+  <rect x="15" y="19" width="34" height="21" rx="1.5" fill="#0E0F10"/>
+  <path d="M8 46h48l-3 5H11z" fill="#5A5A5C"/>
+  <path class="blink" d="M21 29.5l5 5 12-12" fill="none" stroke="#83D06C" stroke-width="5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

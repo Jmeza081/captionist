@@ -1,28 +1,46 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
 import { ProgressRail } from '@/components/atoms/ProgressRail'
+import { RoundProgress } from '@/components/atoms/RoundProgress'
 import { Snackbar } from '@/components/atoms/Snackbar'
 import { TimerPill, URGENT_AT } from '@/components/atoms/TimerPill'
 import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatRail } from '@/components/molecules/ChatRail'
+import { ChatToast, ChatToastOverflow } from '@/components/molecules/ChatToast'
+import { ReactionFloaters } from '@/components/molecules/ReactionFloaters'
 import { HostToolbox } from '@/components/molecules/HostToolbox'
 import { Modal } from '@/components/molecules/Modal'
+import { ReconnectOverlay } from '@/components/molecules/ReconnectOverlay'
 import { RoundOpener } from '@/components/molecules/RoundOpener'
-import { PhasePending } from '@/components/organisms/PhasePending'
+import { ChatPanel } from '@/components/organisms/ChatPanel'
 import {
   isUrgent,
   modeName,
   phaseLabel,
+  playerById,
+  presentCount,
+  reconnectCopy,
   roleHolder,
   settingsLine,
   showsProgressRail,
+  showsRoundProgress,
   timerSuffix,
   toAvatarProps,
 } from '@/lib/game/selectors'
-import type { RoomPhase } from '@/lib/game/types'
+import { SEAT_GRACE_MS } from '@/lib/game/constants'
+import type { Clock, RoomPhase } from '@/lib/game/types'
+import type { ChatQuote } from '@/lib/room/transport'
 import { useCountdown } from '@/lib/room/useCountdown'
-import { useRoom, useRoomRefusal } from '@/lib/room/useRoom'
+import {
+  useChat,
+  useChatLog,
+  useLastReaction,
+  useRoom,
+  useRoomRefusal,
+  useUnread,
+} from '@/lib/room/useRoom'
 import { RoomShellContext, type RoomShellApi } from './context'
 import { HELP_STEPS, openerCopy } from './copy'
 import styles from './RoomShell.module.scss'
@@ -41,6 +59,17 @@ import styles from './RoomShell.module.scss'
 /** DESIGNSYSTEM.md §3 — one snackbar at a time, gone in 2.8s. */
 const SNACKBAR_MS = 2_800
 
+/** How long an incoming message sits beside the collapsed rail. */
+const TOAST_MS = 5_200
+
+/**
+ * How many toasts stack before the rest become a count.
+ *
+ * Three would already reach the timer on a short phone, and the thing a toast
+ * must never do is hide the clock it is competing with.
+ */
+const TOAST_LIMIT = 2
+
 /** Which overlays are mutually exclusive. Chat is not one: it docks. */
 type Overlay = 'toolbox' | 'help' | null
 
@@ -50,11 +79,28 @@ export interface RoomShellProps {
 }
 
 export function RoomShell({ screens = {} }: RoomShellProps) {
-  const { state, status, selfId, isHost, send } = useRoom()
+  const router = useRouter()
+  const { state, status, error, selfId, isHost, send } = useRoom()
   const countdown = useCountdown(state?.clock)
+
+  // The held seat is a deadline like any other, so it gets the same clock the
+  // round does — which is also what keeps `Date.now()` out of the render path.
+  const heldUntil = state ? playerById(state, selfId)?.seatHeldUntil : undefined
+  const graceClock = useMemo<Clock | undefined>(
+    () =>
+      heldUntil === undefined
+        ? undefined
+        : { status: 'running', endsAt: heldUntil, totalMs: SEAT_GRACE_MS },
+    [heldUntil],
+  )
+  const grace = useCountdown(graceClock)
 
   const [chatOpen, setChatOpen] = useState(false)
   const [overlay, setOverlay] = useState<Overlay>(null)
+  const messages = useChatLog()
+  const unread = useUnread()
+  const { markRead } = useChat()
+  const burst = useLastReaction()
   const [helpStep, setHelpStep] = useState(0)
   const [queue, setQueue] = useState<readonly string[]>([])
 
@@ -71,14 +117,35 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
     return () => clearTimeout(id)
   }, [queue])
 
+  // Opening chat is what marks it read — not scrolling, and not the passage of
+  // time. The unread run is also what draws the divider, so clearing it on any
+  // looser trigger would erase the line you came back to find.
+  useEffect(() => {
+    if (chatOpen) markRead()
+  }, [chatOpen, messages.length, markRead])
+
+  // Toasts are the collapsed rail's only voice, so they exist only while it is
+  // collapsed and expire on their own. Keyed on the newest message's id rather
+  // than a timer per toast: one timeout, restarted, cannot leak.
+  const [toastFloor, setToastFloor] = useState(0)
+  const newestId = messages[messages.length - 1]?.id
+  useEffect(() => {
+    if (chatOpen || newestId === undefined) return
+    const id = setTimeout(() => setToastFloor(messages.length), TOAST_MS)
+    return () => clearTimeout(id)
+  }, [chatOpen, newestId, messages.length])
+
+  // Everything since you last looked, minus whatever has already timed out.
+  const pending = messages.slice(Math.max(toastFloor, messages.length - unread.count))
+
   const holder = state ? roleHolder(state) : undefined
   const opener = state && holder ? openerCopy(state, selfId) : undefined
 
   // Nothing renders behind the round opener: its interstitial covers the
   // screen, and a stand-in underneath would be a screen nobody can see
-  // announcing itself.
-  const Screen =
-    !state || state.phase === 'opener' ? undefined : (screens[state.phase] ?? PhasePending)
+  // announcing itself. Every other phase has a real screen now, so an absent
+  // entry means the map is wrong rather than the work is unfinished.
+  const Screen = !state || state.phase === 'opener' ? undefined : screens[state.phase]
 
   const urgent = Boolean(state && (isUrgent(state) || countdown.seconds <= URGENT_AT))
   const showRail = Boolean(state && showsProgressRail(state) && countdown.running)
@@ -88,13 +155,33 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
     setOverlay('help')
   }, [])
 
-  const shellApi = useMemo<RoomShellApi>(() => ({ notify, openHelp }), [notify, openHelp])
+  const [replyTo, setReplyTo] = useState<ChatQuote | undefined>(undefined)
+
+  /**
+   * Staging a reply opens chat, because the answer has nowhere else to go —
+   * and on a phone the rail is a sheet, so this is what puts the composer in
+   * front of you rather than leaving a quote staged behind a closed rail.
+   */
+  const startReply = useCallback((quote: ChatQuote) => {
+    setReplyTo(quote)
+    setChatOpen(true)
+  }, [])
+  const clearReply = useCallback(() => setReplyTo(undefined), [])
+
+  const shellApi = useMemo<RoomShellApi>(
+    () => ({ notify, openHelp, replyTo, startReply, clearReply }),
+    [notify, openHelp, replyTo, startReply, clearReply],
+  )
 
   const toolbox = useMemo(
     () => ({
       onSecondsChange: (seconds: number) =>
-        send({ type: 'host/adjustedClock', deltaMs: (seconds - countdown.seconds) * 1_000 }),
-      onTogglePause: () => send({ type: countdown.paused ? 'host/resumed' : 'host/paused' }),
+        send({
+          type: 'host/adjustedClock',
+          deltaMs: (seconds - countdown.seconds) * 1_000,
+        }),
+      onTogglePause: () =>
+        send({ type: countdown.paused ? 'host/resumed' : 'host/paused' }),
     }),
     [send, countdown.seconds, countdown.paused],
   )
@@ -106,7 +193,10 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
       <div className={styles.shell}>
         <AppHeader />
         <p className={styles.connecting}>
-          {status === 'disconnected' ? 'Lost the room. Reconnecting…' : 'Joining the room…'}
+          {error ??
+            (status === 'disconnected'
+              ? 'Lost the room. Reconnecting…'
+              : 'Joining the room…')}
         </p>
       </div>
     )
@@ -114,9 +204,21 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
 
   const otherMode = state.settings.mode === 'caption' ? 'react' : 'caption'
 
+  // A drop the player can see, rather than one only the transport knows about.
+  // The old copy sat behind `if (!state)`, so it only ever fired for someone
+  // who never connected — never for the case it describes.
+  const dropped = status === 'disconnected'
+  const me = playerById(state, selfId)
+  const held = graceClock !== undefined
+  const dropCopy = reconnectCopy(state, selfId, grace.seconds, held)
+
   return (
     <div
-      className={[styles.shell, chatOpen ? styles.railOpen : '', isHost ? styles.hasToolbox : '']
+      className={[
+        styles.shell,
+        chatOpen ? styles.railOpen : '',
+        isHost ? styles.hasToolbox : '',
+      ]
         .filter(Boolean)
         .join(' ')}
     >
@@ -126,7 +228,16 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
         host={isHost}
         surface={state.phase === 'vote' ? 'vote' : 'default'}
         trailing={
-          countdown.running || countdown.paused ? (
+          // The pips and the clock are the same slot: the scoreboard is untimed
+          // and the timed phases have no rounds-played to report, so the two
+          // never contend.
+          showsRoundProgress(state) ? (
+            <RoundProgress
+              played={state.roundNumber}
+              total={state.settings.totalRounds}
+              showLabel
+            />
+          ) : countdown.running || countdown.paused ? (
             <TimerPill
               seconds={countdown.seconds}
               suffix={timerSuffix(state, selfId)}
@@ -138,52 +249,90 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
 
       {showRail && <ProgressRail fraction={countdown.fraction} urgent={urgent} />}
 
-      <div className={styles.body}>
-        <main className={styles.content} data-phase={state.phase}>
-          <RoomShellContext.Provider value={shellApi}>
+      {/* The provider wraps the rail as well as the content column, because a
+          reply is raised on a vote card and consumed in the composer — the one
+          thing in this contract that crosses between them. */}
+      <RoomShellContext.Provider value={shellApi}>
+        <div className={styles.body}>
+          <main className={styles.content} data-phase={state.phase}>
             {Screen && <Screen />}
-          </RoomShellContext.Provider>
-        </main>
+          </main>
 
-        {/* A phone cannot afford a docked rail — the design turns chat into a
-            sheet there instead, which lands with chat itself in phase 6. Until
-            then the rail simply is not rendered below the breakpoint, and
-            `--room-rail-width` stays 0 so nothing offsets by a rail that
-            isn't there. */}
-        <div className={styles.rail}>
-          <ChatRail
-            open={chatOpen}
-            onOpenChange={setChatOpen}
-            present={state.players.length}
-            players={state.players.map(toAvatarProps)}
-          >
-            {/* Chat itself lands in phase 6. The rail is here now because every
-                screen has to lay out around it from the start. */}
-            <p className={styles.railEmpty}>Chat opens up in a later round of work.</p>
-          </ChatRail>
+          {/* One rail at both sizes. Below `md` it renders as a sheet over the
+            content and `--room-rail-width` stays 0, because a sheet overlays
+            rather than displaces; from `md` up it docks and the column
+            reflows around it. The branch is entirely in the rail's own
+            stylesheet — see `ChatRail.module.scss`. */}
+          <div className={styles.rail}>
+            <ChatRail
+              open={chatOpen}
+              onOpenChange={setChatOpen}
+              present={presentCount(state)}
+              unread={unread.count}
+              players={state.players.map(toAvatarProps)}
+              toasts={
+                pending.length > 0 ? (
+                  <>
+                    {pending.slice(-TOAST_LIMIT).map((entry) => {
+                      const author = playerById(state, entry.from)
+                      return (
+                        <ChatToast
+                          key={entry.id}
+                          author={
+                            author
+                              ? toAvatarProps(author)
+                              : {
+                                  name: 'Someone who left',
+                                  color: '#303031',
+                                  avatarSeed: entry.from,
+                                }
+                          }
+                          body={entry.text}
+                        />
+                      )
+                    })}
+                    {pending.length > TOAST_LIMIT && (
+                      <ChatToastOverflow count={pending.length - TOAST_LIMIT} />
+                    )}
+                  </>
+                ) : undefined
+              }
+            >
+              <ChatPanel />
+            </ChatRail>
+          </div>
         </div>
-      </div>
+      </RoomShellContext.Provider>
 
+      {/* The phone's chat sheet covers the content, and the toolbox key floats
+          over everything — including the sheet's own send button. So while
+          chat is open on a phone the toolbox stands down; closing chat brings
+          it back. Above `md` the rail docks beside the content and the two
+          never contend. */}
       {isHost && (
-        <HostToolbox
-          open={overlay === 'toolbox'}
-          onOpenChange={(open) => setOverlay(open ? 'toolbox' : null)}
-          seconds={countdown.seconds}
-          onSecondsChange={toolbox.onSecondsChange}
-          paused={countdown.paused}
-          onTogglePause={toolbox.onTogglePause}
-          onSkip={() => send({ type: 'host/skippedPhase' })}
-          onSwitchMode={() => {
-            send({ type: 'host/switchedMode', mode: otherMode })
-            notify(`Mode set to ${modeName(otherMode)}`)
-          }}
-          switchModeLabel={otherMode === 'react' ? 'Switch to prompts' : 'Switch to captions'}
-          onHelp={openHelp}
-          onForceTie={() => send({ type: 'host/forcedTie' })}
-          onJumpToFinal={() => send({ type: 'host/jumpedToPodium' })}
-          onRestart={() => send({ type: 'host/restarted' })}
-          railWidth="var(--room-rail-width)"
-        />
+        <div className={styles.toolboxDock}>
+          <HostToolbox
+            open={overlay === 'toolbox'}
+            onOpenChange={(open) => setOverlay(open ? 'toolbox' : null)}
+            seconds={countdown.seconds}
+            onSecondsChange={toolbox.onSecondsChange}
+            paused={countdown.paused}
+            onTogglePause={toolbox.onTogglePause}
+            onSkip={() => send({ type: 'host/skippedPhase' })}
+            onSwitchMode={() => {
+              send({ type: 'host/switchedMode', mode: otherMode })
+              notify(`Mode set to ${modeName(otherMode)}`)
+            }}
+            switchModeLabel={
+              otherMode === 'react' ? 'Switch to prompts' : 'Switch to captions'
+            }
+            onHelp={openHelp}
+            onForceTie={() => send({ type: 'host/forcedTie' })}
+            onJumpToFinal={() => send({ type: 'host/jumpedToPodium' })}
+            onRestart={() => send({ type: 'host/restarted' })}
+            railWidth="var(--room-rail-width)"
+          />
+        </div>
       )}
 
       {/* Never pauses the room — only the host's own pause stops the clock. */}
@@ -211,6 +360,35 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           />
         </div>
       )}
+
+      {/* The room is still mounted behind this — `GuestClient` holds the last
+          state it saw, so the blur is over something real. Rendered here rather
+          than from a screen because a drop is the room's business, not the
+          phase's, and it has to survive whichever screen is up. */}
+      {dropped && (
+        <ReconnectOverlay
+          headline={dropCopy.headline}
+          body={dropCopy.body}
+          attempt={dropCopy.attempt}
+          countdown={dropCopy.countdown}
+          identity={dropCopy.identity}
+          where={dropCopy.where}
+          fraction={held ? grace.fraction : undefined}
+          player={me ? toAvatarProps(me) : undefined}
+          // The transport is already retrying; this is the impatient path, and
+          // a full reload is the honest one — it re-runs the claim, reclaims
+          // the seat from `sessionStorage`, and rebuilds the connection.
+          onRejoin={() => window.location.reload()}
+          onLeave={() => router.push('/')}
+        />
+      )}
+
+      {/* Anybody's reaction, anywhere in the room. Purely decorative — the
+          count on the card is the information, and this is the noise the room
+          makes when it lands. */}
+      <div className={styles.floaterDock}>
+        <ReactionFloaters burst={burst && { glyph: burst.emoji, key: burst.key }} />
+      </div>
 
       {queue[0] && (
         <div className={styles.snackbarDock}>

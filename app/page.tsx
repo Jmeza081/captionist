@@ -29,7 +29,7 @@ export default async function HomePage() {
       <HeroWall tiles={tiles} />
 
       <div className={styles.content}>
-        <LandingNav joinHref="#join" repoHref={REPO} />
+        <LandingNav joinHref="/join" repoHref={REPO} />
 
         <Stack as="main" align="center" gap={0} className={styles.hero}>
           <h1 className={styles.headline}>

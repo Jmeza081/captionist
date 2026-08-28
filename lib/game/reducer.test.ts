@@ -4,8 +4,9 @@ import { authorize } from './authorize'
 import { MIN_PLAYERS, PLAYER_COLORS, colorFor } from './constants'
 import { createRoom } from './create'
 import { project } from './project'
+import { fixtureFor } from './fixtures'
 import { reduce } from './reducer'
-import { scoresFrom, standings, submittedCount, viewKey } from './selectors'
+import { competitors, scoresFrom, standings, submittedCount, viewKey } from './selectors'
 import type { EntryAnswer, GameState, PlayerId } from './types'
 
 /* ------------------------------------------------------------------ */
@@ -192,6 +193,67 @@ describe('scoring', () => {
     expect(totals.p2).toBe(2 + 3 + 2) // from p0, p1, p3
     expect(totals.p3).toBe(1 + 2 + 2) // from p0, p1, p2
     expect(totals.p0 ?? 0).toBe(0) // the role holder did not compete
+  })
+
+  it('awards one point a ballot in a single-vote room, not three', () => {
+    // The reducer's single branch was always right; nothing reached it. Both
+    // ballot builders hardcoded `kind: 'rank'`, so a room whose label promised
+    // one point paid `RANK_POINTS[0]`.
+    let state = apply(room(4, { voting: 'single' }), 'p0', { type: 'game/started' })
+    state = expire(state)
+    state = apply(state, 'p0', {
+      type: 'round/subjectLocked',
+      subject: { kind: 'prompt', text: 'x' },
+    })
+    state = submitAll(state)
+    state = expire(state) // waiting -> vote
+
+    // p1 authored r1-e1, p2 authored r1-e2, p3 authored r1-e3.
+    state = apply(state, 'p0', { type: 'round/ballotCast', ballot: { kind: 'single', choice: 'r1-e1' } })
+    state = apply(state, 'p2', { type: 'round/ballotCast', ballot: { kind: 'single', choice: 'r1-e1' } })
+    state = apply(state, 'p3', { type: 'round/ballotCast', ballot: { kind: 'single', choice: 'r1-e1' } })
+    state = apply(state, 'p1', { type: 'round/ballotCast', ballot: { kind: 'single', choice: 'r1-e2' } })
+
+    expectPhase(state, 'reveal')
+    const result = state.history[0]
+    expect(result?.winnerEntryId).toBe('r1-e1')
+    // Three people picked it, one point each — not 3/2/1.
+    expect(result?.points.p1).toBe(3)
+    expect(result?.points.p2).toBe(1)
+    expect(result?.points.p3 ?? 0).toBe(0)
+  })
+
+  it('refuses a ranking in a room that takes one vote each', () => {
+    // Not only the screen's bug: `authorize` never compared the ballot's kind
+    // to the room's setting, so any client could rank in a single-vote room.
+    let state = apply(room(4, { voting: 'single' }), 'p0', { type: 'game/started' })
+    state = expire(state)
+    state = apply(state, 'p0', {
+      type: 'round/subjectLocked',
+      subject: { kind: 'prompt', text: 'x' },
+    })
+    state = submitAll(state)
+    state = expire(state)
+
+    expect(
+      authorize(state, {
+        type: 'round/ballotCast',
+        ballot: { kind: 'rank', ranked: ['r1-e1', 'r1-e2', 'r1-e3'] },
+        at: at(),
+        actor: 'p0',
+      }),
+    ).toBe('This room takes one vote each, not a ranking.')
+
+    // A one-deep ranking stays legal — it is what a two-entry room casts, and
+    // what the tiebreak fixture builds.
+    expect(
+      authorize(state, {
+        type: 'round/ballotCast',
+        ballot: { kind: 'rank', ranked: ['r1-e1'] },
+        at: at(),
+        actor: 'p0',
+      }),
+    ).toBe(true)
   })
 
   it('refuses a vote for your own entry', () => {
@@ -411,5 +473,36 @@ describe('seat colours', () => {
     const first = state.players[0]?.color
     const eighth = state.players[PLAYER_COLORS.length]?.color
     expect(eighth).toBe(first)
+  })
+})
+
+describe('joining late', () => {
+  it('seats someone who arrives mid-round without giving them the round', () => {
+    const state = fixtureFor('compose', { players: 5 })
+    const next = reduce(state, {
+      type: 'player/joined',
+      player: { id: 'late', name: 'Roberto', avatarSeed: 'fern' },
+      at: 1_700_000_100_000,
+      actor: 'late',
+    })
+
+    // In the room…
+    expect(next.players.map((p) => p.id)).toContain('late')
+    // …but not in this round: they have no entry, so nobody waits on one.
+    expect(next.round?.entries.some((e) => e.authorId === 'late')).toBe(false)
+    expect(competitors(next).some((p) => p.id === 'late')).toBe(true)
+  })
+
+  it('is allowed in every phase, because the lobby promises it is', () => {
+    for (const phase of ['compose', 'vote', 'reveal', 'score'] as const) {
+      const state = fixtureFor(phase, { players: 5 })
+      const verdict = authorize(state, {
+        type: 'player/joined',
+        player: { id: 'late', name: 'Roberto', avatarSeed: 'fern' },
+        at: 1_700_000_100_000,
+        actor: 'late',
+      })
+      expect(verdict, phase).toBe(true)
+    }
   })
 })

@@ -39,6 +39,16 @@ export const TIEBREAK_BONUS = 1
 export const MIN_PLAYERS = 3
 export const MAX_PLAYERS = 20
 
+/**
+ * What a host is called when they never gave a name.
+ *
+ * Reaching a room without passing through `/host` is a real path — a shared
+ * link, a dev URL — and the roster needs *something*. It is deliberately a word
+ * that reads in the third person, because a guest's lobby says it back to them:
+ * "You is still herding the rest of the team" is what the obvious choice got.
+ */
+export const HOST_FALLBACK_NAME = 'Host'
+
 /** A dropped player keeps their seat, and their submission, for this long. */
 export const SEAT_GRACE_MS = 60_000
 

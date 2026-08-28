@@ -2,8 +2,20 @@
 
 .rail {
   width: 100%;
-  height: t.$progress-rail-height;
   background-color: t.$line-hairline;
+}
+
+.header {
+  height: t.$progress-rail-height;
+}
+
+// Thicker and rounded: this one is read as a countdown rather than glanced at
+// as chrome, so it carries the same weight as the number beside it.
+.bar {
+  height: t.$space-8;
+  border-radius: t.$radius-pip;
+  background-color: t.$fill-secondary;
+  overflow: hidden;
 }
 
 .fill {

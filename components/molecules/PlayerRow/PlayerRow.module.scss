@@ -98,9 +98,9 @@
   display: block;
   height: 100%;
   border-radius: t.$radius-pip;
-  // Neutral by default — the yellow is what marks first place, so every row
-  // carrying it would make the colour mean nothing.
-  background-color: t.$line-rank;
+  // The accent for everyone, gold for the leader — the two colours the design
+  // gives the scoreboard. A neutral fill read as a disabled control.
+  background-color: t.$accent;
 }
 
 .winner .barFill {
@@ -113,4 +113,45 @@
   font-weight: 800;
   color: t.$text-primary;
   font-variant-numeric: tabular-nums;
+}
+
+// The standings' note column. Suppressed below `md`: on a phone the row is
+// already carrying a rank, an avatar, a name, a bar and a score, and this is
+// the one of the six that repeats information the scoreboard shows elsewhere.
+.note {
+  display: none;
+  flex: none;
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 500;
+  color: t.$text-label;
+  text-align: right;
+  white-space: nowrap;
+
+  @include t.mq('md') {
+    display: block;
+  }
+}
+
+// The guest lobby's roster. Hugs its content so a row of them wraps, which is
+// what makes twenty names readable without twenty full-width rows.
+.pill {
+  display: inline-flex;
+  width: auto;
+  gap: t.$space-10;
+  padding: t.$space-8 t.$space-14 t.$space-8 t.$space-8;
+  border-radius: t.$radius-pill;
+  background-color: t.$fill-subtle;
+}
+
+.pill .name {
+  flex: 0 1 auto;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+// Your own seat, so a roster of twenty is scannable for one name.
+.pill.you {
+  background-color: t.$accent-fill-weak;
+  box-shadow: inset 0 0 0 1px t.$accent-border-weak;
 }

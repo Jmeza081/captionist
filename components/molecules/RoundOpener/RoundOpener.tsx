@@ -13,7 +13,7 @@ export interface RoundOpenerProps {
   /** The line under it — what everyone else does. */
   subline: string
   /** Whoever holds the role this round. */
-  roleHolder: Pick<AvatarProps, 'name' | 'color' | 'src'>
+  roleHolder: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
   onSkip?: () => void
 }
 

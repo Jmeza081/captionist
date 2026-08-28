@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="This is fine">
+  <style>
+    .flame { transform-origin: 32px 52px; animation: flame 1.6s ease-in-out infinite; }
+    @keyframes flame { 0%, 100% { transform: scaleY(1) scaleX(1); } 50% { transform: scaleY(1.07) scaleX(.97); } }
+    @media (prefers-reduced-motion: reduce) { .flame { animation: none; } }
+  </style>
+  <g class="flame">
+    <path d="M32 6c12 12 19 21 19 30a19 19 0 0 1-38 0C13 27 20 18 32 6z" fill="#FF787D"/>
+    <path d="M32 20c8 8 12 14 12 19a12 12 0 0 1-24 0c0-5 4-11 12-19z" fill="#F6E338"/>
+  </g>
+  <!-- The face sits still while the flame moves, so it reads as calm. -->
+  <circle cx="27" cy="38" r="2.6" fill="#17181A"/>
+  <circle cx="37" cy="38" r="2.6" fill="#17181A"/>
+  <path d="M27 46h10" stroke="#17181A" stroke-width="3" stroke-linecap="round"/>
+</svg>

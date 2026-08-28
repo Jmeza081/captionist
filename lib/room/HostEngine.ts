@@ -92,12 +92,32 @@ export class HostEngine {
         if (intent.action.type === 'clock/expired') {
           // The trust boundary. `clock/expired` is the engine's own event, so
           // accepting one off the wire would let any guest end a phase early.
-          this.onRefused?.(intent, 'The clock is the host’s to keep.')
+          this.refuse(intent, 'The clock is the host’s to keep.')
           return
         }
         this.apply(intent.action, intent.from, intent)
       }),
     )
+    // Presence does two jobs, and the second one is why the reconnect layer
+    // was inert until now.
+    //
+    // A member *appearing* is the only thing that makes a late joiner
+    // possible: `recipients()` already unions `members()`, but nothing
+    // published when that set grew, so a guest attaching after `start()`
+    // waited on a broadcast that never came.
+    //
+    // A member *vanishing* is a player dropping — and until this, the host
+    // detected it and did nothing. `player/left` holds their seat and their
+    // submission for `SEAT_GRACE_MS`; coming back reclaims it. That is the
+    // whole of `ConnectionState`, which had four writers and no readers.
+    this.teardown.push(
+      this.transport.onPresence((entries) => {
+        if (this.stopped) return
+        this.reconcile(entries.map((entry) => entry.id))
+        this.publish()
+      }),
+    )
+
     this.transport.setPresence('online')
     this.schedule()
     this.publish()
@@ -119,7 +139,7 @@ export class HostEngine {
     const full = { ...action, at: this.now(), actor } as GameAction
     const verdict = authorize(this.state, full)
     if (verdict !== true) {
-      if (intent) this.onRefused?.(intent, verdict)
+      if (intent) this.refuse(intent, verdict)
       return false
     }
     const next = reduce(this.state, full)
@@ -131,6 +151,50 @@ export class HostEngine {
     this.publish()
     this.onChange?.(next)
     return true
+  }
+
+  /**
+   * Turn "who is attached" into "who is playing".
+   *
+   * The transport knows sockets; the reducer knows seats. Nothing joined the
+   * two, so a dropped player stayed `online` in the roster forever and the
+   * held-seat machinery never ran.
+   *
+   * Deliberately one-way per player and idempotent: a presence set arrives on
+   * every change, so this is called constantly and must cost nothing when
+   * nothing moved. The reducer returning the same reference for a no-op is
+   * what makes that true.
+   */
+  private reconcile(attached: readonly PlayerId[]): void {
+    const here = new Set(attached)
+    for (const player of this.state.players) {
+      // The host is not a member of its own transport in every
+      // implementation, and a host that dropped is not a case presence can
+      // report — the room would be gone with it.
+      if (player.id === this.state.hostId) continue
+
+      const present = here.has(player.id)
+      if (!present && player.connection === 'online') {
+        this.apply({ type: 'player/left' }, player.id)
+      } else if (present && player.connection !== 'online') {
+        this.apply({ type: 'player/reconnected' }, player.id)
+      }
+    }
+  }
+
+  /**
+   * Tell the asker why, wherever they are.
+   *
+   * The in-process callback is kept because the host's own refusals never
+   * touch the wire — it is the same tab — and because the dev route and the
+   * tests read it. Everyone else gets the sentence over the transport, which
+   * is the only route that reaches another tab.
+   */
+  private refuse(intent: Intent, reason: string): void {
+    this.onRefused?.(intent, reason)
+    if (intent.from !== this.transport.selfId) {
+      this.transport.publishRefusal(intent.from, reason)
+    }
   }
 
   /**

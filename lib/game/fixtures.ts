@@ -2,6 +2,7 @@ import type { ActionInput, GameAction } from './actions'
 import { authorize } from './authorize'
 import { createRoom } from './create'
 import { reduce } from './reducer'
+import { ballotFrom } from './selectors'
 import type { EntryAnswer, GameState, RoomPhase, RoomSettings } from './types'
 
 /**
@@ -128,8 +129,10 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
       const voterB = state.players.find(
         (p) => p.id !== state.round?.entries[1]?.authorId && p.id !== voterA?.id,
       )
-      if (voterA) state = step(state, voterA.id, { type: 'round/ballotCast', ballot: { kind: 'rank', ranked: [a] } })
-      if (voterB) state = step(state, voterB.id, { type: 'round/ballotCast', ballot: { kind: 'rank', ranked: [b] } })
+      const ballotA = ballotFrom(state, [a])
+      const ballotB = ballotFrom(state, [b])
+      if (voterA && ballotA) state = step(state, voterA.id, { type: 'round/ballotCast', ballot: ballotA })
+      if (voterB && ballotB) state = step(state, voterB.id, { type: 'round/ballotCast', ballot: ballotB })
     }
     state = expire(state) // vote -> tally -> tiebreak
     return state
@@ -138,8 +141,12 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
   for (const p of state.players) {
     const own = state.round?.entries.find((e) => e.authorId === p.id)
     const ranked = entryIds.filter((id) => id !== own?.id).slice(0, 3)
-    if (ranked.length > 0) {
-      state = step(state, p.id, { type: 'round/ballotCast', ballot: { kind: 'rank', ranked } })
+    // Through `ballotFrom` rather than a hardcoded `rank`, so a single-vote
+    // fixture casts what a single-vote room scores. Hardcoding it here paid
+    // 3/2/1 in a room that promised 1, and `authorize` now refuses it outright.
+    const ballot = ballotFrom(state, ranked)
+    if (ballot) {
+      state = step(state, p.id, { type: 'round/ballotCast', ballot })
     }
   }
   if (state.phase === 'tiebreak') state = expire(state)

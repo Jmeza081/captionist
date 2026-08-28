@@ -5,12 +5,19 @@ import { Icon } from '@/components/atoms/Icon'
 import styles from './ChatMessage.module.scss'
 
 export interface ChatMessageProps {
-  author: Pick<AvatarProps, 'name' | 'color' | 'src'>
+  author: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
   body: string
   /** Already formatted for reading — "2:14", not a timestamp. */
   time: string
   /** A GIF the player attached, rendered at 180×120. */
   attachment?: { src: string; alt: string }
+  /**
+   * The caption this message answers.
+   *
+   * Content, never authorship — the grid is anonymous until the reveal, and a
+   * name here would hand back what `project()` strips.
+   */
+  replyTo?: { src?: string; caption: string }
   /** Reaction tallies under the body. */
   tallies?: ReactNode
   /**
@@ -31,6 +38,7 @@ export function ChatMessage({
   body,
   time,
   attachment,
+  replyTo,
   tallies,
   announcement = false,
 }: ChatMessageProps) {
@@ -58,7 +66,23 @@ export function ChatMessage({
           <time className={styles.time}>{time}</time>
         </div>
 
-        <p className={styles.body}>{body}</p>
+        {body && <p className={styles.body}>{body}</p>}
+
+        {/* After the body, the way the design draws it: you read what someone
+            said, then what they said it about. */}
+        {replyTo && (
+          <div className={styles.quote}>
+            {replyTo.src && (
+              /* eslint-disable-next-line @next/next/no-img-element -- the
+                 round's own art, already remote and animated. */
+              <img className={styles.quoteThumb} src={replyTo.src} alt="" />
+            )}
+            <div className={styles.quoteBody}>
+              <Eyebrow tone="muted">Replying to</Eyebrow>
+              <span className={styles.quoteCaption}>{replyTo.caption}</span>
+            </div>
+          </div>
+        )}
 
         {attachment && (
           <div className={styles.attachment}>

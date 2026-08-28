@@ -59,12 +59,81 @@ export interface StateMeta {
  * Anything the room says that is not room state.
  *
  * Chat is an event, never `GameState` — a full-state broadcast per message
- * would be absurd, and chat has no bearing on what the reducer decides. Landing
- * in phase 6; the lane exists now so it does not reshape the interface later.
+ * would be absurd, and chat has no bearing on what the reducer decides. The
+ * lane was cut in phase 1 and filled in phase 6, and the interface did not move
+ * to accommodate it, which is what it was shaped early for.
+ *
+ * **`from` is the transport's, not the sender's.** Every implementation
+ * overwrites it on receive with the identity it authenticated, exactly as
+ * `Intent.from` is. A payload field would let any member post as anyone else
+ * the moment chat existed to carry it.
  */
+/** A GIF sent with a message. `src` is checked on receive, never on send. */
+export interface ChatAttachment {
+  src: string
+  alt: string
+}
+
+/**
+ * The caption a message answers — a **snapshot, not a reference**.
+ *
+ * It carries the entry's content and deliberately not its `EntryId`, for two
+ * reasons that pull the same way:
+ *
+ * 1. **Lifetime.** `round.entries` is replaced wholesale when the round turns
+ *    over, and nothing in `history` keeps a caption's text or its media. Chat
+ *    scrollback is 50 messages and outlives the round by design. An id would
+ *    resolve to nothing by round three — which is exactly when the design's
+ *    reason for the quote ("keeps the reply legible after the grid has
+ *    scrolled") starts to matter.
+ * 2. **The store's contract.** `EventStoreOptions.isMember` is a predicate
+ *    rather than a roster precisely so this store holds no copy of game state.
+ *    Resolving an id at render would make a thing that was *said* change what
+ *    it says because the room moved on.
+ *
+ * **Never carries authorship.** `project()` strips `authorId` while voting is
+ * open; a "replying to Jesska's caption" label would hand that back by a second
+ * route, which is the failure `redactTiebreak` already exists to prevent.
+ *
+ * The id is omitted on purpose. If a jump-to-the-card affordance is ever
+ * wanted, add it then with its own reason — an id that nothing resolves is a
+ * trap for whoever helpfully resolves it.
+ */
+export interface ChatQuote {
+  /** The entry's thumbnail. Absent when the round had no image to show. */
+  src?: string
+  /** The caption text, as the grid showed it. */
+  caption: string
+}
+
 export type RoomEvent =
-  | { kind: 'chat'; from: PlayerId; text: string; at: number }
-  | { kind: 'reaction'; from: PlayerId; entryId: string; emoji: string; at: number }
+  | {
+      kind: 'chat'
+      from: PlayerId
+      text: string
+      at: number
+      attachment?: ChatAttachment
+      replyTo?: ChatQuote
+    }
+  | {
+      kind: 'reaction'
+      from: PlayerId
+      /**
+       * What is being reacted to.
+       *
+       * A third `kind` was the obvious shape and the wrong one: reacting to a
+       * card and reacting to a message are the same act against different
+       * things, so they share a handler, a tally derivation and a rate limit.
+       * Splitting the kind would have duplicated all three.
+       */
+      target: ReactionTarget
+      targetId: string
+      emoji: string
+      at: number
+    }
+
+/** An entry in a vote grid, or one message in the room chat. */
+export type ReactionTarget = 'entry' | 'message'
 
 /** Who the transport believes is present, independent of what the reducer thinks. */
 export interface PresenceEntry {
@@ -97,17 +166,36 @@ export interface RoomTransport {
    * else's is stripped. So the host publishes one projection per recipient
    * rather than a single shared payload.
    *
-   * Phase 5 note: this is the one part of the interface Ably does not satisfy
-   * for free, since a channel broadcast reaches every subscriber. The options
-   * there are a per-member channel or a broadcast carrying only the shared
-   * projection plus a private "your entry is `id`" message. Decide it then —
-   * recorded here so it is not discovered at swap time.
+   * This is the one part of the interface a channel does not satisfy for free,
+   * since a broadcast reaches every subscriber identically. It was recorded
+   * here as phase 5's question and arrived a phase early, because
+   * `BroadcastChannel` is the same shape: `BroadcastTransport` answers it with
+   * **one channel per recipient**, and `AblyTransport` inherits that answer.
+   * See [ADR 0007](../../docs/adr/0007-the-first-tab-to-ask-owns-the-room.md).
    */
   publishState(state: PublicState, meta: StateMeta, to?: PlayerId): void
   onState(handler: (state: PublicState, meta: StateMeta) => void): Unsubscribe
 
   publishEvent(event: RoomEvent): void
   onEvent(handler: (event: RoomEvent) => void): Unsubscribe
+
+  /**
+   * Host → the one player whose intent was refused.
+   *
+   * A refusal is addressed and private: it belongs to the person who asked, and
+   * broadcasting "Jesse cannot vote for their own" to the room would be both
+   * noise and a leak. It carries no authority — it is the host explaining a
+   * decision already made, so it is not state and not an event.
+   *
+   * This lane exists from phase 4 rather than phase 5. While every endpoint
+   * shared a page, `HostEngine`'s `onRefused` callback reached the asker
+   * in-process; the moment a guest lives in another tab, an in-process callback
+   * reaches nobody and a blocked button goes quiet instead of explaining
+   * itself. `authorize.ts` returns finished sentences precisely so this lane
+   * can carry them straight to a snackbar.
+   */
+  publishRefusal(to: PlayerId, reason: string): void
+  onRefusal(handler: (reason: string) => void): Unsubscribe
 
   setPresence(state: ConnectionState): void
   onPresence(handler: (entries: readonly PresenceEntry[]) => void): Unsubscribe

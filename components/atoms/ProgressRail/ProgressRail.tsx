@@ -6,10 +6,16 @@ export interface ProgressRailProps {
   /** Matches the timer pill going red at 15s. */
   urgent?: boolean
   label?: string
+  /**
+   * `header` is the 3px hairline under the room's header. `bar` is the thicker,
+   * rounded one the reconnect overlay counts a held seat down with — same
+   * mechanics, same colours, twice the height and a radius.
+   */
+  size?: 'header' | 'bar'
 }
 
 /**
- * The 3px rail under the header that drains with the round timer.
+ * A rail that drains with a deadline.
  *
  * Presentational: the timer pill already announces the time, so this is
  * hidden from assistive tech unless given a label.
@@ -18,12 +24,13 @@ export function ProgressRail({
   fraction,
   urgent = false,
   label,
+  size = 'header',
 }: ProgressRailProps) {
   const pct = Math.min(100, Math.max(0, fraction * 100))
 
   return (
     <div
-      className={styles.rail}
+      className={`${styles.rail} ${styles[size]}`}
       role={label ? 'progressbar' : undefined}
       aria-label={label}
       aria-valuenow={label ? Math.round(pct) : undefined}

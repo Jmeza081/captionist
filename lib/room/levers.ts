@@ -1,8 +1,8 @@
 import { FIXTURE_PHASES } from '@/lib/game/fixtures'
-import type { GameMode, PlayerId, RoomPhase } from '@/lib/game/types'
+import type { GameMode, PlayerId, RoomPhase, RoomSettings } from '@/lib/game/types'
 
 /**
- * The seven URL levers, read once in `RoomProvider`.
+ * The ten URL levers, read once in `RoomProvider`.
  *
  * Gated to non-production so no test branch can leak into a screen: in a
  * production build every lever reads as absent, whatever the query string says.
@@ -22,6 +22,14 @@ export interface Levers {
    */
   mode?: GameMode
   /**
+   * The room's voting rule and caption format, for the same reason as `mode`:
+   * every fixture takes `DEFAULT_SETTINGS`, so a single-vote or one-line room
+   * is otherwise reachable only by walking `/host` → `sessionStorage` → a
+   * room, which drags a route boundary into a screen spec.
+   */
+  voting?: RoomSettings['voting']
+  format?: RoomSettings['format']
+  /**
    * Who the local player is. Defaults to the host.
    *
    * The round-1 role holder is `players[0]`, which is also the host — so as
@@ -36,6 +44,15 @@ export interface Levers {
    * afternoon of layout work off the rate limit.
    */
   gifs?: 'stub' | 'live'
+  /**
+   * Which transport the room runs on.
+   *
+   * A real room is Ably — that is the only way two devices reach each other,
+   * and unlike Giphy there is no offline stand-in for other people. But the
+   * test suite must not need a key or a network, so `broadcast` selects the
+   * one-browser transport instead. `ABLY_STUB=1` does the same thing stickily.
+   */
+  transport?: 'ably' | 'broadcast'
 }
 
 const MAX_BOTS = 19
@@ -65,6 +82,12 @@ export function readLevers(
   const mode = search.get('mode')
   if (mode === 'caption' || mode === 'react') levers.mode = mode
 
+  const voting = search.get('voting')
+  if (voting === 'rank' || voting === 'single') levers.voting = voting
+
+  const format = search.get('format')
+  if (format === 'tb' || format === 'one') levers.format = format
+
   // Shape only — whether that seat exists is the room's business, not the
   // parser's, and a fixture with fewer players should fall back rather than throw.
   const as = search.get('as')
@@ -72,6 +95,9 @@ export function readLevers(
 
   const gifs = search.get('gifs')
   if (gifs === 'stub' || gifs === 'live') levers.gifs = gifs
+
+  const transport = search.get('transport')
+  if (transport === 'ably' || transport === 'broadcast') levers.transport = transport
 
   return levers
 }

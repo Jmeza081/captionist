@@ -29,6 +29,36 @@
   background-color: rgba(123, 97, 255, 0.12);
 }
 
+// The staged quote. The same accent rule the message will carry, so what you
+// are about to send looks like what lands.
+.replying {
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+  padding: t.$space-8 t.$space-10;
+  border-radius: t.$chat-quote-radius;
+  background: t.$fill-quote;
+  border-left: t.$chat-quote-rule solid t.$accent-border-quote;
+  min-width: 0;
+}
+
+.replyingThumb {
+  flex: none;
+  width: t.$chat-quote-thumb;
+  height: t.$chat-quote-thumb;
+  border-radius: t.$chat-quote-thumb-radius;
+  object-fit: cover;
+}
+
+.replyingCaption {
+  font-size: 12px;
+  font-weight: 600;
+  color: t.$text-quote;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .attachedPreview {
   flex: none;
   width: t.$composer-attach-preview-w;

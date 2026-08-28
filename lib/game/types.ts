@@ -12,8 +12,9 @@
  *    message cap, and twenty inlined avatars would exhaust it on their own.
  * 2. **`Player` stays structurally assignable to `AvatarProps`.** Every
  *    player-rendering molecule takes `Pick<AvatarProps, 'name' | 'color' |
- *    'src'>`, so `<PlayerRow player={player} />` typechecks with no adapter.
- *    Keep it that way.
+ *    'src' | 'avatarSeed'>`, so `<PlayerRow player={player} />` typechecks with
+ *    no adapter. Keep it that way. `avatarSeed` is in that shape because the
+ *    art is rendered from it at the edge — which is what lets invariant 1 hold.
  */
 
 export type PlayerId = string
@@ -169,9 +170,9 @@ export type Clock =
 
 export interface RoomSettings {
   mode: GameMode
-  /** `tb` is top-and-bottom. `one` is modelled but shipped blocked. */
+  /** `tb` is top-and-bottom; `one` asks for a single caption line. */
   format: 'tb' | 'one'
-  /** `single` is modelled but shipped blocked. */
+  /** `rank` pays 3/2/1 across three picks; `single` pays 1 to one. */
   voting: 'rank' | 'single'
   /** The compose clock, in seconds. 30–180 in steps of 15. */
   capSeconds: number

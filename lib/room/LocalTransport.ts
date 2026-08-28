@@ -65,6 +65,7 @@ export class LocalBus {
     PlayerId,
     Set<(entries: readonly PresenceEntry[]) => void>
   >()
+  private readonly refusalHandlers = new Map<PlayerId, Set<(reason: string) => void>>()
   private readonly presence = new Map<PlayerId, ConnectionState>()
 
   /** Outstanding deliveries, so `flush()` can await a quiet bus. */
@@ -139,6 +140,17 @@ export class LocalBus {
     return LocalBus.add(this.presenceHandlers, id, handler)
   }
 
+  registerRefusal(id: PlayerId, handler: (reason: string) => void): Unsubscribe {
+    return LocalBus.add(this.refusalHandlers, id, handler)
+  }
+
+  /** Addressed, never fanned out: a refusal belongs to whoever asked. */
+  publishRefusal(to: PlayerId, reason: string): void {
+    const set = this.refusalHandlers.get(to)
+    if (!set) return
+    for (const handler of [...set]) this.deliver(() => handler(reason))
+  }
+
   sendIntent(intent: Intent): void {
     this.deliver(() => {
       for (const set of [...this.intentHandlers.values()]) {
@@ -189,6 +201,7 @@ export class LocalBus {
     this.stateHandlers.clear()
     this.eventHandlers.clear()
     this.presenceHandlers.clear()
+    this.refusalHandlers.clear()
     const waiters = this.idle
     this.idle = []
     for (const resolve of waiters) resolve()
@@ -205,13 +218,18 @@ const NOOP: Unsubscribe = () => {}
 
 export function createLocalTransport(options: LocalTransportOptions): RoomTransport {
   const { bus, selfId, isHost } = options
-  let statusHandler: ((status: TransportStatus) => void) | undefined
+  // A set, like every other subscription. A single slot silently evicted a
+  // second subscriber, which is the bug `LocalBus`'s handler sets already exist
+  // to prevent — `onStatus` was the one that got missed.
+  const statusHandlers = new Set<(status: TransportStatus) => void>()
   const teardown: Unsubscribe[] = []
 
   // Local delivery cannot fail, so status goes straight to connected. The hook
   // exists because a guest screen binds to it and must not care which
   // implementation it got.
-  queueMicrotask(() => statusHandler?.('connected'))
+  queueMicrotask(() => {
+    for (const handler of [...statusHandlers]) handler('connected')
+  })
 
   const transport: RoomTransport = {
     roomCode: bus.roomCode,
@@ -243,11 +261,25 @@ export function createLocalTransport(options: LocalTransportOptions): RoomTransp
     },
 
     publishEvent(event) {
-      bus.publishEvent(event)
+      // `from` belongs to the endpoint, never the caller — the same rule the
+      // networked transports hold, kept here so the in-process bus does not
+      // quietly permit something Ably refuses.
+      bus.publishEvent({ ...event, from: selfId })
     },
 
     onEvent(handler) {
       const off = bus.registerEvent(selfId, handler)
+      teardown.push(off)
+      return off
+    },
+
+    publishRefusal(to, reason) {
+      if (!isHost) throw new Error('publishRefusal: only the host may refuse an intent')
+      bus.publishRefusal(to, reason)
+    },
+
+    onRefusal(handler) {
+      const off = bus.registerRefusal(selfId, handler)
       teardown.push(off)
       return off
     },
@@ -267,15 +299,15 @@ export function createLocalTransport(options: LocalTransportOptions): RoomTransp
     },
 
     onStatus(handler) {
-      statusHandler = handler
+      statusHandlers.add(handler)
       return () => {
-        statusHandler = undefined
+        statusHandlers.delete(handler)
       }
     },
 
     close() {
       for (const off of teardown.splice(0)) off()
-      statusHandler = undefined
+      statusHandlers.clear()
     },
   }
 

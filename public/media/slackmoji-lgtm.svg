@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="LGTM">
+  <style>
+    .stamp { transform-origin: 32px 32px; animation: stamp 3s ease-in-out infinite; }
+    @keyframes stamp { 0%, 70%, 100% { transform: scale(1); } 78% { transform: scale(1.12); } }
+    @media (prefers-reduced-motion: reduce) { .stamp { animation: none; } }
+  </style>
+  <g class="stamp">
+    <rect x="5" y="19" width="54" height="26" rx="6" fill="none" stroke="#83D06C" stroke-width="4"/>
+    <text x="32" y="33" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="800"
+          fill="#83D06C" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">LGTM</text>
+  </g>
+</svg>

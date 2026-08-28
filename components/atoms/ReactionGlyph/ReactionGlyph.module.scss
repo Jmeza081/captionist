@@ -1,0 +1,7 @@
+@use 'theme' as t;
+
+.image {
+  display: inline-block;
+  vertical-align: -2px;
+  object-fit: contain;
+}

@@ -123,16 +123,47 @@ test.describe('component gallery', () => {
     await page.goto('/components')
 
     const toolbar = page.getByRole('dialog', { name: 'React to this caption' })
+    // The tiles, not every button in the panel — the pack tabs are buttons too.
+    const tiles = toolbar.getByRole('group', { name: 'Reactions' }).getByRole('button')
 
     // Unsearched, it shows the ten defaults — not the whole set.
-    await expect(toolbar.getByRole('button')).toHaveCount(10)
+    await expect(tiles).toHaveCount(10)
 
+    // Narrows to the reactions that actually mention one, named rather than
+    // counted — the count is a property of the corpus, which grows.
     await toolbar.getByLabel('Search reactions').fill('outage')
-    await expect(toolbar.getByRole('button', { name: 'Panic' })).toBeVisible()
-    await expect(toolbar.getByRole('button')).toHaveCount(1)
+    await expect(toolbar.getByRole('button', { name: 'Incident' })).toBeVisible()
+    await expect(toolbar.getByRole('button', { name: 'This is fine' })).toBeVisible()
+    await expect(tiles).toHaveCount(2)
 
     await toolbar.getByLabel('Search reactions').fill('zzzz')
     await expect(toolbar.getByText(/Nothing matches/)).toBeVisible()
+  })
+
+  test('the reaction packs filter the grid, and search beats a pack', async ({ page }) => {
+    await page.goto('/components')
+
+    const toolbar = page.getByRole('dialog', { name: 'React to this caption' })
+    const tiles = toolbar.getByRole('group', { name: 'Reactions' }).getByRole('button')
+
+    // The four Slackmojis are the app's own art, and they sit in the defaults
+    // — DESIGNSYSTEM §4.4 is "6 emoji + 4 Slackmoji GIFs".
+    await expect(tiles.locator('img[src^="/media/slackmoji-"]')).toHaveCount(4)
+
+    await toolbar.getByRole('button', { name: 'Slackmojis' }).click()
+    await expect(tiles).toHaveCount(4)
+
+    await toolbar.getByRole('button', { name: 'Objects' }).click()
+    await expect(tiles.locator('img')).toHaveCount(0)
+
+    // A search overrides whichever pack is open, rather than being narrowed
+    // by it — §4.4 makes search the long-tail answer.
+    await toolbar.getByLabel('Search reactions').fill('laugh')
+    await expect(toolbar.getByRole('button', { name: 'Crying with laughter' })).toBeVisible()
+
+    // Recent starts empty and says so, rather than showing a blank grid.
+    await toolbar.getByRole('button', { name: 'Recent' }).click()
+    await expect(toolbar.getByText(/Nothing here yet/)).toBeVisible()
   })
 
   test('the modal opens, steps, and closes on Escape', async ({ page }) => {
@@ -384,5 +415,28 @@ test.describe('compositions', () => {
     const header = page.locator('header').filter({ hasText: 'Round 2 of 5' })
     await expect(header).toBeVisible()
     await expect(header.getByRole('timer')).toBeVisible()
+  })
+})
+
+test.describe('the phase-3 atoms', () => {
+  test('a rank slot says what it holds, and an empty one says it is empty', async ({
+    page,
+  }) => {
+    await page.goto('/components')
+
+    // The tint and the dashed outline are colour and shape — neither reaches a
+    // screen reader, so the label has to carry the state.
+    await expect(
+      page.getByRole('button', { name: 'Clear 1st: It compiles. Ship it.' }),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: '3rd, empty' })).toBeVisible()
+  })
+
+  test('a status pill carries its second clause', async ({ page }) => {
+    await page.goto('/components')
+
+    await expect(page.getByText('Locked in')).toBeVisible()
+    await expect(page.getByText('4 of 7 have voted')).toBeVisible()
+    await expect(page.getByText(/can’t vote in their own duel/)).toBeVisible()
   })
 })

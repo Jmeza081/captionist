@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@/components/atoms/Button'
 import { QuickJoin } from '@/components/molecules/QuickJoin'
-import { generateCode, normalizeCode } from '@/lib/game/codes'
+import { normalizeCode } from '@/lib/game/codes'
 import styles from './LandingActions.module.scss'
 
 /**
@@ -13,10 +13,10 @@ import styles from './LandingActions.module.scss'
  * An organism because it routes: both paths end in a navigation to
  * `/room/[code]`, and `components/README.md` puts routing at this tier.
  *
- * Starting a room generates the code here rather than asking a server for one.
- * The host's browser *is* the server (ADR 0003), so there is nothing to ask —
- * the code only has to be well-formed and unlikely to collide, which
- * `generateCode` already guarantees.
+ * Starting a room goes through `/host` first, which is where the design puts
+ * the decisions — the code is generated there, on the way out. Joining pushes
+ * straight at the room, because a typed code is already the answer to the only
+ * question that screen asks.
  */
 
 const LENGTH = 6
@@ -24,22 +24,20 @@ const LENGTH = 6
 export interface LandingActionsProps {
   /** Where a fresh room lives. The generated code is appended. */
   roomBase?: string
+  /** Where "Start a game" goes to pick the room's rules. */
+  hostHref?: string
 }
 
-export function LandingActions({ roomBase = '/room' }: LandingActionsProps) {
+export function LandingActions({
+  roomBase = '/room',
+  hostHref = '/host',
+}: LandingActionsProps) {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | undefined>(undefined)
 
   const short = LENGTH - code.length
   const ready = short <= 0
-
-  function start() {
-    // Seeded from the clock at click time, never during render — a random
-    // value in the render path is a hydration mismatch waiting to happen.
-    const [fresh] = generateCode(Date.now())
-    router.push(`${roomBase}/${fresh}`)
-  }
 
   function join() {
     if (!ready) return
@@ -54,8 +52,10 @@ export function LandingActions({ roomBase = '/room' }: LandingActionsProps) {
 
   return (
     <div className={styles.actions}>
-      {/* Matched to the join pill beside it — see `$landing-cta-height`. */}
-      <Button size="form" className={styles.start} onClick={start}>
+      {/* A link, not a button: starting a game is a navigation to the setup
+          screen, so it previews on hover and works before hydration. Matched to
+          the join pill beside it — see `$landing-cta-height`. */}
+      <Button size="form" href={hostHref} className={styles.start}>
         Start a game — it’s free
       </Button>
 

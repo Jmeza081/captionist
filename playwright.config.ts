@@ -55,5 +55,21 @@ export default defineConfig({
     timeout: 120_000,
     stdout: 'ignore',
     stderr: 'pipe',
+    /**
+     * The suite talks to no third party, deliberately and explicitly.
+     *
+     * It was already true — but only because this machine happened to have no
+     * keys, which meant anyone adding one to `.env.local` silently moved the
+     * whole suite onto a live service. Both switches are stated here rather
+     * than inherited from an absence:
+     *
+     * - `ABLY_STUB` keeps every room on the tab transport.
+     * - `GIFS_STUB` keeps the picker *and the landing wall* on the offline
+     *   shelf. Not every room spec passes `?gifs=stub`, and `room.spec.ts`
+     *   walks a full game through the picker — so without this, a key turns a
+     *   full-suite run into a few hundred live Giphy calls and breaks
+     *   `landing.spec.ts`, which asserts the wall's stub art in the SSR HTML.
+     */
+    env: { ABLY_STUB: '1', GIFS_STUB: '1' },
   },
 })

@@ -4,7 +4,7 @@ import type { PublicState } from '@/lib/game/types'
 import { GuestClient } from './GuestClient'
 import { HostEngine, type TimerHandle } from './HostEngine'
 import { LocalBus, createLocalTransport } from './LocalTransport'
-import type { Intent } from './transport'
+import type { Intent, RoomEvent } from './transport'
 
 const noTimers = {
   setTimer: (): TimerHandle => 0 as unknown as TimerHandle,
@@ -217,5 +217,92 @@ describe('the transport boundary', () => {
     expect(() =>
       guest.publishState(fixtureFor('lobby'), { rev: 2, hostNow: 0 }),
     ).toThrow(/only the host/i)
+  })
+})
+
+describe('a refusal for someone else', () => {
+  it('travels the transport, because an in-process callback reaches one tab', async () => {
+    const { bus, engine } = room('lobby')
+    engine.start()
+
+    // A real guest: its own endpoint, its own seat, as it would be in its own
+    // tab once `BroadcastTransport` puts it there.
+    const guest = createLocalTransport({ bus, selfId: 'p1', isHost: false })
+    const heard: string[] = []
+    guest.onRefusal((reason) => heard.push(reason))
+
+    // Host-only, so the room says no.
+    guest.sendIntent({ type: 'game/started' })
+    await bus.flush()
+
+    expect(heard).toEqual(['Only the host can do that.'])
+  })
+
+  it('does not send the host its own refusals over the wire', async () => {
+    const { bus, engine, hostTransport, refusals } = room('lobby')
+    engine.start()
+
+    const heard: string[] = []
+    hostTransport.onRefusal((reason) => heard.push(reason))
+
+    // `game/started` needs three players; this fixture's lobby has five, so
+    // reach for something the host genuinely cannot do instead.
+    hostTransport.sendIntent({ type: 'round/ballotCast', ballot: { kind: 'rank', ranked: [] } })
+    await bus.flush()
+
+    // The host is in the room where the refusal was decided: it hears it
+    // through the engine's own callback, and putting it on the wire as well
+    // would show it twice.
+    expect(refusals).toHaveLength(1)
+    expect(heard).toEqual([])
+  })
+})
+
+describe('the event lane', () => {
+  it('stamps the sender rather than trusting the payload', async () => {
+    const bus = new LocalBus('C-F34213', { latencyMs: 0 })
+    const host = createLocalTransport({ bus, selfId: 'p0', isHost: true })
+    const guest = createLocalTransport({ bus, selfId: 'p1', isHost: false })
+
+    const heard: RoomEvent[] = []
+    host.onEvent((event) => heard.push(event))
+
+    // A guest addressing a message from the host. `from` is the transport's to
+    // decide, exactly as `Intent.from` is — without that, the first thing chat
+    // buys the room is the ability to post as anybody in it.
+    guest.publishEvent({ kind: 'chat', from: 'p0', text: 'everyone vote for mine', at: 0 })
+    await bus.flush()
+
+    expect(heard).toHaveLength(1)
+    expect(heard[0]?.from).toBe('p1')
+  })
+
+  it('reaches the room without touching its state', async () => {
+    const { bus, engine, hostTransport } = room('vote')
+    engine.start()
+
+    const guest = createLocalTransport({ bus, selfId: 'p1', isHost: false })
+    const heard: RoomEvent[] = []
+    hostTransport.onEvent((event) => heard.push(event))
+
+    // Read after the guest has attached: joining the room is a real change,
+    // and the claim under test is about the event, not the connection.
+    await bus.flush()
+    const before = engine.snapshot().rev
+
+    guest.publishEvent({
+      kind: 'reaction',
+      from: 'p1',
+      target: 'entry',
+      targetId: 'e1',
+      emoji: '🔥',
+      at: 0,
+    })
+    await bus.flush()
+
+    expect(heard).toHaveLength(1)
+    // The whole reason chat is an event: it must not bump the revision guests
+    // drop stale *game* updates against.
+    expect(engine.snapshot().rev).toBe(before)
   })
 })

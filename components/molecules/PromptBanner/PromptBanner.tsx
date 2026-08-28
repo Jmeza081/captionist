@@ -6,7 +6,7 @@ export interface PromptBannerProps {
   /** The prompt text, without quotes — the component adds curly ones. */
   prompt: string
   /** The Prompter. Omit for the compact variant. */
-  author?: Pick<AvatarProps, 'name' | 'color' | 'src'>
+  author?: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
   /** `lg` is the round's hero banner; `sm` sits above a vote grid. */
   size?: 'sm' | 'lg'
   /**

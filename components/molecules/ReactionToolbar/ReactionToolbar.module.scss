@@ -24,6 +24,31 @@
   letter-spacing: 0.07em;
 }
 
+.tabs {
+  display: flex;
+  gap: t.$space-2;
+}
+
+.tab {
+  @include t.focusRing;
+
+  padding: t.$reaction-tab-pad-y t.$reaction-tab-pad-x;
+  border: 0;
+  border-radius: t.$segmented-item-radius;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: t.$text-meta;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tabActive {
+  background: t.$surface-tab-active;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

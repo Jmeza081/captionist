@@ -1,3 +1,4 @@
+import { avatarUri } from '@/lib/avatar'
 import styles from './Avatar.module.scss'
 
 /** The eight sizes the design specifies, in px. */
@@ -9,8 +10,17 @@ export interface AvatarProps {
   name: string
   /** The player's colour — the circle behind the art. */
   color: string
-  /** Avatar art. Falls back to the player's initial when absent. */
+  /** Avatar art, when something has already resolved it. */
   src?: string
+  /**
+   * Dicebear input. Rendered into a face locally, because the seed is what
+   * travels in `GameState` and the art must never be what goes on the wire.
+   * `src` wins if both are given; the initial is the fallback for neither.
+   *
+   * Named for the field it comes from, so `<Avatar {...player} />` keeps
+   * working — every molecule spreads a player straight in.
+   */
+  avatarSeed?: string
   size?: AvatarSize
   /** Chosen in setup: gains a 2px accent ring. */
   selected?: boolean
@@ -21,13 +31,16 @@ export interface AvatarProps {
 /**
  * A player, as a colour-filled circle with their art inset to ~78%.
  *
- * Art is optional so a room works before avatars load — the initial on the
- * player's own colour is still identifying.
+ * Three ways to fill it, in order: a resolved `src`, a `seed` rendered into a
+ * face, or the player's initial. The initial is not a placeholder to be
+ * replaced later — it is what a room falls back to when a seed is absent, and
+ * on the player's own colour it still identifies them.
  */
 export function Avatar({
   name,
   color,
   src,
+  avatarSeed,
   size = 40,
   selected = false,
   dimmed = false,
@@ -42,6 +55,7 @@ export function Avatar({
 
   // The design insets the art to ~78% of the circle.
   const art = Math.round(size * 0.78)
+  const image = src ?? (avatarSeed ? avatarUri(avatarSeed) : undefined)
 
   return (
     <span
@@ -50,11 +64,11 @@ export function Avatar({
       role="img"
       aria-label={selected ? `${name}, selected` : name}
     >
-      {src ? (
+      {image ? (
         // Avatar art is a fixed-size sprite, not a responsive image, so
         // next/image would add a loader round-trip for nothing.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" width={art} height={art} className={styles.art} />
+        <img src={image} alt="" width={art} height={art} className={styles.art} />
       ) : (
         <span className={styles.initial} style={{ fontSize: art * 0.44 }}>
           {name.charAt(0).toUpperCase()}

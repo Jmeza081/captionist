@@ -16,6 +16,7 @@ $surface-card: #1b1c1c; //        cards, popovers, toolbox
 $surface-timer: #1d1e1f; //       timer pill (neutral)
 $surface-snackbar: #232426; //    snackbar
 $surface-track: #242425; //       segmented-control track
+$surface-tab-active: #2a2b2c; //  the reaction picker's selected pack tab
 $surface-field: #303031; //       fields, active segment
 
 // --- Accents ----------------------------------------------------------------
@@ -37,8 +38,14 @@ $accent-fill-strong: rgba(123, 97, 255, 0.3);
 $accent-border-weak: rgba(123, 97, 255, 0.26);
 $accent-border: rgba(123, 97, 255, 0.45);
 $accent-border-strong: rgba(123, 97, 255, 0.55);
+// The quoted-caption rule. A shade heavier than `$accent-border-strong`, which
+// is the design's own distinction — the rule marks a quote rather than edging
+// a surface, so it reads at a glance beside 14px body text.
+$accent-border-quote: rgba(123, 97, 255, 0.6);
 
 $urgent-fill: rgba(255, 120, 125, 0.14);
+$urgent-border: rgba(255, 120, 125, 0.24); // the error card's own edge
+$urgent-glow: rgba(255, 120, 125, 0.22); //   the wash behind it
 // The same amber also marks "waiting on someone" — a different job, one hex.
 // Aliased rather than repeated so the value still lives in exactly one place.
 $status-waiting: $winner;
@@ -54,6 +61,7 @@ $winner-fill: rgba(246, 227, 56, 0.14);
 
 $text-primary: #fff;
 $text-chat: rgba(255, 255, 255, 0.78);
+$text-quote: rgba(255, 255, 255, 0.7); //  the caption a message replies to
 $text-body: rgba(255, 255, 255, 0.55);
 $text-label: rgba(255, 255, 255, 0.45);
 $text-meta: rgba(255, 255, 255, 0.4);
@@ -62,6 +70,7 @@ $text-timestamp: rgba(255, 255, 255, 0.3);
 
 // --- Neutral fills and lines ------------------------------------------------
 
+$fill-quote: rgba(255, 255, 255, 0.04); //     the quoted caption in a message
 $fill-subtle: rgba(255, 255, 255, 0.06); //   tally pill in chat
 $fill-secondary: rgba(255, 255, 255, 0.07); // secondary button
 $fill-field: rgba(255, 255, 255, 0.08); //     text field, avatar overflow chip

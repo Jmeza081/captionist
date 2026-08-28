@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Avatar, AvatarOverflow, AVATAR_SIZES } from '@/components/atoms/Avatar'
+import { AvatarPicker } from '@/components/molecules/AvatarPicker'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Chip } from '@/components/atoms/Chip'
@@ -11,11 +12,13 @@ import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { PresencePill } from '@/components/atoms/PresencePill'
 import { ProgressRail } from '@/components/atoms/ProgressRail'
+import { RankSlot } from '@/components/atoms/RankSlot'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
 import { SegmentedControl } from '@/components/atoms/SegmentedControl'
 import { Snackbar } from '@/components/atoms/Snackbar'
 import { Stack } from '@/components/atoms/Stack'
+import { StatusPill } from '@/components/atoms/StatusPill'
 import { Stepper } from '@/components/atoms/Stepper'
 import { Tag } from '@/components/atoms/Tag'
 import { TallyPill } from '@/components/atoms/TallyPill'
@@ -34,16 +37,18 @@ import { JoinPanel } from '@/components/molecules/JoinPanel'
 import { QuickJoin } from '@/components/molecules/QuickJoin'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { Modal } from '@/components/molecules/Modal'
+import { ModeCard } from '@/components/molecules/ModeCard'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { Podium } from '@/components/molecules/Podium'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { ReactionFloaters } from '@/components/molecules/ReactionFloaters'
-import { ReactionToolbar, type Reaction } from '@/components/molecules/ReactionToolbar'
+import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { RevealReactionBar } from '@/components/molecules/RevealReactionBar'
 import { RoomShare } from '@/components/molecules/RoomShare'
 import { RoundOpener, type GameMode } from '@/components/molecules/RoundOpener'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
-import { ATTACHMENT, MEDIA, PLAYER_COLORS, SLACKMOJI } from './placeholders'
+import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
+import { ATTACHMENT, MEDIA, PLAYER_COLORS } from './placeholders'
 import styles from './ComponentGallery.module.scss'
 
 const PLAYERS = {
@@ -56,19 +61,6 @@ const PLAYERS = {
   roberto: { name: 'Roberto', color: PLAYER_COLORS.green },
 }
 
-const REACTIONS: Reaction[] = [
-  { id: 'fire', glyph: '🔥', keywords: ['fire', 'hot', 'burn'], label: 'Fire' },
-  { id: 'skull', glyph: '💀', keywords: ['skull', 'dead', 'rip'], label: 'Skull' },
-  { id: 'cry', glyph: '😂', keywords: ['laugh', 'cry', 'funny'], label: 'Crying laughing' },
-  { id: 'eyes', glyph: '👀', keywords: ['eyes', 'look', 'watching'], label: 'Eyes' },
-  { id: 'melt', glyph: '🫠', keywords: ['melt', 'melting', 'fine'], label: 'Melting face' },
-  { id: 'target', glyph: '🎯', keywords: ['target', 'exact', 'bullseye'], label: 'Direct hit' },
-  { id: 'ship', glyph: SLACKMOJI.ship, kind: 'gif', keywords: ['ship', 'deploy'], label: 'Ship it' },
-  { id: 'panic', glyph: SLACKMOJI.panic, kind: 'gif', keywords: ['panic', 'outage'], label: 'Panic' },
-  { id: 'yikes', glyph: SLACKMOJI.yikes, kind: 'gif', keywords: ['yikes', 'oof'], label: 'Yikes' },
-  { id: 'nice', glyph: SLACKMOJI.nice, kind: 'gif', keywords: ['nice', 'good'], label: 'Nice' },
-  { id: 'clap', glyph: '👏', keywords: ['clap', 'applause'], label: 'Applause' },
-]
 
 const GIFS: GifResult[] = [
   { id: 'g1', src: MEDIA.serverRack, alt: 'a server rack on fire', keywords: ['fire', 'prod', 'outage'] },
@@ -79,14 +71,14 @@ const GIFS: GifResult[] = [
   { id: 'g6', src: MEDIA.outage, alt: 'an upside-down smile', keywords: ['outage', 'ok', 'sure'] },
 ]
 
-const QUICK = [
-  { id: 'fire', glyph: '🔥', label: 'Fire' },
-  { id: 'skull', glyph: '💀', label: 'Skull' },
-  { id: 'cry', glyph: '😂', label: 'Crying laughing' },
-  { id: 'eyes', glyph: '👀', label: 'Eyes' },
-  { id: 'melt', glyph: '🫠', label: 'Melting face' },
-  { id: 'target', glyph: '🎯', label: 'Direct hit' },
-]
+/**
+ * The composer's one-tap row, from the room's own list.
+ *
+ * Hardcoded here until phase 7, and drifted exactly as predicted: two ids and
+ * two labels no longer matched `QUICK_REACTIONS`. The gallery is supposed to
+ * show what ships, so it reads the same list every other surface does.
+ */
+const QUICK = QUICK_REACTIONS.map(({ id, glyph, label }) => ({ id, glyph, label }))
 
 const MODAL_STEPS = [
   {
@@ -146,6 +138,7 @@ function Case({ label, children }: { label: string; children: React.ReactNode })
  */
 export function ComponentGallery() {
   const [mode, setMode] = useState<GameMode>('caption')
+  const [face, setFace] = useState<string>('ember')
   const [source, setSource] = useState<'giphy' | 'upload'>('giphy')
   const [caption, setCaption] = useState('When prod goes down')
   const [search, setSearch] = useState('')
@@ -327,8 +320,11 @@ export function ComponentGallery() {
             <TimerPill seconds={120} urgent suffix="sudden death" />
           </Inline>
         </Case>
-        <Case label="Progress rail">
-          <ProgressRail fraction={0.62} label="Round timer" />
+        <Case label="Progress rail — the header hairline, and the countdown bar">
+          <Stack gap={12}>
+            <ProgressRail fraction={0.62} label="Round timer" />
+            <ProgressRail fraction={0.62} urgent size="bar" label="Seat held" />
+          </Stack>
         </Case>
         <Case label="Tags, chips, presence">
           <Inline gap={8}>
@@ -345,6 +341,44 @@ export function ComponentGallery() {
             <TallyPill glyph="🔥" count={9} label="Fire" />
             <TallyPill glyph="💀" count={5} mine label="Skull" />
             <TallyPill glyph="😂" count={2} context="chat" label="Crying laughing" />
+          </Inline>
+        </Case>
+        <Case label="Status pills — over media, and on the canvas">
+          <Inline gap={8}>
+            <StatusPill context="media" confirmed>
+              Locked in
+            </StatusPill>
+            <StatusPill note="Jesska and Melania can’t vote in their own duel">
+              4 of 7 have voted
+            </StatusPill>
+          </Inline>
+        </Case>
+        <Case label="Avatar picker — the face you play as">
+          <AvatarPicker label="Pick your face" value={face} onChange={setFace} />
+        </Case>
+        <Case label="Mode cards — a format, not a setting">
+          <Inline gap={10} align="start">
+            <ModeCard
+              title="Caption the image"
+              body="One player picks a GIF. Everyone else writes the caption."
+              tag="Selected"
+              selected
+              onSelect={() => {}}
+            />
+            <ModeCard
+              title="React to the caption"
+              body="One player writes a prompt. Everyone else answers with a GIF."
+              tag="Reversed"
+              selected={false}
+              onSelect={() => {}}
+            />
+          </Inline>
+        </Case>
+        <Case label="Rank slots — filled, and waiting">
+          <Inline gap={8}>
+            <RankSlot ordinal="1st" entry="It compiles. Ship it." first />
+            <RankSlot ordinal="2nd" entry="The rollback also failed." />
+            <RankSlot ordinal="3rd" />
           </Inline>
         </Case>
         <Case label="Round progress">
@@ -486,13 +520,26 @@ export function ComponentGallery() {
                 body="my exact face during standup"
                 attachment={{ src: ATTACHMENT, alt: 'A pair of eyes' }}
               />
+              <ChatMessage
+                author={PLAYERS.jesska}
+                time="2:16"
+                body="this is the correct answer and I will hear nothing else"
+                replyTo={{ src: ATTACHMENT, caption: 'Nuff said!' }}
+              />
+              <ChatMessage
+                author={PLAYERS.melania}
+                time="2:17"
+                body=""
+                attachment={{ src: ATTACHMENT, alt: 'A pair of eyes' }}
+                replyTo={{ caption: 'Day three of the two-hour migration.' }}
+              />
               <UnreadDivider count={3} />
             </Stack>
           </Case>
-          <Case label="Reaction toolbar — searchable, 10 defaults">
+          <Case label="Reaction toolbar — 6 emoji + 4 Slackmojis, then packs and search">
             <ReactionToolbar
               title="React to this caption"
-              reactions={REACTIONS}
+              reactions={[...REACTIONS]}
               chosen={chosen}
               onPick={(r) =>
                 setChosen((prev) =>

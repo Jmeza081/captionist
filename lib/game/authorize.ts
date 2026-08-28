@@ -73,6 +73,13 @@ export function authorize(state: GameState, action: GameAction): true | string {
         action.ballot.kind === 'rank' ? action.ballot.ranked : [action.ballot.choice]
       if (own && ids.includes(own.id)) return 'You cannot vote for your own — we checked.'
       if (new Set(ids).size !== ids.length) return 'Pick a different entry for each place.'
+      // The room's voting rule, enforced where every client meets it rather
+      // than in the screen that happens to draw the slots. A three-deep rank
+      // ballot in a single-vote room paid 3/2/1 against a setting that
+      // promised one point. A one-deep rank ballot stays legal — that is what
+      // a room with two entries casts, and what the tiebreak fixture builds.
+      if (state.settings.voting === 'single' && ids.length > 1)
+        return 'This room takes one vote each, not a ranking.'
       const known = new Set(state.round?.entries.map((e) => e.id) ?? [])
       if (ids.some((id) => !known.has(id))) return 'That entry is not in this round.'
       return true

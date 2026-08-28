@@ -85,13 +85,16 @@ recalled APIs.
 
 ## Architecture
 
-Four routes: `/` and `/components` are static, `/room/[code]` is dynamic and
-client-driven, and `/api/gifs` proxies Giphy so the key stays server-side. The
+Seven routes: `/`, `/components`, `/join` and `/host` are static, `/join/[code]`
+and `/room/[code]` are dynamic, and `/api/gifs` proxies Giphy so the key stays
+server-side. `/host` and `/join` are the front door — a room's rules are set
+before it exists, and a guest picks a name and a face before asking for a seat.
+The
 round flow's engine is built (`lib/game` pure core, `lib/room` host engine) and
-four of its ten phases have screens; the rest render `PhasePending` until phase
-3. `app/layout.tsx` owns fonts, global CSS and `app/tokens.scss` (which
-publishes the token custom properties). Components are tiered atoms → molecules
-→ organisms by *dependency*, not size; pages compose and hold almost no markup.
+all ten of its phases have screens. `app/layout.tsx` owns fonts, global CSS and
+`app/tokens.scss` (which publishes the token custom properties). Components are
+tiered atoms → molecules → organisms by *dependency*, not size; pages compose
+and hold almost no markup.
 
 Tokens flow Sass → CSS custom properties → `theme/tokens.ts`, so values exist
 once. `theme/tokens.ts` holds names only. `e2e/tokens.spec.ts` guards the bridge.

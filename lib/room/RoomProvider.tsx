@@ -2,32 +2,42 @@
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { ActionInput } from '@/lib/game/actions'
+import { HOST_FALLBACK_NAME } from '@/lib/game/constants'
 import { createRoom } from '@/lib/game/create'
 import { fixtureFor } from '@/lib/game/fixtures'
-import type { GameState, RoomCode } from '@/lib/game/types'
+import type { GameState, RoomCode, RoomSettings } from '@/lib/game/types'
 import { BotDriver } from './BotDriver'
+import { connectRoom, probeRealtime, RoomUnavailable } from './connect'
 import { GuestClient } from './GuestClient'
 import { HostEngine } from './HostEngine'
-import { LocalBus, createLocalTransport } from './LocalTransport'
 import { createAutopilot } from './autopilot'
-import { readLevers } from './levers'
+import { createEventStore } from './events'
+import { ensureIdentity, type Identity } from './identity'
+import { readLevers, type Levers } from './levers'
+import { clearPendingSettings, readPendingSettings } from './pendingSettings'
 import { createRoomStore } from './store'
+import type { RoomTransport } from './transport'
 import { RoomContext, type RoomBinding } from './useRoom'
 
 /**
  * Constructs the room and hands screens a store to subscribe to.
  *
- * Phase 5 changes exactly one thing in this file: which transport is built.
- * Nothing above `useRoom()` knows a transport exists, which is the whole reason
- * the spine was built before the screens.
+ * **This tab does not know whether it is the host until it asks.** It claims
+ * the room code on the transport; silence means the room is ours, an answer
+ * means somebody else opened it and we are a guest. Everything downstream —
+ * whether an engine exists, whether bots attach, what `beforeunload` sends —
+ * hangs off that one answer.
  *
- * The local player is normally the host, because joining a room someone else
- * opened is phase 4. `?bots=` fills the other seats, and `?as=` sits you in one
- * of them — the first real use of the guest path.
+ * The dev harness is the exception, and deliberately so: `?phase=` boots a
+ * fixture that *is* the room, so it declares itself host rather than asking.
+ * That keeps every harness URL behaving exactly as it did before joining
+ * existed, which is the only way the claim path can be added without
+ * disturbing the suite that guards everything else.
+ *
+ * Nothing above `useRoom()` knows a transport exists, which is why phase 5 is
+ * still one line here: which implementation `connect` builds.
  */
 
-const HOST_ID = 'p0'
-const HOST_NAME = 'You'
 const SNAPSHOT_PREFIX = 'captionist:room:'
 
 export interface RoomProviderProps {
@@ -94,129 +104,381 @@ function rebaseClock(state: GameState, now: number): GameState {
   return { ...state, clock: { ...state.clock, endsAt: now + state.clock.totalMs } }
 }
 
+/**
+ * The fixture's own host seat.
+ *
+ * `lib/game/fixtures.ts` builds its rooms with `p0` at the head of the roster,
+ * so a harness tab has to answer to that id to be the host of the room it just
+ * manufactured — its `localStorage` identity is irrelevant there.
+ */
+/**
+ * The room settings the URL asked for.
+ *
+ * Three levers feed one partial, built once rather than inline at both room
+ * constructors — the fixture path and the fresh-room path. Inline, `?mode=`
+ * was spelled out twice and the next lever would have reached only one of them.
+ * `undefined` when nothing was asked for, so the room keeps its defaults.
+ */
+function leverSettings(levers: Levers): Partial<RoomSettings> | undefined {
+  const settings: Partial<RoomSettings> = {}
+  if (levers.mode) settings.mode = levers.mode
+  if (levers.voting) settings.voting = levers.voting
+  if (levers.format) settings.format = levers.format
+  return Object.keys(settings).length > 0 ? settings : undefined
+}
+
+const FIXTURE_HOST_ID = 'p0'
+
+/** Who this tab plays as, and whether it is allowed to skip the claim. */
+interface Seat {
+  identity: Identity
+  /** The id the *host engine's* endpoint answers to. */
+  hostId: string
+  /** A fixture is the room, so it never asks whether one already exists. */
+  declared: boolean
+}
+
+function resolveSeat(levers: Levers): Seat {
+  if (levers.phase !== undefined) {
+    // `?as=` sits in a seat the fixture already populated. Without it the tab
+    // is the fixture's host.
+    const id = levers.as ?? FIXTURE_HOST_ID
+    return {
+      identity: { id, name: HOST_FALLBACK_NAME, avatarSeed: id },
+      hostId: FIXTURE_HOST_ID,
+      declared: true,
+    }
+  }
+  const identity = ensureIdentity()
+  return { identity, hostId: identity.id, declared: false }
+}
+
 export function RoomProvider({ roomCode, search, children }: RoomProviderProps) {
   const levers = useMemo(() => readLevers(toSearchParams(search)), [search])
+  const seat = useMemo(() => resolveSeat(levers), [levers])
+  const selfId = seat.identity.id
 
+  // `isHost` starts false and is corrected the moment the claim resolves: a tab
+  // that assumed it was hosting would flash the host's controls at a guest.
+  const [store] = useState(() => createRoomStore(selfId, false))
   /**
-   * `?as=` only means anything against a fixture, where the seat already
-   * exists. In a fresh room the seats are empty until someone joins, and
-   * joining is phase 4's problem — so this falls back to the host rather than
-   * putting you in a chair nobody is sitting in.
+   * Chat and reactions, in their own store beside the room's.
+   *
+   * Both of its callbacks read `store` rather than closing over a value: this
+   * tab does not know its own seat until the claim resolves, and the roster it
+   * checks a sender against changes on every broadcast.
    */
-  const selfId = levers.phase !== undefined && levers.as ? levers.as : HOST_ID
-  const isHost = selfId === HOST_ID
-
-  const [store] = useState(() => createRoomStore(selfId, isHost))
+  const [events] = useState(() =>
+    createEventStore({
+      self: () => store.getSnapshot().selfId,
+      isMember: (from) =>
+        store.getSnapshot().state?.players.some((p) => p.id === from) ?? false,
+    }),
+  )
   const engineRef = useRef<HostEngine | undefined>(undefined)
   const guestRef = useRef<GuestClient | undefined>(undefined)
+  /** The endpoint events are published from — this player's own, host or guest. */
+  const selfTransportRef = useRef<RoomTransport | undefined>(undefined)
   const refusalListeners = useRef(new Set<(reason: string) => void>())
 
+  const announce = (reason: string) => {
+    for (const listener of [...refusalListeners.current]) listener(reason)
+  }
+
   useEffect(() => {
-    const bus = new LocalBus(roomCode, { latencyMs: 80, jitterMs: 40 })
-    const hostTransport = createLocalTransport({ bus, selfId: HOST_ID, isHost: true })
+    let cancelled = false
+    const cleanups: Array<() => void> = []
 
-    const restored = loadSnapshot(roomCode)
-    const fresh =
-      levers.phase !== undefined
-        ? rebaseClock(
-            fixtureFor(levers.phase, {
-              // A fixture needs a populated room whether or not bots drive it —
-              // `?phase=vote` alone is how a screen gets reviewed in isolation.
-              players: levers.bots !== undefined ? levers.bots + 1 : 5,
-              seed: levers.seed,
-              settings: levers.mode ? { mode: levers.mode } : undefined,
-            }),
-            Date.now(),
-          )
-        : createRoom({
-            roomCode,
-            host: { id: HOST_ID, name: HOST_NAME, avatarSeed: HOST_ID },
-            seed: levers.seed ?? Math.floor(Math.random() * 2 ** 31),
-            at: Date.now(),
-          })
-    // Prefer whichever is further along: a reload mid-game should not restart it.
-    const initial = restored && restored.rev > fresh.rev ? restored : fresh
+    // A fixture is a local room by construction, so no lever may drag it onto
+    // a shared network — see the note in the connect block below.
+    const roomLevers = seat.declared ? { ...levers, transport: 'broadcast' as const } : levers
 
-    const engine = new HostEngine({
-      transport: hostTransport,
-      initial,
-      fast: levers.fast,
-      onChange: (state) => saveSnapshot(roomCode, state),
-      // Only *our* refusals are worth a snackbar. A bot being told to sit a
-      // round out is the harness working, not something to interrupt over.
-      onRefused: (intent, reason) => {
-        if (intent.from !== selfId) return
-        for (const listener of [...refusalListeners.current]) listener(reason)
-      },
-    })
-    engineRef.current = engine
-
-    // The host is a player too, so it needs the same state feed a guest gets.
-    // Under `?as=` the local endpoint is a genuine guest instead: its own
-    // transport, its own seat, and intents that travel the same road a real
-    // guest's will in phase 4.
-    const selfTransport = isHost
-      ? hostTransport
-      : createLocalTransport({ bus, selfId, isHost: false })
-
-    const selfClient = new GuestClient({
-      transport: selfTransport,
-      onState: (state) => store.setState(state),
-      onStatus: (status) => store.setStatus(status),
-    })
-    selfClient.start()
-    guestRef.current = selfClient
-
-    const bots: Array<() => void> = []
-    for (let i = 1; i <= (levers.bots ?? 0); i++) {
-      const id = `p${i}`
-      // Two drivers in one chair would submit twice and vote against itself.
-      if (id === selfId) continue
-      const transport = createLocalTransport({ bus, selfId: id, isHost: false })
-      const bot = new BotDriver({
-        id,
-        name: `Bot ${i}`,
-        index: i,
-        send: (action) => transport.sendIntent(action),
-      })
-      const client = new GuestClient({ transport, onState: (s) => bot.observe(s) })
-      client.start()
-      bots.push(() => {
-        client.stop()
-        transport.close()
-      })
-    }
-
-    // Only autopilot a room that has bots in it: with real people, those taps
-    // are the host's, and phase 2 gives them buttons.
-    if (levers.bots) {
-      const autopilot = createAutopilot({ engine, waitFor: levers.bots + 1 })
-      const off = hostTransport.onState((state) => autopilot(state))
-      bots.push(off)
-    }
-
-    engine.start()
-
-    // A throttled background tab stops firing timers, and guests must never
-    // self-advance — so the room would silently freeze at 0:00 without this.
-    const onVisible = () => engine.catchUp()
-    const onUnload = () => engine.apply({ type: 'host/left' }, HOST_ID)
-    document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('beforeunload', onUnload)
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('beforeunload', onUnload)
-      for (const stop of bots) stop()
-      selfClient.stop()
-      if (!isHost) selfTransport.close()
-      engine.stop()
-      hostTransport.close()
-      bus.close()
+    const teardown = () => {
+      for (const stop of cleanups.splice(0).reverse()) stop()
       engineRef.current = undefined
       guestRef.current = undefined
     }
-  }, [roomCode, levers, store, selfId, isHost])
+
+    void (async () => {
+      // **A fixture never asks the server for anything.** It is a room this tab
+      // manufactured, with seats named `p0`/`p2` that no server issued — asking
+      // would overwrite the stored signature with one for a seat the fixture
+      // will never play under, and the next real room would present it and be
+      // refused. It also stays off Ably entirely, whatever `?transport=` says:
+      // publishing a synthetic room into a shared channel namespace would put
+      // a fake game in front of anyone who has the code.
+      const realtime = seat.declared
+        ? { seat: selfId, stubbed: true }
+        : await probeRealtime(roomCode, selfId)
+      if (cancelled) return
+      const stubbed = realtime.stubbed
+
+      // **Play under the seat the server signed, not the one we minted.** On a
+      // first visit the local id has no signature, so the route issues a fresh
+      // one — and a tab that kept using its own would declare a `clientId` the
+      // token does not bind, which Ably refuses.
+      const activeId = seat.declared ? selfId : realtime.seat
+      const hostId = seat.declared ? seat.hostId : activeId
+
+      // The question this whole phase turns on. A fixture declares; everyone
+      // else asks and lives with the answer.
+      const hostEndpoint = await connectRoom({
+        roomCode,
+        selfId: hostId,
+        role: seat.declared ? 'host' : 'auto',
+        levers: roomLevers,
+        stubbed,
+      })
+      if (cancelled) {
+        hostEndpoint.close()
+        return
+      }
+      cleanups.push(() => hostEndpoint.close())
+
+      if (hostEndpoint.isHost) {
+        await startAsHost(hostEndpoint, stubbed, activeId, hostId)
+      } else {
+        await startAsGuest(stubbed, activeId)
+      }
+    })().catch((error: unknown) => {
+      if (cancelled) return
+      // A room that cannot be built says why, on screen. That case is expected
+      // and fully explained, so it is not logged as an error — doing so puts
+      // Next's crash overlay over a message that is already the answer.
+      if (error instanceof RoomUnavailable) {
+        store.setError(error.message)
+        return
+      }
+      // Anything else is a bug. It still gets a sentence, because a bug that
+      // leaves the page on "Joining the room…" forever is the worst shape it
+      // could take, but the detail belongs in the log.
+      store.setError('This room didn’t open. Reload, or start a new one.')
+      console.error('[room] could not connect', error)
+    })
+
+    /* ---------------- this tab owns the room ---------------- */
+
+    async function startAsHost(
+      hostTransport: RoomTransport,
+      stubbed: boolean,
+      activeId: string,
+      hostId: string,
+    ) {
+      // This *tab* runs the engine, but under `?as=` the *player* is a guest
+      // sitting in someone else's fixture. `isHost` is about the seat, not the
+      // engine, because it is what decides whether a screen offers the host's
+      // controls — and offering them to p2 would hand them a refusal.
+      store.setIdentity(activeId, hostId === activeId)
+
+      const restored = loadSnapshot(roomCode)
+      const pending = levers.phase === undefined ? readPendingSettings() : undefined
+      if (pending) clearPendingSettings()
+      const fresh =
+        levers.phase !== undefined
+          ? rebaseClock(
+              fixtureFor(levers.phase, {
+                // A fixture needs a populated room whether or not bots drive it —
+                // `?phase=vote` alone is how a screen gets reviewed in isolation.
+                players: levers.bots !== undefined ? levers.bots + 1 : 5,
+                seed: levers.seed,
+                settings: leverSettings(levers),
+              }),
+              Date.now(),
+            )
+          : createRoom({
+              roomCode,
+              // The host names itself from the same identity a guest joins
+              // with, so "You" is only ever a fallback for a tab that never
+              // passed through `/host`.
+              host: {
+                id: activeId,
+                name: seat.identity.name || HOST_FALLBACK_NAME,
+                avatarSeed: seat.identity.avatarSeed,
+              },
+              // Whatever `/host` just chose, if this tab came through it.
+              // Cleared on use so a later room does not silently inherit them.
+              settings: pending ?? leverSettings(levers),
+              seed: levers.seed ?? Math.floor(Math.random() * 2 ** 31),
+              at: Date.now(),
+            })
+      // Prefer whichever is further along: a reload mid-game should not restart it.
+      const initial = restored && restored.rev > fresh.rev ? restored : fresh
+
+      const engine = new HostEngine({
+        transport: hostTransport,
+        initial,
+        fast: levers.fast,
+        onChange: (state) => saveSnapshot(roomCode, state),
+        // Only *our* refusals are worth a snackbar. A bot being told to sit a
+        // round out is the harness working, not something to interrupt over.
+        // Everyone else's travel the transport instead — see `HostEngine.refuse`.
+        onRefused: (intent, reason) => {
+          if (intent.from !== activeId) return
+          announce(reason)
+        },
+      })
+      engineRef.current = engine
+      cleanups.push(() => engine.stop())
+
+      // The host is a player too, so it needs the same state feed a guest gets.
+      // Under `?as=` the local endpoint is a genuine guest instead: its own
+      // endpoint, its own seat, and intents over the same road a real guest's
+      // travels.
+      const selfTransport =
+        hostId === activeId
+          ? hostTransport
+          : await connectRoom({
+              roomCode,
+              selfId: activeId,
+              role: 'guest',
+              levers: roomLevers,
+              stubbed,
+            })
+      if (cancelled) return
+      if (selfTransport !== hostTransport) cleanups.push(() => selfTransport.close())
+
+      attachSelf(selfTransport)
+
+      for (let i = 1; i <= (levers.bots ?? 0); i++) {
+        const id = `p${i}`
+        // Two drivers in one chair would submit twice and vote against itself.
+        if (id === activeId) continue
+        const transport = await connectRoom({
+          roomCode,
+          selfId: id,
+          role: 'guest',
+          levers: roomLevers,
+          stubbed,
+        })
+        if (cancelled) {
+          transport.close()
+          return
+        }
+        const bot = new BotDriver({
+          id,
+          name: `Bot ${i}`,
+          index: i,
+          send: (action) => transport.sendIntent(action),
+        })
+        const client = new GuestClient({ transport, onState: (s) => bot.observe(s) })
+        client.start()
+        cleanups.push(() => {
+          client.stop()
+          transport.close()
+        })
+      }
+
+      // Only autopilot a room that has bots in it: with real people, those taps
+      // are the host's, and every untimed phase has a button for them.
+      if (levers.bots) {
+        const autopilot = createAutopilot({
+          engine,
+          waitFor: levers.bots + 1,
+          // The dwell is in room time, so `?fast=80` shortens it too — otherwise
+          // a sped-up game would still crawl through ten untimed phases.
+          rate: levers.fast ?? 1,
+        })
+        cleanups.push(hostTransport.onState((state) => autopilot(state)))
+      }
+
+      engine.start()
+
+      // A throttled background tab stops firing timers, and guests must never
+      // self-advance — so the room would silently freeze at 0:00 without this.
+      const onVisible = () => engine.catchUp()
+      // The room ends with its host. A guest closing a tab is a different
+      // event entirely — see `startAsGuest`.
+      const onUnload = () => engine.apply({ type: 'host/left' }, hostId)
+      document.addEventListener('visibilitychange', onVisible)
+      window.addEventListener('beforeunload', onUnload)
+      cleanups.push(() => {
+        document.removeEventListener('visibilitychange', onVisible)
+        window.removeEventListener('beforeunload', onUnload)
+      })
+    }
+
+    /* ---------------- somebody else owns the room ---------------- */
+
+    async function startAsGuest(stubbed: boolean, activeId: string) {
+      store.setIdentity(activeId, false)
+
+      const transport = await connectRoom({ roomCode, selfId: activeId, role: 'guest', levers, stubbed })
+      if (cancelled) {
+        transport.close()
+        return
+      }
+      cleanups.push(() => transport.close())
+
+      attachSelf(transport)
+
+      // Ask for a seat on the first broadcast, and ask for the *right* thing.
+      //
+      // Not in the room → join. Already in it but marked `reconnecting` → this
+      // is a return, and joining again would be refused as a duplicate name
+      // while leaving the seat reconnecting forever. That second branch is the
+      // bug a held seat created: `player/left` keeps you in `players`, so the
+      // "am I listed" guard saw a returning player as already handled and said
+      // nothing at all.
+      //
+      // One-shot per outcome: both are in flight until the next broadcast.
+      let asked = false
+      cleanups.push(
+        transport.onState((state) => {
+          if (asked) return
+          const mine = state.players.find((p) => p.id === activeId)
+          if (mine && mine.connection === 'online') return
+
+          asked = true
+          if (mine) {
+            transport.sendIntent({ type: 'player/reconnected' })
+            return
+          }
+          transport.sendIntent({
+            type: 'player/joined',
+            player: {
+              id: activeId,
+              name: seat.identity.name || 'Guest',
+              avatarSeed: seat.identity.avatarSeed,
+            },
+          })
+        }),
+      )
+
+      // Leaving holds the seat rather than ending the room — that is the host's
+      // to do, and a guest firing `host/left` would kill a game it does not own.
+      const onUnload = () => transport.sendIntent({ type: 'player/left' })
+      window.addEventListener('beforeunload', onUnload)
+      cleanups.push(() => window.removeEventListener('beforeunload', onUnload))
+    }
+
+    /** The local player's own feed, host or guest. */
+    function attachSelf(transport: RoomTransport) {
+      const client = new GuestClient({
+        transport,
+        onState: (state) => store.setState(state),
+        onStatus: (status) => store.setStatus(status),
+      })
+      client.start()
+      guestRef.current = client
+      selfTransportRef.current = transport
+      cleanups.push(() => client.stop())
+      cleanups.push(() => {
+        if (selfTransportRef.current === transport) selfTransportRef.current = undefined
+      })
+      // The one road a refusal can take to another tab.
+      cleanups.push(transport.onRefusal(announce))
+      // Chat and reactions. Deliberately not through `GuestClient`, which is
+      // about state ordering and clock skew — an event has neither a `rev` nor
+      // a deadline, so routing it through there would only borrow machinery it
+      // does not use.
+      cleanups.push(transport.onEvent((event) => events.receive(event)))
+    }
+
+    return () => {
+      cancelled = true
+      teardown()
+    }
+  }, [roomCode, levers, store, events, seat, selfId])
 
   const binding = useMemo<RoomBinding>(
     () => ({
@@ -239,8 +501,23 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         refusalListeners.current.add(listener)
         return () => refusalListeners.current.delete(listener)
       },
+      events,
+      /**
+       * Say something, or react to something.
+       *
+       * Straight onto the transport rather than through `send`. An intent asks
+       * the host to change the room and can be refused; an event carries no
+       * authority and there is nothing to refuse it, so routing chat through
+       * the authorisation path would invent a decision nobody makes.
+       *
+       * `from` is filled in by the transport, which is the whole point — see
+       * `RoomEvent`. The value passed here is a placeholder the wire discards.
+       */
+      publish: (event) => {
+        selfTransportRef.current?.publishEvent(event)
+      },
     }),
-    [store],
+    [store, events],
   )
 
   return <RoomContext.Provider value={binding}>{children}</RoomContext.Provider>

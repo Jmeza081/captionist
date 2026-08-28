@@ -14,6 +14,7 @@ import { GifPanel } from '@/components/molecules/GifPanel'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { CAPTION_MAX, SEARCH_SUGGESTIONS } from '@/lib/game/constants'
 import {
+  captionFields,
   composeCopy,
   myEntry,
   requireSubject,
@@ -40,9 +41,23 @@ export function ComposeScreen() {
   const { notify } = useRoomShell()
   const gifs = useGifSearch()
 
-  const [top, setTop] = useState('')
-  const [bottom, setBottom] = useState('')
+  /**
+   * One draft string per field the room's format asks for.
+   *
+   * An array rather than `top`/`bottom`, because the number of fields is a
+   * room setting: a one-line room has one. The answer already carries
+   * `lines: readonly string[]`, so this is the same shape all the way down.
+   */
+  const [lines, setLines] = useState<readonly string[]>([])
   const [picked, setPicked] = useState<GifResult | undefined>(undefined)
+
+  const setLine = (index: number, value: string) =>
+    setLines((current) => {
+      const next = [...current]
+      while (next.length <= index) next.push('')
+      next[index] = value
+      return next
+    })
 
   if (!state) return null
 
@@ -141,7 +156,8 @@ export function ComposeScreen() {
   /* ---------------- Captioning the image ---------------- */
 
   const media = subject?.kind === 'media' ? subject.media : undefined
-  const written = top.trim().length > 0 || bottom.trim().length > 0
+  const fields = captionFields(state)
+  const written = lines.some((line) => line.trim().length > 0)
 
   const submit = (lines: readonly string[], message: string) => {
     send({ type: 'round/entrySubmitted', answer: { kind: 'caption', lines } })
@@ -157,8 +173,8 @@ export function ComposeScreen() {
         <MediaCard
           src={media?.src ?? ''}
           alt={media?.alt ?? 'The round’s image'}
-          topText={top}
-          bottomText={bottom}
+          topText={lines[0]}
+          bottomText={lines[1]}
         />
       </Stack>
 
@@ -168,32 +184,29 @@ export function ComposeScreen() {
           {copy.body && <p className={styles.body}>{copy.body}</p>}
         </Stack>
 
-        <TextField
-          label="Top text"
-          size="caption"
-          primary
-          showCount
-          maxLength={CAPTION_MAX}
-          value={top}
-          onChange={(e) => setTop(e.target.value)}
-          placeholder="When prod goes down…"
-        />
-        <TextField
-          label="Bottom text"
-          size="caption"
-          showCount
-          maxLength={CAPTION_MAX}
-          value={bottom}
-          onChange={(e) => setBottom(e.target.value)}
-          placeholder="…and I’m the only one on call"
-        />
+        {fields.map((field, i) => (
+          <TextField
+            key={field.label}
+            label={field.label}
+            size="caption"
+            primary={field.primary}
+            showCount
+            maxLength={CAPTION_MAX}
+            value={lines[i] ?? ''}
+            onChange={(e) => setLine(i, e.target.value)}
+            placeholder={field.placeholder}
+          />
+        ))}
 
         <Inline gap={12}>
           <Button
             blocked={!written}
             onClick={() => {
               if (!written) return
-              submit([top.trim(), bottom.trim()], mine ? 'Caption updated' : 'Caption submitted')
+              submit(
+                fields.map((_, i) => lines[i]?.trim() ?? ''),
+                mine ? 'Caption updated' : 'Caption submitted',
+              )
             }}
           >
             {written ? copy.action : 'Write something first'}

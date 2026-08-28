@@ -17,14 +17,39 @@ export interface MediaCardProps {
   rank?: 1 | 2 | 3
   /** This is the player's own entry, so it can't be voted for. */
   own?: boolean
+  /**
+   * What the scrim over your own entry calls it. The design says "caption" in
+   * one mode and "answer" in the other, and that branch belongs in a selector
+   * rather than in here — a component that knows the mode has forked.
+   */
+  ownLabel?: string
   /** Picked by this player. */
   selected?: boolean
   /** The round's winner: bigger radius, 4px ring, drop shadow. */
   winner?: boolean
   /** Reaction tallies, bottom-left. */
   tallies?: ReactNode
-  /** The reaction affordance, rendered under the card. */
+  /** The card's primary action under the foot — ranking it, usually. */
   action?: ReactNode
+  /**
+   * The reaction affordance, beside the action.
+   *
+   * Its own slot rather than something the caller nests inside `action`,
+   * because the design draws label, action and reaction as three things
+   * sharing one row — and because `action` is already spoken for by the rank
+   * button on every card in a vote grid.
+   */
+  reaction?: ReactNode
+  /**
+   * The reply affordance, beside the reaction.
+   *
+   * Its own slot for the same reason `reaction` has one: the design draws the
+   * foot as peers sharing a row, and `action` is already spoken for by the rank
+   * button on every card in a vote grid. **The design draws no reply control** —
+   * only the message it produces (Screens 2c) — so this slot is ours, and the
+   * row it joins was drawn with three things in it.
+   */
+  reply?: ReactNode
   /** Caption label under the card. */
   caption?: string
 }
@@ -42,10 +67,13 @@ export function MediaCard({
   bottomText,
   rank,
   own = false,
+  ownLabel = 'Your own answer',
   selected = false,
   winner = false,
   tallies,
   action,
+  reaction,
+  reply,
   caption,
 }: MediaCardProps) {
   // A round whose clock ran out has a subject with no image. Rather than a
@@ -88,16 +116,18 @@ export function MediaCard({
 
         {own && (
           <span className={styles.ownScrim}>
-            <span className={styles.ownLabel}>Your own answer</span>
+            <span className={styles.ownLabel}>{ownLabel}</span>
           </span>
         )}
 
         {tallies && <div className={styles.tallies}>{tallies}</div>}
       </div>
 
-      {(caption || action) && (
+      {(caption || action || reaction || reply) && (
         <figcaption className={styles.foot}>
           {caption && <span className={styles.captionText}>{caption}</span>}
+          {reply}
+          {reaction}
           {action}
         </figcaption>
       )}

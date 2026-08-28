@@ -136,3 +136,42 @@
   border-radius: t.$radius-avatar;
   background-color: t.$fill-subtle;
 }
+
+// A guest sees the rules rather than the controls that set them. Four pairs,
+// laid out to be read rather than skimmed — the host's header line already
+// carries the same facts for anyone who only wants a glance.
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-20;
+  margin: 0;
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-5;
+}
+
+.settingLabel {
+  @include t.eyebrowText;
+  color: t.$text-caption;
+}
+
+.settingValue {
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 18px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+// The guest roster wraps as pills, so twenty names read as a crowd rather than
+// twenty rows of empty column. Driven from the component rather than a `:has`
+// on the row's class — class names are hashed per module, so this file's
+// `.pill` would never match `PlayerRow`'s.
+.rosterPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-10;
+}

@@ -6,6 +6,12 @@
   // offsets by it may assume a number.
   --room-rail-width: 0px;
 
+  // How far up from the bottom edge floating room furniture has to start.
+  // On a phone the host's toolbox key already owns the bottom-right corner,
+  // and chat's key would land underneath it — so anything else that floats
+  // there stacks above it rather than fighting it for the same 44px.
+  --room-dock-bottom: #{t.$space-20};
+
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -51,6 +57,16 @@
   padding-bottom: t.$space-52 + t.$space-26;
 }
 
+.shell.hasToolbox {
+  --room-dock-bottom: calc(#{t.$space-20} + #{t.$tap-target-min} + #{t.$space-12});
+
+  // Above `md` the toolbox sits beside the rail rather than on top of it, so
+  // there is nothing to clear.
+  @include t.mq('md') {
+    --room-dock-bottom: #{t.$space-20};
+  }
+}
+
 .connecting {
   margin: 0;
   padding: t.$screen-pad-v t.$screen-pad-h;
@@ -58,22 +74,12 @@
   color: t.$text-meta;
 }
 
+// `contents` rather than `block`: the rail has to stay a flex sibling of the
+// content column, not sit inside an extra box that would break its sticky
+// full-height behaviour above `md`. Below it, the rail positions itself as a
+// fixed sheet and a wrapper of any kind would be irrelevant either way.
 .rail {
-  display: none;
-
-  // `contents` rather than `block`: the rail has to stay a flex sibling of the
-  // content column, not sit inside an extra box that would break its sticky
-  // full-height behaviour.
-  @include t.mq('md') {
-    display: contents;
-  }
-}
-
-.railEmpty {
-  margin: 0;
-  padding: t.$space-20;
-  @include t.bodyText;
-  color: t.$text-meta;
+  display: contents;
 }
 
 .interstitial {
@@ -96,4 +102,33 @@
   transform: translateX(-50%);
   z-index: t.$z-snackbar;
   pointer-events: none;
+}
+
+// The floaters' own layer is `position: absolute`, which is right on a card and
+// wrong for the room — it would anchor to the page and scroll away from the
+// reaction that fired it. A fixed dock pins the burst to the viewport instead.
+.floaterDock {
+  position: fixed;
+  inset: 0;
+  z-index: t.$z-floater;
+  pointer-events: none;
+}
+
+// `contents` so the toolbox stays exactly where it was — it positions itself
+// fixed, and an extra box in the tree would change nothing except give this
+// rule somewhere to hang.
+.toolboxDock {
+  display: contents;
+}
+
+// Chat open on a phone means a sheet over the content, and the toolbox key
+// floats above everything — including the sheet's own send button. It stands
+// down until chat is closed. Above `md` the rail docks beside the content and
+// the two never overlap.
+.railOpen .toolboxDock {
+  display: none;
+
+  @include t.mq('md') {
+    display: contents;
+  }
 }

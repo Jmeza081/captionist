@@ -120,6 +120,18 @@ $chat-gap: 10px;
 $chat-attachment-width: 180px;
 $chat-attachment-height: 120px;
 $chat-header-height: 48px;
+// The quoted caption a reply carries. 9px is the picker-tile radius from
+// DESIGNSYSTEM 4.4; the 30px thumb matches the avatar beside it.
+$chat-quote-radius: 9px;
+$chat-quote-rule: 2px;
+$chat-quote-thumb: 30px;
+$chat-quote-thumb-radius: 5px;
+
+// The reaction picker's pack tabs. 11px is off the spacing scale on purpose —
+// the scale is the uneven set the design specifies, and this is the value it
+// draws rather than the nearest one.
+$reaction-tab-pad-y: 6px;
+$reaction-tab-pad-x: 11px;
 
 // --- Overlays -------------------------------------------------------------
 
@@ -250,3 +262,21 @@ $podium-block-width-first: 110px;
 $podium-height-first: 110px;
 $podium-height-second: 74px;
 $podium-height-third: 58px;
+
+/// The tiebreak's duel card. Wider than a vote card because two of them carry
+/// the whole screen, and narrower than the reveal's winner because two fit.
+$duel-card-width: 392px;
+
+/// The reveal's two columns: the winning card, and the attribution beside it.
+$reveal-winner-width: 400px;
+$reveal-column-width: 440px;
+
+/// The single column `/join` and `/host` are built in. Both are entry screens
+/// that stay one column at every width — the design draws them as phone
+/// screens a desktop also shows.
+$join-column-width: 420px;
+$setup-column-width: 600px;
+
+/// The reconnect overlay's card. Wider than the help modal because it carries
+/// a countdown and an identity row rather than one step of a walkthrough.
+$reconnect-card-width: 620px;

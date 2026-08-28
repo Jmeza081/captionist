@@ -7,7 +7,7 @@ import { PresencePill } from '@/components/atoms/PresencePill'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import styles from './ChatRail.module.scss'
 
-type RailPlayer = Pick<AvatarProps, 'name' | 'color' | 'src'>
+type RailPlayer = Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
 
 export interface ChatRailProps {
   open: boolean
@@ -19,6 +19,15 @@ export interface ChatRailProps {
   /** Shown in the collapsed strip. The first three, then a +N chip. */
   players: RailPlayer[]
   onReact?: () => void
+  /**
+   * Incoming messages, shown beside the collapsed strip.
+   *
+   * A slot rather than a list, because what a toast looks like is chat's
+   * business and where it sits is the rail's. They rise above the rail rather
+   * than inside it — DESIGNSYSTEM.md's ladder puts toasts at 65 and the rail
+   * at 40.
+   */
+  toasts?: ReactNode
   /** The message list and composer. */
   children?: ReactNode
 }
@@ -27,11 +36,18 @@ export interface ChatRailProps {
 const STACK_LIMIT = 3
 
 /**
- * Room chat, docked beside the content.
+ * Room chat: a docked rail on a desktop, a sheet on a phone.
  *
  * Never modal and never over the content — it docks, and overlays sit above
  * both. Collapses to a 64px strip that keeps the unread count, the reaction
  * affordance and who's here.
+ *
+ * **Both sizes are one component, and the difference is entirely CSS.** A
+ * phone cannot afford 360px of docked chat, so below `md` the same markup
+ * becomes a sheet over the content and the strip becomes a single key above
+ * the thumb. A sibling `ChatSheet` was the obvious shape and the wrong one:
+ * the header, the stream and the composer are identical in both, so a second
+ * component would be a copy of this one that drifts from it.
  */
 export function ChatRail({
   open,
@@ -40,6 +56,7 @@ export function ChatRail({
   unread = 0,
   players,
   onReact,
+  toasts,
   children,
 }: ChatRailProps) {
   if (!open) {
@@ -48,6 +65,8 @@ export function ChatRail({
 
     return (
       <aside className={styles.strip} aria-label="Room chat, collapsed">
+        {toasts && <div className={styles.toastDock}>{toasts}</div>}
+
         <button
           type="button"
           className={styles.openKey}
@@ -86,6 +105,10 @@ export function ChatRail({
 
   return (
     <aside className={styles.rail} aria-label="Room chat">
+      {/* The sheet's drag handle. Decorative — the close key is the real
+          affordance, and it is reachable at both sizes. */}
+      <span className={styles.grabber} aria-hidden="true" />
+
       <header className={styles.head}>
         <span className={styles.title}>Room chat</span>
         <PresencePill count={present} />
@@ -93,9 +116,17 @@ export function ChatRail({
           type="button"
           className={styles.collapse}
           onClick={() => onOpenChange(false)}
-          aria-label="Collapse chat"
+          aria-label="Close chat"
         >
-          <Icon name="chevronRight" size={15} />
+          {/* A chevron points at the edge it collapses to, which on a sheet is
+              nowhere. Both are rendered and CSS shows one, so the icon matches
+              the shape without a media query in React. */}
+          <span className={styles.railIcon}>
+            <Icon name="chevronRight" size={15} />
+          </span>
+          <span className={styles.sheetIcon}>
+            <Icon name="close" size={15} />
+          </span>
         </button>
       </header>
 

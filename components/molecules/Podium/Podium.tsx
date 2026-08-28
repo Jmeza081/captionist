@@ -2,7 +2,7 @@ import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
 import styles from './Podium.module.scss'
 
 export interface PodiumPlace {
-  player: Pick<AvatarProps, 'name' | 'color' | 'src'>
+  player: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
   score: number
 }
 

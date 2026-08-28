@@ -1,23 +1,77 @@
 @use 'theme' as t;
 
-.rail,
-.strip {
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-  z-index: t.$z-rail;
-  height: 100vh;
-  height: 100dvh;
-  background-color: t.$surface-header;
-  border-left: 1px solid t.$line-hairline;
-  flex: none;
-}
+// **Mobile first, and here that means the sheet is the default shape.**
+// A phone cannot afford 360px of docked chat, so below `md` the rail is a sheet
+// over the content and the strip is a single key above the thumb. The docked
+// rail is layered on at `md`, where there is room for it.
 
 .rail {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: t.$z-rail;
+  // Never the full height: the header carries the phase and the clock, and a
+  // sheet that covered the countdown would make chat cost you the round.
+  height: 78%;
+  max-height: 78dvh;
   display: flex;
   flex-direction: column;
-  width: t.$rail-width;
-  max-width: 100%;
+  background-color: t.$surface-header;
+  border-top: 1px solid t.$line-hairline-strong;
+  border-top-left-radius: t.$radius-modal;
+  border-top-right-radius: t.$radius-modal;
+  box-shadow: t.$shadow-toolbox;
+
+  @include t.mq('md') {
+    position: sticky;
+    top: 0;
+    right: auto;
+    bottom: auto;
+    align-self: flex-start;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    width: t.$rail-width;
+    max-width: 100%;
+    border-top: 0;
+    border-radius: 0;
+    border-left: 1px solid t.$line-hairline;
+    box-shadow: none;
+  }
+}
+
+// The sheet's drag handle. Only the sheet has one — a docked rail is not
+// dragged anywhere.
+.grabber {
+  flex: none;
+  width: t.$space-34;
+  height: 4px;
+  margin: t.$space-8 auto t.$space-2;
+  border-radius: t.$radius-pip;
+  background-color: t.$line-outline;
+
+  @include t.mq('md') {
+    display: none;
+  }
+}
+
+// One close key, two glyphs: a chevron points at the edge the rail collapses
+// to, which for a sheet is nowhere.
+.railIcon {
+  display: none;
+
+  @include t.mq('md') {
+    display: flex;
+  }
+}
+
+.sheetIcon {
+  display: flex;
+
+  @include t.mq('md') {
+    display: none;
+  }
 }
 
 .head {
@@ -67,12 +121,56 @@
 // --- collapsed strip ---
 
 .strip {
+  position: fixed;
+  right: t.$space-14;
+  // Set by the room when something else already floats in this corner. The
+  // fallback keeps the rail usable anywhere else it is rendered.
+  bottom: var(--room-dock-bottom, #{t.$space-20});
+  z-index: t.$z-rail;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: center;
   gap: t.$space-10;
-  width: t.$rail-width-collapsed;
-  padding: t.$space-12 0;
+
+  @include t.mq('md') {
+    position: sticky;
+    top: 0;
+    right: auto;
+    bottom: auto;
+    align-self: flex-start;
+    flex-direction: column;
+    flex: none;
+    height: 100vh;
+    height: 100dvh;
+    width: t.$rail-width-collapsed;
+    padding: t.$space-12 0;
+    background-color: t.$surface-header;
+    border-left: 1px solid t.$line-hairline;
+  }
+}
+
+// The strip's furniture below is desktop-only. On a phone the collapsed state
+// is one key: an avatar stack and a vertical label beside a thumb are
+// decoration bought with the space the game is played in.
+
+// Above the rail, never inside it — the ladder puts toasts at 65 and the rail
+// at 40, so a toast has to escape its stacking context to sit over the room.
+.toastDock {
+  position: fixed;
+  right: t.$space-14;
+  bottom: calc(var(--room-dock-bottom, #{t.$space-20}) + #{t.$tap-target-min} + #{t.$space-14});
+  z-index: t.$z-toast;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: t.$space-8;
+  max-width: min(320px, calc(100vw - #{t.$space-26}));
+  pointer-events: none;
+
+  @include t.mq('md') {
+    right: calc(#{t.$rail-width-collapsed} + #{t.$space-12});
+    bottom: t.$space-26;
+  }
 }
 
 .openKey {
@@ -84,11 +182,22 @@
   justify-content: center;
   width: t.$tap-target-min;
   height: t.$tap-target-min;
-  border: 1px solid t.$accent-border;
-  border-radius: t.$radius-field;
-  background-color: rgba(123, 97, 255, 0.18);
-  color: t.$accent-on-fill;
+  border: 0;
+  // A phone's collapsed chat is a floating key with nothing beside it, so it
+  // has to read as a button on its own rather than as one cell of a strip.
+  border-radius: t.$radius-avatar;
+  background-color: t.$accent;
+  color: t.$text-primary;
+  box-shadow: t.$shadow-snackbar;
   cursor: pointer;
+
+  @include t.mq('md') {
+    border: 1px solid t.$accent-border;
+    border-radius: t.$radius-field;
+    background-color: t.$accent-fill;
+    color: t.$accent-on-fill;
+    box-shadow: none;
+  }
 }
 
 .badge {
@@ -112,18 +221,28 @@
 }
 
 .stripRule {
+  display: none;
   width: t.$space-26;
   height: 1px;
   background-color: t.$fill-field;
+
+  @include t.mq('md') {
+    display: block;
+  }
 }
 
 .stack {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: t.$space-6;
+
+  @include t.mq('md') {
+    display: flex;
+  }
 }
 
 .vertical {
+  display: none;
   margin-top: auto;
   writing-mode: vertical-rl;
   font-family: t.$font-sans;
@@ -132,4 +251,8 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: t.$text-timestamp;
+
+  @include t.mq('md') {
+    display: block;
+  }
 }

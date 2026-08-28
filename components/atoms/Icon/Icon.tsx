@@ -20,12 +20,19 @@ export type IconName =
   | 'chat'
   | 'close'
   | 'help'
+  | 'star'
+  | 'wifiOff'
 
 interface PathSpec {
   d: string[]
   circles?: { cx: number; cy: number; r: number }[]
   /** The design draws each glyph at its own weight; keep them. */
   width: number
+  /**
+   * Filled rather than stroked. The star is the only one — the design draws it
+   * as a solid shape, so a stroke weight would be meaningless on it.
+   */
+  filled?: boolean
 }
 
 const PATHS: Record<IconName, PathSpec> = {
@@ -76,6 +83,19 @@ const PATHS: Record<IconName, PathSpec> = {
     d: ['M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.3M12 17.1v.5'],
     width: 2.1,
   },
+  // Three arcs, a dot, and the slash through them. Drawn shortest-arc-first so
+  // the stroke caps line up as the signal "weakens" toward the top.
+  wifiOff: {
+    d: ['M2.5 8.5a17 17 0 0 1 19 0M5.5 12.2a12 12 0 0 1 13 0M8.7 15.8a7 7 0 0 1 6.6 0M12 19.3v.5', 'M3 21 21 3'],
+    width: 2.1,
+  },
+  // The design draws this at `viewBox="0 0 24 18"`; re-boxed to the shared
+  // 24x24 grid by shifting 3.5 down, so it sizes like every other glyph.
+  star: {
+    d: ['M2 20.5 0 6.5l6 4 6-7 6 7 6-4-2 14z'],
+    width: 0,
+    filled: true,
+  },
 }
 
 export interface IconProps {
@@ -106,9 +126,9 @@ export function Icon({ name, size = 16, color, label }: IconProps) {
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
-      stroke={color ?? 'currentColor'}
-      strokeWidth={spec.width}
+      fill={spec.filled ? (color ?? 'currentColor') : 'none'}
+      stroke={spec.filled ? 'none' : (color ?? 'currentColor')}
+      strokeWidth={spec.filled ? undefined : spec.width}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={label ? undefined : true}

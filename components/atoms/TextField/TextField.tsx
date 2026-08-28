@@ -22,6 +22,15 @@ export interface TextFieldProps
   icon?: ReactNode
   /** A trailing control inside the field — the composer's send key. */
   trailing?: ReactNode
+  /**
+   * What went wrong, in the domain's own words.
+   *
+   * A prop rather than a second component: `CodeEntry` and `QuickJoin` both
+   * carry one already, and a nickname field that needs "Someone already has
+   * that name" is the same job. The sentence comes from `authorize.ts`, so the
+   * field states the room's reason rather than inventing its own.
+   */
+  error?: string
 }
 
 /**
@@ -37,6 +46,7 @@ export function TextField({
   showCount = false,
   icon,
   trailing,
+  error,
   className,
   value,
   maxLength,
@@ -47,10 +57,13 @@ export function TextField({
   const fieldId = id ?? generatedId
   const length = typeof value === 'string' ? value.length : 0
 
+  const errorId = `${fieldId}-error`
+
   const wrapClasses = [
     styles.field,
     styles[size],
     primary ? styles.primary : '',
+    error ? styles.invalid : '',
     className ?? '',
   ]
     .filter(Boolean)
@@ -80,10 +93,18 @@ export function TextField({
           className={styles.input}
           value={value}
           maxLength={maxLength}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           {...rest}
         />
         {trailing}
       </div>
+
+      {error && (
+        <p id={errorId} className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

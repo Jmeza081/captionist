@@ -84,7 +84,11 @@ export const HOST_ONLY: ReadonlySet<ActionType> = new Set<ActionType>([
 export const PHASE_GUARDS: Readonly<Partial<Record<ActionType, readonly RoomPhase[]>>> = {
   'room/settingsChanged': ['lobby'],
   'game/started': ['lobby'],
-  'player/joined': ['lobby'],
+  // `player/joined` is deliberately absent: joining is legal in any phase.
+  // The lobby has always told the host "Late joiners can still hop in between
+  // rounds", and a lobby-only guard made that a promise the reducer refused.
+  // A player who arrives mid-round has no entry in it, so `competitors()`
+  // leaves them out on its own; they vote, and compete from the next round.
   'round/subjectLocked': ['brief'],
   // Submitting stays legal through `waiting`: that is what "Edit my caption"
   // is, and the design lets you edit until the clock hits zero.

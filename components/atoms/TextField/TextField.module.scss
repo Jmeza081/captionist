@@ -120,3 +120,18 @@
     font-weight: 500;
   }
 }
+
+// The field states what went wrong, in the same red the rest of the app uses
+// for urgency and failure. Matches `CodeEntry`, so the two never diverge.
+.invalid {
+  box-shadow: inset 0 0 0 2px t.$urgent;
+}
+
+.error {
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: t.$urgent;
+}

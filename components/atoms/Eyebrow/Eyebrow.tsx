@@ -1,10 +1,15 @@
 import type { ElementType, ReactNode } from 'react'
 import styles from './Eyebrow.module.scss'
 
-export type EyebrowTone = 'accent' | 'muted'
+export type EyebrowTone = 'accent' | 'muted' | 'winner' | 'urgent'
 
 export interface EyebrowProps {
-  /** `accent` is the default PROMPT/ROUND marker; `muted` recedes on a card. */
+  /**
+   * `accent` is the default PROMPT/ROUND marker and `muted` recedes on a card.
+   * `winner` and `urgent` are the two the design gives their own colour: gold
+   * on the reveal and the podium, red on sudden death — in both cases the
+   * eyebrow is the first thing that says what kind of moment this is.
+   */
   tone?: EyebrowTone
   as?: ElementType
   children: ReactNode

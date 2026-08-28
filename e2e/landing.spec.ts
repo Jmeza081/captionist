@@ -11,16 +11,23 @@ test.describe('the landing page', () => {
     await expect(page.getByText(/five-minute standup warmup/)).toBeVisible()
     await expect(page.getByText('3–20 players · no install · works in a Zoom share')).toBeVisible()
 
-    // Both paths, given equal weight: start one, or join one.
-    await expect(page.getByRole('button', { name: 'Start a game — it’s free' })).toBeVisible()
+    // Both paths, given equal weight: start one, or join one. Both are links —
+    // each is a navigation to a screen that asks the next question.
+    await expect(page.getByRole('link', { name: 'Start a game — it’s free' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Join a room' })).toBeVisible()
   })
 
-  test('starts a room and lands in its lobby', async ({ page }) => {
+  test('sends a new host to set the room up first', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: 'Start a game — it’s free' }).click()
+    await page.getByRole('link', { name: 'Start a game — it’s free' }).click()
 
-    // A generated code, and a real room behind it.
+    // The design's flow is landing → setup → lobby: the rules are decided
+    // before the room exists, not after people are already in it.
+    await expect(page).toHaveURL(/\/host$/)
+    await expect(page.getByRole('button', { name: 'Open the room' })).toBeVisible()
+
+    // And the defaults are playable as-is, so a host can leave without reading.
+    await page.getByRole('button', { name: 'Open the room' }).click()
     await expect(page).toHaveURL(/\/room\/C-[346789A-HJKMNPQRTUVWXY]{6}$/)
     await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
   })
@@ -75,7 +82,7 @@ test.describe('the landing page', () => {
   test('sits the two calls to action at the same height', async ({ page }) => {
     await page.goto('/')
 
-    const start = (await page.getByRole('button', { name: /Start a game/ }).boundingBox())!
+    const start = (await page.getByRole('link', { name: /Start a game/ }).boundingBox())!
     const pill = (await page.locator('form[class*="QuickJoin"]').boundingBox())!
     expect(Math.round(pill.height)).toBe(Math.round(start.height))
 

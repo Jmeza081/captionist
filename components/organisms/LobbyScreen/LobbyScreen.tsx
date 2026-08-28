@@ -11,7 +11,15 @@ import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { RoomShare } from '@/components/molecules/RoomShare'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { MAX_PLAYERS } from '@/lib/game/constants'
-import { canStart, lobbyCopy, modeName, startLabel, toAvatarProps } from '@/lib/game/selectors'
+import {
+  WAITING_LINE,
+  canStart,
+  lobbyCopy,
+  modeName,
+  settingsSummary,
+  startLabel,
+  toAvatarProps,
+} from '@/lib/game/selectors'
 import type { GameMode } from '@/lib/game/types'
 import { useRoom } from '@/lib/room/useRoom'
 import styles from './LobbyScreen.module.scss'
@@ -19,12 +27,15 @@ import styles from './LobbyScreen.module.scss'
 /**
  * The room before it starts: how to get in, who is in, and the one button.
  *
- * Covers both designed lobby states. "Not enough players" is not a separate
- * screen — it is the same layout with a different headline and a blocked CTA
- * that says what is missing, which is the design's own rule.
+ * Covers all three designed lobby states — host, guest, and "not enough
+ * players" — as one screen with branched values. The blocked start is not a
+ * separate screen but the same layout with a different headline and a CTA that
+ * says what is missing, which is the design's own rule.
  *
- * The guest lobby (no controls, settings shown read-only) arrives with real
- * joining in phase 4; today the only player in the room is the host.
+ * **A guest is shown, not offered.** The share block, the mode control and the
+ * start button are all the host's: a guest gets the settings read-only and a
+ * line saying what they are waiting for, because every one of those controls
+ * would only ever hand them a refusal.
  */
 
 const MODES: Array<{ value: GameMode; label: string }> = [
@@ -32,19 +43,27 @@ const MODES: Array<{ value: GameMode; label: string }> = [
   { value: 'react', label: 'React to the caption' },
 ]
 
+/**
+ * Where the QR code and the copied link point.
+ *
+ * `/join/[code]` rather than the room itself: a guest still needs a name and a
+ * face before they can ask for a seat, and landing straight in the room would
+ * seat them as an unnamed stranger. This used to emit `/${code}`, which was no
+ * route at all — the QR and both copy actions produced a dead link.
+ */
 function joinUrlFor(code: string): string {
   const base =
     process.env.NEXT_PUBLIC_APP_URL ??
     (typeof window === 'undefined' ? '' : window.location.origin)
-  return `${base.replace(/\/$/, '')}/${code}`
+  return `${base.replace(/\/$/, '')}/join/${code}`
 }
 
 export function LobbyScreen() {
-  const { state, isHost, send } = useRoom()
+  const { state, selfId, isHost, send } = useRoom()
   const { notify, openHelp } = useRoomShell()
   if (!state) return null
 
-  const copy = lobbyCopy(state)
+  const copy = lobbyCopy(state, selfId)
   const gate = canStart(state)
   const joinUrl = joinUrlFor(state.roomCode)
 
@@ -57,6 +76,10 @@ export function LobbyScreen() {
   return (
     <Inline gap={44} align="start" className={styles.lobby}>
       <Stack gap={26} className={styles.share}>
+        {/* The design's guest lobby has no share block: inviting people is the
+            host's job, and a guest handed a QR would be sharing a room they do
+            not own. */}
+        {isHost && (
         <Stack gap={12}>
           <Eyebrow>Scan or type the code</Eyebrow>
           <RoomShare
@@ -72,15 +95,25 @@ export function LobbyScreen() {
             }}
           />
         </Stack>
+        )}
 
         <Inline gap={10} wrap={false}>
-          {isHost && (
+          {isHost ? (
             <SegmentedControl
               label="Game mode"
               value={state.settings.mode}
               onChange={setMode}
               options={MODES}
             />
+          ) : (
+            <dl className={styles.settings}>
+              {settingsSummary(state).map((pair) => (
+                <div key={pair.label} className={styles.setting}>
+                  <dt className={styles.settingLabel}>{pair.label}</dt>
+                  <dd className={styles.settingValue}>{pair.value}</dd>
+                </div>
+              ))}
+            </dl>
           )}
           <button
             type="button"
@@ -119,7 +152,7 @@ export function LobbyScreen() {
                block — arrives with real joining in phase 4. */
             <p className={styles.waiting}>
               <span className={styles.waitingDot} aria-hidden="true" />
-              Waiting on the host to start
+              {WAITING_LINE}
             </p>
           )}
         </Stack>
@@ -134,10 +167,15 @@ export function LobbyScreen() {
             </span>
           </Inline>
 
-          <ul className={styles.roster}>
+          <ul className={`${styles.roster} ${isHost ? '' : styles.rosterPills}`}>
             {state.players.map((player) => (
               <li key={player.id}>
-                <PlayerRow player={toAvatarProps(player)} host={player.isHost} />
+                <PlayerRow
+                  player={toAvatarProps(player)}
+                  variant={isHost ? 'roster' : 'pill'}
+                  host={player.isHost}
+                  you={player.id === selfId}
+                />
               </li>
             ))}
             {!gate.ok && (

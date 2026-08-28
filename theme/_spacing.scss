@@ -47,6 +47,35 @@ $rail-width-collapsed: 64px; // chat rail, strip
 // Smallest comfortable touch target. Every interactive element must meet it.
 $tap-target-min: 44px;
 
+/**
+ * Grow a small control's *hit area* to 44px without resizing it.
+ *
+ * DESIGNSYSTEM.md specifies controls smaller than the 44px floor on purpose —
+ * a reaction CTA is a 28–34px pill, a picker tile is 36–42px — and the design
+ * is the source of truth for how big a thing *looks*. This separates the two:
+ * the pill keeps its drawn size, and a centred pseudo-element gives the finger
+ * the 44px it needs.
+ *
+ * **Only for controls with clear space around them.** Applying it inside a
+ * dense row or grid makes neighbouring hit areas overlap, and the last one
+ * painted silently steals its neighbour's taps — worse than the small target it
+ * set out to fix. Where the design packs controls tightly, the spacing has to
+ * grow first.
+ */
+@mixin tapTarget($w: $tap-target-min, $h: $tap-target-min) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, #{$w});
+    height: max(100%, #{$h});
+    transform: translate(-50%, -50%);
+  }
+}
+
 // --- Radii ------------------------------------------------------------------
 //
 // Named by what they wrap. The 143px pill is not a typo — it is large enough
