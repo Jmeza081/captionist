@@ -14,13 +14,36 @@ import styles from './ReactionToolbar.module.scss'
 export type { Reaction }
 
 export interface ReactionToolbarProps {
-  /** Names what's being reacted to — "React to this caption". */
+  /**
+   * Whether the picker is showing.
+   *
+   * Controlled rather than mounted and unmounted by the caller, because a
+   * panel that animates *out* has to outlive the decision to close it. The
+   * component still renders nothing once the exit has finished.
+   */
+  open?: boolean
+  /**
+   * Names what's being reacted to — "React to this caption".
+   *
+   * The accessible name only. It used to print above the grid as well, which
+   * the design draws and use disproved: you open this from the thing you are
+   * reacting to, so the panel was spending a line restating what the last tap
+   * already said.
+   */
   title: string
   /** The full set. Unsearched, the first ten show as defaults. */
   reactions: Reaction[]
   /** Reactions this player has already added. */
   chosen?: string[]
   onPick: (reaction: Reaction) => void
+  /**
+   * Close without picking — Escape, or a click anywhere outside the panel.
+   *
+   * Owned here rather than at each anchor because the panel is the thing that
+   * knows where its own edges are. Without it the picker was a trap: it opened
+   * on the CTA and only that same CTA could put it away.
+   */
+  onDismiss?: () => void
   /** Flips to bottom-anchored in the lower third of a list. */
   flipped?: boolean
 }
@@ -43,6 +66,16 @@ const ROOT_MARGIN = '120px'
 
 /** The tile art, matching `$gif-thumb`. */
 const TILE_GLYPH = 22
+
+/**
+ * How long the exit runs before the panel is actually gone.
+ *
+ * A timer rather than `animationend`, because `prefers-reduced-motion` removes
+ * the animation and with it the event — and a picker that never unmounts for
+ * the people who asked for less motion is the worst version of this.
+ * Comfortably longer than `$duration-genie-out`.
+ */
+const EXIT_MS = 220
 
 /**
  * The tabs, in the design's order.
@@ -84,10 +117,12 @@ const TABS: readonly { id: 'recent' | ReactionPack; label: string }[] = [
  * the opening view, only somewhere you go.
  */
 export function ReactionToolbar({
+  open = true,
   title,
   reactions,
   chosen = [],
   onPick,
+  onDismiss,
   flipped = false,
 }: ReactionToolbarProps) {
   const [query, setQuery] = useState('')
@@ -147,14 +182,77 @@ export function ReactionToolbar({
     return () => observer.disconnect()
   }, [more, view, limit])
 
+  /**
+   * Leaving, which is not the same as closed.
+   *
+   * `open` is the caller's intent; this is the tail after it goes false, and
+   * the panel is on screen for both. Adjusted during render off a previous
+   * value rather than in an effect — the pattern React documents for state
+   * derived from a prop — because an effect that sets state on the way in is a
+   * cascading render, and this one would run on every open.
+   */
+  const [exiting, setExiting] = useState(false)
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    setExiting(!open)
+  }
+  const rendered = open || exiting
+
+  const panel = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!exiting) return
+    const timer = setTimeout(() => {
+      setExiting(false)
+      // A fresh open starts on the default grid rather than wherever the last
+      // one was left.
+      setQuery('')
+      setTab(undefined)
+    }, EXIT_MS)
+    return () => clearTimeout(timer)
+  }, [exiting])
+
+  /*
+    Escape, or a click anywhere else.
+
+    `click` rather than `pointerdown` so the affordance that opened this can
+    still close it: the anchor's own handler toggles first and this then agrees
+    with it, where a pointerdown listener would close the panel and let the
+    click that followed reopen it. Registered from an effect, which runs after
+    the click that opened the panel has finished dispatching — so it cannot
+    close on the way in.
+  */
+  useEffect(() => {
+    if (!open || !onDismiss) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onDismiss()
+    }
+    const onClick = (event: MouseEvent) => {
+      const el = panel.current
+      if (el && event.target instanceof Node && !el.contains(event.target)) onDismiss()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('click', onClick)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('click', onClick)
+    }
+  }, [open, onDismiss])
+
+  if (!rendered) return null
+
   return (
     <div
-      className={`${styles.toolbar} ${flipped ? styles.flipped : ''}`}
+      ref={panel}
+      className={[styles.toolbar, flipped ? styles.flipped : '', open ? styles.in : styles.out]
+        .filter(Boolean)
+        .join(' ')}
       role="dialog"
       aria-label={title}
     >
-      <span className={styles.title}>{title}</span>
-
       <TextField
         size="popover"
         placeholder="Search all emoji"

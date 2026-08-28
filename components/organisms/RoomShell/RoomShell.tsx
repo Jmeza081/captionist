@@ -10,8 +10,7 @@ import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatRail } from '@/components/molecules/ChatRail'
 import { ChatToast, ChatToastOverflow } from '@/components/molecules/ChatToast'
 import { ReactionFloaters } from '@/components/molecules/ReactionFloaters'
-import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
-import { HostToolbox } from '@/components/molecules/HostToolbox'
+import { RoomToolbox } from '@/components/molecules/RoomToolbox'
 import { Modal } from '@/components/molecules/Modal'
 import { ReconnectOverlay } from '@/components/molecules/ReconnectOverlay'
 import { RoundOpener } from '@/components/molecules/RoundOpener'
@@ -32,7 +31,7 @@ import {
 } from '@/lib/game/selectors'
 import { SEAT_GRACE_MS } from '@/lib/game/constants'
 import type { Clock, RoomPhase } from '@/lib/game/types'
-import { REACTIONS } from '@/lib/reactions'
+import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import type { ChatQuote } from '@/lib/room/transport'
 import { ROOM_TARGET } from '@/lib/room/transport'
 import { useCountdown } from '@/lib/room/useCountdown'
@@ -76,11 +75,12 @@ const TOAST_LIMIT = 2
 /**
  * Which overlays are mutually exclusive. Chat is not one: it docks.
  *
- * `reactions` is the rail's own picker — DESIGNSYSTEM.md's "REACT TO THE ROOM".
- * Listing it here is what buys rule 3 ("one overlay surface at a time") without
- * anybody having to remember to close the others.
+ * The room's reaction picker used to be a third member, hung off the collapsed
+ * rail. It is inside the toolbox now — see `RoomToolbox` — so it is part of
+ * that surface rather than competing with it, and rule 3 ("one overlay surface
+ * at a time") still holds with one fewer thing to remember.
  */
-type Overlay = 'toolbox' | 'help' | 'reactions' | null
+type Overlay = 'toolbox' | 'help' | null
 
 export interface RoomShellProps {
   /** The phase-to-screen map. Injected so the shell has no opinion about screens. */
@@ -182,17 +182,22 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
     [notify, openHelp, replyTo, startReply, clearReply],
   )
 
-  const toolbox = useMemo(
-    () => ({
-      onSecondsChange: (seconds: number) =>
-        send({
-          type: 'host/adjustedClock',
-          deltaMs: (seconds - countdown.seconds) * 1_000,
-        }),
-      onTogglePause: () =>
-        send({ type: countdown.paused ? 'host/resumed' : 'host/paused' }),
-    }),
-    [send, countdown.seconds, countdown.paused],
+  /**
+   * The burst, by value.
+   *
+   * Built once per reaction rather than once per render. Inline, this was a new
+   * object on every clock tick, which restarted the floaters' effect several
+   * times a second — see `ReactionFloaters`, where the other half of that bug
+   * lived.
+   */
+  const floaterBurst = useMemo(
+    () => (burst ? { glyph: burst.emoji, key: burst.key } : null),
+    [burst],
+  )
+
+  const reactToRoom = useCallback(
+    (glyph: string) => react('room', ROOM_TARGET, glyph),
+    [react],
   )
 
   // SSR and the moment before the first broadcast. The chrome renders so the
@@ -226,7 +231,9 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
       className={[
         styles.shell,
         chatOpen ? styles.railOpen : '',
-        isHost ? styles.hasToolbox : '',
+        // Everyone has a toolbox now, so everyone's content column reserves
+        // room for it and everyone's collapsed chat key stacks above it.
+        styles.hasToolbox,
       ]
         .filter(Boolean)
         .join(' ')}
@@ -275,15 +282,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           <div className={styles.rail}>
             <ChatRail
               open={chatOpen}
-              onOpenChange={(open) => {
-                setChatOpen(open)
-                // The CTA this picker hangs off lives in the collapsed strip,
-                // so opening chat takes its anchor away with it.
-                if (open) setOverlay((o) => (o === 'reactions' ? null : o))
-              }}
-              onReact={() =>
-                setOverlay((o) => (o === 'reactions' ? null : 'reactions'))
-              }
+              onOpenChange={setChatOpen}
               present={presentCount(state)}
               unread={unread.count}
               players={state.players.map(toAvatarProps)}
@@ -321,36 +320,48 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
         </div>
       </RoomShellContext.Provider>
 
-      {/* The phone's chat sheet covers the content, and the toolbox key floats
-          over everything — including the sheet's own send button. So while
-          chat is open on a phone the toolbox stands down; closing chat brings
-          it back. Above `md` the rail docks beside the content and the two
-          never contend. */}
-      {isHost && (
-        <div className={styles.toolboxDock}>
-          <HostToolbox
-            open={overlay === 'toolbox'}
-            onOpenChange={(open) => setOverlay(open ? 'toolbox' : null)}
-            seconds={countdown.seconds}
-            onSecondsChange={toolbox.onSecondsChange}
-            paused={countdown.paused}
-            onTogglePause={toolbox.onTogglePause}
-            onSkip={() => send({ type: 'host/skippedPhase' })}
-            onSwitchMode={() => {
-              send({ type: 'host/switchedMode', mode: otherMode })
-              notify(`Mode set to ${modeName(otherMode)}`)
-            }}
-            switchModeLabel={
-              otherMode === 'react' ? 'Switch to prompts' : 'Switch to captions'
-            }
-            onHelp={openHelp}
-            onForceTie={() => send({ type: 'host/forcedTie' })}
-            onJumpToFinal={() => send({ type: 'host/jumpedToPodium' })}
-            onRestart={() => send({ type: 'host/restarted' })}
-            railWidth="var(--room-rail-width)"
-          />
-        </div>
-      )}
+      {/* Everyone has one — a guest's holds the room's reactions and the
+          walkthrough, a host's adds their controls to the same bar. The phone's
+          chat sheet covers the content and this floats over everything,
+          including the sheet's own send button, so while chat is open on a
+          phone it stands down; closing chat brings it back. Above `md` the rail
+          docks beside the content and the two never contend. */}
+      <div className={styles.toolboxDock}>
+        <RoomToolbox
+          open={overlay === 'toolbox'}
+          onOpenChange={(open) => setOverlay(open ? 'toolbox' : null)}
+          quickReactions={[...QUICK_REACTIONS]}
+          reactions={[...REACTIONS]}
+          onReact={reactToRoom}
+          onHelp={openHelp}
+          host={
+            isHost
+              ? {
+                  seconds: countdown.seconds,
+                  onSecondsChange: (seconds: number) =>
+                    send({
+                      type: 'host/adjustedClock',
+                      deltaMs: (seconds - countdown.seconds) * 1_000,
+                    }),
+                  paused: countdown.paused,
+                  onTogglePause: () =>
+                    send({ type: countdown.paused ? 'host/resumed' : 'host/paused' }),
+                  onSkip: () => send({ type: 'host/skippedPhase' }),
+                  onSwitchMode: () => {
+                    send({ type: 'host/switchedMode', mode: otherMode })
+                    notify(`Mode set to ${modeName(otherMode)}`)
+                  },
+                  switchModeLabel:
+                    otherMode === 'react' ? 'Switch to prompts' : 'Switch to captions',
+                  onForceTie: () => send({ type: 'host/forcedTie' }),
+                  onJumpToFinal: () => send({ type: 'host/jumpedToPodium' }),
+                  onRestart: () => send({ type: 'host/restarted' }),
+                }
+              : undefined
+          }
+          railWidth="var(--room-rail-width)"
+        />
+      </div>
 
       {/* Never pauses the room — only the host's own pause stops the clock. */}
       <Modal
@@ -400,27 +411,11 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
         />
       )}
 
-      {/* The room picker, hung off the collapsed rail's CTA. A room reaction
-          is the burst and nothing else — it leaves no tally, because the
-          design's own prototype fires floaters for it and stores nothing. */}
-      {overlay === 'reactions' && !chatOpen && (
-        <div className={styles.pickerDock}>
-          <ReactionToolbar
-            title="React to the room"
-            reactions={[...REACTIONS]}
-            onPick={(reaction) => {
-              react('room', ROOM_TARGET, reaction.glyph)
-              setOverlay(null)
-            }}
-          />
-        </div>
-      )}
-
       {/* Anybody's reaction, anywhere in the room. Purely decorative — the
           count on the card is the information, and this is the noise the room
           makes when it lands. */}
       <div className={styles.floaterDock}>
-        <ReactionFloaters burst={burst && { glyph: burst.emoji, key: burst.key }} />
+        <ReactionFloaters burst={floaterBurst} />
       </div>
 
       {queue[0] && (

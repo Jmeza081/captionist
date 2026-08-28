@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.popKeyframes;
+
 .card {
   display: flex;
   flex-direction: column;

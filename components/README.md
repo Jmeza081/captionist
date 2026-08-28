@@ -7,7 +7,7 @@ atom, and a 10-line component that calls `useRoom()` is an organism.
 | Tier | May contain | May **not** contain |
 | --- | --- | --- |
 | `atoms/` | Markup, tokens, its own props, `Icon` | App state, data fetching, any other component from this repo |
-| `molecules/` | Atoms, layout, local UI state | Data fetching, realtime subscriptions, routing side effects |
+| `molecules/` | Atoms, layout, local UI state, **and another molecule where one genuinely composes another** | Data fetching, realtime subscriptions, routing side effects |
 | `organisms/` | Molecules, atoms, data fetching, room state (`useRoom()`), routing | — |
 
 **The gallery at `/components` holds the reusable library, not every file in
@@ -22,6 +22,15 @@ could ever import. Forbidding it would push genuinely atomic components like
 `molecules/` on a technicality, which would make the tier say less, not more.
 Nothing else gets this exemption: if a component imports anything from
 `components/` other than `Icon`, it is a molecule.
+
+**A molecule may hold another molecule, and exactly one does.** `RoomToolbox`
+renders `ReactionToolbar` inside its body — the picker is a section of the
+toolbox rather than a popover over it, which is how the room's reactions stay
+one open surface rather than two. The tier is about *dependencies*, not depth:
+neither component fetches, subscribes or routes, so both are still molecules
+and the organism above them is still the only thing that knows a room exists.
+The rule this does not licence is composing your way out of a tier — if the
+inner component needs `useRoom()`, the pair belongs in `organisms/`.
 
 Pages in `app/` compose organisms and molecules. They should hold almost no
 markup of their own.

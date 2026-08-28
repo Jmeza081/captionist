@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.riseKeyframes;
+
 .layer {
   position: absolute;
   inset: 0;

@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.caretKeyframes;
+
 .pill {
   @include t.glass;
 

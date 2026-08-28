@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.genieKeyframes;
+
 .toolbar {
   display: flex;
   flex-direction: column;
@@ -11,17 +13,43 @@
   border-radius: t.$radius-field-lg;
   background-color: t.$surface-card;
   box-shadow: t.$shadow-popover;
+  transform-origin: top center;
+  // Which way the panel is pulled from. Below its anchor it drops in from
+  // above; flipped, it rises from below.
+  --genie-shift: -14px;
 }
 
-// Anchored from the bottom when it sits low in a list.
+// Anchored from the bottom when it sits low in a list. That also decides which
+// edge the genie is pulled out of, so the panel grows from its affordance
+// rather than from the middle of nowhere.
 .flipped {
   flex-direction: column-reverse;
+  transform-origin: bottom center;
+  --genie-shift: 14px;
 }
 
-.title {
-  @include t.eyebrowText;
-  color: t.$text-meta;
-  letter-spacing: 0.07em;
+// The open and the close. Both are declared on the same element so the panel
+// keeps its box while it leaves — a second wrapper would only exist to hold a
+// transform this one can carry itself.
+.in {
+  animation: genie-in t.$duration-genie-in cubic-bezier(0.2, 1.1, 0.35, 1) both;
+}
+
+.out {
+  animation: genie-out t.$duration-genie-out cubic-bezier(0.4, 0, 0.9, 0.3) both;
+  // Leaving, so it must not swallow the click that is dismissing it.
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .in,
+  .out {
+    animation: none;
+  }
+
+  .out {
+    opacity: 0;
+  }
 }
 
 // Six chips no longer fit 262px, so the row scrolls sideways rather than

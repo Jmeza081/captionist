@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.pulseKeyframes;
+
 .pill {
   --status-pill-check: #{t.$success};
 

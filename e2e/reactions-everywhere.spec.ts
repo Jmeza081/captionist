@@ -2,17 +2,20 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { CHAT_INTERVAL_MS } from '../lib/room/events'
 
 /**
- * The reaction affordance, everywhere the design puts it.
+ * The reaction affordance, everywhere the room puts it.
  *
- * DESIGNSYSTEM.md §4.4 names five sites — caption cards, chat messages, the
- * composer, the collapsed rail and the reveal bar — and rule 4 says the icon is
- * uniform across all of them. Three were missing or half-wired: the rail's
- * picker was declared and never passed its handler, chat reactions always
- * landed on whatever arrived last, and an empty log rendered six quick keys
- * that silently did nothing.
+ * DESIGNSYSTEM.md §4.4 names five sites and rule 4 says the icon is uniform
+ * across all of them, which is still true — but *what each one does* was not.
+ * The collapsed chat rail carried the room's reaction key, so shouting at the
+ * room looked like a chat feature; the composer's emoji fired a burst and left
+ * nothing in the log; and the picker, once open, could only be closed by the
+ * control that opened it.
  *
- * Scoped by rail throughout, because a vote card carries the same CTA with the
- * same name — which is the point of rule 4 and the reason a bare
+ * So: the room's reactions live in the room toolbox, which everybody has now.
+ * The composer's emoji post. And the picker closes when you click away from it.
+ *
+ * Scoped by container throughout, because the same CTA carries the same name in
+ * three places — which is the point of rule 4 and the reason a bare
  * `getByRole('button', { name: 'Add a reaction' })` is ambiguous here.
  */
 
@@ -24,9 +27,19 @@ const collapsedRail = (page: Page): Locator =>
 const openRail = (page: Page): Locator =>
   page.getByRole('complementary', { name: 'Room chat', exact: true })
 
+const toolbox = (page: Page): Locator =>
+  page.getByRole('region', { name: /^(Host|Guest) toolbox$/ })
+
 async function enterRoom(page: Page): Promise<void> {
   await page.goto(ROOM)
   await expect(page.getByRole('heading', { name: 'Rank your top three.' })).toBeVisible()
+}
+
+async function openToolbox(page: Page): Promise<Locator> {
+  await page.getByRole('button', { name: /^(Host|Guest) toolbox$/ }).click()
+  const panel = toolbox(page)
+  await expect(panel).toBeVisible()
+  return panel
 }
 
 async function openChat(page: Page): Promise<void> {
@@ -44,20 +57,70 @@ async function say(page: Page, text: string): Promise<void> {
 }
 
 test.describe('reacting to the room', () => {
-  test('opens from the collapsed rail and leaves no count behind', async ({ page }) => {
+  test('is a toolbox tool, not a chat one', async ({ page }) => {
     await enterRoom(page)
 
-    await collapsedRail(page).getByRole('button', { name: 'Add a reaction' }).click()
+    // `as=p2` is a guest, and a guest has a toolbox now — the room's reactions
+    // are everybody's, and they used to be reachable only through chat's edge.
+    await expect(page.getByRole('button', { name: 'Guest toolbox' })).toBeVisible()
+    await expect(
+      collapsedRail(page).getByRole('button', { name: 'Add a reaction' }),
+    ).toHaveCount(0)
+  })
 
-    const picker = page.getByRole('dialog', { name: 'React to the room' })
-    await expect(picker).toBeVisible()
+  test('fires from the toolbox and leaves no count behind', async ({ page }) => {
+    await enterRoom(page)
+    const panel = await openToolbox(page)
 
-    await picker.getByRole('button', { name: 'Fire', exact: true }).click()
-    await expect(picker).toBeHidden()
+    await panel.getByRole('button', { name: 'React with Fire' }).click()
 
     // A room reaction is the burst and nothing else — the design's prototype
     // fires floaters for it and stores nothing, so no tally may appear.
     await expect(page.getByText(/Fire, \d+ reaction/)).toHaveCount(0)
+    // And it does not shut the bar you are reacting from: reacting twice is
+    // the whole point.
+    await expect(panel).toBeVisible()
+  })
+
+  test('reaches the long tail through the picker', async ({ page }) => {
+    await enterRoom(page)
+    const panel = await openToolbox(page)
+
+    await panel.getByRole('button', { name: 'Add a reaction' }).click()
+    const picker = panel.getByRole('dialog', { name: 'React to the room' })
+    await expect(picker).toBeVisible()
+
+    await picker.getByRole('button', { name: 'Fire', exact: true }).click()
+    await expect(picker).toBeHidden()
+    await expect(page.getByText(/Fire, \d+ reaction/)).toHaveCount(0)
+  })
+})
+
+test.describe('dismissing the picker', () => {
+  test('closes on a click outside it', async ({ page }) => {
+    await enterRoom(page)
+    const panel = await openToolbox(page)
+
+    await panel.getByRole('button', { name: 'Add a reaction' }).click()
+    const picker = panel.getByRole('dialog', { name: 'React to the room' })
+    await expect(picker).toBeVisible()
+
+    // The bug this covers: the picker opened and then trapped you, because the
+    // only thing that could close it was the CTA it hung off.
+    await page.getByRole('heading', { name: 'Rank your top three.' }).click()
+    await expect(picker).toBeHidden()
+  })
+
+  test('closes on Escape', async ({ page }) => {
+    await enterRoom(page)
+    const panel = await openToolbox(page)
+
+    await panel.getByRole('button', { name: 'Add a reaction' }).click()
+    const picker = panel.getByRole('dialog', { name: 'React to the room' })
+    await expect(picker).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(picker).toBeHidden()
   })
 })
 
@@ -67,14 +130,24 @@ test.describe('reacting in chat', () => {
     await openChat(page)
 
     const rail = openRail(page)
-    // Both were wrong here: the CTA was withheld on the grounds that a dead
-    // control is worse than none, while the six quick keys beside it were
-    // rendered anyway and did nothing at all.
     await expect(rail.getByRole('button', { name: 'Add a reaction' })).toBeVisible()
     await expect(rail.getByRole('button', { name: /^React with / })).toHaveCount(6)
 
     await rail.getByRole('button', { name: 'Add a reaction' }).click()
-    await expect(page.getByRole('dialog', { name: 'React to the room' })).toBeVisible()
+    // Not "React to the room" any more. The composer's picker sends a message.
+    await expect(page.getByRole('dialog', { name: 'Send an emoji' })).toBeVisible()
+  })
+
+  test('a composer emoji posts, rather than vanishing into a burst', async ({ page }) => {
+    await enterRoom(page)
+    await openChat(page)
+
+    const rail = openRail(page)
+    await rail.getByRole('button', { name: 'React with Fire' }).click()
+
+    // It used to fire a room reaction and leave nothing behind, which read as a
+    // chat control quietly doing something else.
+    await expect(page.getByRole('article').filter({ hasText: '🔥' })).toHaveCount(1)
   })
 
   test('lands on the message you aimed at, not the newest', async ({ page }) => {

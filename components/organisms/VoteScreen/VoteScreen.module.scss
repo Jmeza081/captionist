@@ -73,7 +73,10 @@
 
   @include t.mq('md') {
     position: static;
-    padding-right: 0;
+    // Still reserving room on the right, just more of it: from `md` the
+    // toolbox FAB is a labelled pill rather than a 44px key, and everyone has
+    // one now — so the widest thing in this corner is no longer chat's.
+    padding-right: t.$toolbox-fab-clear;
     background: none;
   }
 }

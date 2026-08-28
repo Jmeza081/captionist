@@ -135,3 +135,12 @@
   line-height: 1.45;
   color: t.$urgent;
 }
+
+// A trailing control brings its own inset. The composer's send key is 34px in a
+// 46px field, so it already sits 6px from the top and bottom edges — the
+// field's own 14px then pushed it a further 8px off the right one, and the key
+// read as floating inside the box rather than tucked into its corner. After the
+// size rules, because it is correcting one of them.
+.hasTrailing {
+  padding-right: t.$space-6;
+}

@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 import { Avatar, AvatarOverflow, type AvatarProps } from '@/components/atoms/Avatar'
 import { Icon } from '@/components/atoms/Icon'
 import { PresencePill } from '@/components/atoms/PresencePill'
-import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import styles from './ChatRail.module.scss'
 
 type RailPlayer = Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
@@ -18,7 +17,6 @@ export interface ChatRailProps {
   unread?: number
   /** Shown in the collapsed strip. The first three, then a +N chip. */
   players: RailPlayer[]
-  onReact?: () => void
   /**
    * Incoming messages, shown beside the collapsed strip.
    *
@@ -55,7 +53,6 @@ export function ChatRail({
   present,
   unread = 0,
   players,
-  onReact,
   toasts,
   children,
 }: ChatRailProps) {
@@ -84,8 +81,6 @@ export function ChatRail({
             </span>
           )}
         </button>
-
-        {onReact && <ReactionCTA onClick={onReact} />}
 
         <span className={styles.stripRule} aria-hidden="true" />
 

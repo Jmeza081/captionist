@@ -40,6 +40,30 @@ rendition from it locally through `lib/noto.ts`. So the allowlist gained one
 `lib/gifs/allow.test.ts` asserts that a gstatic URL is still **refused**, so the
 day that changes it will be on purpose.
 
+**Since then the room's floating controls stopped being the host's.**
+`HostToolbox` is `RoomToolbox`: everyone gets one, it leads with a "React to the
+room" row and the walkthrough, and the host's timer, pause, skip, switch-mode,
+force-tie, jump and restart are an extra section behind an optional `host` prop
+rather than a second, host-shaped component. The room's reaction picker moved
+*into* it — off the collapsed chat rail, where it read as a chat feature and sat
+a tap from the composer's emoji, which are a different thing. `ChatRail` lost
+`onReact` and `RoomShell`'s `Overlay` union lost `'reactions'`, so "one overlay
+surface at a time" now holds with one fewer thing to remember. Nothing on the
+wire moved: a room reaction is the same event it was.
+
+**Two structural fixes rode along with it, and one of them was silent.** Five
+animations had never run. `theme/_motion.scss` declared its keyframes once in a
+*global* stylesheet, and CSS Modules rewrite `animation-name` into module scope
+— so every rule naming `pop`, `pulse`, `rise`, `caret` or `toastin` asked for a
+keyframe nothing declared, and the element rendered in its static state with no
+warning. It is one mixin per animation now, included by the module that names
+it: [ADR 0013](./adr/0013-a-keyframe-is-scoped-to-the-module-that-names-it.md).
+The other is layout: **from `md` up the room is an app shell rather than a
+scrolling page.** `RoomShell` is `height: 100dvh; overflow: hidden` and the
+content column is what scrolls, so the docked rail is the height of the viewport
+and its composer no longer hangs below the fold until the header is scrolled
+away. Below `md` nothing changed — the rail is a sheet and the page scrolls.
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -80,8 +104,8 @@ here now*. Where they overlap, this file links rather than repeats.
 | Room runtime | `lib/room/` — `RoomTransport` + `HostEngine` | The host browser is the server — see [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md) |
 | Chat + tallies | `lib/room/events.ts` — a second store, beside `RoomStore` | [ADR 0010](./adr/0010-chat-is-a-second-store-and-its-sender-is-stamped.md) — the event lane, never game state: a message must not bump the `rev` guests drop stale game updates against. Every guard runs on *receive* — membership, 1.5s per sender on the local clock, 140 characters, 50 messages of scrollback, and since phase 7 an origin check on every URL a message carries |
 | Image origins | `lib/gifs/allow.ts` — `isAllowedImageSrc` | One allowlist for everything a *sender* can point an `<img>` at: a chat attachment, a quote's thumbnail, a reaction's glyph. Same-origin `/media/*.svg` or `/media/emoji/*.svg` — **one optional path segment, not a wildcard**, so the surface it opens is exactly the directory the importer writes — and `https://` hosts at or under `giphy.com`, parsed with `URL` so a lookalike fails on hostname. **The catalog added no host**: `fonts.gstatic.com` is still refused, and `allow.test.ts` asserts the refusal. [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md) · [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
-| Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
-| Reaction affordance | `ReactionCTA` on all five sites the design names | Caption cards, chat messages, the composer, the collapsed rail and the reveal bar — DESIGNSYSTEM §4.4's "uniform everywhere", which three of the five did not honour until now. `ChatRail` had declared `onReact` and never been passed one, so the room picker existed only in the gallery; `ChatMessage` had no affordance at all, so every chat reaction landed on whatever arrived last; and the composer withheld its CTA on an empty log while rendering six quick keys that silently did nothing. `ChatPanel`'s reaction surface now carries *what it is aimed at* — a message id, or `null` for the room — and `RoomShell` lists `reactions` in its `Overlay` union, which is what buys "one overlay surface at a time" without anybody remembering to close the others |
+| Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the toolbox's react row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
+| Reaction affordance | `ReactionCTA` on all five sites the design names | Caption cards, chat messages, the composer, the reveal bar and the **room toolbox** — DESIGNSYSTEM §4.4's "uniform everywhere", which three of the five did not honour until recently. `ChatMessage` had no affordance at all, so every chat reaction landed on whatever arrived last, and the composer withheld its CTA on an empty log while rendering six quick keys that silently did nothing. The fifth site was the collapsed chat rail and **is now `RoomToolbox`**: reacting to the room is something any player does at any time, not an edge-of-chat control, so `ChatRail` no longer takes `onReact` and `RoomShell`'s `Overlay` union is back to `'toolbox' \| 'help' \| null`. `ChatPanel`'s reaction surface still carries *what it is aimed at* — a message id, or `null` for the composer, which **posts**: an emoji from the composer is a chat message that also fires the room's burst, rather than a chat control that quietly did something else |
 | Reaction art | `public/media/emoji/` stills · `lib/noto.ts` derives the motion | 584 CC BY 4.0 stills, 2.79MB, written by `scripts/import-noto-emoji.mjs` — run by hand, output committed, **deliberately not wired into `build`**, which has no network. `animatedSrcFor(glyph)` turns a same-origin still into its `fonts.gstatic.com` WebP and returns `null` for anything else; Google publishes these at 512px only, so one animated tile is ~369KB and the whole catalog would be ~57MB committed. [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
 | Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Shared by `HeroWall` and `ReactionGlyph`, which are the two places the decision is *which file to fetch* and therefore the two CSS cannot make |
 | Recent reactions | `lib/recent-reactions.ts` — `localStorage`, ids not glyphs | The picker's Recent tab, and the one piece of reaction state that never travels: not the event store (whose contract is one event off the wire), not `GameState` (it would bump `rev`), not `sessionStorage` (your emoji should outlive the room). Filtered against `REACTIONS` on read, so a retired tile leaves quietly |
@@ -1078,7 +1102,7 @@ graph BT
     Room["JoinPanel · PlayerRow · PromptBanner"]
     Media["MediaCard"]
     Chat["ChatMessage · UnreadDivider<br/>ChatRail · ChatToast"]
-    Overlay["Modal · RoundOpener · HostToolbox<br/>Dropzone · ReactionToolbar · GifPanel<br/>ReconnectOverlay"]
+    Overlay["Modal · RoundOpener · RoomToolbox<br/>Dropzone · ReactionToolbar · GifPanel<br/>ReconnectOverlay"]
     Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
     Lobby["CodeEntry · RoomShare · Podium"]
     Entry["AvatarPicker · ModeCard"]
@@ -1138,14 +1162,15 @@ graph BT
   Status -->|"TallyPill"| Panel
   Glyph -->|"a tally's face"| Panel
   Glyph -->|"a tally's face"| Screens
-  Glyph -->|"every tile in the picker"| Overlay
+  Glyph -->|"every tile in the picker,<br/>and the toolbox's react row"| Overlay
+  Feedback -->|"ReactionCTA — the toolbox's<br/>own picker key"| Overlay
   Glyph -->|"the burst, and the reveal's one-tap row"| Compose
   Panel -->|"rendered as ChatRail's child"| Shell
 
   Status -->|"TimerPill · RoundProgress · ProgressRail"| Shell
   Feedback --> Shell
   Chat -->|"ChatRail · ChatToast"| Shell
-  Overlay -->|"Modal · RoundOpener · HostToolbox<br/>ReconnectOverlay — over a live room"| Shell
+  Overlay -->|"Modal · RoundOpener · RoomToolbox — everyone's<br/>ReconnectOverlay — over a live room"| Shell
   Compose -->|"AppHeader · ReactionFloaters"| Shell
   Room -->|"PlayerRow · PromptBanner"| Screens
   Media --> Screens
@@ -1175,9 +1200,9 @@ the second and third, and they are the clearest case of it**: neither calls
 They collect what a seat needs, write it to storage and navigate — which is the
 whole of the pre-room surface. `RoomShell` owns everything outside
 the content column: the header and its trailing slot, the rail — docked or a
-sheet — with `ChatPanel` inside it and chat's toasts beside it, the host
-toolbox, the help modal, the round-opener overlay, the room-wide reaction
-floaters and one snackbar at a time. A
+sheet — with `ChatPanel` inside it and chat's toasts beside it, the room
+toolbox (everyone's, not just the host's), the help modal, the round-opener
+overlay, the room-wide reaction floaters and one snackbar at a time. A
 screen owns its content column and nothing else, which is what stops nine
 screens each growing their own header. What a screen may ask of the chrome is
 `RoomShellContext`, and it stays deliberately tiny: `notify()`, `openHelp()`,
@@ -1213,7 +1238,7 @@ server components, so using them costs no client JS.
 `Icon` is the one component atoms may import; the reasoning is in
 [`components/README.md`](../components/README.md). Everything that takes user
 input is `'use client'` and **controlled** — it owns no state, so the same
-`Toggle` works in the setup screen and the host toolbox without either one
+`Stepper` works in the setup screen and the room toolbox without either one
 fighting it for ownership.
 
 The landing components are the first tier placements decided by something
@@ -1287,9 +1312,11 @@ rail's. `MediaCard` gained a `reaction` slot beside `action`, because the design
 draws label, action and reaction as three things sharing one row and `action`
 was already spoken for by the rank button. And `RoomShell` gained a
 `--room-dock-bottom` custom property so floating furniture stacks rather than
-collides: on a phone the host's toolbox key owns the bottom-right corner, so
-chat's key starts a tap-target above it, and above `md` both revert because a
-docked rail and the toolbox never contend. The other half of that collision is
+collides: on a phone the toolbox key owns the bottom-right corner, so chat's
+key starts a tap-target above it, and above `md` both revert because a docked
+rail and the toolbox never contend. That offset used to depend on being the
+host — `hasToolbox` was a conditional class — and is unconditional now, because
+everyone has a toolbox. The other half of that collision is
 behavioural — while the chat sheet is open on a phone the toolbox stands down,
 since a fixed key over a sheet would land on the sheet's own send button. Both
 offsets are built out of tokens (`$space-20`, `$tap-target-min`) inside
@@ -1363,6 +1390,56 @@ deliberately *not* a member of that union — it is a pending payload that has t
 survive the panel that produced it closing, which is the same shape one level
 up as the staged reply on `RoomShellContext`.
 
+**The toolbox pass added no component and renamed one.** `HostToolbox` became
+`RoomToolbox` and widened rather than forking: the host's seven controls moved
+behind one optional `host` prop, which is rule 2 applied to a whole section
+rather than to a single value — a `GuestToolbox` would have been a copy of the
+frame, the FAB, the rail offset and the walkthrough button, differing only in
+what it omits. What it gained above that prop is the "React to the room" row,
+six one-tap keys and a `ReactionCTA` opening the full picker *inside* the body
+rather than over it, because the toolbox is already the open surface and a
+popover hung off it would be a second one. The collapsed FAB renders both
+shapes and lets CSS choose — a 44px key on a phone, where the corner is one
+column wide and chat's key stacks directly above, and a labelled pill from `md`
+up. That is `ChatRail`'s two-glyph trick applied to a whole label.
+
+**It is also the repo's first molecule that imports another molecule.**
+`RoomToolbox` holds `ReactionToolbar`, which `components/README.md`'s table
+permits by omission rather than by intent: it forbids data fetching, realtime
+and routing in a molecule, and says nothing about depth. The alternative was to
+promote one of them to an organism, which would be a tier decided by nesting
+instead of by dependency — the exact thing that table exists to prevent. Worth
+knowing because it is the only one; if a second appears, the rule needs writing
+down rather than inferring.
+
+**`ReactionToolbar` became controlled so it could leave.** `open` is a prop
+now rather than the caller mounting and unmounting it, because a panel that
+animates *out* has to outlive the decision to close it; it unmounts itself once
+the exit has run, on a timer rather than `animationend`, since
+`prefers-reduced-motion` removes the animation and with it the event. It also
+gained `onDismiss` — Escape and click-outside, owned by the panel because the
+panel is what knows where its own edges are; without it the picker was a trap
+that only the CTA that opened it could close. And it stopped printing its
+`title`, which is now the accessible name only: you open it from the thing you
+are reacting to, so the heading spent a line restating the last tap.
+
+**The docked room is an app shell, and that is a layout change with a
+behavioural cause.** `RoomShell`'s `.shell` is `height: 100dvh; overflow:
+hidden` from `md` up and `.content` is the only thing that scrolls, so
+`ChatRail`'s docked rail and collapsed strip are `position: static` full-height
+flex children rather than `sticky` boxes measured at `100dvh`. Sticky plus a
+viewport height inside a scrolling *page* put the composer below the fold until
+the header had been scrolled away, which is a rail you have to scroll to reach.
+Below `md` none of it applies: the rail is a sheet, and a phone's page is meant
+to scroll.
+
+`ChatPanel`'s composer emoji changed meaning rather than shape. They used to
+fire a room burst and leave nothing in the log, aimed at whichever message
+arrived last — so the same key meant "tally that" or "shout at the room"
+depending on timing nobody could see. They post now, and the burst rides along:
+`say(glyph)` plus `react('room', ROOM_TARGET, glyph)`, one wire event each, the
+event lane unchanged.
+
 ## Token flow
 
 Values exist exactly once. Sass owns them; React reads them by name.
@@ -1371,7 +1448,7 @@ Values exist exactly once. Sass owns them; React reads them by name.
 graph LR
   S["theme/_spacing.scss<br/><i>$spaces, $radii maps</i>"]
   V["theme/_css-vars.scss<br/><i>rootVars() mixin</i>"]
-  T["app/tokens.scss<br/><i>:root + keyframes</i>"]
+  T["app/tokens.scss<br/><i>:root only — no keyframes</i>"]
   B["Browser<br/><i>--space-26, --radius-card</i>"]
   TS["theme/tokens.ts<br/><i>names only, no values</i>"]
   P["Stack / Inline / Box / Grid<br/><i>gap={26} → var(--space-26)</i>"]
@@ -1402,16 +1479,39 @@ is a named metric, never the nearest token. The overlay's other
 three values went to the maps they belong in rather than into the component:
 `$urgent-border` and `$urgent-glow` are colours, `$z-reconnect: 92` is an
 elevation, and it sits above every other overlay because when the room is gone
-nothing else matters. The metrics stay Sass constants because no React prop
-takes them, so
+nothing else matters. The toolbox pass added one more, `$toolbox-fab-clear`:
+160px a full-width control has to leave beside the collapsed toolbox from `md`
+up, where the FAB is a labelled pill rather than a 44px key. `VoteScreen`'s
+lock button is the one that needs it — it runs the width of the column, and its
+right end was under the pill. The metrics stay Sass constants because no React
+prop takes them, so
 publishing a custom property for each would be a bridge with nothing crossing
 it. The rule is the same either way: the number exists once, in `theme/`.
+
+**`theme/_motion.scss` stopped being one mixin and became six.** There is no
+`keyframes()` any more and `app/tokens.scss` includes nothing from it: each
+animation is its own mixin — `popKeyframes` · `pulseKeyframes` ·
+`riseKeyframes` · `caretKeyframes` · `toastinKeyframes` · `genieKeyframes` —
+and the `.module.scss` that names the animation includes it directly under its
+`@use 'theme' as t;`. This is the one place in `theme/` where a value is
+*emitted* more than once on purpose: CSS Modules rewrite `animation-name` into
+module scope exactly as they rewrite class names, so a rule referencing a
+globally-declared keyframe asks for a name nothing declares and the browser
+applies no animation at all — silently, because an unresolvable
+`animation-name` is legal CSS. Five animations were dead that way, and the only
+visible one was `rise`, which is the whole of the room's reaction burst. The
+values still live once, in `theme/`; what is duplicated is emitted bytes.
+[ADR 0013](./adr/0013-a-keyframe-is-scoped-to-the-module-that-names-it.md).
+`genieKeyframes` is the first animation written against that rule, and it
+carries its direction in a `--genie-shift` custom property rather than a second
+pair of keyframes, because a custom property crosses the module boundary a
+keyframe name does not.
 
 The chat rail's two widths are the metric that does have to cross —
 `rootVars()` publishes
 `--rail-width` and `--rail-width-collapsed`, `RoomShell.module.scss` picks
 between them and 0 at the breakpoints as `--room-rail-width`, and
-`HostToolbox` takes that custom property through its `railWidth` prop (widened
+`RoomToolbox` takes that custom property through its `railWidth` prop (widened
 from `number` to `number | string` for exactly this). The offset has to survive
 a media query, so it is decided in CSS; React only passes the name along. This
 is the exception that proves the rule about layout values: it is in `theme/`,
@@ -1434,7 +1534,10 @@ caption. The quote's rule is deliberately heavier than `$accent-border-strong`
 rather than reusing it — the design distinguishes a rule that *marks* something
 from one that edges a surface, and beside 14px body text the two are not
 interchangeable. Nothing new opened over anything, so the ladder is untouched
-for a second phase running.
+for a second phase running — and for a third, since the toolbox pass moved the
+room's picker *inside* `$z-toolbox: 50` rather than opening a new layer, and
+`$z-reaction-picker: 70` still belongs to the two pickers that really are
+popovers (the vote card's and the composer's).
 
 ## Rendering path
 
@@ -1758,8 +1861,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-185 unit tests (`lib/**/*.test.ts`, node) and 286 Playwright tests across the
-two viewports — 143 per project, over 21 spec files. 280 of the 286 run; the
+190 unit tests (`lib/**/*.test.ts`, node) and 302 Playwright tests across the
+two viewports — 151 per project, over 22 spec files. 296 of the 302 run; the
 other 6 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.
@@ -1804,6 +1907,17 @@ time and extends on scroll, a still *decodes* (`naturalWidth > 0`, so a broken
 image fails rather than passing on being present), search reaches an emoji by
 name, and a picked catalog tile lands in a live tally as a picture rather than
 as `/media/emoji/1f427.svg` in text.
+
+**The reaction affordance's own spec is `e2e/reactions-everywhere.spec.ts`, now
+8 tests per project**, and the toolbox pass is most of the growth: reacting to
+the room is asserted to be a *toolbox* tool and not a chat one, the picker is
+driven from the toolbox and from the long tail behind it, and two tests cover
+the dismissal that did not exist — a click outside and Escape. Three more hold
+chat's half of the split: the composer offers its affordance on an empty log, a
+composer emoji **posts** rather than vanishing into a burst, and a message
+reaction lands on the message you aimed at rather than the newest. No unit test
+changed in that pass, which is the honest reading of it — nothing moved in
+`lib/`.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

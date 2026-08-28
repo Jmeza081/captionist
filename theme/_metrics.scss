@@ -161,6 +161,12 @@ $interstitial-width: 560px;
 $toolbox-width: 340px;
 $toolbox-radius: 20px;
 
+// How much room a full-width control has to leave beside the collapsed toolbox
+// from `md` up, where the FAB is a labelled pill rather than a 44px key. The
+// vote screen's lock button is the one that needs it: it runs the width of the
+// column, and its right end was under the FAB.
+$toolbox-fab-clear: 160px;
+
 $pip-width: 26px;
 $pip-height: 8px;
 

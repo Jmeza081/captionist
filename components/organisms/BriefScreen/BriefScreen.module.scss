@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.pulseKeyframes;
+
 .headline {
   margin: 0;
   @include t.screenTitleText;

@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.popKeyframes;
+
 // The red wash behind sudden death. Decorative, so it is a pseudo-element and
 // never enters the accessibility tree.
 .screen {

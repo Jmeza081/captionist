@@ -62,6 +62,7 @@ export function TextField({
   const wrapClasses = [
     styles.field,
     styles[size],
+    trailing ? styles.hasTrailing : '',
     primary ? styles.primary : '',
     error ? styles.invalid : '',
     className ?? '',

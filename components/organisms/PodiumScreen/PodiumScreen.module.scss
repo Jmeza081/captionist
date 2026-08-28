@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.popKeyframes;
+
 .screen {
   --podium-star: #{t.$winner};
 

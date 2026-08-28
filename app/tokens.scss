@@ -1,8 +1,13 @@
 @use 'theme' as t;
 
 // Publishes the spacing and radius scales as CSS custom properties so the
-// React layout primitives can reference them by name, and declares the shared
-// keyframes once. See theme/_css-vars.scss for why the indirection exists.
+// React layout primitives can reference them by name. See theme/_css-vars.scss
+// for why the indirection exists.
+//
+// It does *not* declare the keyframes any more, and could not usefully: a
+// `.module.scss` rewrites `animation-name` into its own scope, so a global
+// declaration is a name nothing asks for. Each module includes the keyframes it
+// names — see ADR 0013.
 //
 // Global (not a module) and imported once from app/layout.tsx.
 
@@ -10,4 +15,3 @@
   @include t.rootVars;
 }
 
-@include t.keyframes;

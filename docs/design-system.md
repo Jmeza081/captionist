@@ -143,9 +143,19 @@ the ladder, not by guessing a bigger number.
 
 ### Motion — `theme/_motion.scss`
 
-`keyframes()` declares `pop`, `pulse`, `rise`, `toastin` and `gcy` once, from
-`app/tokens.scss`. The spec requires these live in a stylesheet, never driven
-inline from JS.
+One mixin per animation — `popKeyframes()`, `pulseKeyframes()`,
+`riseKeyframes()`, `caretKeyframes()`, `toastinKeyframes()`,
+`genieKeyframes()` — included by the module that uses it. The spec requires
+these live in a stylesheet, never driven inline from JS.
+
+**Include them per module, not once globally.** A `.module.scss` has its
+`animation-name` rewritten to the module's scope exactly as its class names
+are, so a rule naming a keyframe declared in a *global* stylesheet asks for
+`Snackbar-module__hash__toastin` — which nothing declares, and the element
+simply renders in its static state. That is what left the reaction floaters
+sitting motionless along the bottom of the room, and it was quietly true of
+`pop`, `pulse`, `caret` and `toastin` as well. See
+[ADR 0013](./adr/0013-a-keyframe-is-scoped-to-the-module-that-names-it.md).
 
 ### Breakpoints — `theme/_breakpoints.scss`
 
@@ -253,12 +263,12 @@ primitives.
 | `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Its foot takes `caption`, `reply`, `reaction` and `action` as peers |
 | `ChatMessage` | molecule | One chat message, or a host announcement with `announcement`. Carries an attached GIF at 180×120, and the caption it answers quoted under the body. `onReact` puts the CTA in the meta row, so a reaction lands on *this* message rather than on whatever arrived last |
 | `UnreadDivider` | molecule | Where you stopped reading |
-| `ReactionToolbar` | molecule | The searchable reaction picker. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
+| `ReactionToolbar` | molecule | The searchable reaction picker. Controlled by `open` so it can animate out, dismissed by Escape or a click anywhere outside it, and genie-in/out from the edge its `flipped` anchor sits on. No printed title — the thing you opened it from already said what it is for. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
 | `Dropzone` | molecule | Upload. Empty, drag-over and file-ready in one component |
 | `RoundOpener` | molecule | The interstitial before each round |
 | `Modal` | molecule | The multi-step walkthrough. Escape closes; Back/Next stay paired |
-| `HostToolbox` | molecule | The host's controls, fixed bottom-right, collapsing to a FAB |
-| `ChatRail` | molecule | Room chat: docked beside content above `md`, a sheet over it below. Collapses to a 64px strip, or one floating key on a phone. Both sizes are one component and the branch is entirely CSS. The strip's `onReact` opens the room picker — see `RoomShell` |
+| `RoomToolbox` | molecule | The room's floating controls, fixed bottom-right, collapsing to a FAB. Everyone gets one: the "React to the room" row and the walkthrough for all, the host's controls as an extra section behind a `host` prop |
+| `ChatRail` | molecule | Room chat: docked beside content above `md`, a sheet over it below. Collapses to a 64px strip, or one floating key on a phone. Both sizes are one component and the branch is entirely CSS. The strip carries no reaction key — reacting to the room is a `RoomToolbox` tool, not a chat one |
 | `ChatToast` | molecule | An arriving message while chat is shut. Not `Snackbar` — that one is the room's single centred voice for something *you* did and carries no author |
 | `Composer` | molecule | The chat composer. Sends on text *or* an attachment, and carries the staged reply above them |
 | `GifPanel` | molecule | Giphy search above the composer. Picking attaches and closes; it never sends |

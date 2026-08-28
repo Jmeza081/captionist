@@ -3,8 +3,10 @@
 .panel {
   display: flex;
   flex-direction: column;
-  // The rail's body is the scroll container for the whole room; this fills it
-  // so the composer can sit at the bottom rather than after the last message.
+  // Fills the rail's body so the composer sits at the bottom of the rail
+  // rather than after the last message. The body does not scroll — `.log`
+  // does — so this is the panel that owns the full height.
+  flex: 1;
   height: 100%;
   min-height: 0;
 }

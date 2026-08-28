@@ -1,5 +1,7 @@
 @use 'theme' as t;
 
+@include t.toastinKeyframes;
+
 .snackbar {
   display: inline-flex;
   align-items: center;

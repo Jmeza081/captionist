@@ -253,10 +253,12 @@ test.describe('attaching a GIF', () => {
     await say(guest, 'something to react to')
 
     await guest.getByRole('button', { name: 'Add a reaction' }).click()
-    await expect(guest.getByRole('dialog', { name: /^React to / })).toBeVisible()
+    await expect(guest.getByRole('dialog', { name: 'Send an emoji' })).toBeVisible()
 
     await guest.getByRole('button', { name: 'Attach a GIF' }).click()
     await expect(guest.getByRole('dialog', { name: 'Attach a GIF' })).toBeVisible()
-    await expect(guest.getByRole('dialog', { name: /^React to / })).toBeHidden()
+    // And the picker's own click-outside dismissal must not fight this: it
+    // closes only the surface it was showing, never one just opened over it.
+    await expect(guest.getByRole('dialog', { name: 'Send an emoji' })).toBeHidden()
   })
 })

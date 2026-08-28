@@ -1,10 +1,21 @@
 // Keyframes — taken verbatim from DESIGNSYSTEM.md §2.
 //
-// The spec requires these be declared once in a stylesheet, never driven
-// inline from JS. `app/tokens.scss` includes this mixin at the top level so
-// every component can reference the animation by name.
+// The spec requires these be declared in a stylesheet rather than driven inline
+// from JS, and they are: one mixin per animation, `@include`d by the modules
+// that use it.
+//
+// **Why per-module and not once globally.** A `.module.scss` has its
+// `animation-name` values rewritten to the module's scope, exactly as its class
+// names are — so a rule referencing a keyframe declared in a *global*
+// stylesheet asks for `Snackbar-module__hash__toastin`, which nothing declares,
+// and the element simply renders in its static state. That is how the reaction
+// floaters ended up sitting motionless along the bottom of the room, and it was
+// silently true of `pop`, `pulse`, `caret` and `toastin` as well. Emitting the
+// keyframes inside each module puts the declaration and the reference in the
+// same scope, so they resolve. The duplicated bytes are a rounding error next
+// to five broken animations.
 
-@mixin keyframes {
+@mixin popKeyframes {
   @keyframes pop {
     0% {
       transform: scale(0.9);
@@ -15,7 +26,9 @@
       opacity: 1;
     }
   }
+}
 
+@mixin pulseKeyframes {
   @keyframes pulse {
     0%,
     100% {
@@ -25,8 +38,10 @@
       opacity: 1;
     }
   }
+}
 
-  // Reaction floaters. `--dx` is set per floater so they fan out.
+// Reaction floaters. `--dx` is set per floater so they fan out.
+@mixin riseKeyframes {
   @keyframes rise {
     0% {
       opacity: 0;
@@ -41,10 +56,12 @@
       transform: translate(var(--dx, 0px), -430px) scale(0.9);
     }
   }
+}
 
-  // The caret on the landing page's code mask. The native one is hidden,
-  // because a transparent input's caret has no idea where the mask's
-  // characters are — so the cell being filled next carries it instead.
+// The caret on the landing page's code mask. The native one is hidden,
+// because a transparent input's caret has no idea where the mask's
+// characters are — so the cell being filled next carries it instead.
+@mixin caretKeyframes {
   @keyframes caret {
     0%,
     45% {
@@ -55,7 +72,9 @@
       opacity: 0.15;
     }
   }
+}
 
+@mixin toastinKeyframes {
   @keyframes toastin {
     0% {
       opacity: 0;
@@ -66,24 +85,48 @@
       transform: none;
     }
   }
+}
 
-  @keyframes gcy {
-    0%,
-    22% {
-      opacity: 1;
-    }
-    26%,
-    96% {
+// The reaction picker's open and close, and the only two-way animation in the
+// system. Named for the shape it borrows: the panel is pulled out of — and
+// sucked back into — the affordance that owns it, so it stretches along the
+// axis it travels rather than scaling uniformly. `transform-origin` is set by
+// the anchor, not here, which is what lets one pair of keyframes serve a picker
+// hanging off a composer, a card and a toolbox.
+@mixin genieKeyframes {
+  @keyframes genie-in {
+    0% {
       opacity: 0;
+      transform: translateY(var(--genie-shift, 14px)) scale(0.42, 0.16);
+    }
+    58% {
+      opacity: 1;
+      transform: translateY(0) scale(1.02, 1.04);
     }
     100% {
       opacity: 1;
+      transform: translateY(0) scale(1, 1);
+    }
+  }
+
+  @keyframes genie-out {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1, 1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(var(--genie-shift, 14px)) scale(0.42, 0.16);
     }
   }
 }
 
 $duration-toast: 0.2s;
 $duration-toggle: 0.16s;
+
+// The picker's genie. Out is quicker than in, the way a dismissal should be.
+$duration-genie-in: 260ms;
+$duration-genie-out: 170ms;
 
 // Auto-dismiss timings the logic layer needs to match.
 $dismiss-snackbar: 2800ms;

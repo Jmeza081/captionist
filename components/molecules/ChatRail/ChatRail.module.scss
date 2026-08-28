@@ -24,14 +24,14 @@
   box-shadow: t.$shadow-toolbox;
 
   @include t.mq('md') {
-    position: sticky;
-    top: 0;
-    right: auto;
-    bottom: auto;
-    align-self: flex-start;
-    height: 100vh;
-    height: 100dvh;
+    // Static and full-height, because the room shell is the viewport there —
+    // it does not scroll, so there is nothing to stick to and the rail is
+    // simply as tall as the row it sits in. Sticky plus `100dvh` used to hang
+    // the composer below the fold until the header had been scrolled away.
+    position: static;
+    height: auto;
     max-height: none;
+    align-self: stretch;
     width: t.$rail-width;
     max-width: 100%;
     border-top: 0;
@@ -111,10 +111,15 @@
   }
 }
 
+// **Never the scroll container.** It used to be, which pushed the composer off
+// the bottom of the rail and made you scroll the whole panel to reach it. The
+// stream inside is what scrolls; this only gives it a box to do it in.
 .body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: t.$space-12;
 }
 
@@ -133,15 +138,11 @@
   gap: t.$space-10;
 
   @include t.mq('md') {
-    position: sticky;
-    top: 0;
-    right: auto;
-    bottom: auto;
-    align-self: flex-start;
+    position: static;
+    align-self: stretch;
     flex-direction: column;
     flex: none;
-    height: 100vh;
-    height: 100dvh;
+    height: auto;
     width: t.$rail-width-collapsed;
     padding: t.$space-12 0;
     background-color: t.$surface-header;

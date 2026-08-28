@@ -1,0 +1,178 @@
+@use 'theme' as t;
+
+.toolbox {
+  position: fixed;
+  bottom: t.$space-20;
+  z-index: t.$z-toolbox;
+  width: t.$toolbox-width;
+  max-width: calc(100vw - #{t.$space-34});
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: t.$toolbox-radius;
+  background-color: t.$surface-card;
+  box-shadow: t.$shadow-toolbox;
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+  padding: t.$space-12 t.$space-14 t.$space-12 t.$space-20;
+  border-bottom: 1px solid t.$line-hairline;
+}
+
+.title {
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.close {
+  @include t.focusRing;
+
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+  border: 0;
+  border-radius: t.$radius-media-lg;
+  background: none;
+  color: t.$text-meta;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}
+
+// Taller than it was, now that it carries a picker as well as the host's
+// controls — so it scrolls rather than running off the top of a short phone.
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-8;
+  padding: t.$space-12 t.$space-20 t.$space-20;
+  max-height: calc(100dvh - #{t.$space-52} - #{t.$space-52});
+  overflow-y: auto;
+}
+
+// --- react to the room ---
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-10;
+}
+
+.eyebrow {
+  @include t.eyebrowText;
+  color: t.$text-meta;
+  letter-spacing: 0.07em;
+}
+
+.reactRow {
+  display: flex;
+  align-items: center;
+  gap: t.$space-2;
+}
+
+.reactKey {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$composer-key;
+  height: t.$composer-key;
+  border: 0;
+  border-radius: t.$radius-media;
+  background: none;
+  font-size: t.$composer-quick-glyph;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: t.$fill-subtle;
+  }
+}
+
+// The picker is 262px wide where it hangs off a card; inside the toolbox it has
+// 340px of body to fill, so it takes it.
+.pickerSlot > * {
+  width: 100%;
+}
+
+.more {
+  margin-left: auto;
+  flex: none;
+  height: t.$composer-key;
+}
+
+.rule {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background-color: t.$line-hairline;
+}
+
+.pair {
+  display: flex;
+  gap: t.$space-8;
+}
+
+// A 44px key on a phone, a labelled pill from `md` up. The corner of a phone is
+// one column that wide — the collapsed chat key stacks straight above this —
+// and a pill long enough to read "Guest toolbox" reached back under the vote
+// screen's lock button, which reserves exactly one key's width beside it.
+.fab {
+  @include t.focusRing;
+
+  position: fixed;
+  bottom: t.$space-20;
+  z-index: t.$z-toolbox;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: t.$radius-avatar;
+  background-color: t.$surface-card;
+  box-shadow: t.$shadow-toolbox;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 700;
+  color: t.$text-primary;
+  white-space: nowrap;
+  cursor: pointer;
+
+  @include t.mq('md') {
+    width: auto;
+    height: auto;
+    padding: t.$btn-toolbox-pad-y t.$space-20;
+    border-radius: t.$radius-pill;
+    min-height: t.$tap-target-min;
+  }
+}
+
+.fabLabel {
+  display: none;
+
+  @include t.mq('md') {
+    display: block;
+  }
+}
+
+.fabIcon {
+  display: flex;
+
+  @include t.mq('md') {
+    display: none;
+  }
+}

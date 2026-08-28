@@ -32,7 +32,7 @@ import { CodeEntry } from '@/components/molecules/CodeEntry'
 import { Composer } from '@/components/molecules/Composer'
 import { Dropzone } from '@/components/molecules/Dropzone'
 import { GifPanel, type GifResult } from '@/components/molecules/GifPanel'
-import { HostToolbox } from '@/components/molecules/HostToolbox'
+import { RoomToolbox } from '@/components/molecules/RoomToolbox'
 import { JoinPanel } from '@/components/molecules/JoinPanel'
 import { QuickJoin } from '@/components/molecules/QuickJoin'
 import { MediaCard } from '@/components/molecules/MediaCard'
@@ -724,7 +724,8 @@ export function ComponentGallery() {
             <div className={styles.railContent}>
               <p className={styles.railNote}>
                 The rail docks beside the content column. Collapsed, it keeps the
-                unread badge, the reaction affordance and who&rsquo;s here.
+                unread badge and who&rsquo;s here — reacting to the room lives in
+                the toolbox now, not on chat&rsquo;s edge.
               </p>
             </div>
             <ChatRail
@@ -733,7 +734,6 @@ export function ComponentGallery() {
               present={7}
               unread={3}
               players={Object.values(PLAYERS)}
-              onReact={() => undefined}
             >
               <Stack gap={12}>
                 <ChatMessage
@@ -761,20 +761,25 @@ export function ComponentGallery() {
         onStepChange={setStep}
       />
 
-      <HostToolbox
+      <RoomToolbox
         open={toolboxOpen}
         onOpenChange={setToolboxOpen}
-        seconds={toolboxSeconds}
-        onSecondsChange={setToolboxSeconds}
-        paused={false}
-        onTogglePause={() => undefined}
-        onSkip={() => undefined}
-        onSwitchMode={() => undefined}
-        switchModeLabel="Switch to prompts"
+        quickReactions={[...QUICK_REACTIONS]}
+        reactions={[...REACTIONS]}
+        onReact={fireBurst}
         onHelp={() => setModalOpen(true)}
-        onForceTie={() => undefined}
-        onJumpToFinal={() => undefined}
-        onRestart={() => undefined}
+        host={{
+          seconds: toolboxSeconds,
+          onSecondsChange: setToolboxSeconds,
+          paused: false,
+          onTogglePause: () => undefined,
+          onSkip: () => undefined,
+          onSwitchMode: () => undefined,
+          switchModeLabel: 'Switch to prompts',
+          onForceTie: () => undefined,
+          onJumpToFinal: () => undefined,
+          onRestart: () => undefined,
+        }}
       />
 
       <p className={styles.clockNote}>

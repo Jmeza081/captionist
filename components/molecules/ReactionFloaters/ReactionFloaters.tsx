@@ -40,16 +40,44 @@ const MAX = 7
 export function ReactionFloaters({ burst }: ReactionFloatersProps) {
   const [floaters, setFloaters] = useState<Floater[]>([])
   const seq = useRef(0)
+  /**
+   * Every removal still pending.
+   *
+   * Held in a ref rather than returned as the effect's cleanup, because the
+   * effect fires once *per burst* and each batch outlives the run that made it.
+   * Cancelling on re-run was the second half of the bug below: the timer that
+   * would have swept batch N was cleared the moment batch N+1 arrived, so
+   * nothing was ever swept and the room filled up with emoji.
+   */
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>())
+
+  useEffect(() => () => {
+    for (const timer of timers.current) clearTimeout(timer)
+    timers.current.clear()
+  }, [])
+
+  /*
+    Depended on by value, not by object.
+
+    The room shell builds this prop inline — `burst && { glyph, key }` — so the
+    object is new on every one of its renders, and a render happens on every
+    clock tick. Keyed on the object, this effect fired several times a second
+    and each run added another four to seven floaters that nothing removed.
+    `key` already rises once per reaction, including a repeat of the same
+    emoji, which is exactly the identity this wants.
+  */
+  const key = burst?.key
+  const glyph = burst?.glyph
 
   useEffect(() => {
-    if (!burst) return
+    if (key === undefined || glyph === undefined) return
 
     const count = MIN + Math.floor(Math.random() * (MAX - MIN + 1))
     const made: Floater[] = Array.from({ length: count }, () => {
       seq.current += 1
       return {
-        id: `${burst.key}-${seq.current}`,
-        glyph: burst.glyph,
+        id: `${key}-${seq.current}`,
+        glyph,
         dx: Math.round((Math.random() - 0.5) * 160),
         duration: 1.9 + Math.random() * 1.3,
         offset: Math.random(),
@@ -63,12 +91,12 @@ export function ReactionFloaters({ burst }: ReactionFloatersProps) {
     // bound over a long round.
     const longest = Math.max(...made.map((f) => f.duration)) * 1000
     const timer = setTimeout(() => {
+      timers.current.delete(timer)
       const ids = new Set(made.map((f) => f.id))
       setFloaters((prev) => prev.filter((f) => !ids.has(f.id)))
     }, longest + 100)
-
-    return () => clearTimeout(timer)
-  }, [burst])
+    timers.current.add(timer)
+  }, [key, glyph])
 
   return (
     <div className={styles.layer} aria-hidden="true">

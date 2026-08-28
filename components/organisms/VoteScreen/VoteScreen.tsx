@@ -205,20 +205,25 @@ export function VoteScreen() {
                         setPicking((open) => (open === card.entryId ? undefined : card.entryId))
                       }
                     />
-                    {picking === card.entryId && (
-                      <span className={styles.picker}>
-                        <ReactionToolbar
-                          title={`React to ${labelOf(card.entryId) || 'this entry'}`}
-                          reactions={[...REACTIONS]}
-                          chosen={counts.filter((t) => t.mine).map((t) => idFor(t.emoji))}
-                          flipped
-                          onPick={(reaction) => {
-                            react('entry', card.entryId, reaction.glyph)
-                            setPicking(undefined)
-                          }}
-                        />
-                      </span>
-                    )}
+                    <span className={styles.picker}>
+                      <ReactionToolbar
+                        open={picking === card.entryId}
+                        title={`React to ${labelOf(card.entryId) || 'this entry'}`}
+                        reactions={[...REACTIONS]}
+                        chosen={counts.filter((t) => t.mine).map((t) => idFor(t.emoji))}
+                        flipped
+                        onPick={(reaction) => {
+                          react('entry', card.entryId, reaction.glyph)
+                          setPicking(undefined)
+                        }}
+                        // Only this card's. A click on the next card's CTA
+                        // reaches the outside-click listener after React has
+                        // already opened that one.
+                        onDismiss={() =>
+                          setPicking((cur) => (cur === card.entryId ? undefined : cur))
+                        }
+                      />
+                    </span>
                   </span>
                 }
                 // Answering a caption in kind is where the laughter is — and

@@ -58,9 +58,9 @@ const selectTallies = (snapshot: EventSnapshot) => snapshot.tallies
  * not a surface, and it has to survive the panel that produced it closing.
  *
  * The reaction surface carries *what it is aimed at* rather than being a bare
- * flag, because there is now more than one answer: a message you picked, or —
- * when `messageId` is null — the room itself. Holding the target in the surface
- * is what stops the picker quietly landing on whatever arrived last.
+ * flag: a message you picked, or — when `messageId` is null — the composer,
+ * which posts. Holding the target in the surface is what stops the picker
+ * quietly landing on whatever arrived last.
  */
 type Surface = { kind: 'reactions'; messageId: string | null } | { kind: 'gifs' } | null
 
@@ -87,17 +87,36 @@ export function ChatPanel() {
 
   if (!state) return null
 
-  /** What a one-tap reaction or the picker lands on: the newest message. */
-  const newest = messages[messages.length - 1]
-
-  /** A reaction lands on the message you aimed at, or on the room if none. */
-  const sendReaction = (messageId: string | null, glyph: string) => {
-    if (messageId) react('message', messageId, glyph)
-    else react('room', ROOM_TARGET, glyph)
+  /**
+   * An emoji from the composer is a message, and the room hears it twice.
+   *
+   * The composer's keys used to fire a room reaction and leave no trace in the
+   * log, which read as a chat control that silently did something else. They
+   * post now — an emoji on its own is a complete thing to say — and the burst
+   * rides along, because a room full of 🔥 in the stream and a still screen
+   * would be the same disconnect the other way round.
+   */
+  const postReaction = (glyph: string) => {
+    say(glyph)
+    react('room', ROOM_TARGET, glyph)
   }
 
+  /**
+   * A reaction aimed at one message.
+   *
+   * Leaves a tally on that message *and* fires the room's burst — the event
+   * store already bumps `lastReaction` for every target, because a laugh in
+   * chat is still the room laughing.
+   */
+  const reactToMessage = (messageId: string, glyph: string) => {
+    react('message', messageId, glyph)
+  }
+
+  /** Which message the open picker is aimed at, or null for the composer. */
+  const pickingAt = surface?.kind === 'reactions' ? surface.messageId : null
+
   const pickerTitle = (messageId: string | null) => {
-    if (!messageId) return 'React to the room'
+    if (!messageId) return 'Send an emoji'
     const entry = messages.find((m) => m.id === messageId)
     const author = entry && playerById(state, entry.from)
     return `React to ${author?.name ?? 'this'}`
@@ -105,19 +124,33 @@ export function ChatPanel() {
 
   const composer = (
     <div className={styles.foot}>
-      {surface?.kind === 'reactions' && (
-        <div className={styles.picker}>
-          <ReactionToolbar
-            title={pickerTitle(surface.messageId)}
-            reactions={[...REACTIONS]}
-            flipped
-            onPick={(reaction) => {
-              sendReaction(surface.messageId, reaction.glyph)
-              setSurface(null)
-            }}
-          />
-        </div>
-      )}
+      <div className={styles.picker}>
+        <ReactionToolbar
+          open={surface?.kind === 'reactions'}
+          title={pickerTitle(pickingAt)}
+          reactions={[...REACTIONS]}
+          flipped
+          onPick={(reaction) => {
+            if (pickingAt) reactToMessage(pickingAt, reaction.glyph)
+            else postReaction(reaction.glyph)
+            setSurface(null)
+          }}
+          /*
+            Only closes the picker it was opened for.
+
+            The outside-click listener fires after React's own handler for the
+            same click, so a tap on the GIF key — or on another message's CTA —
+            would otherwise open that surface and then immediately have this
+            close it. Comparing against the target this picker was showing
+            leaves a surface somebody else has just opened alone.
+          */
+          onDismiss={() =>
+            setSurface((cur) =>
+              cur?.kind === 'reactions' && cur.messageId === pickingAt ? null : cur,
+            )
+          }
+        />
+      </div>
 
       <Composer
         value={draft}
@@ -134,18 +167,17 @@ export function ChatPanel() {
         quickReactions={QUICK_REACTIONS.map((r) => ({ id: r.id, glyph: r.glyph, label: r.label }))}
         onQuickReact={(id) => {
           const glyph = QUICK_REACTIONS.find((r) => r.id === id)?.glyph
-          if (glyph) sendReaction(newest?.id ?? null, glyph)
+          if (glyph) postReaction(glyph)
         }}
         /*
-          Always offered, never inert. It used to be withheld when the log was
-          empty, on the grounds that a dead control is worse than none — but the
-          six quick keys beside it were rendered anyway and silently did
-          nothing, which was worse than either. Both now fall back to the room,
-          which is what DESIGNSYSTEM's "REACT TO THE ROOM" is for.
+          Always offered, never inert — and now it always does the same thing,
+          whatever is in the log. It used to aim at whichever message arrived
+          last, so the same key meant "tally that" or "shout at the room"
+          depending on timing nobody could see.
         */
         onReact={() =>
           setSurface((open) =>
-            open?.kind === 'reactions' ? null : { kind: 'reactions', messageId: newest?.id ?? null },
+            open?.kind === 'reactions' ? null : { kind: 'reactions', messageId: null },
           )
         }
         onAttachGif={() =>
@@ -224,7 +256,13 @@ export function ChatPanel() {
                 // line. Same slot, same list, same component with a flag —
                 // a sibling would have drifted by the second change.
                 announcement={author?.isHost === true}
-                onReact={() => setSurface({ kind: 'reactions', messageId: entry.id })}
+                onReact={() =>
+                  setSurface((open) =>
+                    open?.kind === 'reactions' && open.messageId === entry.id
+                      ? null
+                      : { kind: 'reactions', messageId: entry.id },
+                  )
+                }
                 tallies={
                   own.length > 0
                     ? own.map((tally) => (
