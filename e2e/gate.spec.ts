@@ -62,6 +62,11 @@ test.describe('the phase 2 gate', () => {
     await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
 
     const fab = page.getByRole('button', { name: 'Host toolbox' })
+
+    // The rail now arrives docked open above `md`, so the collapsed width is
+    // the state this has to reach for rather than the one it starts in.
+    await page.getByRole('button', { name: 'Close chat' }).click()
+    await expect(page.getByRole('button', { name: /Open chat/ })).toBeVisible()
     const collapsed = (await fab.boundingBox())!.x
 
     await page.getByRole('button', { name: /Open chat/ }).click()

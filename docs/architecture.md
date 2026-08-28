@@ -51,6 +51,17 @@ a tap from the composer's emoji, which are a different thing. `ChatRail` lost
 surface at a time" now holds with one fewer thing to remember. Nothing on the
 wire moved: a room reaction is the same event it was.
 
+**The rail now greets you open where it can dock.** `RoomShell` derives its
+initial state from `useWideViewport()` rather than storing `false` — chat is
+open from `md` up, closed below it, and your own toggle overrides the viewport
+from the moment you touch it. A phone keeps its closed rail on purpose: there
+the rail is a full-screen sheet, and arriving inside it would take the room
+away from somebody who just got there. That change is also why `LobbyScreen`
+became a **container** rather than a set of viewport breakpoints — with 360px
+of rail docked, the window no longer describes the column the lobby is laid out
+in, and the room code, the player names and the empty seat were all wrapping or
+truncating against a measure that had silently shrunk.
+
 **Two structural fixes rode along with it, and one of them was silent.** Five
 animations had never run. `theme/_motion.scss` declared its keyframes once in a
 *global* stylesheet, and CSS Modules rewrite `animation-name` into module scope

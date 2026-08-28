@@ -35,7 +35,10 @@ test.describe('dropping out', () => {
     const host = await openRoom(context)
     const guest = await join(context, 'Vic')
 
-    await host.getByRole('button', { name: /Open chat/ }).click()
+    // The rail arrives docked open above `md`, which is the only place this
+    // test runs — so there may be no key to press.
+    const openKey = host.getByRole('button', { name: /Open chat/ })
+    if (await openKey.count()) await openKey.click()
     await expect(host.getByText('2 here')).toBeVisible()
 
     await guest.close()

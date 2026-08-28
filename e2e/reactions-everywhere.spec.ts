@@ -43,8 +43,17 @@ async function openToolbox(page: Page): Promise<Locator> {
 }
 
 async function openChat(page: Page): Promise<void> {
-  await page.getByRole('button', { name: /^Open chat/ }).click()
-  await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
+  // Above `md` the rail arrives docked open — the room greets you with chat
+  // rather than with a key to press — so there may be nothing to click.
+  //
+  // `count()` does not retry, so the room has to have settled into one shape or
+  // the other before it is asked: on a phone this raced the first paint and
+  // read zero keys on a rail that was about to draw one.
+  const composer = page.getByRole('textbox', { name: 'Message the room' })
+  const key = page.getByRole('button', { name: /^Open chat/ })
+  await expect(composer.or(key).first()).toBeVisible()
+  if (await key.count()) await key.click()
+  await expect(composer).toBeVisible()
 }
 
 async function say(page: Page, text: string): Promise<void> {

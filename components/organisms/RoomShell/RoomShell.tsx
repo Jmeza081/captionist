@@ -35,6 +35,7 @@ import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import type { ChatQuote } from '@/lib/room/transport'
 import { ROOM_TARGET } from '@/lib/room/transport'
 import { useCountdown } from '@/lib/room/useCountdown'
+import { useWideViewport } from '@/lib/useWideViewport'
 import {
   useChat,
   useChatLog,
@@ -104,7 +105,18 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   )
   const grace = useCountdown(graceClock)
 
-  const [chatOpen, setChatOpen] = useState(false)
+  /**
+   * Chat arrives open where there is room to dock it.
+   *
+   * Derived rather than stored, so there is no effect setting state on mount
+   * and no hydration mismatch: the rail is a docked column above `md` and a
+   * full-screen sheet below it, and only the first is something to greet
+   * somebody with. `chatOpened` is the override — `null` until you touch the
+   * rail yourself, after which your answer wins over the viewport's.
+   */
+  const wide = useWideViewport()
+  const [chatOpened, setChatOpened] = useState<boolean | null>(null)
+  const chatOpen = chatOpened ?? wide
   const [overlay, setOverlay] = useState<Overlay>(null)
   const messages = useChatLog()
   const unread = useUnread()
@@ -173,7 +185,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
    */
   const startReply = useCallback((quote: ChatQuote) => {
     setReplyTo(quote)
-    setChatOpen(true)
+    setChatOpened(true)
   }, [])
   const clearReply = useCallback(() => setReplyTo(undefined), [])
 
@@ -282,7 +294,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           <div className={styles.rail}>
             <ChatRail
               open={chatOpen}
-              onOpenChange={setChatOpen}
+              onOpenChange={setChatOpened}
               present={presentCount(state)}
               unread={unread.count}
               players={state.players.map(toAvatarProps)}

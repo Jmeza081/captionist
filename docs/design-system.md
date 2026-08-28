@@ -161,6 +161,16 @@ sitting motionless along the bottom of the room, and it was quietly true of
 
 `t.mq('sm' | 'md' | 'lg' | 'xl')` → 480 / 768 / 1024 / 1280px, **min-width only**.
 
+**When the window is the wrong thing to measure, use a container query.** The
+room docks a 360px chat rail beside the content, so the same window is a
+comfortable two-column lobby with chat shut and a cramped one with chat open —
+and `t.mq()` cannot tell the two apart. `LobbyScreen` sets
+`container-type: inline-size` on its root and layers its second column on at
+`@container (min-width: t.$lobby-columns)`. Same min-width direction as
+`t.mq()`, and the same rule applies: write the narrow layout unconditionally,
+then add to it. Reach for this only when the rail's width is genuinely part of
+the answer; `t.mq()` remains the default.
+
 ### Reaching tokens from React — `theme/tokens.ts`
 
 The layout primitives take spacing as a prop (`<Stack gap={26}>`), which Sass
@@ -251,7 +261,7 @@ primitives.
 | `SegmentedControl` | atom | A small exclusive choice. A real radiogroup |
 | `Snackbar` | atom | Confirms an action with no other visible result |
 | `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+`. Appears on all five sites the design names — caption cards, chat messages, the composer, the collapsed rail and the reveal bar. Takes an `aria-label` override, so a log of twenty messages does not hand a screen reader twenty controls called "Add a reaction" |
-| `RoomCode` | atom | A room code, for reading aloud or typing. `display` on the entry screen, `compact` beside the lobby's QR |
+| `RoomCode` | atom | A room code, for reading aloud or typing. `display` on the entry screen, `compact` beside the lobby's QR — where it is `white-space: nowrap`, because a code is read out and typed by hand and `C-D77KR` above a lone `T` is one somebody will get wrong. The column gives instead: `$lobby-share-width` is sized around it |
 
 **Molecules**
 

@@ -40,7 +40,12 @@ test.describe('the reveal', () => {
     test.skip(!wide(page), 'the reaction bar is desktop-only')
     await page.goto('/room/DEV?seed=42&phase=reveal&gifs=stub')
 
-    const fire = page.getByRole('button', { name: 'React with Fire' })
+    // Scoped to the screen: chat arrives docked open above `md`, and the
+    // composer's one-tap row carries the same accessible name by design —
+    // DESIGNSYSTEM §4.4's "uniform everywhere" cuts both ways.
+    const fire = page
+      .getByRole('main')
+      .getByRole('button', { name: 'React with Fire' })
     await expect(fire).toHaveAttribute('aria-pressed', 'false')
     await fire.click()
     await expect(fire).toHaveAttribute('aria-pressed', 'true')

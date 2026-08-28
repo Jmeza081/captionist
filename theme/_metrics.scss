@@ -200,9 +200,26 @@ $compose-preview-width: 520px;
 
 // The lobby's two columns, and the round help key beside the mode toggle.
 // The share side is a fixed measure so the roster takes whatever is left.
-$lobby-share-width: 420px;
+// Wide enough for the QR, a gap and eight characters of room code that must
+// not break: 142 + 26 + ~256. It was 420, which is ~4px short of the code — so
+// the code wrapped, every time, on every screen.
+$lobby-share-width: 456px;
 $lobby-roster-min: 360px;
-$lobby-player-min: 230px;
+// The share column, the gap and three roster cells. Past this the lobby stops
+// growing and centres instead — a room code and a player list spread across a
+// 27" screen is a lot of eye travel for two pieces of information.
+$lobby-max: 1360px;
+// Where the lobby earns its second column. The share column (456) plus the gap
+// (44) plus two roster cells (276 + 10 + 276) is 1062; under that, side by side
+// costs the roster more than stacking costs the page. Measured against the
+// content column, not the window — with the rail docked the two differ by
+// 360px, which is the whole difference between a readable roster and a
+// truncated one.
+$lobby-columns: 1080px;
+// A roster cell holds an avatar, a name, and up to two tags. At 230 the name
+// was squeezed to "H…" beside its own HOST and YOU chips, and the empty seat's
+// "Waiting for a friend…" wrapped onto two lines.
+$lobby-player-min: 276px;
 $lobby-help-key: 36px;
 $share-qr: 142px;
 

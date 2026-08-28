@@ -13,6 +13,11 @@
     flex-direction: row;
     align-items: flex-start;
     gap: t.$space-26;
+    // The code cannot break, so if the column is ever narrower than the QR plus
+    // the code, the body drops below it rather than the code losing a
+    // character to the next line. A last resort: `$lobby-share-width` is sized
+    // so it does not happen at the docked rail's width.
+    flex-wrap: wrap;
   }
 }
 

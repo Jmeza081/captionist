@@ -1,21 +1,32 @@
 @use 'theme' as t;
 
+// Centred and capped rather than stretched to whatever is left of the column.
+// With the rail docked open the content is narrower than the window, and the
+// lobby has to read well at both widths — so it takes the room it needs and
+// gives back the rest.
+//
+// **A container, not a breakpoint.** Everything below keys off how wide this
+// column actually is, and a viewport media query cannot see that the rail took
+// 360px of it — the same window is a two-column lobby with chat shut and a
+// cramped one with chat open. `t.mq()` is still right for everything the
+// viewport genuinely decides; this is not one of those.
 .lobby {
+  container-type: inline-size;
   width: 100%;
+  max-width: t.$lobby-max;
+  margin-inline: auto;
 }
 
 /**
- * The share column is a fixed measure and the roster takes the rest — roughly
- * a third to two thirds on a laptop. Equal halves left the roster cramped and
- * the QR block swimming in space.
+ * Stacked by default; two columns once the container can hold them.
+ *
+ * The share column is then a fixed measure and the roster takes the rest —
+ * roughly a third to two thirds. Equal halves left the roster cramped and the
+ * QR block swimming in space.
  */
 .share {
   flex: none;
   width: 100%;
-
-  @include t.mq('md') {
-    width: t.$lobby-share-width;
-  }
 }
 
 .rosterCard {
@@ -24,10 +35,6 @@
   // Without this the card refuses to shrink below its content and pushes the
   // column off a phone.
   min-width: 0;
-
-  @include t.mq('md') {
-    min-width: t.$lobby-roster-min;
-  }
 }
 
 // A round key beside the mode toggle. Both sit on one row, which is also what
@@ -121,6 +128,10 @@
 .empty {
   display: flex;
   align-items: center;
+  // It is one short line and it reads as a placeholder; broken over two it
+  // reads as a layout fault. The cell is sized to hold it — see
+  // `$lobby-player-min`.
+  white-space: nowrap;
   gap: t.$space-12;
   padding: t.$player-row-pad-y t.$player-row-pad-x;
   border: 1px dashed t.$line-dashed;
@@ -174,4 +185,21 @@
   display: flex;
   flex-wrap: wrap;
   gap: t.$space-10;
+}
+
+// Two columns, once there is room for the share column, the gap and two roster
+// cells. Layered onto the stack rather than the stack being layered onto it —
+// the same min-width direction `t.mq()` uses, just measured against the column
+// instead of the window.
+//
+// Stacked is the better narrow answer, not a fallback: a full-width roster
+// fits three names across where a squeezed one fitted a single truncated row.
+@container (min-width: #{t.$lobby-columns}) {
+  .share {
+    width: t.$lobby-share-width;
+  }
+
+  .rosterCard {
+    min-width: t.$lobby-roster-min;
+  }
 }

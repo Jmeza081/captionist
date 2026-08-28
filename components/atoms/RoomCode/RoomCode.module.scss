@@ -3,17 +3,25 @@
 .roomCode {
   margin: 0;
   text-align: center;
-  word-break: break-all;
 }
 
 .display {
   @include t.roomCodeText;
+
+  // The entry screen's code is viewport-scaled, so on the narrowest phone this
+  // is the last resort that keeps it on screen.
+  word-break: break-all;
 }
 
+// **Never broken.** A code is read aloud and typed by hand, and `C-D77KR` on
+// one line above a lone `T` is a code somebody will get wrong. It sits in a
+// fixed column beside the QR, so the column is what gives — see
+// `$lobby-share-width` and `RoomShare`'s wrap.
 .compact {
   @include t.roomCodeCompactText;
 
   text-align: left;
+  white-space: nowrap;
 }
 
 .srOnly {
