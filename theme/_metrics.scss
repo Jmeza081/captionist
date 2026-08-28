@@ -151,10 +151,37 @@ $toolbar-scroll-cap: 196px;
 $picker-dock-gap: 16px;
 $picker-dock-bottom: 24px;
 
-$modal-media-rail: 300px;
-$modal-pad: 22px;
+// The design's 880px card (Screens 2e–2h), split into a column of copy and a
+// 380px rail. The rail is full-bleed: it carries a miniature render of the
+// screen its step describes, not a padded thumbnail. 352px is the floor that
+// keeps the card the same height across four steps of different artwork; on a
+// phone the rail is a band above the copy instead of a column beside it.
+$modal-width: 880px;
+// One height for every step, so the card does not resize under a Next click.
+// Both are the tallest step measured plus a little headroom; 408px is also the
+// design's own figure for the card (Screens 3g). A short viewport still wins —
+// `max-height: 100%` clamps the card and it scrolls, as it always did.
+$modal-height: 408px;
+$modal-height-sm: 664px;
+$modal-rail: 380px;
+$modal-rail-min-height: 352px;
+$modal-rail-height-sm: 220px;
+// One inset on all four sides, and it is the design's own header/footer figure
+// (Screens 2e–2h). 22px left the card's edges reading unevenly against a
+// 24px corner radius.
+$modal-pad: 26px;
 $modal-dot: 8px;
 $modal-dot-active: 26px;
+
+// The rail's illustrations. These are drawings of the app rather than
+// instances of it — a 56px podium bar is not `Podium`'s — so their sizes live
+// here rather than being borrowed from the components they depict.
+$help-illo-inset: 16px;
+$help-podium-bar: 56px;
+$help-podium-first: 68px;
+$help-podium-second: 44px;
+$help-podium-third: 32px;
+$help-meme-size: 20px;
 
 $interstitial-width: 560px;
 

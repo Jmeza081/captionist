@@ -1113,7 +1113,7 @@ graph BT
     Room["JoinPanel · PlayerRow · PromptBanner"]
     Media["MediaCard"]
     Chat["ChatMessage · UnreadDivider<br/>ChatRail · ChatToast"]
-    Overlay["Modal · RoundOpener · RoomToolbox<br/>Dropzone · ReactionToolbar · GifPanel<br/>ReconnectOverlay"]
+    Overlay["HelpModal · RoundOpener · RoomToolbox<br/>Dropzone · ReactionToolbar · GifPanel<br/>ReconnectOverlay"]
     Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
     Lobby["CodeEntry · RoomShare · Podium"]
     Entry["AvatarPicker · ModeCard"]
@@ -1181,7 +1181,7 @@ graph BT
   Status -->|"TimerPill · RoundProgress · ProgressRail"| Shell
   Feedback --> Shell
   Chat -->|"ChatRail · ChatToast"| Shell
-  Overlay -->|"Modal · RoundOpener · RoomToolbox — everyone's<br/>ReconnectOverlay — over a live room"| Shell
+  Overlay -->|"HelpModal · RoundOpener · RoomToolbox — everyone's<br/>ReconnectOverlay — over a live room"| Shell
   Compose -->|"AppHeader · ReactionFloaters"| Shell
   Room -->|"PlayerRow · PromptBanner"| Screens
   Media --> Screens

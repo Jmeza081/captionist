@@ -1,4 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import { Button } from '@/components/atoms/Button'
+import { HelpModal } from '@/components/molecules/HelpModal'
 import styles from './LandingNav.module.scss'
 
 /**
@@ -11,16 +15,20 @@ import styles from './LandingNav.module.scss'
  *
  * A molecule rather than an atom because it composes `Button` — the tier is
  * decided by what a thing depends on, not by how big it is.
+ *
+ * `'use client'` buys one thing: "How it works" opens the same walkthrough the
+ * lobby and the toolbox open, rather than jumping to an explainer section that
+ * does not exist. The markup still server-renders.
  */
 export interface LandingNavProps {
   /** Where "Join a room" goes. */
   joinHref: string
   repoHref: string
-  /** Anchor for the explainer further down the page. */
-  howHref?: string
 }
 
-export function LandingNav({ joinHref, repoHref, howHref = '#how' }: LandingNavProps) {
+export function LandingNav({ joinHref, repoHref }: LandingNavProps) {
+  const [helpOpen, setHelpOpen] = useState(false)
+
   return (
     <header className={styles.nav}>
       <span className={styles.brand}>
@@ -29,9 +37,9 @@ export function LandingNav({ joinHref, repoHref, howHref = '#how' }: LandingNavP
       </span>
 
       <nav className={styles.links} aria-label="Captionist">
-        <a className={styles.link} href={howHref}>
+        <button type="button" className={styles.link} onClick={() => setHelpOpen(true)}>
           How it works
-        </a>
+        </button>
         <a className={styles.link} href={repoHref} target="_blank" rel="noreferrer noopener">
           GitHub
         </a>
@@ -39,6 +47,10 @@ export function LandingNav({ joinHref, repoHref, howHref = '#how' }: LandingNavP
           Join a room
         </Button>
       </nav>
+
+      {/* No room yet, so no format is in play: the walkthrough opens on
+          captions and the switcher marks nothing. */}
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </header>
   )
 }

@@ -16,7 +16,12 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 900px;
+  max-width: t.$modal-width;
+  // Fixed rather than content-sized. The steps differ by a line or two of
+  // copy, and a card that grows and shrinks under a Next click reads as a
+  // jump rather than a transition — so it is the tallest step's height at
+  // every step, with the footer pinned to the bottom of the column.
+  height: t.$modal-height-sm;
   max-height: 100%;
   overflow: auto;
   border: 1px solid t.$accent-border-weak;
@@ -31,6 +36,7 @@
   // Above md the media rail sits beside the copy rather than under it.
   @include t.mq('md') {
     flex-direction: row;
+    height: t.$modal-height;
   }
 }
 
@@ -50,6 +56,21 @@
   display: flex;
   align-items: center;
   gap: t.$space-10;
+  flex-wrap: wrap;
+}
+
+// The mode switcher. Two mode labels are wider than the header's leftovers on
+// a phone, so it takes a row of its own there and only sits beside the step
+// count once there is room for it.
+.control {
+  order: 1;
+  flex: 1 0 100%;
+  min-width: 0;
+
+  @include t.mq('md') {
+    order: 0;
+    flex: 0 1 auto;
+  }
 }
 
 .stepCount {
@@ -64,6 +85,12 @@
   @include t.focusRing;
 
   margin-left: auto;
+  // Optical, not geometric. The glyph is 16px centred in a 44px target, so
+  // squaring the *box* with the copy's 26px inset would sit the × 14px
+  // further in than every line of text beside it. Pull the box out by that
+  // 14px and the glyph lands on the same edge as the words; the target keeps
+  // its full 44px and stays inside the card.
+  margin-right: -(t.$space-14);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,11 +127,14 @@
   text-wrap: pretty;
 }
 
+// Pinned to the bottom of the column, so a short step leaves its space above
+// the controls rather than floating them up the card.
 .foot {
   display: flex;
   align-items: center;
   gap: t.$space-14;
-  margin-top: t.$space-26;
+  margin-top: auto;
+  padding-top: t.$space-26;
   flex-wrap: wrap;
 }
 
@@ -135,31 +165,27 @@
   gap: t.$space-10;
 }
 
+// On a phone the art leads and the copy follows it, so Back and Next stay the
+// last thing on the card rather than sitting above a picture. Above md it is
+// the design's rail down the right-hand side — full-bleed, because what it
+// carries is a render of a screen rather than a framed picture.
 .rail {
+  order: -1;
+  position: relative;
   flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: t.$space-14;
+  height: t.$modal-rail-height-sm;
+  overflow: hidden;
   background-color: t.$surface-header;
-  border-top: 1px solid t.$line-hairline;
-
-  img {
-    display: block;
-    width: 100%;
-    max-height: 200px;
-    object-fit: cover;
-    border-radius: t.$radius-field;
-  }
+  border-bottom: 1px solid t.$line-hairline;
 
   @include t.mq('md') {
-    width: t.$modal-media-rail;
-    border-top: 0;
+    order: 0;
+    align-self: stretch;
+    width: t.$modal-rail;
+    height: auto;
+    min-height: t.$modal-rail-min-height;
+    border-bottom: 0;
     border-left: 1px solid t.$line-hairline;
-
-    img {
-      max-height: 260px;
-    }
   }
 }
 

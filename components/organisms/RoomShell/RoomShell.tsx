@@ -11,7 +11,7 @@ import { ChatRail } from '@/components/molecules/ChatRail'
 import { ChatToast, ChatToastOverflow } from '@/components/molecules/ChatToast'
 import { ReactionFloaters } from '@/components/molecules/ReactionFloaters'
 import { RoomToolbox } from '@/components/molecules/RoomToolbox'
-import { Modal } from '@/components/molecules/Modal'
+import { HelpModal } from '@/components/molecules/HelpModal'
 import { ReconnectOverlay } from '@/components/molecules/ReconnectOverlay'
 import { RoundOpener } from '@/components/molecules/RoundOpener'
 import { ChatPanel } from '@/components/organisms/ChatPanel'
@@ -45,7 +45,7 @@ import {
   useUnread,
 } from '@/lib/room/useRoom'
 import { RoomShellContext, type RoomShellApi } from './context'
-import { HELP_STEPS, openerCopy } from './copy'
+import { openerCopy } from './copy'
 import styles from './RoomShell.module.scss'
 
 /**
@@ -122,7 +122,6 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const unread = useUnread()
   const { markRead, react } = useChat()
   const burst = useLastReaction()
-  const [helpStep, setHelpStep] = useState(0)
   const [queue, setQueue] = useState<readonly string[]>([])
 
   const notify = useCallback((message: string) => {
@@ -172,7 +171,6 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const showRail = Boolean(state && showsProgressRail(state) && countdown.running)
 
   const openHelp = useCallback(() => {
-    setHelpStep(0)
     setOverlay('help')
   }, [])
 
@@ -384,13 +382,10 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
       </div>
 
       {/* Never pauses the room — only the host's own pause stops the clock. */}
-      <Modal
+      <HelpModal
         open={overlay === 'help'}
         onClose={() => setOverlay(null)}
-        label="How Captionist works"
-        steps={HELP_STEPS[state.settings.mode]}
-        stepIndex={helpStep}
-        onStepChange={setHelpStep}
+        mode={state.settings.mode}
       />
 
       {state.phase === 'opener' && opener && holder && (

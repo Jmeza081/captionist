@@ -1,0 +1,317 @@
+@use 'theme' as t;
+
+// The rail's illustrations. Each fills the rail edge to edge — the design's
+// rail is full-bleed, so nothing here carries its own padding except the
+// compositions that are not photographs.
+
+.frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  background-color: t.$surface-header;
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// The stand-in art carries its own title (`lib/gifs/samples` draws one, which
+// is right in a picker and wrong here). Where a rail treats the image as the
+// round's shared GIF, crop the title out so the only words on it are the ones
+// the step is demonstrating. Delete this when the real artwork lands — the
+// grid keeps its titles, where they read as the entries' labels.
+.frame .art {
+  transform: scale(1.6);
+  transform-origin: 50% 15%;
+}
+
+// Bottom-up, so a chip sitting on the image stays legible without a box
+// behind the whole thing.
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 11, 0.7),
+    rgba(10, 10, 11, 0) 55%
+  );
+}
+
+// The prompt has no image to sit on, so the rail carries the line itself.
+.flat {
+  justify-content: center;
+  padding: t.$space-26;
+  background-color: t.$surface-canvas;
+}
+
+.prompt {
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: t.$text-primary;
+  text-wrap: balance;
+}
+
+// The same line once it is pinned above an answer.
+.prompt2 {
+  position: absolute;
+  left: t.$help-illo-inset;
+  right: t.$help-illo-inset;
+  top: t.$help-illo-inset;
+  padding: t.$space-8 t.$space-12;
+  border-radius: t.$radius-media-lg;
+  background-color: t.$scrim-tally;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: t.$text-chat;
+}
+
+.pill {
+  position: absolute;
+  right: t.$help-illo-inset;
+  top: t.$help-illo-inset;
+  padding: t.$space-6 t.$space-12;
+  border-radius: t.$radius-pill;
+  background-color: t.$accent;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.chip {
+  position: absolute;
+  left: t.$help-illo-inset;
+  bottom: t.$help-illo-inset;
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+  padding: t.$space-5 t.$space-12 t.$space-5 t.$space-5;
+  border-radius: t.$radius-pill;
+  background-color: t.$scrim-tally;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$text-primary;
+  white-space: nowrap;
+}
+
+// --- the caption, being written ---------------------------------------------
+//
+// The four-way black shadow `MediaCard` uses, so the image stays visible
+// behind the words rather than sitting under a scrim.
+.meme {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 0 t.$space-14;
+  text-align: center;
+  font-family: t.$font-sans;
+  font-size: t.$help-meme-size;
+  font-weight: 800;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: t.$text-primary;
+  text-shadow: 0 1.5px 0 #000, 0 -1.5px 0 #000, 1.5px 0 0 #000,
+    -1.5px 0 0 #000;
+}
+
+.memeTop {
+  top: t.$space-20;
+}
+
+.memeBottom {
+  bottom: t.$space-52;
+}
+
+// The composer under it, mid-sentence, with the clock the design shows.
+.field {
+  position: absolute;
+  left: t.$help-illo-inset;
+  right: t.$help-illo-inset;
+  bottom: t.$help-illo-inset;
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+  padding: t.$space-8 t.$space-12;
+  border-radius: t.$radius-media-lg;
+  border: 1px solid t.$accent-border-quote;
+  background-color: t.$scrim-tally;
+}
+
+.fieldText {
+  flex: 1;
+  min-width: 0;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: t.$text-chat;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fieldClock {
+  @include t.tabularFigures;
+
+  flex: none;
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 700;
+  color: t.$text-caption;
+}
+
+// --- the vote, mid-ranking --------------------------------------------------
+
+.grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: t.$space-10;
+  padding: t.$help-illo-inset;
+  background-color: t.$surface-header;
+}
+
+.cell {
+  position: relative;
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: t.$radius-media;
+}
+
+.first {
+  box-shadow: 0 0 0 t.$media-ring t.$winner;
+}
+
+.second {
+  box-shadow: 0 0 0 t.$media-ring t.$line-rank;
+}
+
+// Not yet ranked, and reading as such.
+.unranked {
+  opacity: 0.72;
+}
+
+.rank {
+  position: absolute;
+  right: t.$space-6;
+  top: t.$space-6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$media-rank-badge;
+  height: t.$media-rank-badge;
+  border-radius: t.$radius-avatar;
+  background-color: t.$text-primary;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 800;
+  color: t.$surface-vote;
+}
+
+.rankFirst {
+  background-color: t.$winner;
+}
+
+// --- the champion -----------------------------------------------------------
+
+.champion {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-20;
+  background: radial-gradient(
+      circle at 50% 42%,
+      t.$accent-fill-strong,
+      rgba(10, 10, 11, 0) 68%
+    )
+    t.$surface-header;
+}
+
+.crown {
+  position: relative;
+  display: flex;
+  border-radius: t.$radius-avatar;
+  box-shadow: 0 0 0 t.$media-ring-winner t.$winner;
+}
+
+.star {
+  position: absolute;
+  top: calc(-1 * t.$space-14);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  color: t.$winner;
+}
+
+.name {
+  margin-top: t.$space-14;
+  font-family: t.$font-sans;
+  font-size: 22px;
+  font-weight: 800;
+  color: t.$text-primary;
+}
+
+.stat {
+  margin-top: t.$space-2;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 600;
+  color: t.$winner;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: t.$space-8;
+  margin-top: t.$space-20;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$help-podium-bar;
+  border-radius: t.$radius-media t.$radius-media 0 0;
+  font-family: t.$font-sans;
+  font-weight: 800;
+}
+
+.barFirst {
+  height: t.$help-podium-first;
+  background-color: t.$winner-fill;
+  font-size: 19px;
+  color: t.$winner;
+}
+
+.barSecond {
+  height: t.$help-podium-second;
+  background-color: t.$fill-secondary;
+  font-size: 15px;
+  color: t.$text-label;
+}
+
+.barThird {
+  height: t.$help-podium-third;
+  background-color: t.$fill-subtle;
+  font-size: 14px;
+  color: t.$text-meta;
+}

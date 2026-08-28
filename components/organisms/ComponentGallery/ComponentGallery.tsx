@@ -36,7 +36,7 @@ import { RoomToolbox } from '@/components/molecules/RoomToolbox'
 import { JoinPanel } from '@/components/molecules/JoinPanel'
 import { QuickJoin } from '@/components/molecules/QuickJoin'
 import { MediaCard } from '@/components/molecules/MediaCard'
-import { Modal } from '@/components/molecules/Modal'
+import { HelpModal } from '@/components/molecules/HelpModal'
 import { ModeCard } from '@/components/molecules/ModeCard'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { Podium } from '@/components/molecules/Podium'
@@ -79,27 +79,6 @@ const GIFS: GifResult[] = [
  * show what ships, so it reads the same list every other surface does.
  */
 const QUICK = QUICK_REACTIONS.map(({ id, glyph, label }) => ({ id, glyph, label }))
-
-const MODAL_STEPS = [
-  {
-    eyebrow: 'The setup',
-    heading: 'Somebody picks the image',
-    body: 'The Captionist searches Giphy or uploads their own. Everyone else waits, briefly.',
-    media: { src: MEDIA.deploy, alt: 'A rocket, launching' },
-  },
-  {
-    eyebrow: 'The writing',
-    heading: 'Everybody captions it',
-    body: 'Top text, bottom text, one clock. Your caption stays anonymous until the reveal.',
-    media: { src: MEDIA.serverRack, alt: 'A server rack, on fire' },
-  },
-  {
-    eyebrow: 'The verdict',
-    heading: 'The room ranks its top three',
-    body: 'You cannot vote for your own. Ties go to sudden death, which is exactly as calm as it sounds.',
-    media: { src: MEDIA.standup, alt: 'A skull' },
-  },
-]
 
 interface SectionProps {
   id: string
@@ -149,7 +128,6 @@ export function ComponentGallery() {
   const [chatOpen, setChatOpen] = useState(true)
   const [toolboxOpen, setToolboxOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const [step, setStep] = useState(0)
   const [toolboxSeconds, setToolboxSeconds] = useState(22)
   const [message, setMessage] = useState('')
   const [gifPanelOpen, setGifPanelOpen] = useState(false)
@@ -752,14 +730,9 @@ export function ComponentGallery() {
         </Case>
       </Section>
 
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        label="How Captionist works"
-        steps={MODAL_STEPS}
-        stepIndex={step}
-        onStepChange={setStep}
-      />
+      {/* The walkthrough as the app ships it: the switcher reads the other
+          format without changing the room, and the dot marks the one in play. */}
+      <HelpModal open={modalOpen} onClose={() => setModalOpen(false)} mode="caption" />
 
       <RoomToolbox
         open={toolboxOpen}

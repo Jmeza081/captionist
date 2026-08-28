@@ -177,12 +177,12 @@ test.describe('component gallery', () => {
 
     const modal = page.getByRole('dialog', { name: 'How Captionist works' })
     await expect(modal).toBeVisible()
-    await expect(modal.getByText('Step 1 of 3')).toBeVisible()
+    await expect(modal.getByText('Step 1 of 4')).toBeVisible()
 
     // Back is disabled on the first step; Next advances.
     await expect(modal.getByRole('button', { name: 'Back' })).toBeDisabled()
     await modal.getByRole('button', { name: 'Next' }).click()
-    await expect(modal.getByText('Step 2 of 3')).toBeVisible()
+    await expect(modal.getByText('Step 2 of 4')).toBeVisible()
 
     await page.keyboard.press('Escape')
     await expect(modal).toBeHidden()

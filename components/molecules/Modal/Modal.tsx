@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react'
 import { Button } from '@/components/atoms/Button'
 import { Icon } from '@/components/atoms/Icon'
 import styles from './Modal.module.scss'
@@ -10,8 +10,14 @@ export interface ModalStep {
   eyebrow: string
   heading: string
   body: string
-  /** Optional media for the 300px right rail. */
-  media?: { src: string; alt: string }
+  /**
+   * Fills the 380px rail, edge to edge.
+   *
+   * A node rather than a `src`, because the design's rail is a miniature of
+   * the screen the step describes — an image wearing its "Selected" pill, a
+   * vote grid mid-ranking — and only some of those are a picture at all.
+   */
+  illustration?: ReactNode
 }
 
 export interface ModalProps {
@@ -34,6 +40,9 @@ export interface ModalProps {
  *
  * Back and Next stay grouped as a pair on the right, never spread apart, so
  * the eye doesn't have to cross the card to advance.
+ *
+ * Three ways out, because a walkthrough nobody asked for must not feel like a
+ * trap: the close key, Escape, and a click on the backdrop.
  */
 export function Modal({
   open,
@@ -46,7 +55,15 @@ export function Modal({
   tone = 'default',
 }: ModalProps) {
   const cardRef = useRef<HTMLDivElement>(null)
-
+  /**
+   * Whether the press that started this click landed on the backdrop.
+   *
+   * A `click` fires on the common ancestor of its press and release, so a
+   * selection drag that starts on the copy and ends past the card's edge
+   * targets the backdrop too. Without this, reading the modal with a mouse
+   * closes it.
+   */
+  const pressedOutside = useRef(false)
   // Escape closes, and focus moves into the card so a keyboard user isn't
   // left behind the backdrop.
   useEffect(() => {
@@ -69,8 +86,20 @@ export function Modal({
   const isFirst = stepIndex === 0
   const isLast = stepIndex === steps.length - 1
 
+  function onBackdropMouseDown(e: MouseEvent<HTMLDivElement>) {
+    pressedOutside.current = e.target === e.currentTarget
+  }
+
+  function onBackdropClick(e: MouseEvent<HTMLDivElement>) {
+    if (pressedOutside.current && e.target === e.currentTarget) onClose()
+  }
+
   return (
-    <div className={styles.backdrop}>
+    <div
+      className={styles.backdrop}
+      onMouseDown={onBackdropMouseDown}
+      onClick={onBackdropClick}
+    >
       <div
         ref={cardRef}
         tabIndex={-1}
@@ -84,7 +113,7 @@ export function Modal({
             <span className={styles.stepCount}>
               Step {stepIndex + 1} of {steps.length}
             </span>
-            {headerControl}
+            {headerControl && <div className={styles.control}>{headerControl}</div>}
             <button
               type="button"
               className={styles.close}
@@ -128,11 +157,9 @@ export function Modal({
           </div>
         </div>
 
-        {step.media && (
-          <div className={styles.rail}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- animated
-                GIF; next/image would rasterise it. */}
-            <img src={step.media.src} alt={step.media.alt} />
+        {step.illustration && (
+          <div className={styles.rail} data-testid="modal-rail">
+            {step.illustration}
           </div>
         )}
       </div>

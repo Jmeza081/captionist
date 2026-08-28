@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Box } from '@/components/atoms/Box'
+import { Icon } from '@/components/atoms/Icon'
 import { Button } from '@/components/atoms/Button'
 import { Inline } from '@/components/atoms/Inline'
 import { SegmentedControl } from '@/components/atoms/SegmentedControl'
@@ -11,6 +12,7 @@ import { Stepper } from '@/components/atoms/Stepper'
 import { TextField } from '@/components/atoms/TextField'
 import { Toggle } from '@/components/atoms/Toggle'
 import { AvatarPicker } from '@/components/molecules/AvatarPicker'
+import { HelpModal } from '@/components/molecules/HelpModal'
 import { ModeCard } from '@/components/molecules/ModeCard'
 import { generateCode } from '@/lib/game/codes'
 import {
@@ -46,6 +48,7 @@ export function HostSetupScreen() {
   const copy = hostSetupCopy()
 
   const [settings, setSettings] = useState<RoomSettings>(DEFAULT_SETTINGS)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   // See `JoinScreen`: stored underneath, typed on top.
   const stored = useStoredPerson()
@@ -115,6 +118,14 @@ export function HostSetupScreen() {
                 />
               ))}
             </div>
+
+            {/* The design puts the walkthrough right under the choice, because
+                this is where a first-time host is deciding between two formats
+                they have not played yet. It opens on whichever is selected. */}
+            <button type="button" className={styles.how} onClick={() => setHelpOpen(true)}>
+              <Icon name="help" size={15} />
+              How this mode works
+            </button>
           </Stack>
 
           <Stack gap={20}>
@@ -196,6 +207,12 @@ export function HostSetupScreen() {
           </Button>
         </Stack>
       </Box>
+
+      <HelpModal
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        mode={settings.mode}
+      />
     </Stack>
   )
 }

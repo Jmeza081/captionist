@@ -52,13 +52,21 @@
 
 // The two text links stand down on a phone: the bar has room for the wordmark
 // and the way in, and nothing else worth crowding them.
+// One of the two is a button — "How it works" opens the walkthrough rather
+// than navigating — so the reset lives here and both read identically.
 .link {
+  @include t.focusRing;
+
   display: none;
+  padding: 0;
+  border: 0;
+  background: none;
   font-family: t.$font-sans;
   font-size: 15px;
   font-weight: 500;
   color: t.$text-caption;
   text-decoration: none;
+  cursor: pointer;
 
   &:hover {
     color: t.$text-primary;
