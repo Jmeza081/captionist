@@ -1,0 +1,43 @@
+@use 'theme' as t;
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: t.$space-8;
+  width: 100%;
+  padding: t.$space-14;
+  border: 1px solid t.$line-hairline-strong;
+  border-radius: t.$radius-field-lg;
+  background-color: t.$fill-subtle;
+  text-align: left;
+  cursor: pointer;
+
+  @include t.focusRing;
+}
+
+.selected {
+  background-color: t.$accent-fill-weak;
+  border-color: t.$accent-border;
+}
+
+.icon {
+  display: flex;
+  color: t.$accent-text;
+}
+
+.title {
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.body {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: t.$text-body;
+  text-wrap: pretty;
+}

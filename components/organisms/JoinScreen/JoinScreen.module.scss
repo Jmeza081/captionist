@@ -1,0 +1,37 @@
+@use 'theme' as t;
+
+.screen {
+  min-height: 100vh;
+  padding: t.$screen-pad-v t.$space-20 t.$space-52;
+  text-align: center;
+
+  @include t.mq('md') {
+    padding: t.$screen-pad-v-lg t.$screen-pad-h-lg t.$space-52;
+  }
+}
+
+.heading {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+.body {
+  margin: 0;
+  @include t.bodyText;
+  color: t.$text-label;
+}
+
+// One column at any width: the design's join is a phone screen that a desktop
+// happens to also show, not a layout that reflows.
+.form {
+  width: 100%;
+  max-width: t.$join-column-width;
+  text-align: left;
+}
+
+.helper {
+  margin: 0;
+  text-align: center;
+  @include t.labelText;
+  color: t.$text-caption;
+}

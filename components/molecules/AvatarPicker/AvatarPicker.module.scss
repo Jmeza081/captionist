@@ -1,0 +1,36 @@
+@use 'theme' as t;
+
+.picker {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.label {
+  padding: 0;
+  @include t.eyebrowText;
+  color: t.$text-caption;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-10;
+  margin-top: t.$space-12;
+}
+
+.face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // The avatar is 46px; the target around it is the 44px floor either way.
+  min-width: t.$tap-target-min;
+  min-height: t.$tap-target-min;
+  padding: 0;
+  border: 0;
+  border-radius: t.$radius-avatar;
+  background: none;
+  cursor: pointer;
+
+  @include t.focusRing;
+}
