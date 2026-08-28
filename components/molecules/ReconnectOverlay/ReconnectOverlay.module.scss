@@ -1,0 +1,108 @@
+@use 'theme' as t;
+
+.overlay {
+  --reconnect-accent: #{t.$urgent};
+
+  position: fixed;
+  inset: 0;
+  z-index: t.$z-reconnect;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-20;
+  overflow-y: auto;
+  @include t.backdrop;
+
+  // The wash the design system reserves for a failure: an error swaps the
+  // purple glow for this one, so red never reads as "the app is asking".
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1100px;
+    height: 900px;
+    max-width: 220%;
+    transform: translate(-50%, -50%);
+    border-radius: t.$radius-avatar;
+    background: radial-gradient(circle, t.$urgent-glow, rgba(255, 120, 125, 0) 66%);
+    pointer-events: none;
+  }
+}
+
+// Pinned above everything, including where a header would be — the one piece
+// of chrome that says "not the app you were using" before you read a word.
+.edge {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
+  background-color: t.$urgent;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  max-width: t.$reconnect-card-width;
+  background-color: t.$surface-card;
+  border: 1px solid t.$urgent-border;
+  text-align: center;
+}
+
+.medallion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$avatar-56;
+  height: t.$avatar-56;
+  border-radius: t.$radius-avatar;
+  background-color: t.$urgent-fill;
+}
+
+.headline {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+.body {
+  margin: 0;
+  max-width: 46ch;
+  @include t.bodyText;
+  color: t.$text-body;
+  text-wrap: pretty;
+}
+
+.progress,
+.identity,
+.actions {
+  width: 100%;
+}
+
+.attempt {
+  @include t.labelText;
+  color: t.$text-meta;
+}
+
+.countdown {
+  @include t.labelText;
+  color: t.$urgent;
+}
+
+.identity {
+  background-color: t.$fill-subtle;
+  text-align: left;
+}
+
+.who {
+  @include t.labelText;
+  font-size: 15px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.where {
+  @include t.labelText;
+  font-size: 13px;
+  color: t.$text-label;
+}
