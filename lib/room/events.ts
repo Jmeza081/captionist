@@ -36,6 +36,17 @@ export const CHAT_INTERVAL_MS = 1_500
 export const CHAT_MAX_LENGTH = 140
 
 /**
+ * How long a sender must wait between room reactions, in milliseconds.
+ *
+ * The other two targets are throttled for free: a reaction is one per person
+ * per emoji per target, so the second identical one is already a no-op. A room
+ * reaction has nothing to dedupe against — repeating it *is* the feature — so
+ * it is the one target that needs a clock. Same local-clock rule as chat, and
+ * for the same reason: `at` is a number the sender chose.
+ */
+export const ROOM_REACTION_INTERVAL_MS = 1_500
+
+/**
  * How many messages a tab keeps.
  *
  * There is no database and the room dies with its host, so scrollback is a
@@ -190,6 +201,8 @@ export function createEventStore(options: EventStoreOptions): EventStore {
 
   /** Last accepted message per sender, on the *local* clock — see below. */
   const lastMessageAt = new Map<PlayerId, number>()
+  /** Room reactions have no tally to dedupe against, so they get a clock. */
+  const lastRoomReactionAt = new Map<PlayerId, number>()
   /** One reaction per person per emoji per target. Re-sending is a no-op. */
   const reacted = new Set<string>()
   let seq = 0
@@ -248,6 +261,23 @@ export function createEventStore(options: EventStoreOptions): EventStore {
     // points twenty browsers at whatever the sender chose. Same allowlist as an
     // attachment; the cap keeps a 4KB string out of `tallies` fifty times over.
     if (!isAllowedGlyph(event.emoji)) return
+
+    // A room reaction is the burst and nothing else. DESIGNSYSTEM's "REACT TO
+    // THE ROOM" leaves no count behind it — the design's prototype fires
+    // floaters and stores nothing — so there is no tally, and with no tally
+    // there is nothing to dedupe against. That drops the guard the other two
+    // targets get for free, which is why this branch is the one with a clock.
+    if (event.target === 'room') {
+      const arrived = now()
+      const last = lastRoomReactionAt.get(event.from)
+      if (last !== undefined && arrived - last < ROOM_REACTION_INTERVAL_MS) return
+      lastRoomReactionAt.set(event.from, arrived)
+
+      bursts += 1
+      snapshot = { ...snapshot, lastReaction: { emoji: event.emoji, key: bursts } }
+      emit()
+      return
+    }
 
     const key = tallyKey(event.target, event.targetId)
     const once = `${key}:${event.from}:${event.emoji}`

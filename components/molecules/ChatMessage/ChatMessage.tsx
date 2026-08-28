@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Icon } from '@/components/atoms/Icon'
+import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import styles from './ChatMessage.module.scss'
 
 export interface ChatMessageProps {
@@ -20,6 +21,14 @@ export interface ChatMessageProps {
   replyTo?: { src?: string; caption: string }
   /** Reaction tallies under the body. */
   tallies?: ReactNode
+  /**
+   * Opens the reaction picker aimed at *this* message.
+   *
+   * Optional because the gallery draws a message with no room behind it — and
+   * because an announcement has no affordance. Without it, chat reactions could
+   * only ever land on whatever arrived last, which is what they did until now.
+   */
+  onReact?: () => void
   /**
    * A host announcement. Replaces the whole row with an accent card — it is
    * the room speaking, not a player.
@@ -40,6 +49,7 @@ export function ChatMessage({
   attachment,
   replyTo,
   tallies,
+  onReact,
   announcement = false,
 }: ChatMessageProps) {
   if (announcement) {
@@ -64,6 +74,15 @@ export function ChatMessage({
         <div className={styles.meta}>
           <span className={styles.name}>{author.name}</span>
           <time className={styles.time}>{time}</time>
+          {onReact && (
+            <ReactionCTA
+              className={styles.react}
+              onClick={onReact}
+              // Not the default "Add a reaction": a log of twenty messages
+              // would hand a screen reader twenty controls with one name.
+              aria-label={`React to ${author.name}'s message`}
+            />
+          )}
         </div>
 
         {body && <p className={styles.body}>{body}</p>}

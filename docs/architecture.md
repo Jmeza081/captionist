@@ -8,10 +8,18 @@ Companion docs: [design system](./design-system.md) · [roadmap](./roadmap.md) �
 
 Current as of phase 7: **a message can carry a picture and answer a caption.**
 The event lane's `chat` variant now takes an optional `attachment` and a
-`replyTo` quote, the reaction picker holds 32 reactions behind four pack tabs
+`replyTo` quote, the reaction picker put its 32 reactions behind pack tabs
 with the design's four Slackmoji tiles among them, and the two `/host` settings
 that no screen read — `voting: 'single'` and `format: 'one'` — are read. Still
 nine routes and ten phases; nothing about the shape of a room moved.
+
+**Since then the reaction catalog grew from 32 to 616, and the wire did not
+change.** 584 emoji were imported from Google's Noto Animated Emoji under CC BY
+4.0 and committed as still SVGs under `public/media/emoji/`, so a reaction still
+renders with no network, no credentials and no third party. They land *behind*
+the curated 32, which keep positions 1–32, so every head-slice the room takes
+off `REACTIONS` is what it was.
+[ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md).
 
 Widening the lane asked a question the text-only one never had to: **what may a
 message point at?** Every sender-supplied URL — an attachment, a quote's
@@ -22,6 +30,15 @@ and the reaction lane was the sharp edge: the wire carries a *glyph*, which was
 harmless while every glyph was an emoji and a URL the moment tiles existed.
 Both halves — a quote is a copy, a glyph is a location — are
 [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md).
+
+**Growing the catalog did not widen that answer, and the naive reading of it is
+the opposite of what happened.** The animation is Google's, on
+`fonts.gstatic.com` — but that URL never travels. The lane carries the same
+same-origin still it always did, and every browser derives the animated
+rendition from it locally through `lib/noto.ts`. So the allowlist gained one
+*optional path segment*, `/media/(emoji/)?…\.svg`, and no remote host at all;
+`lib/gifs/allow.test.ts` asserts that a gstatic URL is still **refused**, so the
+day that changes it will be on purpose.
 
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
@@ -62,8 +79,11 @@ here now*. Where they overlap, this file links rather than repeats.
 | Game state | `lib/game/` — pure reducer, no React | `reduce()` is total and pure; randomness is a seeded PRNG cursor in state |
 | Room runtime | `lib/room/` — `RoomTransport` + `HostEngine` | The host browser is the server — see [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md) |
 | Chat + tallies | `lib/room/events.ts` — a second store, beside `RoomStore` | [ADR 0010](./adr/0010-chat-is-a-second-store-and-its-sender-is-stamped.md) — the event lane, never game state: a message must not bump the `rev` guests drop stale game updates against. Every guard runs on *receive* — membership, 1.5s per sender on the local clock, 140 characters, 50 messages of scrollback, and since phase 7 an origin check on every URL a message carries |
-| Image origins | `lib/gifs/allow.ts` — `isAllowedImageSrc` | One allowlist for everything a *sender* can point an `<img>` at: a chat attachment, a quote's thumbnail, a reaction's glyph. Same-origin `/media/*.svg` and `https://` hosts at or under `giphy.com`, parsed with `URL` so a lookalike fails on hostname. [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md) |
-| Reactions | `lib/reactions.ts` — one ordered list of 32 | Read by the picker, the composer row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — `lib/reactions.test.ts` asserts it. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between; `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
+| Image origins | `lib/gifs/allow.ts` — `isAllowedImageSrc` | One allowlist for everything a *sender* can point an `<img>` at: a chat attachment, a quote's thumbnail, a reaction's glyph. Same-origin `/media/*.svg` or `/media/emoji/*.svg` — **one optional path segment, not a wildcard**, so the surface it opens is exactly the directory the importer writes — and `https://` hosts at or under `giphy.com`, parsed with `URL` so a lookalike fails on hostname. **The catalog added no host**: `fonts.gstatic.com` is still refused, and `allow.test.ts` asserts the refusal. [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md) · [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
+| Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
+| Reaction affordance | `ReactionCTA` on all five sites the design names | Caption cards, chat messages, the composer, the collapsed rail and the reveal bar — DESIGNSYSTEM §4.4's "uniform everywhere", which three of the five did not honour until now. `ChatRail` had declared `onReact` and never been passed one, so the room picker existed only in the gallery; `ChatMessage` had no affordance at all, so every chat reaction landed on whatever arrived last; and the composer withheld its CTA on an empty log while rendering six quick keys that silently did nothing. `ChatPanel`'s reaction surface now carries *what it is aimed at* — a message id, or `null` for the room — and `RoomShell` lists `reactions` in its `Overlay` union, which is what buys "one overlay surface at a time" without anybody remembering to close the others |
+| Reaction art | `public/media/emoji/` stills · `lib/noto.ts` derives the motion | 584 CC BY 4.0 stills, 2.79MB, written by `scripts/import-noto-emoji.mjs` — run by hand, output committed, **deliberately not wired into `build`**, which has no network. `animatedSrcFor(glyph)` turns a same-origin still into its `fonts.gstatic.com` WebP and returns `null` for anything else; Google publishes these at 512px only, so one animated tile is ~369KB and the whole catalog would be ~57MB committed. [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
+| Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Shared by `HeroWall` and `ReactionGlyph`, which are the two places the decision is *which file to fetch* and therefore the two CSS cannot make |
 | Recent reactions | `lib/recent-reactions.ts` — `localStorage`, ids not glyphs | The picker's Recent tab, and the one piece of reaction state that never travels: not the event store (whose contract is one event off the wire), not `GameState` (it would bump `rev`), not `sessionStorage` (your emoji should outlive the room). Filtered against `REACTIONS` on read, so a retired tile leaves quietly |
 | Realtime | `AblyTransport` over Ably v2 · `BroadcastTransport` over `BroadcastChannel` | All three `RoomTransport` implementations now exist and **no method changed at the swap** — [ADR 0009](./adr/0009-the-room-crosses-the-network.md). Ably is what a real room takes; the tab transport is what the suite runs on. Who hosts is presence on Ably and a claim probe on the tab bus — [ADR 0007](./adr/0007-the-first-tab-to-ask-owns-the-room.md). Both lanes — intents and events — stamp `from` from the identity the transport authenticated, never from the payload |
 | Realtime auth | `/api/ably/seat` + `/api/ably/token`, `lib/ably/` | `ABLY_API_KEY` is server-only. Two routes because an `authUrl` must answer with the bare `TokenRequest`: the seat (signed, and where the stub answer lives) comes from one, the token from the other. `createTokenRequest` signs locally, so neither route makes a call of its own; the capability is the glob `captionist:<code>:*` |
@@ -95,6 +115,16 @@ in `.env.local` cannot silently move the suite onto a live service — and it is
 also why phase 5's gate is unverified: nothing in the repo exercises Ably, key
 or no key. `?transport=broadcast` and `?gifs=stub` do the same for one page
 load.
+
+**The browser is now held to that promise as well as the server.**
+`webServer.env` only ever bound the process Playwright spawns, which stopped
+mattering the moment a reaction tile could reach a CDN — a full run would
+quietly pull a few hundred 369KB files and every spec would pass whether or not
+the committed stills work. `launchOptions.args` carries
+`--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1`, so a spec resolves
+nothing but the dev server. Everything is blocked rather than that one host, so
+the claim is enforced by the network layer instead of by remembering to add the
+next hostname.
 
 Without `GIPHY_API_KEY` the GIF route
 serves the offline shelf outside production, so a fresh clone gets a working
@@ -313,10 +343,11 @@ property, so no component ever declares a font family directly.
 ## Room state
 
 Three layers in a stack, plus `lib/gifs/`, `lib/avatar.ts`, `lib/ably/`,
-`lib/reactions.ts` and `lib/recent-reactions.ts` alongside — and the arrows only ever point one way. **State lives in `lib/`; `components/` is UI.** Providers, stores
-and hooks belong in `lib/room/` even though they are React — putting a provider
-in `components/` would make a tier that is supposed to be about markup the owner
-of room authority instead.
+`lib/reactions.ts`, `lib/noto.ts` and `lib/recent-reactions.ts` alongside — and
+the arrows only ever point one way. **State lives in `lib/`; `components/` is
+UI.** Providers, stores and hooks belong in `lib/room/` even though they are
+React — putting a provider in `components/` would make a tier that is supposed
+to be about markup the owner of room authority instead.
 
 ```mermaid
 graph LR
@@ -325,9 +356,13 @@ graph LR
   G["lib/game/<br/><i>pure — types · reducer · authorize<br/>selectors · project · rng</i>"]
   F["lib/gifs/<br/><i>types · samples · giphy · wall · useGifSearch<br/>allow — isAllowedImageSrc</i>"]
   AV["lib/avatar.ts<br/><i>seed → data URI, cached</i>"]
-  RX["lib/reactions.ts<br/><i>the room's 32 · packs · glyph ↔ id</i>"]
+  RX["lib/reactions.ts<br/><i>616 — 32 curated, then 584 imported<br/>packs · glyph ↔ id · matchesQuery</i>"]
+  CAT["lib/reactions.catalog.ts<br/><i>GENERATED by scripts/import-noto-emoji.mjs<br/>run by hand, never at build</i>"]
+  NO["lib/noto.ts<br/><i>a still glyph → its animated URL</i>"]
+  GST["fonts.gstatic.com<br/><i>Noto Animated Emoji · CC BY 4.0</i>"]
   RC["lib/recent-reactions.ts<br/><i>localStorage · ids only</i>"]
   AT["components/atoms/Avatar"]
+  GL["components/atoms/ReactionGlyph"]
   API["app/api/gifs"]
   TKR["app/api/ably/seat<br/>app/api/ably/token"]
   ABL["lib/ably/<br/><i>token · seat — server only, node:crypto</i>"]
@@ -341,17 +376,23 @@ graph LR
   R -->|"isAllowedImageSrc — every URL<br/>a sender puts on the lane"| F
   G -->|"re-exports REVEAL_REACTIONS"| RX
   RC --> RX
+  CAT -->|"NOTO_REACTIONS — spread in behind the curated head"| RX
+  GL -->|"isImageGlyph"| RX
+  GL -->|"animatedSrcFor(glyph) — this atom, and nothing else"| NO
+  NO -.->|"derived per browser, never on the wire<br/>fetched only near the viewport"| GST
   R -.->|"fetch — a signed seat, then a token"| TKR
   API --> F
   TKR --> ABL
   F -.->|"toMediaRef → MediaRef"| G
 ```
 
-Every solid arrow is a dependency, and the dotted one from `lib/room/` is a
-runtime fetch rather than an import — which is the whole reason `lib/ably/` can
-hold the key handling and still never reach a client bundle. **No arrow points
-back.** Phase 6 briefly introduced one: `lib/reactions.ts` took its `Reaction`
-shape as a type import from `components/molecules/ReactionToolbar`, which —
+Every solid arrow is a dependency, and the dotted ones are runtime traffic
+rather than imports — `lib/room/`'s is a fetch, which is the whole reason
+`lib/ably/` can hold the key handling and still never reach a client bundle, and
+`lib/noto.ts`'s is an `<img>` each browser issues for itself, out of a URL it
+derived locally. **No arrow points back.** Phase 6 briefly introduced one:
+`lib/reactions.ts` took its `Reaction` shape as a type import from
+`components/molecules/ReactionToolbar`, which —
 because `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` — gave the pure
 core a type edge into `components/`. Types are erased at build, so nothing was
 breaking and the unit suite never noticed, which is exactly what makes that
@@ -455,7 +496,7 @@ players*, and an `<img>` is a passive context where an SVG cannot run script.
 all: `token.ts` takes the key as an argument rather than reading it, the way
 `searchGiphy(query, apiKey)` does, and `seat.ts` imports `node:crypto`, which
 keeps it server-side by construction rather than by convention.
-`lib/reactions.ts` is the fifth: the room's 32 reactions in one deliberately
+`lib/reactions.ts` is the fifth: the room's reactions in one deliberately
 ordered list, their pack, and the glyph-to-id hop the wire needs. It moved out
 of `ComponentGallery` in phase 6, where it had been fine until a second surface
 needed it, and phase 7 grew it from ten to 32 — **including the four Slackmoji
@@ -468,10 +509,41 @@ Because a glyph can now be a location, three things follow: `isImageGlyph`
 decides which, `ReactionGlyph` renders either without every caller growing the
 same ternary, and `labelFor` gives an unknown location a generic name rather
 than reading a path out character by character.
-`lib/recent-reactions.ts` is the sixth and now the smallest — the picker's
+
+**It is 616 now, and the shape of the growth is the load-bearing part.** 584
+came from Google's Noto Animated Emoji, imported by
+`scripts/import-noto-emoji.mjs` into the generated `lib/reactions.catalog.ts`
+and committed as still SVGs — the script is run by hand and deliberately not
+wired into `build`, because the build has no network and 584 files that change
+roughly never have no business being fetched on every deploy. `REACTIONS` is
+`[...CURATED, ...NOTO_REACTIONS]` rather than one merged list, precisely so
+every slice in the file still counts from the same front: the composer's six,
+the reveal's five and the picker's default ten are the same reactions they were
+at 32. Two indexes came with the size — `BY_ID` and `BY_GLYPH` replace what were
+`REACTIONS.find` linear scans behind `glyphFor`, `idFor` and `labelFor`, and
+`SEARCH_TEXT` behind the new `matchesQuery` replaces a lowercase-and-join the
+picker was running 616 times per keystroke. `ReactionPack` gained `nature` and
+`places`, because Noto's nine categories fold into four packs and the tab row
+has room for six chips.
+
+`lib/noto.ts` is the sixth, and it is one function for one reason: the art is
+ours to serve and the motion is not. `animatedSrcFor(glyph)` matches
+`/media/emoji/<codepoint>.svg` and nothing else, returning the
+`fonts.gstatic.com` WebP for it and `null` for a Slackmoji or an emoji
+character, both of which already move on their own terms. **It is derivation,
+not a second field.** Nothing publishes an animated URL, nothing stores one, and
+no sender can choose one — which is what let the allowlist stay a same-origin
+rule with Giphy beside it.
+[ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md)
+records why the catalog is Noto rather than the slackmojis.com directory the ask
+named, and why the stills are committed while the animation is fetched.
+`lib/recent-reactions.ts` is the seventh and still the smallest — the picker's
 Recent tab, on `localStorage`, storing ids so a retired tile disappears instead
 of rendering as a dead URL. It is the only reaction state that never touches
-the wire.
+the wire. `lib/useReducedMotion.ts` is the eighth and the only one that is a
+hook: `useSyncExternalStore` over `matchMedia`, answering `true` on the server,
+so `HeroWall` and `ReactionGlyph` read the preference the same way instead of
+each keeping an effect that sets state from a media query.
 
 `Avatar` fills its circle three ways in order — a resolved `src`, a rendered
 `avatarSeed`, then the initial — and `avatarSeed` was added to the
@@ -835,6 +907,12 @@ the one worth throttling. So `receive()` holds all five:
 - **Idempotence.** One reaction per person per emoji per target, so a repeat is
   a no-op and counts only ever rise. The design draws no un-react, and a count
   that could fall would need per-person state on every tally to know whose.
+  **`room` is the exception, and pays for it.** DESIGNSYSTEM's "REACT TO THE
+  ROOM" leaves no count — the design's own prototype fires floaters for it and
+  stores nothing — so there is no tally to dedupe against and repeating it is
+  the feature. That drops the guard the other two targets get for free, which
+  is why it is the one target with a clock: `ROOM_REACTION_INTERVAL_MS`, 1.5s
+  per sender, read off the local clock for the same reason chat's is.
 
 **A bad source degrades a message; it never refuses one.** A disallowed
 attachment is dropped and the words survive, a disallowed thumbnail is dropped
@@ -883,6 +961,8 @@ reasons: `getSnapshot()` returns a stable reference between real changes, and
 nothing time-varying goes in it. Tallies are a `Record` keyed
 `entry:<id>` / `message:<id>`, and only the key that moved is rebuilt — so
 nineteen untouched vote cards keep their array identity and do not re-render.
+A `room` reaction writes no key at all: it bumps `lastReaction` and returns, so
+the burst is the whole of it.
 `useEventSelector` is `useRoomSelector`'s twin over this store, with the same
 double cache, and unlike its twin it has customers: `ChatPanel` and `VoteScreen`
 each read the whole tally record in one subscription, because a per-row
@@ -985,14 +1065,14 @@ Tier is decided by dependencies, not size. Full rules in
 
 ```mermaid
 graph BT
-  subgraph atoms["atoms/ — no app state, no repo imports (Icon excepted)"]
+  subgraph atoms["atoms/ — no app state, no component imports (Icon excepted)"]
     Layout["Stack · Inline · Box · Grid"]
     Icon["Icon"]
     Controls["Button · TextField · Toggle<br/>Stepper · SegmentedControl · Chip · RankSlot"]
     Status["TimerPill · TallyPill · PresencePill · StatusPill<br/>Tag · Eyebrow · RoundProgress · ProgressRail"]
     Ident["Avatar · RoomCode"]
     Feedback["Snackbar · ReactionCTA"]
-    Glyph["ReactionGlyph<br/><i>a character, or an img</i>"]
+    Glyph["ReactionGlyph<br/><i>'use client' · a character, or the still —<br/>which upgrades to the animation</i>"]
   end
   subgraph molecules["molecules/ — compose atoms"]
     Room["JoinPanel · PlayerRow · PromptBanner"]
@@ -1058,6 +1138,8 @@ graph BT
   Status -->|"TallyPill"| Panel
   Glyph -->|"a tally's face"| Panel
   Glyph -->|"a tally's face"| Screens
+  Glyph -->|"every tile in the picker"| Overlay
+  Glyph -->|"the burst, and the reveal's one-tap row"| Compose
   Panel -->|"rendered as ChatRail's child"| Shell
 
   Status -->|"TimerPill · RoundProgress · ProgressRail"| Shell
@@ -1224,6 +1306,32 @@ nothing, and it is decorative on purpose: `TallyPill` already hides its glyph
 from screen readers and carries the reaction's name in its own visually-hidden
 label, so a second accessible name here would be a stutter.
 
+**The catalog import changed that atom more than anything else in the tree.**
+It is `'use client'` now, because it owns the one decision the committed still
+cannot make for itself: whether to reach for the animation. Three conditions,
+all of which must hold — the tile is near the viewport (an
+`IntersectionObserver`, since a pack is 60 tiles and each animation is ~369KB),
+the browser has not asked for less motion (`useReducedMotion`), and the file
+actually decodes (preloaded through `new Image()` and swapped into `src` only
+on `onload`, so a slow or blocked network shows a still emoji rather than a
+blank square). Which animation it has loaded is stamped with the glyph rather
+than held as a boolean, so a change of reaction falls back to its own still by
+derivation. It is still an atom by
+[`components/README.md`](../components/README.md)'s rule — no app state, no
+component imports — though it now imports three `lib/` modules where it
+imported one, which is the honest reading of that rule: it is about
+`components/`, not about `lib/`.
+
+**Two more surfaces render through it than did before, and neither had a branch
+to forget.** `ReactionFloaters` put `{f.glyph}` on screen as text, so a
+Slackmoji burst printed `/media/slackmoji-lgtm.svg` up the page in 30px type;
+`RevealReactionBar` did the same with its five one-tap keys, which are a slice
+of a list whose first six are only *asserted* to be characters.
+`ReactionToolbar` was the third, and it had a branch — its own copy of the
+atom's — which is what the atom exists to delete. All three go through
+`ReactionGlyph` now, which is also how the animated upgrade reaches the
+picker's tiles without the picker knowing a CDN exists.
+
 Everything else phase 7 needed was a prop or a slot, per rule 2. `MediaCard`
 gained a `reply` slot beside `reaction` — **the design draws no reply control**,
 only the message that results from one (Screens 2c), so the affordance is ours
@@ -1231,11 +1339,17 @@ and it goes where the foot's other peers already sit rather than nesting inside
 `action`, which the rank button owns. `ChatMessage` gained `replyTo` and draws
 the quote block after the body; `Composer` gained `replyTo` / `onClearReply`
 and a strip above the field. `ReactionToolbar` grew pack tabs — Recent ·
-Slackmojis · Smileys · Objects — over a named `role="group"` tile grid, with a
-search that beats a tab and a tab that beats the default six-plus-four, and an
-empty state for a Recent nobody has filled yet. The tabs are a group of toggles
-and deliberately not a `tablist`: a real one promises arrow-key navigation the
-grid below it does not implement.
+Slackmojis · Smileys · Nature · Objects · Places, six chips in a row that
+scrolls sideways rather than wrapping, so the panel keeps its height whatever is
+in it — over a named `role="group"` tile grid, with a search that beats a tab
+and a tab that beats the default six-plus-four, and an empty state for a Recent
+nobody has filled yet. The tabs are a group of toggles and deliberately not a
+`tablist`: a real one promises arrow-key navigation the grid below it does not
+implement. **A pack now renders 60 tiles and extends on scroll**, through a
+sentinel the grid itself observes; it used to render whole, which was right at
+fourteen tiles and is a stall at 238. How far a view has been paged is stamped
+with the view it belongs to, so switching tab or typing starts from the top by
+derivation rather than by a render-then-correct.
 
 `ReactionToolbar` is also the second molecule to import from `lib/` —
 `AvatarPicker` was the first — and for the same reason: `REACTIONS` and
@@ -1447,9 +1561,12 @@ deletes the debounce-and-race question entirely. What is left is the stale
 guard. A picked result becomes a `MediaRef` through `toMediaRef()` and is
 broadcast to the room — which is why the sample shelf is SVG files under
 `public/media/` rather than data URIs, since a full-state message has to fit
-inside Ably's 64KB cap. `public/media/` now holds 28: twelve animated
-tiles and a `-still` companion for each, because stopping an animated image
-means swapping the file, plus phase 7's four Slackmoji reaction tiles.
+inside Ably's 64KB cap. `public/media/` holds 28 files at its top level: twelve
+animated tiles and a `-still` companion for each, because stopping an animated
+image means swapping the file, plus phase 7's four Slackmoji reaction tiles.
+One directory down, `public/media/emoji/` holds the imported catalog — **584
+still SVGs and a `LICENSE.txt`, 2.79MB** — which is why the image allowlist
+grew exactly one optional path segment rather than a wildcard.
 
 **Phase 7 gave that path a third caller and a second destination.**
 `ChatPanel` opens the same `GifPanel` in its `popover` variant, over the same
@@ -1573,11 +1690,21 @@ ours, drawn as SVGs beside the sample shelf. All three are drawn in
 stay in the table below, unchanged and for the original reason: there is still
 nowhere for a *player's own file* to live.
 
+**The catalog import removed no row and added one.** 616 reactions is not a gap
+closed by time — the ask was slackmojis.com's directory, and it cannot be taken:
+their terms forbid compiling it and the art is not theirs to license, so the
+source changed and the goal survived as Noto under CC BY 4.0
+([ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md);
+attribution is on `/components` and in `public/media/emoji/LICENSE.txt`). What
+is left out is the part no import can supply — a *workspace's own* custom emoji
+— and it is the uploads row's reason again rather than a new one.
+
 | Area | What exists | What doesn't |
 | --- | --- | --- |
 | The round-flow screens | **All ten phases**, inside the `RoomShell` chrome drawn above — `opener` as the `RoundOpener` overlay, the other nine through the [tier map](#component-tiers). `PhasePending` is gone | Four pieces of the design, each left out for a reason rather than for time — see below the table |
 | Iconography | `Icon` ships the design's own SVG paths | `@phosphor-icons/react` is installed and unused |
-| Uploads | `Dropzone` renders `blocked` with the reason on it | Anywhere for a *player's own file* to live. Blocked in v1 by decision, not by omission — `BriefScreen`'s "Upload your own" tab says so rather than hiding. `Player.src` is the same door on the avatar side: the prop exists, nothing populates it, and seeds cover every face the app draws. Note this is now the only row of its kind: the three that used to borrow this reason were phase 7's, and none of them actually needed a storage target |
+| Custom team emoji | 616 reactions from `lib/reactions.ts` — 32 authored, four of them Slackmoji-style, plus 584 Noto imports under CC BY 4.0 | A *workspace's* own emoji, which is what the ask meant. Blocked by licensing rather than by time — slackmojis.com's terms forbid compiling their directory and it does not own the art ([ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md)). The honest route is host-supplied URLs, which needs the storage target the row below is also waiting on |
+| Uploads | `Dropzone` renders `blocked` with the reason on it | Anywhere for a *player's own file* to live. Blocked in v1 by decision, not by omission — `BriefScreen`'s "Upload your own" tab says so rather than hiding. `Player.src` is the same door on the avatar side: the prop exists, nothing populates it, and seeds cover every face the app draws. The three rows that used to borrow this reason were phase 7's, and none of them actually needed a storage target; the row above it is the one that genuinely does |
 
 The four omissions in the round-flow screens, in phase order:
 
@@ -1631,9 +1758,13 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-171 unit tests (`lib/**/*.test.ts`, node) and 274 Playwright tests across the
-two viewports — 137 per project, over 19 spec files. Phase 6's share is
-`lib/room/events.test.ts`, now 29 tests over the
+185 unit tests (`lib/**/*.test.ts`, node) and 286 Playwright tests across the
+two viewports — 143 per project, over 21 spec files. 280 of the 286 run; the
+other 6 are viewport-gated (`test.skip` where a docked rail exists only above
+`md`, or a floating dock only below it), which is a branch of the layout rather
+than a hole in the coverage.
+
+Phase 6's share is `lib/room/events.test.ts`, now 29 tests over the
 receive-side guards, which is where a rate limit measured on the local clock can
 be checked without waiting 1.5 real seconds — and `e2e/chat.spec.ts`, now 11 tests
 per project that carry a message between two real tabs, badge the collapsed
@@ -1646,9 +1777,10 @@ lookalike host, `data:`, `blob:`, plain `http:` and an over-long URL each get a
 case, so adding a second image source later is one edit measured against a
 written contract rather than a judgement call. `lib/reactions.test.ts` is 8
 more and locks the ordering invariants the slices depend on: 1–6 emoji, 7–10 the
-Slackmojis, 32 in total with unique ids and labels. The rest landed inside
-`events.test.ts`, because the attachment, the quote and the glyph guard are all
-receive-side. `e2e/reply.spec.ts` is 3 tests per project across the three
+Slackmojis, and the whole list unique by id and by label — 32 of them then, and
+the same assertions over 616 now. The rest landed inside `events.test.ts`,
+because the attachment, the quote and the glyph guard are all receive-side.
+`e2e/reply.spec.ts` is 3 tests per project across the three
 surfaces a reply crosses — raised on a vote card, staged in the shell, sent from
 the rail — and the third one is the ADR's argument made executable: it plays the
 round on and checks the quote is still legible after the grid it came from is
@@ -1656,6 +1788,22 @@ gone. `e2e/ably.spec.ts` drives the **seat** route through the
 `request` fixture against its stub, with no credentials and no browser, the way
 `gifs.spec.ts` covers Giphy; `e2e/reconnect.spec.ts` drops a real guest out of a
 real room and reads the overlay over it.
+
+**The catalog's share is 13 unit tests and one spec, and most of them assert a
+floor rather than a happy path.** `lib/noto.test.ts` is 4 over `animatedSrcFor`:
+a catalog still resolves, a Slackmoji and an emoji character resolve to `null`,
+and a codepoint's dashes become Google's underscores. `lib/reactions.test.ts`
+grew from 8 to 14 — the head-slices are asserted still intact at 616, ids and
+glyphs are unique across the whole set, and `matchesQuery` is held to the
+keyword search the picker used to do inline. `lib/gifs/allow.test.ts` grew from
+6 to 9, and the important one asserts a **failure**: a `fonts.gstatic.com` URL
+is still refused, because the animation is derived in each browser and never
+sent. `e2e/reactions-catalog.spec.ts` is 4 tests per project, all of them
+running with the CDN unreachable by construction — a pack pages in 60 at a
+time and extends on scroll, a still *decodes* (`naturalWidth > 0`, so a broken
+image fails rather than passing on being present), search reaches an emoji by
+name, and a picked catalog tile lands in a live tally as a picture rather than
+as `/media/emoji/1f427.svg` in text.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a
@@ -1722,8 +1870,13 @@ rather than code:
 7. **Media that can move ships a still, and motion is opt-in after the
    preference is read.** Anything animated carries a companion still frame —
    `GifResult.still`, `WallTile.poster`, the `-still` SVGs in `public/media/` —
-   and it is that frame the first render shows. Playback is enabled only inside
-   the effect that reads `prefers-reduced-motion`, so it never starts and then
+   and it is that frame the first render shows. **The emoji catalog satisfies
+   this by construction rather than by discipline:** the still is not a
+   companion somebody has to remember to draw, it is the thing on the wire, and
+   the animation is the departure from it. The preference itself is read in one
+   place, `lib/useReducedMotion.ts`, by both components that have to choose a
+   file rather than a CSS rule. Playback is enabled only inside the effect that
+   reads `prefers-reduced-motion`, so it never starts and then
    gets cancelled. This is a rule rather than a preference because CSS cannot
    reach inside an animated image to stop it, and an SVG used as an `<img>` does
    not reliably inherit the page's motion preference — the only reliable stop is
@@ -1783,10 +1936,17 @@ rather than code:
    spoke; it says nothing about where their words point, and a chat attachment,
    a quote's thumbnail and a reaction's glyph all become an `<img src>` in
    twenty other browsers. Everything sender-supplied clears
-   `isAllowedImageSrc` in `lib/gifs/allow.ts` — same-origin `/media/*.svg` or a
-   `giphy.com` host over `https:`, parsed with `URL` — and it is checked on
-   **receive**, so it holds on every transport. A failed check *degrades* the
-   message rather than refusing it: the picture goes, the words stay, and only
-   an empty message is dropped. Adding a second image source is one edit in one
-   file, and `lib/gifs/allow.test.ts` is the contract it has to meet.
-   [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md).
+   `isAllowedImageSrc` in `lib/gifs/allow.ts` — same-origin `/media/*.svg` or
+   `/media/emoji/*.svg`, or a `giphy.com` host over `https:`, parsed with `URL`
+   — and it is checked on **receive**, so it holds on every transport. A failed
+   check *degrades* the message rather than refusing it: the picture goes, the
+   words stay, and only an empty message is dropped. Adding a second image
+   source is one edit in one file, and `lib/gifs/allow.test.ts` is the contract
+   it has to meet. **The emoji catalog is the case that proves the rule rather
+   than bending it:** its
+   animation lives on `fonts.gstatic.com` and that host is still refused,
+   because the URL is derived in each browser from a same-origin still and
+   never travels. Growing the catalog from 32 to 616 widened the allowlist by
+   one optional path segment and by no host at all.
+   [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md) ·
+   [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md).

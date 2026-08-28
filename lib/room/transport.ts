@@ -125,6 +125,10 @@ export type RoomEvent =
        * card and reacting to a message are the same act against different
        * things, so they share a handler, a tally derivation and a rate limit.
        * Splitting the kind would have duplicated all three.
+       *
+       * `room` is the odd one and stays here for the same reason: it is the
+       * same act against nothing in particular. It carries no `targetId` worth
+       * reading and leaves no tally — see `receiveReaction`.
        */
       target: ReactionTarget
       targetId: string
@@ -132,8 +136,23 @@ export type RoomEvent =
       at: number
     }
 
-/** An entry in a vote grid, or one message in the room chat. */
-export type ReactionTarget = 'entry' | 'message'
+/**
+ * An entry in a vote grid, one message in the room chat, or the room itself.
+ *
+ * `room` is DESIGNSYSTEM.md's "REACT TO THE ROOM" — the rail's picker, and what
+ * the composer's keys fall back to when there is no message to aim at. The
+ * design's own prototype fires floaters and stores nothing for it, so it is a
+ * burst with no count behind it.
+ */
+export type ReactionTarget = 'entry' | 'message' | 'room'
+
+/**
+ * The `targetId` a room reaction carries.
+ *
+ * A room reaction is not *about* anything, but the wire shape wants a string
+ * and an empty one reads like a bug. Never used as a key: nothing tallies it.
+ */
+export const ROOM_TARGET = 'room'
 
 /** Who the transport believes is present, independent of what the reducer thinks. */
 export interface PresenceEntry {

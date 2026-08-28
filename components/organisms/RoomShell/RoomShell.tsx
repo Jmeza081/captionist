@@ -10,6 +10,7 @@ import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatRail } from '@/components/molecules/ChatRail'
 import { ChatToast, ChatToastOverflow } from '@/components/molecules/ChatToast'
 import { ReactionFloaters } from '@/components/molecules/ReactionFloaters'
+import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { HostToolbox } from '@/components/molecules/HostToolbox'
 import { Modal } from '@/components/molecules/Modal'
 import { ReconnectOverlay } from '@/components/molecules/ReconnectOverlay'
@@ -31,7 +32,9 @@ import {
 } from '@/lib/game/selectors'
 import { SEAT_GRACE_MS } from '@/lib/game/constants'
 import type { Clock, RoomPhase } from '@/lib/game/types'
+import { REACTIONS } from '@/lib/reactions'
 import type { ChatQuote } from '@/lib/room/transport'
+import { ROOM_TARGET } from '@/lib/room/transport'
 import { useCountdown } from '@/lib/room/useCountdown'
 import {
   useChat,
@@ -70,8 +73,14 @@ const TOAST_MS = 5_200
  */
 const TOAST_LIMIT = 2
 
-/** Which overlays are mutually exclusive. Chat is not one: it docks. */
-type Overlay = 'toolbox' | 'help' | null
+/**
+ * Which overlays are mutually exclusive. Chat is not one: it docks.
+ *
+ * `reactions` is the rail's own picker — DESIGNSYSTEM.md's "REACT TO THE ROOM".
+ * Listing it here is what buys rule 3 ("one overlay surface at a time") without
+ * anybody having to remember to close the others.
+ */
+type Overlay = 'toolbox' | 'help' | 'reactions' | null
 
 export interface RoomShellProps {
   /** The phase-to-screen map. Injected so the shell has no opinion about screens. */
@@ -99,7 +108,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const [overlay, setOverlay] = useState<Overlay>(null)
   const messages = useChatLog()
   const unread = useUnread()
-  const { markRead } = useChat()
+  const { markRead, react } = useChat()
   const burst = useLastReaction()
   const [helpStep, setHelpStep] = useState(0)
   const [queue, setQueue] = useState<readonly string[]>([])
@@ -266,7 +275,15 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           <div className={styles.rail}>
             <ChatRail
               open={chatOpen}
-              onOpenChange={setChatOpen}
+              onOpenChange={(open) => {
+                setChatOpen(open)
+                // The CTA this picker hangs off lives in the collapsed strip,
+                // so opening chat takes its anchor away with it.
+                if (open) setOverlay((o) => (o === 'reactions' ? null : o))
+              }}
+              onReact={() =>
+                setOverlay((o) => (o === 'reactions' ? null : 'reactions'))
+              }
               present={presentCount(state)}
               unread={unread.count}
               players={state.players.map(toAvatarProps)}
@@ -381,6 +398,22 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           onRejoin={() => window.location.reload()}
           onLeave={() => router.push('/')}
         />
+      )}
+
+      {/* The room picker, hung off the collapsed rail's CTA. A room reaction
+          is the burst and nothing else — it leaves no tally, because the
+          design's own prototype fires floaters for it and stores nothing. */}
+      {overlay === 'reactions' && !chatOpen && (
+        <div className={styles.pickerDock}>
+          <ReactionToolbar
+            title="React to the room"
+            reactions={[...REACTIONS]}
+            onPick={(reaction) => {
+              react('room', ROOM_TARGET, reaction.glyph)
+              setOverlay(null)
+            }}
+          />
+        </div>
       )}
 
       {/* Anybody's reaction, anywhere in the room. Purely decorative — the

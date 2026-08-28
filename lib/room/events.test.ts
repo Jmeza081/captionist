@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { CHAT_HISTORY, CHAT_INTERVAL_MS, CHAT_MAX_LENGTH, createEventStore, tallyKey } from './events'
+import {
+  CHAT_HISTORY,
+  CHAT_INTERVAL_MS,
+  CHAT_MAX_LENGTH,
+  createEventStore,
+  ROOM_REACTION_INTERVAL_MS,
+  tallyKey,
+} from './events'
 import type { EventStore } from './events'
 import type { RoomEvent } from './transport'
 
@@ -26,6 +33,10 @@ function chat(from: string, text: string, at = 1_000): RoomEvent {
 
 function reaction(from: string, targetId: string, emoji: string): RoomEvent {
   return { kind: 'reaction', from, target: 'entry', targetId, emoji, at: 1_000 }
+}
+
+function roomReaction(from: string, emoji: string): RoomEvent {
+  return { kind: 'reaction', from, target: 'room', targetId: 'room', emoji, at: 1_000 }
 }
 
 describe('the chat log', () => {
@@ -344,5 +355,72 @@ describe('the reaction glyph', () => {
     const s = store()
     s.receive(reaction('p1', 'r1-e1', 'x'.repeat(600)))
     expect(s.getSnapshot().tallies[tallyKey('entry', 'r1-e1')]).toBeUndefined()
+  })
+})
+
+
+/**
+ * Reacting to the room.
+ *
+ * DESIGNSYSTEM.md's "REACT TO THE ROOM" — the rail's picker, and where the
+ * composer's keys land when there is no message to aim at. The design's own
+ * prototype fires floaters for it and stores nothing, so this is the one target
+ * that leaves no trace behind the burst.
+ */
+describe('a room reaction', () => {
+  it('bursts without leaving a count anywhere', () => {
+    const s = store()
+    s.receive(roomReaction('p1', '🔥'))
+
+    expect(s.getSnapshot().lastReaction?.emoji).toBe('🔥')
+    // Not under `room:room`, and not under anything else either.
+    expect(s.getSnapshot().tallies).toEqual({})
+  })
+
+  it('can be sent again, unlike a reaction that counts', () => {
+    // The dedupe on the other targets exists because a count may only rise
+    // once per person. With no count there is nothing to protect, and sending
+    // the same thing twice is the entire point of an ambient burst.
+    let clock = 0
+    const s = store({ now: () => clock })
+
+    s.receive(roomReaction('p1', '🎯'))
+    const first = s.getSnapshot().lastReaction?.key
+
+    clock += ROOM_REACTION_INTERVAL_MS
+    s.receive(roomReaction('p1', '🎯'))
+
+    expect(s.getSnapshot().lastReaction?.key).not.toBe(first)
+  })
+
+  it('is throttled on the local clock, since it has no dedupe to hide behind', () => {
+    let clock = 0
+    const s = store({ now: () => clock })
+
+    s.receive(roomReaction('p1', '💀'))
+    const settled = s.getSnapshot().lastReaction?.key
+
+    // A flooding tab stamps whatever `at` it likes, so the guard reads ours.
+    clock += ROOM_REACTION_INTERVAL_MS - 1
+    s.receive(roomReaction('p1', '💀'))
+    expect(s.getSnapshot().lastReaction?.key).toBe(settled)
+
+    // Somebody else is not the flooder, and is not made to wait for them.
+    s.receive(roomReaction('p2', '💀'))
+    expect(s.getSnapshot().lastReaction?.key).not.toBe(settled)
+  })
+
+  it('checks the glyph against the same allowlist as every other target', () => {
+    const s = store()
+    s.receive(roomReaction('p1', 'https://evil.example/beacon.gif'))
+
+    expect(s.getSnapshot().lastReaction).toBeUndefined()
+  })
+
+  it('still refuses somebody who is not in the room', () => {
+    const s = store()
+    s.receive(roomReaction('nobody', '🔥'))
+
+    expect(s.getSnapshot().lastReaction).toBeUndefined()
   })
 })

@@ -230,7 +230,7 @@ primitives.
 | `ProgressRail` | atom | The 3px rail under the header that drains with the timer |
 | `StatusPill` | atom | A short statement of where the room is — "Locked in" over media, "4 of 7 have voted" on the canvas |
 | `RankSlot` | atom | One place in a ranked ballot. Dashed when empty, gold at first, clears when tapped. A single-vote room draws one, named rather than numbered |
-| `ReactionGlyph` | atom | One reaction's face — an emoji character or a Slackmoji image, from one glyph string. The wire carries the glyph, and three surfaces render it; the branch lives here so none of them prints a URL as text |
+| `ReactionGlyph` | atom | One reaction's face — a character, a Slackmoji, or a catalog emoji, from one glyph string. The wire carries the glyph and four surfaces render it, so the branch lives here rather than four times. Also owns the animated upgrade: the still first, then Google's CDN once the tile is near the viewport and motion is welcome |
 | `TallyPill` | atom | One reaction's running count. Carries its own scrim over media |
 | `PresencePill` | atom | "7 here" — live room presence |
 | `RoundProgress` | atom | How far through the game the room is, as pips |
@@ -240,7 +240,7 @@ primitives.
 | `Stepper` | atom | A bounded numeric setting — timer, round count |
 | `SegmentedControl` | atom | A small exclusive choice. A real radiogroup |
 | `Snackbar` | atom | Confirms an action with no other visible result |
-| `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+` |
+| `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+`. Appears on all five sites the design names — caption cards, chat messages, the composer, the collapsed rail and the reveal bar. Takes an `aria-label` override, so a log of twenty messages does not hand a screen reader twenty controls called "Add a reaction" |
 | `RoomCode` | atom | A room code, for reading aloud or typing. `display` on the entry screen, `compact` beside the lobby's QR |
 
 **Molecules**
@@ -251,19 +251,19 @@ primitives.
 | `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line |
 | `PlayerRow` | molecule | One player in a list — `roster`, `tracker`, or `standing` |
 | `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Its foot takes `caption`, `reply`, `reaction` and `action` as peers |
-| `ChatMessage` | molecule | One chat message, or a host announcement with `announcement`. Carries an attached GIF at 180×120, and the caption it answers quoted under the body |
+| `ChatMessage` | molecule | One chat message, or a host announcement with `announcement`. Carries an attached GIF at 180×120, and the caption it answers quoted under the body. `onReact` puts the CTA in the meta row, so a reaction lands on *this* message rather than on whatever arrived last |
 | `UnreadDivider` | molecule | Where you stopped reading |
-| `ReactionToolbar` | molecule | The searchable reaction picker. Six emoji and four Slackmojis by default, then pack tabs, then keyword search across the whole set |
+| `ReactionToolbar` | molecule | The searchable reaction picker. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
 | `Dropzone` | molecule | Upload. Empty, drag-over and file-ready in one component |
 | `RoundOpener` | molecule | The interstitial before each round |
 | `Modal` | molecule | The multi-step walkthrough. Escape closes; Back/Next stay paired |
 | `HostToolbox` | molecule | The host's controls, fixed bottom-right, collapsing to a FAB |
-| `ChatRail` | molecule | Room chat: docked beside content above `md`, a sheet over it below. Collapses to a 64px strip, or one floating key on a phone. Both sizes are one component and the branch is entirely CSS |
+| `ChatRail` | molecule | Room chat: docked beside content above `md`, a sheet over it below. Collapses to a 64px strip, or one floating key on a phone. Both sizes are one component and the branch is entirely CSS. The strip's `onReact` opens the room picker — see `RoomShell` |
 | `ChatToast` | molecule | An arriving message while chat is shut. Not `Snackbar` — that one is the room's single centred voice for something *you* did and carries no author |
 | `Composer` | molecule | The chat composer. Sends on text *or* an attachment, and carries the staged reply above them |
 | `GifPanel` | molecule | Giphy search above the composer. Picking attaches and closes; it never sends |
 | `RevealReactionBar` | molecule | Five one-tap reactions on the reveal, plus the CTA to the full toolbar |
-| `ReactionFloaters` | molecule | The decorative emoji burst. `pointer-events: none`, hidden from assistive tech |
+| `ReactionFloaters` | molecule | The decorative emoji burst. `pointer-events: none`, hidden from assistive tech. Renders through `ReactionGlyph`, having once printed `/media/slackmoji-lgtm.svg` up the screen in 30px text |
 | `AppHeader` | molecule | The bar on every in-room screen — phase left, clock right |
 | `CodeEntry` | molecule | Typing a room code on `/join`, where it is the whole screen. Seven thumb-sized slots, one real input behind them |
 | `QuickJoin` | molecule | Typing a room code on the landing page, where it sits beside a headline on glass. One masked field, `C-______`, with an inline key — not `CodeEntry` at another size |
@@ -281,7 +281,7 @@ primitives.
 | --- | --- | --- |
 | `ComponentGallery` | organism | The review surface at `/components` — every component in its states |
 | `RoomShell` | organism | The chrome around every in-room screen — header, clock, rail, host toolbox, snackbar |
-| `ChatPanel` | organism | The message list and composer inside the rail. An organism because it composes four molecules and reads the room; `ChatRail` is only the container and has no idea what a message is |
+| `ChatPanel` | organism | The message list and composer inside the rail. An organism because it composes four molecules and reads the room; `ChatRail` is only the container and has no idea what a message is. Its reaction surface carries *what it is aimed at* — a message you picked, or the room when there is none |
 | `LobbyScreen` | organism | The room before it starts: share block, roster, and the one button |
 | `BriefScreen` | organism | Setting the round up, and watching someone else do it — all four `viewKey` faces |
 | `ComposeScreen` | organism | Captioning an image, answering a prompt, or sitting the round out |

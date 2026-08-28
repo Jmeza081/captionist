@@ -144,6 +144,13 @@ $toolbar-width: 262px;
 $toolbar-tile: 36px;
 $toolbar-scroll-cap: 196px;
 
+// Where the room picker floats when the rail is a strip. The design puts it at
+// rail width + 16 on the right (80 collapsed, 376 docked), 24 up from the
+// bottom. Not on the spacing scale on purpose: these are fixed-overlay insets
+// from the viewport edge, not gaps between elements.
+$picker-dock-gap: 16px;
+$picker-dock-bottom: 24px;
+
 $modal-media-rail: 300px;
 $modal-pad: 22px;
 $modal-dot: 8px;

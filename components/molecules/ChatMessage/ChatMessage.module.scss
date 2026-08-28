@@ -18,6 +18,13 @@
   gap: t.$space-8;
 }
 
+// Pushed to the end of the row so the name and time keep their baseline and
+// the affordance sits where the eye already expects an action.
+.react {
+  margin-left: auto;
+  align-self: center;
+}
+
 .name {
   font-family: t.$font-sans;
   font-size: 13px;

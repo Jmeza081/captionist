@@ -492,10 +492,14 @@ export function ComponentGallery() {
         <Grid columns={1} mdColumns={2} gap={20}>
           <Case label="Messages">
             <Stack gap={14}>
+              {/* `onReact` is what puts the CTA in the meta row, so a reaction
+                  lands on this message rather than on whatever arrived last.
+                  Inert here, like the bare `ReactionCTA` demo below it. */}
               <ChatMessage
                 author={PLAYERS.jack}
                 time="2:14"
                 body="whoever wrote “QA during prod” I am watching you"
+                onReact={() => undefined}
               />
               <ChatMessage
                 author={PLAYERS.lukasz}
@@ -536,7 +540,7 @@ export function ComponentGallery() {
               <UnreadDivider count={3} />
             </Stack>
           </Case>
-          <Case label="Reaction toolbar — 6 emoji + 4 Slackmojis, then packs and search">
+          <Case label="Reaction toolbar — 6 emoji + 4 Slackmojis, then five packs and search across 616">
             <ReactionToolbar
               title="React to this caption"
               reactions={[...REACTIONS]}
@@ -775,6 +779,33 @@ export function ComponentGallery() {
 
       <p className={styles.clockNote}>
         Toolbox clock reads {formatClock(toolboxSeconds)}.
+      </p>
+
+      {/*
+        CC BY 4.0 asks for credit, and this is where the reaction art is on
+        show. See docs/adr/0012 for why the catalog is Google's and not the
+        one everybody actually has in their Slack.
+      */}
+      <p className={styles.credits}>
+        Emoji art is{' '}
+        <a
+          className={styles.creditLink}
+          href="https://googlefonts.github.io/noto-emoji-animation/"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          Noto Animated Emoji
+        </a>{' '}
+        by Google, used under{' '}
+        <a
+          className={styles.creditLink}
+          href="https://creativecommons.org/licenses/by/4.0/"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          CC BY 4.0
+        </a>
+        . The four Slackmojis are ours.
       </p>
     </div>
   )

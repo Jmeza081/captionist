@@ -14,6 +14,7 @@ import { labelFor, QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import type { EventSnapshot, Tally } from '@/lib/room/events'
 import { tallyKey } from '@/lib/room/events'
 import type { ChatAttachment } from '@/lib/room/transport'
+import { ROOM_TARGET } from '@/lib/room/transport'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { useChat, useChatLog, useEventSelector, useRoom, useUnread } from '@/lib/room/useRoom'
 import styles from './ChatPanel.module.scss'
@@ -55,8 +56,13 @@ const selectTallies = (snapshot: EventSnapshot) => snapshot.tallies
  *
  * A staged attachment is deliberately *not* a member: it is a pending payload,
  * not a surface, and it has to survive the panel that produced it closing.
+ *
+ * The reaction surface carries *what it is aimed at* rather than being a bare
+ * flag, because there is now more than one answer: a message you picked, or —
+ * when `messageId` is null — the room itself. Holding the target in the surface
+ * is what stops the picker quietly landing on whatever arrived last.
  */
-type Surface = 'reactions' | 'gifs' | null
+type Surface = { kind: 'reactions'; messageId: string | null } | { kind: 'gifs' } | null
 
 export function ChatPanel() {
   const { state } = useRoom()
@@ -84,16 +90,29 @@ export function ChatPanel() {
   /** What a one-tap reaction or the picker lands on: the newest message. */
   const newest = messages[messages.length - 1]
 
+  /** A reaction lands on the message you aimed at, or on the room if none. */
+  const sendReaction = (messageId: string | null, glyph: string) => {
+    if (messageId) react('message', messageId, glyph)
+    else react('room', ROOM_TARGET, glyph)
+  }
+
+  const pickerTitle = (messageId: string | null) => {
+    if (!messageId) return 'React to the room'
+    const entry = messages.find((m) => m.id === messageId)
+    const author = entry && playerById(state, entry.from)
+    return `React to ${author?.name ?? 'this'}`
+  }
+
   const composer = (
     <div className={styles.foot}>
-      {surface === 'reactions' && newest && (
+      {surface?.kind === 'reactions' && (
         <div className={styles.picker}>
           <ReactionToolbar
-            title={`React to ${playerById(state, newest.from)?.name ?? 'this'}`}
+            title={pickerTitle(surface.messageId)}
             reactions={[...REACTIONS]}
             flipped
             onPick={(reaction) => {
-              react('message', newest.id, reaction.glyph)
+              sendReaction(surface.messageId, reaction.glyph)
               setSurface(null)
             }}
           />
@@ -115,18 +134,29 @@ export function ChatPanel() {
         quickReactions={QUICK_REACTIONS.map((r) => ({ id: r.id, glyph: r.glyph, label: r.label }))}
         onQuickReact={(id) => {
           const glyph = QUICK_REACTIONS.find((r) => r.id === id)?.glyph
-          if (newest && glyph) react('message', newest.id, glyph)
+          if (glyph) sendReaction(newest?.id ?? null, glyph)
         }}
-        // Nothing to react to in an empty room, so the affordance is absent
-        // rather than present and inert — a dead control is worse than none.
-        onReact={newest ? () => setSurface((open) => (open === 'reactions' ? null : 'reactions')) : undefined}
-        onAttachGif={() => setSurface((open) => (open === 'gifs' ? null : 'gifs'))}
+        /*
+          Always offered, never inert. It used to be withheld when the log was
+          empty, on the grounds that a dead control is worse than none — but the
+          six quick keys beside it were rendered anyway and silently did
+          nothing, which was worse than either. Both now fall back to the room,
+          which is what DESIGNSYSTEM's "REACT TO THE ROOM" is for.
+        */
+        onReact={() =>
+          setSurface((open) =>
+            open?.kind === 'reactions' ? null : { kind: 'reactions', messageId: newest?.id ?? null },
+          )
+        }
+        onAttachGif={() =>
+          setSurface((open) => (open?.kind === 'gifs' ? null : { kind: 'gifs' }))
+        }
         attachment={attachment}
         onClearAttachment={() => setAttachment(undefined)}
         replyTo={replyTo}
         onClearReply={clearReply}
         panel={
-          surface === 'gifs' ? (
+          surface?.kind === 'gifs' ? (
             <GifPanel
               variant="popover"
               results={gifs.results}
@@ -194,6 +224,7 @@ export function ChatPanel() {
                 // line. Same slot, same list, same component with a flag —
                 // a sibling would have drifted by the second change.
                 announcement={author?.isHost === true}
+                onReact={() => setSurface({ kind: 'reactions', messageId: entry.id })}
                 tallies={
                   own.length > 0
                     ? own.map((tally) => (

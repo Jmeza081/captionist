@@ -107,6 +107,16 @@
 // The floaters' own layer is `position: absolute`, which is right on a card and
 // wrong for the room — it would anchor to the page and scroll away from the
 // reaction that fired it. A fixed dock pins the burst to the viewport instead.
+// Clear of the collapsed rail, bottom-right, under the floaters and above the
+// toasts — DESIGNSYSTEM's ladder puts the reaction picker at 70.
+.pickerDock {
+  position: fixed;
+  right: calc(#{t.$rail-width-collapsed} + #{t.$picker-dock-gap});
+  bottom: t.$picker-dock-bottom;
+  z-index: t.$z-reaction-picker;
+  max-width: calc(100vw - #{t.$rail-width-collapsed} - #{t.$picker-dock-gap} * 2);
+}
+
 .floaterDock {
   position: fixed;
   inset: 0;
