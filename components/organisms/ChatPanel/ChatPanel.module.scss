@@ -1,0 +1,62 @@
+@use 'theme' as t;
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  // The rail's body is the scroll container for the whole room; this fills it
+  // so the composer can sit at the bottom rather than after the last message.
+  height: 100%;
+  min-height: 0;
+}
+
+.log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-14;
+  padding-bottom: t.$space-12;
+}
+
+// Wraps a message and the divider that may sit above it, so the gap between
+// messages stays the list's and not each row's.
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-12;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-20;
+
+  p {
+    margin: 0;
+    @include t.bodyText;
+    font-size: 14px;
+    color: t.$text-caption;
+    text-align: center;
+  }
+}
+
+.foot {
+  position: relative;
+  flex: none;
+  padding-top: t.$space-12;
+  border-top: 1px solid t.$line-hairline;
+}
+
+// Anchored above the composer rather than below the key that opens it: the
+// composer is already at the bottom of the rail, so a downward popover would
+// open off-screen. This is the `flipped` case the toolbar was built for.
+.picker {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  z-index: t.$z-reaction-picker;
+  margin-bottom: t.$space-8;
+}

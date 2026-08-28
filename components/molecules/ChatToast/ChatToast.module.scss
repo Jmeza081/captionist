@@ -1,0 +1,43 @@
+@use 'theme' as t;
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+  max-width: 100%;
+  padding: t.$space-8 t.$space-12 t.$space-8 t.$space-8;
+  border: 1px solid t.$line-hairline-strong;
+  border-radius: t.$radius-field;
+  background-color: t.$surface-snackbar;
+  box-shadow: t.$shadow-snackbar;
+}
+
+.who {
+  flex: none;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.body {
+  min-width: 0;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 400;
+  color: t.$text-chat;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overflow {
+  padding: t.$space-6 t.$space-12;
+  border: 1px solid t.$line-hairline;
+  border-radius: t.$radius-pill;
+  background-color: t.$surface-card;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 600;
+  color: t.$text-caption;
+}
