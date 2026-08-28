@@ -1,0 +1,171 @@
+@use 'theme' as t;
+
+.screen {
+  --reveal-star: #{t.$winner};
+
+  position: relative;
+  text-align: center;
+  // `clip` rather than `hidden`: the glow below is wider than a phone, and
+  // without this it widens the page itself and the whole room scrolls
+  // sideways. `clip` contains it without making this a scroll container.
+  overflow: clip;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -260px;
+    width: 1000px;
+    height: 1000px;
+    max-width: 260%;
+    transform: translateX(-50%);
+    border-radius: t.$radius-avatar;
+    background: radial-gradient(circle, rgba(123, 97, 255, 0.22), rgba(123, 97, 255, 0) 68%);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+.headline {
+  margin: 0;
+  @include t.displayText;
+  animation: pop 0.4s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.payload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-26;
+  width: 100%;
+  text-align: left;
+
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: t.$space-52;
+  }
+}
+
+.winnerCard {
+  width: 100%;
+  max-width: t.$reveal-winner-width;
+  animation: pop 0.5s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.column {
+  width: 100%;
+
+  @include t.mq('md') {
+    width: t.$reveal-column-width;
+    flex: none;
+  }
+}
+
+.attribution {
+  background-color: t.$winner-fill-weak;
+  border: 1px solid rgba(246, 227, 56, 0.28);
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.winnerName {
+  @include t.cardTitleText;
+}
+
+.winnerSub {
+  @include t.labelText;
+  color: t.$text-body;
+}
+
+.winnerPoints {
+  flex: none;
+  @include t.scoreText;
+  color: t.$winner;
+}
+
+// The phone's own result line. The runners-up list is desktop-only, so without
+// this a losing player would leave the reveal knowing nothing about their round.
+.placement {
+  display: flex;
+  justify-content: space-between;
+  padding: t.$space-12 t.$space-14;
+  border-radius: t.$radius-field;
+  background-color: t.$fill-subtle;
+  @include t.labelText;
+  color: t.$text-body;
+
+  @include t.mq('md') {
+    display: none;
+  }
+}
+
+// Two rows of context that a phone has no room for, and that the winner card
+// above already summarises.
+.runners {
+  display: none;
+
+  @include t.mq('md') {
+    display: flex;
+  }
+}
+
+.runner {
+  padding: t.$space-12 t.$space-14;
+  border-radius: t.$radius-field;
+  background-color: t.$fill-subtle;
+}
+
+.runnerRank {
+  width: t.$space-20;
+  flex: none;
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 800;
+  color: t.$text-meta;
+  font-variant-numeric: tabular-nums;
+}
+
+.runnerTitle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  @include t.labelText;
+  color: t.$text-primary;
+}
+
+.runnerAuthor {
+  @include t.labelText;
+  font-size: 13px;
+  color: t.$text-meta;
+}
+
+.runnerPoints {
+  flex: none;
+  font-family: t.$font-sans;
+  font-size: 17px;
+  font-weight: 800;
+  color: t.$text-body;
+}
+
+// Reactions are local-only until the event lane lands, and the row is a
+// desktop affordance in the design — the phone reveal is the card and the CTA.
+.reactions {
+  display: none;
+
+  @include t.mq('md') {
+    display: block;
+  }
+}

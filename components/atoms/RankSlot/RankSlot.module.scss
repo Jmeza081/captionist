@@ -1,0 +1,61 @@
+@use 'theme' as t;
+
+.slot {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-6;
+  // Wide enough to read as a waiting slot rather than a lone ordinal, and tall
+  // enough to be a real touch target.
+  min-width: 84px;
+  min-height: t.$tap-target-min;
+  justify-content: center;
+  padding: t.$space-8 t.$space-14;
+  border: 1px solid transparent;
+  border-radius: t.$radius-pill;
+  font-family: t.$font-sans;
+  cursor: pointer;
+
+  @include t.focusRing;
+}
+
+.empty {
+  background-color: t.$fill-subtle;
+  // Dashed is the affordance: this place is still open.
+  border-color: t.$line-dashed;
+  border-style: dashed;
+  cursor: default;
+}
+
+.filled {
+  background-color: t.$fill-secondary;
+}
+
+.first {
+  background-color: t.$winner-fill-weak;
+}
+
+.ordinal {
+  flex: none;
+  font-size: 13px;
+  font-weight: 800;
+  color: t.$text-caption;
+}
+
+.filled .ordinal {
+  color: t.$text-body;
+}
+
+.first .ordinal {
+  color: t.$winner;
+}
+
+.entry {
+  // A caption can be 60 characters; the slot is a summary, not the entry.
+  max-width: 130px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 600;
+  color: t.$text-primary;
+}

@@ -1,0 +1,47 @@
+@use 'theme' as t;
+
+.headline {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+.body {
+  margin: 0;
+  max-width: 46ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}
+
+// The title and the advance sit on one baseline on desktop, and stack on a
+// phone so the button lands under the sentence that explains it.
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-20;
+
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: t.$space-26;
+  }
+}
+
+.title {
+  min-width: 0;
+}
+
+.advance {
+  flex: none;
+}
+
+.next {
+  @include t.labelText;
+  color: t.$text-label;
+}
+
+.table {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

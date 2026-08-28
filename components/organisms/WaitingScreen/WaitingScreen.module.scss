@@ -1,0 +1,56 @@
+@use 'theme' as t;
+
+.headline {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+.body {
+  margin: 0;
+  max-width: 46ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}
+
+.count {
+  @include t.labelText;
+  color: t.$text-primary;
+}
+
+// Your card first on a phone: it is the confirmation, and the tracker below it
+// is the part you scroll to.
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-26;
+
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: t.$space-44;
+  }
+}
+
+.previewColumn {
+  flex: none;
+
+  @include t.mq('md') {
+    width: t.$compose-preview-width;
+    max-width: 100%;
+  }
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+}
+
+.card {
+  position: relative;
+}
+
+.lockedDock {
+  position: absolute;
+  left: t.$space-14;
+  bottom: t.$space-14;
+}

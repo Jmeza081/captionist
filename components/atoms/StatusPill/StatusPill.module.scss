@@ -1,0 +1,62 @@
+@use 'theme' as t;
+
+.pill {
+  --status-pill-check: #{t.$success};
+
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-6;
+  border-radius: t.$radius-pill;
+  font-family: t.$font-sans;
+}
+
+.media {
+  padding: t.$space-6 t.$space-12;
+  // The pill sits on an arbitrary GIF, so it brings its own ground.
+  background-color: rgba(10, 10, 11, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.surface {
+  padding: t.$space-12 t.$space-20;
+  background-color: t.$fill-secondary;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+.surface .label {
+  font-size: 14px;
+  font-weight: 600;
+  color: t.$text-body;
+}
+
+.divider {
+  width: 1px;
+  height: 16px;
+  background-color: t.$fill-secondary-hover;
+}
+
+.note {
+  font-size: 14px;
+  font-weight: 500;
+  color: t.$text-caption;
+}
+
+// Still happening, rather than done. Pulses so a static screenshot and a live
+// screen do not read the same, and stops for anyone who asked it to.
+.dot {
+  flex: none;
+  width: t.$space-8;
+  height: t.$space-8;
+  border-radius: t.$radius-avatar;
+  background-color: t.$status-waiting;
+  animation: pulse 1.8s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

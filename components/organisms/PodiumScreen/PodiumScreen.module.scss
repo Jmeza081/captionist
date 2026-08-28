@@ -1,0 +1,44 @@
+@use 'theme' as t;
+
+.screen {
+  --podium-star: #{t.$winner};
+
+  position: relative;
+  text-align: center;
+  // `clip` rather than `hidden`: the glow below is wider than a phone, and
+  // without this it widens the page itself and the whole room scrolls
+  // sideways. `clip` contains it without making this a scroll container.
+  overflow: clip;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -340px;
+    width: 1300px;
+    height: 1200px;
+    max-width: 260%;
+    transform: translateX(-50%);
+    border-radius: t.$radius-avatar;
+    background: radial-gradient(circle, rgba(123, 97, 255, 0.24), rgba(123, 97, 255, 0) 64%);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+.headline {
+  margin: 0;
+  @include t.displayText;
+  animation: pop 0.5s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.body {
+  margin: 0;
+  max-width: 46ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}

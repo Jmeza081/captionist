@@ -1,0 +1,125 @@
+@use 'theme' as t;
+
+.headline {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+.subline {
+  @include t.bodyText;
+  font-size: 16px;
+  color: t.$text-label;
+}
+
+.meta {
+  @include t.labelText;
+  color: t.$text-meta;
+}
+
+// The heading, the subject and the rank slots share a band. It stacks on a
+// phone so the slots sit directly above the cards they fill from.
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-20;
+
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: t.$space-26;
+  }
+}
+
+.intro {
+  min-width: 0;
+}
+
+.picks {
+  flex: none;
+}
+
+// The round's shared image, small enough to be a reminder rather than a card.
+.thumb {
+  flex: none;
+  width: t.$avatar-88;
+  height: t.$avatar-88;
+  border-radius: t.$radius-media;
+  object-fit: cover;
+}
+
+// The lock button follows the grid on desktop, but a phone voter scrolls a
+// long way down the cards — so it sticks to the bottom of the viewport there.
+.lockDock {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  // Below `md` the collapsed chat key floats in this corner, and a full-width
+  // button ran under it — the right end of "Lock my ranking" opened chat
+  // instead. The room raises the key past the host toolbox with
+  // `--room-dock-bottom`; nothing was reserving room *beside* it, so the dock
+  // does that itself.
+  padding-right: calc(#{t.$tap-target-min} + #{t.$space-12});
+  // The button sits over a scrolling grid, so it needs real ground under it —
+  // a gradient that only fades would leave caption text legible through it.
+  padding-top: t.$space-34;
+  padding-bottom: t.$space-14;
+  background: linear-gradient(
+    to top,
+    t.$surface-canvas 0%,
+    t.$surface-canvas 62%,
+    rgba(10, 10, 11, 0) 100%
+  );
+
+  @include t.mq('md') {
+    position: static;
+    padding-right: 0;
+    background: none;
+  }
+}
+
+// The reaction affordance and the popover it opens share one anchor, so the
+// panel is positioned against the key rather than against the card — a card in
+// the last grid column would otherwise open its picker off the screen.
+.reactDock {
+  position: relative;
+  display: inline-flex;
+}
+
+// Matches the reaction key beside it — the two are peers in the foot row, and
+// a reply that looked like the rank button would read as a third way to vote.
+.replyKey {
+  @include t.focusRing;
+  // The pill is drawn at the reaction key's size, so it reads as its peer; the
+  // finger gets 44px regardless. The foot row has 10px between controls and
+  // clear space above and below, so the grown area cannot steal a neighbour's
+  // tap — `tapTarget`'s own caveat.
+  @include t.tapTarget;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 t.$space-10;
+  border: 0;
+  border-radius: t.$radius-pill;
+  background-color: t.$fill-subtle;
+  color: t.$text-meta;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    background-color: t.$accent-fill-strong;
+    color: t.$accent-on-fill;
+  }
+}
+
+// Anchored upward. A vote grid scrolls, and a card near the bottom is exactly
+// where a downward popover disappears — the `flipped` case the toolbar has.
+.picker {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  z-index: t.$z-reaction-picker;
+  margin-bottom: t.$space-8;
+}

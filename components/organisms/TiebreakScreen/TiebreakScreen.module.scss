@@ -1,0 +1,104 @@
+@use 'theme' as t;
+
+// The red wash behind sudden death. Decorative, so it is a pseudo-element and
+// never enters the accessibility tree.
+.screen {
+  position: relative;
+  text-align: center;
+  // `clip` rather than `hidden`: the glow below is wider than a phone, and
+  // without this it widens the page itself and the whole room scrolls
+  // sideways. `clip` contains it without making this a scroll container.
+  overflow: clip;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -200px;
+    width: 1000px;
+    height: 800px;
+    max-width: 260%;
+    transform: translateX(-50%);
+    border-radius: t.$radius-avatar;
+    background: radial-gradient(circle, rgba(255, 120, 125, 0.16), rgba(255, 120, 125, 0) 66%);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+.headline {
+  margin: 0;
+  @include t.displayText;
+  animation: pop 0.35s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.body {
+  margin: 0;
+  max-width: 62ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}
+
+// The duel stacks on a phone: two 392px cards side by side is a desktop shape,
+// and shrinking them to fit would make the captions unreadable.
+.duel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-26;
+  width: 100%;
+
+  @include t.mq('md') {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: t.$space-34;
+  }
+}
+
+.lane {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$space-34;
+  min-width: 0;
+}
+
+.contender {
+  width: 100%;
+  max-width: t.$duel-card-width;
+}
+
+.name {
+  @include t.cardTitleText;
+}
+
+// The divider only makes sense once the lanes are side by side.
+.versus {
+  display: none;
+
+  @include t.mq('md') {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: t.$space-6;
+    padding-top: t.$space-52;
+  }
+}
+
+.versusLabel {
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: t.$text-caption;
+}
+
+.versusRule {
+  width: 1px;
+  height: 200px;
+  background-color: t.$line-hairline-strong;
+}
