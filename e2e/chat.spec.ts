@@ -92,7 +92,9 @@ test.describe('the phase 6 gate', () => {
     await expect(host.getByRole('button', { name: 'Close chat' })).toBeVisible()
   })
 
-  test('marks the host’s own line as the room speaking', async ({ context }) => {
+  test('treats the host’s own line as chat, not as the room speaking', async ({
+    context,
+  }) => {
     const host = await context.newPage()
     await host.goto(`/room/${HOSTED}`)
     await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
@@ -101,9 +103,18 @@ test.describe('the phase 6 gate', () => {
     await openChat(host)
     await say(host, '30 seconds left on voting. No lobbying.')
 
-    // The announcement card names who it is from and that they are the host.
-    await expect(host.getByText(/· host$/i)).toBeVisible()
-    await expect(host.getByText('30 seconds left on voting. No lobbying.')).toBeVisible()
+    const line = host.getByRole('article').filter({
+      hasText: '30 seconds left on voting. No lobbying.',
+    })
+    await expect(line).toHaveCount(1)
+
+    // It used to be an accent announcement card signed "HOST · HOST", for every
+    // line the host typed — and that branch drew only the body, so a GIF from
+    // the host was an empty purple box. The host is a player (ADR 0004); an
+    // announcement is a thing you do, and there is no action for it yet.
+    await expect(host.getByText(/· host$/i)).toHaveCount(0)
+    // An `article` is the player row, so the reaction key came back with it.
+    await expect(line.getByRole('button', { name: /message$/ })).toHaveCount(1)
   })
 
   test('drops a second message inside the rate limit', async ({ context }) => {

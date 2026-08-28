@@ -10,7 +10,13 @@ import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
 import { playerById, toAvatarProps } from '@/lib/game/selectors'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
-import { labelFor, QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
+import {
+  isImageGlyph,
+  labelFor,
+  QUICK_REACTIONS,
+  REACTIONS,
+  type Reaction,
+} from '@/lib/reactions'
 import type { EventSnapshot, Tally } from '@/lib/room/events'
 import { tallyKey } from '@/lib/room/events'
 import type { ChatAttachment } from '@/lib/room/transport'
@@ -96,9 +102,17 @@ export function ChatPanel() {
    * rides along, because a room full of 🔥 in the stream and a still screen
    * would be the same disconnect the other way round.
    */
-  const postReaction = (glyph: string) => {
-    say(glyph)
-    react('room', ROOM_TARGET, glyph)
+  const postReaction = (reaction: Reaction) => {
+    // **A picture is an attachment, not a sentence.** An image tile's glyph is
+    // a URL, and `say`'s text lands in the body verbatim — so a Slackmoji
+    // posted as words rendered `/media/slackmoji-lgtm.svg` in 14px type. The
+    // lane already carries pictures; this is one.
+    if (isImageGlyph(reaction.glyph)) {
+      say('', { attachment: { src: reaction.glyph, alt: reaction.label } })
+    } else {
+      say(reaction.glyph)
+    }
+    react('room', ROOM_TARGET, reaction.glyph)
   }
 
   /**
@@ -132,7 +146,7 @@ export function ChatPanel() {
           flipped
           onPick={(reaction) => {
             if (pickingAt) reactToMessage(pickingAt, reaction.glyph)
-            else postReaction(reaction.glyph)
+            else postReaction(reaction)
             setSurface(null)
           }}
           /*
@@ -166,8 +180,8 @@ export function ChatPanel() {
         }}
         quickReactions={QUICK_REACTIONS.map((r) => ({ id: r.id, glyph: r.glyph, label: r.label }))}
         onQuickReact={(id) => {
-          const glyph = QUICK_REACTIONS.find((r) => r.id === id)?.glyph
-          if (glyph) postReaction(glyph)
+          const picked = QUICK_REACTIONS.find((r) => r.id === id)
+          if (picked) postReaction(picked)
         }}
         /*
           Always offered, never inert — and now it always does the same thing,
@@ -252,10 +266,6 @@ export function ChatPanel() {
                 time={clockTime(entry.at)}
                 attachment={entry.attachment}
                 replyTo={entry.replyTo}
-                // The host addressing the room is an announcement, not a chat
-                // line. Same slot, same list, same component with a flag —
-                // a sibling would have drifted by the second change.
-                announcement={author?.isHost === true}
                 onReact={() =>
                   setSurface((open) =>
                     open?.kind === 'reactions' && open.messageId === entry.id

@@ -25,6 +25,31 @@
   align-self: center;
 }
 
+// **Revealed on hover, but only where hovering is a thing.** A log of twenty
+// messages carrying twenty always-lit CTAs is twenty invitations competing with
+// what people actually said. A phone has no hover, so it keeps them: an
+// affordance that appears on a gesture the device cannot make is no affordance
+// at all.
+//
+// `opacity`, never `display` or `visibility` — the key stays in the tab order
+// and `:focus-within` lights it, so it is reachable by keyboard on exactly the
+// message you have arrowed to. And it stays lit while its own picker is open,
+// or moving the pointer to that picker would put the key out.
+@media (hover: hover) and (pointer: fine) {
+  .react {
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .message:hover .react,
+  .message:focus-within .react,
+  .announcement:hover .react,
+  .announcement:focus-within .react,
+  .react[aria-expanded='true'] {
+    opacity: 1;
+  }
+}
+
 .name {
   font-family: t.$font-sans;
   font-size: 13px;
@@ -85,17 +110,23 @@
 
 .attachment {
   margin-top: t.$space-2;
-  width: t.$chat-attachment-width;
-  max-width: 100%;
+  // Shrink-wraps its art rather than reserving the full 180px for a 64px
+  // glyph, and stops at the design's width for anything bigger.
+  width: fit-content;
+  max-width: min(#{t.$chat-attachment-width}, 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: t.$radius-toolbox;
   overflow: hidden;
 
   img {
     display: block;
-    width: 100%;
-    height: t.$chat-attachment-height;
-    object-fit: cover;
+    // Bounded, not forced. A Giphy GIF is larger than the box and scales down
+    // into it; a 64px Slackmoji posted from the composer is not, and the old
+    // fixed 180×120 stretched it into a banner of one emoji.
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: t.$chat-attachment-height;
   }
 }
 

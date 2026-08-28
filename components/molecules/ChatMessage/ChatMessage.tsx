@@ -32,6 +32,14 @@ export interface ChatMessageProps {
   /**
    * A host announcement. Replaces the whole row with an accent card — it is
    * the room speaking, not a player.
+   *
+   * **Nothing sets this in the room today, deliberately.** `ChatPanel` used to
+   * pass `author.isHost`, which made every line the host typed an accent card
+   * signed "HOST · HOST" — and since this branch drew only the body, a GIF from
+   * the host was an empty one. The host is a player ([ADR
+   * 0004](../../../docs/adr/0004-the-host-is-not-a-special-case.md)); their
+   * chat is chat. An announcement is a thing you *do*, and until there is an
+   * action for it this prop is the gallery's and a future feature's.
    */
   announcement?: boolean
 }
@@ -52,6 +60,16 @@ export function ChatMessage({
   onReact,
   announcement = false,
 }: ChatMessageProps) {
+  const react = onReact && (
+    <ReactionCTA
+      className={styles.react}
+      onClick={onReact}
+      // Not the default "Add a reaction": a log of twenty messages would hand a
+      // screen reader twenty controls with one name.
+      aria-label={`React to ${author.name}'s message`}
+    />
+  )
+
   if (announcement) {
     return (
       <div className={styles.announcement}>
@@ -59,8 +77,26 @@ export function ChatMessage({
           <Icon name="send" size={13} />
         </span>
         <div className={styles.announceBody}>
-          <Eyebrow>{author.name} · host</Eyebrow>
-          <p className={styles.announceText}>{body}</p>
+          <div className={styles.meta}>
+            {/* The room's own host is named "Host", and "HOST · HOST" reads as
+                a bug whether or not it is one. */}
+            <Eyebrow>
+              {author.name.toLowerCase() === 'host' ? 'host' : `${author.name} · host`}
+            </Eyebrow>
+            {react}
+          </div>
+          {body && <p className={styles.announceText}>{body}</p>}
+          {/* An announcement can carry a picture and can be reacted to, same as
+              any other line. Drawing only the body is what made a host's GIF an
+              empty purple card. */}
+          {attachment && (
+            <div className={styles.attachment}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- remote
+                  animated GIF; next/image would rasterise it. */}
+              <img src={attachment.src} alt={attachment.alt} />
+            </div>
+          )}
+          {tallies && <div className={styles.tallies}>{tallies}</div>}
         </div>
       </div>
     )
@@ -74,15 +110,7 @@ export function ChatMessage({
         <div className={styles.meta}>
           <span className={styles.name}>{author.name}</span>
           <time className={styles.time}>{time}</time>
-          {onReact && (
-            <ReactionCTA
-              className={styles.react}
-              onClick={onReact}
-              // Not the default "Add a reaction": a log of twenty messages
-              // would hand a screen reader twenty controls with one name.
-              aria-label={`React to ${author.name}'s message`}
-            />
-          )}
+          {react}
         </div>
 
         {body && <p className={styles.body}>{body}</p>}

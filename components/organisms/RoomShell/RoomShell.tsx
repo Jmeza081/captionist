@@ -329,7 +329,15 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
       <div className={styles.toolboxDock}>
         <RoomToolbox
           open={overlay === 'toolbox'}
-          onOpenChange={(open) => setOverlay(open ? 'toolbox' : null)}
+          /*
+            Closing only closes *this*. The toolbox's own click-outside
+            dismissal fires after React has handled the same click, so a tap on
+            its "How this works" key would open the modal and then have this
+            put it straight back down.
+          */
+          onOpenChange={(open) =>
+            setOverlay((cur) => (open ? 'toolbox' : cur === 'toolbox' ? null : cur))
+          }
           quickReactions={[...QUICK_REACTIONS]}
           reactions={[...REACTIONS]}
           onReact={reactToRoom}

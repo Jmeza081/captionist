@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/atoms/Button'
 import { Icon } from '@/components/atoms/Icon'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
@@ -80,6 +80,44 @@ export function RoomToolbox({
    * exactly one.
    */
   const [picking, setPicking] = useState(false)
+  const panel = useRef<HTMLElement>(null)
+
+  /*
+    Closes on Escape, or a click anywhere outside it — the same contract the
+    picker inside it has, because a floating panel that can only be dismissed by
+    its own close key is the same trap twice.
+
+    The inner picker gets first refusal: while it is open, a click outside *it*
+    but inside this closes only the picker, so one click does not collapse the
+    whole bar. `click` rather than `pointerdown` so the FAB can still toggle,
+    and registered from an effect, which runs after the click that opened this
+    has finished dispatching.
+  */
+  useEffect(() => {
+    if (!open) return
+
+    const dismiss = () => {
+      setPicking(false)
+      onOpenChange(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (picking) setPicking(false)
+      else dismiss()
+    }
+    const onClick = (event: MouseEvent) => {
+      const el = panel.current
+      if (!el || !(event.target instanceof Node) || el.contains(event.target)) return
+      dismiss()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('click', onClick)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('click', onClick)
+    }
+  }, [open, picking, onOpenChange])
 
   const railOffset = typeof railWidth === 'number' ? `${railWidth}px` : railWidth
   const label = host ? 'Host toolbox' : 'Guest toolbox'
@@ -113,6 +151,7 @@ export function RoomToolbox({
 
   return (
     <section
+      ref={panel}
       className={styles.toolbox}
       style={{ right: `calc(${railOffset} + var(--space-20))` }}
       aria-label={label}

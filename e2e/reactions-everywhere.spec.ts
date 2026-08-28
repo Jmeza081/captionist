@@ -111,6 +111,35 @@ test.describe('dismissing the picker', () => {
     await expect(picker).toBeHidden()
   })
 
+  test('the toolbox itself closes on a click outside it', async ({ page }) => {
+    await enterRoom(page)
+    const panel = await openToolbox(page)
+
+    // Same trap the picker had: a floating bar whose only exit is its own close
+    // key. Clicking the room puts it away.
+    await page.getByRole('heading', { name: 'Rank your top three.' }).click()
+    await expect(panel).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Guest toolbox' })).toBeVisible()
+  })
+
+  test('Escape closes the picker first, and the toolbox second', async ({ page }) => {
+    await enterRoom(page)
+    const panel = await openToolbox(page)
+
+    await panel.getByRole('button', { name: 'Add a reaction' }).click()
+    const picker = panel.getByRole('dialog', { name: 'React to the room' })
+    await expect(picker).toBeVisible()
+
+    // One Escape should not collapse the whole bar out from under a picker you
+    // opened inside it.
+    await page.keyboard.press('Escape')
+    await expect(picker).toBeHidden()
+    await expect(panel).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(panel).toBeHidden()
+  })
+
   test('closes on Escape', async ({ page }) => {
     await enterRoom(page)
     const panel = await openToolbox(page)
@@ -148,6 +177,23 @@ test.describe('reacting in chat', () => {
     // It used to fire a room reaction and leave nothing behind, which read as a
     // chat control quietly doing something else.
     await expect(page.getByRole('article').filter({ hasText: '🔥' })).toHaveCount(1)
+  })
+
+  test('a picture reaction posts as a picture, not as its path', async ({ page }) => {
+    await enterRoom(page)
+    await openChat(page)
+
+    const rail = openRail(page)
+    await rail.getByRole('button', { name: 'Add a reaction' }).click()
+    const picker = page.getByRole('dialog', { name: 'Send an emoji' })
+    await picker.getByRole('button', { name: 'LGTM', exact: true }).click()
+
+    // An image tile's glyph is a URL, and `say`'s text lands in the body
+    // verbatim — so this used to render `/media/slackmoji-lgtm.svg` as 14px
+    // type. It is an attachment now.
+    const log = page.getByRole('log', { name: 'Room chat' })
+    await expect(log.getByRole('img', { name: 'LGTM' })).toBeVisible()
+    await expect(page.getByText('/media/slackmoji-')).toHaveCount(0)
   })
 
   test('lands on the message you aimed at, not the newest', async ({ page }) => {

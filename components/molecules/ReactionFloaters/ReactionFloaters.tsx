@@ -26,6 +26,29 @@ const MIN = 4
 const MAX = 7
 
 /**
+ * How large a floater can be, in px.
+ *
+ * A wide spread on purpose. The range used to be 20–36, which is a 1.8×
+ * difference spread over four to seven glyphs — near enough that a burst read
+ * as one size with jitter rather than as a crowd. Meet and Zoom both throw a
+ * genuine mix, and the depth is most of what makes it feel like a room
+ * reacting instead of a row of icons.
+ */
+const SIZE_MIN = 16
+const SIZE_MAX = 58
+
+/**
+ * Biases the spread small, so the big ones land rarely enough to read as
+ * accents. A flat random across 42px makes every burst look the same shape;
+ * squaring the roll means most floaters sit in the lower half and roughly one
+ * in six clears 40px.
+ */
+function rollSize(): number {
+  const t = Math.random() ** 2
+  return Math.round(SIZE_MIN + t * (SIZE_MAX - SIZE_MIN))
+}
+
+/**
  * The emoji burst that rises when somebody reacts.
  *
  * Purely decorative: `aria-hidden` and `pointer-events: none`, so it never
@@ -81,7 +104,7 @@ export function ReactionFloaters({ burst }: ReactionFloatersProps) {
         dx: Math.round((Math.random() - 0.5) * 160),
         duration: 1.9 + Math.random() * 1.3,
         offset: Math.random(),
-        size: 20 + Math.round(Math.random() * 16),
+        size: rollSize(),
       }
     })
 
