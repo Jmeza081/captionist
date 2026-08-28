@@ -27,7 +27,14 @@ export interface WallTile {
   alt: string
 }
 
-/** Twenty is the design's five columns by four rows. */
+/**
+ * Twenty is the design's five columns by four rows — and on a phone the same
+ * twenty turned on its side, four by five.
+ *
+ * It is a hard count, not a floor: `HeroWall`'s grid declares exactly that
+ * many tracks, so twenty tiles fill it precisely at every viewport. Change it
+ * here and the track counts in `theme/_metrics.scss` have to change with it.
+ */
 const WALL_SIZE = 20
 
 function fromSamples(count: number): WallTile[] {

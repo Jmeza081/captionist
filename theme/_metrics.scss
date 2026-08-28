@@ -258,10 +258,18 @@ $landing-pad-h: 56px;
 $landing-hero-pad-b: 60px;
 $landing-pill-gap: 30px;
 $landing-lead-width: 640px;
-// The wall: five 300px columns, tilted, overhanging the viewport on every side
-// so no tile edge is ever visible.
-$wall-tile: 300px;
-$wall-tile-height: 290px;
+// The wall: a fixed count of columns and rows, tilted, overhanging the viewport
+// on every side so no tile edge is ever visible.
+//
+// Counts rather than a tile size, because the tile count is fixed (twenty
+// pieces of media is the perf budget) and the grid has to be exactly full at
+// every viewport. Sizing the tile instead makes the column count depend on the
+// window, and any width where it doesn't divide twenty leaves holes. Five by
+// four is the design's own desktop wall; the phone turns it on its side.
+$wall-columns: 4;
+$wall-rows: 5;
+$wall-columns-md: 5;
+$wall-rows-md: 4;
 $wall-gap: 26px;
 $wall-tilt: -8deg;
 $wall-overhang: 12vw;

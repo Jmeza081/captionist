@@ -75,6 +75,27 @@ content column is what scrolls, so the docked rail is the height of the viewport
 and its composer no longer hangs below the fold until the header is scrolled
 away. Below `md` nothing changed — the rail is a sheet and the page scrolls.
 
+**Since then a player picks a face out of sixty-four rather than seven.**
+`AVATAR_SEEDS` grew from seven seeds to sixty-four — eight pages of exactly
+eight — and the style went with it: seven flat `funEmoji` faces do not stay
+tellable apart sixty-four times, so `lib/avatar.ts` draws DiceBear's
+combinatorial `critters` instead. That forced a major version (`critters` exists
+only in DiceBear 10, and `@dicebear/collection` has no 10), which is the one
+consequence [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) had
+called a one-constant edit; the amendment records what it actually cost, in
+bytes that were measured. Nothing about the decision moved: the seed still
+travels and the art is still derived in each browser. `AvatarPicker` shows a
+window of eight with its own `Shuffle faces` button — a real `radiogroup` with
+arrow keys, faces named `Ember` and `Sunfish` rather than `Face 1` — and the
+opening window is `avatarPage(seed)`, a pure function, so the server and the
+browser draw the same eight and hydration has nothing to disagree about.
+
+**The hero wall stopped leaving holes in itself.** Its grid sized tiles —
+`auto-fill` over a 300px minimum — which made the column count a function of the
+window, and at every width where that count did not divide twenty the last row
+came up short. It counts tracks now: `$wall-columns` × `$wall-rows`, 4×5 on a
+phone and 5×4 from `md` up, so twenty tiles fill twenty cells at any viewport.
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -123,7 +144,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Realtime | `AblyTransport` over Ably v2 · `BroadcastTransport` over `BroadcastChannel` | All three `RoomTransport` implementations now exist and **no method changed at the swap** — [ADR 0009](./adr/0009-the-room-crosses-the-network.md). Ably is what a real room takes; the tab transport is what the suite runs on. Who hosts is presence on Ably and a claim probe on the tab bus — [ADR 0007](./adr/0007-the-first-tab-to-ask-owns-the-room.md). Both lanes — intents and events — stamp `from` from the identity the transport authenticated, never from the payload |
 | Realtime auth | `/api/ably/seat` + `/api/ably/token`, `lib/ably/` | `ABLY_API_KEY` is server-only. Two routes because an `authUrl` must answer with the bare `TokenRequest`: the seat (signed, and where the stub answer lives) comes from one, the token from the other. `createTokenRequest` signs locally, so neither route makes a call of its own; the capability is the glob `captionist:<code>:*` |
 | Identity | `localStorage` person + `sessionStorage` seat, **server-signed** | `lib/room/identity.ts`. The nickname and face are per browser; the player id is per tab, because two tabs are two players. The seat now rides with an HMAC from `lib/ably/seat.ts`, because Ably's `clientId` guarantee is worthless if a tab can ask for a token bearing someone else's id |
-| Avatars | `@dicebear/*`, the `funEmoji` collection | `lib/avatar.ts` turns a seed into a data URI *at the edge*. Only the seed ever travels in state |
+| Avatars | `@dicebear/core@10` + `@dicebear/styles`, the `critters` style | `lib/avatar.ts` turns a seed into a data URI *at the edge*, and only the seed ever travels in state. **Sixty-four seeds, eight pages of eight**, with `avatarPage(seed)` deriving which page a stored face sits on so the picker's opening window is the same on the server and in the browser. `@dicebear/collection@9` is gone — `critters` exists only in DiceBear 10 and there is no 10 of that package — which made this a major bump rather than a one-constant edit: a style is a JSON definition now, so `createAvatar(funEmoji, …)` is `new Avatar(new Style(definition), …)`, and 10 validates colours as hex, so a transparent background is `'00000000'` rather than `'transparent'`. CC0 1.0, so nothing about where a face appears is constrained by attribution. [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) |
 | GIF search | Giphy, proxied by `/api/gifs` | `GIPHY_API_KEY` is server-only; `lib/gifs/` holds the fetcher, the offline shelf and the shared types |
 | GIF renditions | `fixed_width` MP4 · WebP · GIF, plus `fixed_width_still` | `GifResult` carries all four. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
@@ -262,7 +283,10 @@ function, `searchGiphy()`, and the key stops at the server in both.
 
 **`/` is the landing page from artboard 1a**, and it composes three things:
 `LandingNav`, the hero copy, and `LandingActions`. It holds no markup of its
-own beyond the headline, the lead and the avatar proof row. **Its two doors now
+own beyond the headline, the lead and the avatar proof row — whose five faces
+now carry the catalogue's first five seeds on the first five seat colours, so
+the row is literally "here are five of the faces you can pick" rather than five
+initials in circles. **Its two doors now
 go to two different places.** "Start a game" is a link to `/host` — a
 navigation, so it previews on hover and works before hydration — because that
 is where the room's rules are chosen and where `generateCode` now lives. The
@@ -390,13 +414,14 @@ graph LR
   R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown</i>"]
   G["lib/game/<br/><i>pure — types · reducer · authorize<br/>selectors · project · rng</i>"]
   F["lib/gifs/<br/><i>types · samples · giphy · wall · useGifSearch<br/>allow — isAllowedImageSrc</i>"]
-  AV["lib/avatar.ts<br/><i>seed → data URI, cached</i>"]
+  AV["lib/avatar.ts<br/><i>seed → data URI, cached · DiceBear 10 critters<br/>64 seeds · avatarPage · seedLabel</i>"]
   RX["lib/reactions.ts<br/><i>616 — 32 curated, then 584 imported<br/>packs · glyph ↔ id · matchesQuery</i>"]
   CAT["lib/reactions.catalog.ts<br/><i>GENERATED by scripts/import-noto-emoji.mjs<br/>run by hand, never at build</i>"]
   NO["lib/noto.ts<br/><i>a still glyph → its animated URL</i>"]
   GST["fonts.gstatic.com<br/><i>Noto Animated Emoji · CC BY 4.0</i>"]
   RC["lib/recent-reactions.ts<br/><i>localStorage · ids only</i>"]
   AT["components/atoms/Avatar"]
+  PK["components/molecules/AvatarPicker"]
   GL["components/atoms/ReactionGlyph"]
   API["app/api/gifs"]
   TKR["app/api/ably/seat<br/>app/api/ably/token"]
@@ -407,6 +432,7 @@ graph LR
   U -->|"useGifSearch() in the browser<br/>wallTiles() on the server"| F
   U -->|"selectors · constants"| G
   AT -->|"avatarUri(seed)"| AV
+  PK -->|"AVATAR_SEEDS · AVATAR_WINDOW<br/>avatarPage · seedLabel · previewColor"| AV
   R -->|"reduce · authorize · project"| G
   R -->|"isAllowedImageSrc — every URL<br/>a sender puts on the lane"| F
   G -->|"re-exports REVEAL_REACTIONS"| RX
@@ -519,14 +545,41 @@ addition and the fourth caller's supplier: `isAllowedImageSrc` is what
 rather than beside the store for the same reason `GifResult` does — it is a
 fact about where this app's pictures come from, not about how a room talks.
 
-`lib/avatar.ts` is the third lib, and it is one function. **The art is derived
-at the edge and never stored**: `avatarUri(seed)` renders a DiceBear `funEmoji`
-face into a data URI, memoised per seed so a twenty-player scoreboard does not
-rebuild every face on every broadcast. `GameState` still carries only
-`avatarSeed`, which is invariant 1 at the top of `lib/game/types.ts` — twenty
-inlined avatars would exhaust Ably's 64KB cap on their own. It is rendered as an
-`<img src>`, not `dangerouslySetInnerHTML`: the seed arrives *from other
-players*, and an `<img>` is a passive context where an SVG cannot run script.
+`lib/avatar.ts` is the third lib. **The art is derived at the edge and never
+stored**: `avatarUri(seed)` renders a DiceBear `critters` face into a data URI,
+memoised per seed so a twenty-player scoreboard does not rebuild every face on
+every broadcast. `GameState` still carries only `avatarSeed`, which is invariant
+1 at the top of `lib/game/types.ts` — twenty inlined avatars would exhaust
+Ably's 64KB cap on their own. It is rendered as an `<img src>`, not
+`dangerouslySetInnerHTML`: the seed arrives *from other players*, and an
+`<img>` is a passive context where an SVG cannot run script.
+
+**The style changed because the catalogue did.** `AVATAR_SEEDS` grew from seven
+to sixty-four, and seven flat emoji faces do not stay tellable apart sixty-four
+times — `critters` is combinatorial (bodies, eyes, mouths, hats, patterns and a
+palette apiece for body and accent), which is what makes a catalogue that size
+readable at 26px, the smallest size the app draws one. The original seven keep
+indices 0–6, so a seed already sitting in somebody's `localStorage` still
+resolves and still lands on page 0. Two option values are load-bearing rather
+than cosmetic: `backgroundColor: ['00000000']`, because 10 validates colours as
+hex and critters paints an opaque background by default, so getting it wrong
+covers every player's seat colour; and `animationVariant: 'none'`, pinned even
+though the moving variants carry `weight: 0` upstream today, because that is a
+value in a third party's JSON and motion inside an `<img>` is motion nobody can
+stop. `lib/avatar.test.ts` asserts both. The version 10 validators do reach the
+browser — 34KB gzipped — which is measured rather than assumed, and is the
+number that would decide a move to committed SVGs; the amendment to
+[ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) carries it.
+
+Three exports beside `avatarUri` exist for the picker, and `avatarPage` is the
+one that earns its place. It is **pure**: given a seed it returns the eight-face
+page that seed sits on, so `AvatarPicker`'s opening window is derived from the
+stored value on the server and in the browser alike and hydration has nothing to
+disagree about. Drawing that first window at random — the obvious way to build a
+shuffling picker — would be a mismatch on every load. `AVATAR_WINDOW` is the 8,
+and sixty-four is eight of it exactly, so no page is ragged. `seedLabel` is how
+a face gets announced: `sunfish` is "Sunfish", which is what replaced "Face 3"
+as the picker's accessible name.
 `lib/ably/` is the fourth, and the only one that never reaches the browser at
 all: `token.ts` takes the key as an argument rather than reading it, the way
 `searchGiphy(query, apiKey)` does, and `seat.ts` imports `node:crypto`, which
@@ -584,7 +637,12 @@ each keeping an effect that sets state from a media query.
 `avatarSeed`, then the initial — and `avatarSeed` was added to the
 `Pick<AvatarProps, …>` every player-rendering molecule takes, so
 `<PlayerRow player={player} />` still typechecks with no adapter. That is
-invariant 2, and it is why the widening was one line in each molecule.
+invariant 2, and it is why the widening was one line in each molecule. It grew
+one prop with the picker: `decorative` drops the circle out of the
+accessibility tree — `aria-hidden` instead of `role="img"` with a label —
+for the case where a parent already names the player. The picker's face buttons
+are that case, since a labelled `role="img"` inside a labelled `role="radio"`
+announces the same creature twice.
 
 **Who you are is split across two storages**, in `lib/room/identity.ts`. The
 *person* — nickname and face — is `localStorage`, shared by every tab, so
@@ -1109,11 +1167,12 @@ graph BT
     Feedback["Snackbar · ReactionCTA"]
     Glyph["ReactionGlyph<br/><i>'use client' · a character, or the still —<br/>which upgrades to the animation</i>"]
   end
-  subgraph molecules["molecules/ — compose atoms"]
+  subgraph molecules["molecules/ — compose atoms, and occasionally another molecule"]
     Room["JoinPanel · PlayerRow · PromptBanner"]
     Media["MediaCard"]
     Chat["ChatMessage · UnreadDivider<br/>ChatRail · ChatToast"]
     Overlay["HelpModal · RoundOpener · RoomToolbox<br/>Dropzone · ReactionToolbar · GifPanel<br/>ReconnectOverlay"]
+    Dialog["Modal<br/><i>the stepped dialog — chrome and paging only</i>"]
     Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
     Lobby["CodeEntry · RoomShare · Podium"]
     Entry["AvatarPicker · ModeCard"]
@@ -1148,8 +1207,9 @@ graph BT
   Actions --> Home
   Layout -->|"Stack"| Home
   Ident -->|"Avatar"| Home
-  Ident -->|"Avatar"| Entry
+  Ident -->|"Avatar — decorative, the button names the face"| Entry
   Status -->|"Tag"| Entry
+  Controls -->|"Button — AvatarPicker's own<br/>'Shuffle faces', in its header"| Entry
   Controls -->|"Button · TextField · Stepper<br/>Toggle · SegmentedControl"| EntryScreens
   Entry -->|"AvatarPicker · ModeCard"| EntryScreens
   Lobby -->|"CodeEntry"| EntryScreens
@@ -1169,6 +1229,9 @@ graph BT
 
   Chat -->|"ChatMessage · UnreadDivider"| Panel
   Compose -->|"Composer"| Panel
+  Controls -->|"Button"| Dialog
+  Icon --> Dialog
+  Dialog -->|"HelpModal supplies steps and a mode switcher —<br/>a molecule inside a molecule, neither reaching a room"| Overlay
   Overlay -->|"ReactionToolbar — the picker is a popover<br/>GifPanel — the attach surface, same union"| Panel
   Status -->|"TallyPill"| Panel
   Glyph -->|"a tally's face"| Panel
@@ -1260,7 +1323,16 @@ nothing else, so a shared component would have each carrying props the other
 never sets; that is the one case where the *variant is a prop* rule does not
 apply. `HeroWall` is `'use client'` only for the reduced-motion query and the
 pause control — its markup still server-renders, which is what puts the whole
-wall in the first HTML. `QuickJoin` is the landing page's own code field, and
+wall in the first HTML. **Its grid counts tracks rather than sizing tiles.** It
+was `auto-fill` over a 300px minimum, which made the column count a function of
+the window: at every width where the derived count did not divide twenty, the
+last row came up short and the wall had a visible hole in it. It is
+`repeat($wall-columns, minmax(0, 1fr))` by `$wall-rows` now — 4×5 on a phone,
+5×4 from `md` up, the design's own landscape wall turned on its side for the
+narrow case — so twenty tiles land in exactly twenty cells at every viewport.
+`minmax(0, 1fr)` rather than a bare `1fr` because a bare one floors at the
+content's minimum size and a track full of media would refuse to shrink to it.
+`QuickJoin` is the landing page's own code field, and
 the same call as `LandingNav`: `CodeEntry` is the whole screen for someone who
 arrived to join, and shrinking it into a pill beside a headline would be two
 layouts in one component rather than one prop. It borrows `CodeEntry`'s single
@@ -1275,9 +1347,25 @@ Phase 4's two molecules are shared surfaces rather than screen internals, which
 is the only reason they are molecules: `AvatarPicker` and `ModeCard` each appear
 on both `/join` and `/host`, so leaving the markup inside either screen would
 have been two copies to keep in step. `AvatarPicker` is also the first molecule
-to import from `lib/room/` — `AVATAR_SEEDS` and `previewColor` only, constants
-rather than state, so the seed-to-preview-colour mapping exists once and the
-two screens cannot drift. Everything else that grew was a prop, per rule 2:
+to import from `lib/` — `AVATAR_SEEDS`, `AVATAR_WINDOW`, `avatarPage`,
+`seedLabel` and `previewColor` from `lib/avatar.ts`, a list and four pure
+functions rather than room state, so the seed-to-preview-colour mapping exists
+once and the two screens cannot drift. The catalogue lives there rather than in
+`lib/room/` precisely so this molecule can read it without a molecule depending
+on room authority.
+
+**Sixty-four faces made it the one molecule that owns a control.** It draws a
+window of eight with a `Shuffle faces` ghost `Button` in its own header, which
+is why `Controls → Entry` is a new edge above; the same button used to sit in
+`HostSetupScreen`'s nickname `trailing` slot, shuffling a picker it was not part
+of, and `hostSetupCopy().shuffle` went with it. It is a real `role="radiogroup"`
+now — `aria-labelledby` pointing at the visible label, so the `fieldset`/`legend`
+that used to carry it is gone — with roving tabindex and arrow/Home/End keys,
+which ship together because a group with one tab stop and no arrow keys is a
+trap. Two invariants hold the shuffle honest: your own face is never shuffled
+out from under you, and it is reinserted at the *position* it already held,
+because `previewColor` is indexed by position and moving it would change the
+colour under your pick. Everything else that grew was a prop, per rule 2:
 `TextField` gained `error`, `StatusPill` gained `waiting` (a pulsing amber dot),
 and `PlayerRow` gained a `pill` variant and a `you` flag for the guest lobby's
 wrapping name pills.
@@ -1480,7 +1568,12 @@ gap silently falls back to `0` and no other test would fail.
 that road: fixed sizes the design names once and only a stylesheet ever needs —
 `$duel-card-width`, `$reveal-winner-width` and `$reveal-column-width` are phase
 3's three, `$join-column-width` and `$setup-column-width` are phase 4's two,
-`$reconnect-card-width` is phase 5's one, and phase 7 added six: the quote
+`$reconnect-card-width` is phase 5's one, the hero wall's
+`$wall-columns` · `$wall-rows` · `$wall-columns-md` · `$wall-rows-md` are four
+that replaced the `$wall-tile`/`$wall-tile-height` pair — a *count* rather than
+a size, which is the whole reason the wall is always full, and they are coupled
+to `WALL_SIZE` in `lib/gifs/wall.ts` in the one direction a stylesheet cannot
+enforce, so both files say so. Phase 7 added six: the quote
 block's `$chat-quote-radius` · `$chat-quote-rule` · `$chat-quote-thumb` ·
 `$chat-quote-thumb-radius`, and the picker tab's `$reaction-tab-pad-y` ·
 `$reaction-tab-pad-x`. The tab padding is 6px and 11px, which is off the
@@ -1772,7 +1865,9 @@ Phase 4 removed two rows from this table rather than editing them. **Joining a
 room** is built — the routes are in the [route map](#routes), the election that
 decides who hosts is in [who hosts](#who-hosts), and the lobby's guest face is
 `lobbyCopy(state, viewerId)`. **Player avatars** are built — `lib/avatar.ts`,
-described under [room state](#room-state). Neither is a promise any more.
+described under [room state](#room-state), and now a sixty-four-face catalogue
+behind a shuffling picker rather than the seven that closed this row. Neither is
+a promise any more.
 
 Phase 5 removed the third. **Realtime transport is built**: `AblyTransport`,
 `/api/ably/token`, presence UI and the reconnect overlay all exist, and the
@@ -1872,11 +1967,24 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-190 unit tests (`lib/**/*.test.ts`, node) and 302 Playwright tests across the
-two viewports — 151 per project, over 22 spec files. 296 of the 302 run; the
-other 6 are viewport-gated (`test.skip` where a docked rail exists only above
+202 unit tests (`lib/**/*.test.ts`, node) and 334 Playwright tests across the
+two viewports — 167 per project, over 23 spec files. 324 of the 334 run; the
+other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.
+
+**The avatar change's share is 12 unit tests and five specs.**
+`lib/avatar.test.ts` is the 12, and it is aimed at the two things a style swap
+can break silently: that the background stays transparent and that no animation
+comes back, both of which are values in a third party's JSON rather than in this
+repo — the exact failure ADR 0008 warned about and now guards. It also holds the
+catalogue to being sixty-four *distinct drawings* rather than sixty-four names
+for a handful, and pins the original seven to indices 0–6, which is what stops a
+stored seed falling out of the picker's opening page. `e2e/join.spec.ts` gained
+the shuffle and the arrow-key walk — the two behaviours that only exist in a
+real browser — and `e2e/landing.spec.ts` gained one for the seeded proof row and
+one that resizes the window and asserts the wall's grid is still exactly full,
+which is the regression the `auto-fill` layout would have reintroduced quietly.
 
 Phase 6's share is `lib/room/events.test.ts`, now 29 tests over the
 receive-side guards, which is where a rate limit measured on the local clock can

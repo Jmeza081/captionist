@@ -25,7 +25,6 @@ import {
 } from '@/lib/game/constants'
 import { hostSetupCopy, modeChoices, showsCaptionFormat } from '@/lib/game/selectors'
 import type { GameMode, RoomSettings } from '@/lib/game/types'
-import { AVATAR_SEEDS } from '@/lib/avatar'
 import { writeIdentity } from '@/lib/room/identity'
 import { writePendingSettings } from '@/lib/room/pendingSettings'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
@@ -85,19 +84,6 @@ export function HostSetupScreen() {
               maxLength={20}
               placeholder="What should we call you?"
               onChange={(e) => setTypedName(e.target.value)}
-              trailing={
-                <Button
-                  variant="ghost"
-                  size="inline"
-                  onClick={() =>
-                    setPickedSeed(
-                      AVATAR_SEEDS[Math.floor(Math.random() * AVATAR_SEEDS.length)] ?? seed,
-                    )
-                  }
-                >
-                  {copy.shuffle}
-                </Button>
-              }
             />
           </Stack>
 

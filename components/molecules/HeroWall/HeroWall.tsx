@@ -57,7 +57,7 @@ export function HeroWall({ tiles, label = 'a wall of looping reaction GIFs' }: H
   return (
     <>
       <div className={styles.wall} aria-hidden="true">
-        <div className={styles.grid}>
+        <div className={styles.grid} data-testid="hero-wall">
           {tiles.map((tile, i) => (
             <div key={tile.id} className={styles.tile}>
               {tile.mp4 ? (

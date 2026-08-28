@@ -254,7 +254,7 @@ primitives.
 | `TallyPill` | atom | One reaction's running count. Carries its own scrim over media |
 | `PresencePill` | atom | "7 here" — live room presence |
 | `RoundProgress` | atom | How far through the game the room is, as pips |
-| `Avatar` / `AvatarOverflow` | atom | A player, at one of eight sizes. Falls back to an initial when art is absent |
+| `Avatar` / `AvatarOverflow` | atom | A player, at one of eight sizes. Art from a seed, a resolved `src`, or the initial when there is neither. `decorative` drops it out of the accessibility tree, for when a parent already names the player |
 | `TextField` | atom | Every text input — `caption` (62px), `search` (52), `composer` (46), `popover` (34) |
 | `Toggle` | atom | A room setting, on or off. Controlled |
 | `Stepper` | atom | A bounded numeric setting — timer, round count |
@@ -292,7 +292,7 @@ primitives.
 | `LandingNav` | molecule | The public front door's bar. Not `AppHeader` — that one is live room state, this is static links and a way in |
 | `HeroWall` | molecule | The landing page's tilted wall of looping GIFs. Video over GIF, still-first, and stoppable |
 | `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
-| `AvatarPicker` | molecule | Choosing a face on `/join` and `/host`. Owns the seed-to-preview-colour mapping so two screens cannot drift |
+| `AvatarPicker` | molecule | Choosing a face on `/join` and `/host`. Offers a window of eight from the sixty-four-seed catalogue with a "Shuffle faces" that re-rolls the offer and keeps your pick. A real radiogroup with roving tabindex and arrow keys. Owns the seed-to-preview-colour mapping so two screens cannot drift |
 | `ModeCard` | molecule | One of the two game modes, as a card with the sentence that explains it — a format, not a setting |
 | `ReconnectOverlay` | molecule | The room is still there; you are not attached to it. Red rather than purple, over the blurred room rather than instead of it. **Not in this gallery** — it is `position: fixed` with no dismiss, so it would cover the page; `e2e/reconnect.spec.ts` covers it against a real room |
 
@@ -383,6 +383,7 @@ the next person reads this rather than "fixing" them back.
 | Waiting: *"You can still edit until the clock hits zero…"*, with an "Edit my caption" / "Swap my GIF" button | *"It goes up anonymously when the clock hits zero, and the roasting begins."*, with no edit | Phase is room-wide and authoritative, so a guest cannot rewind the room to `compose`. An inline editor here would be a second composer to hold in step with the real one. The copy had to stop promising the button. |
 | Submission tracker: `submitted` / `typing…` / `still thinking` | `submitted` / `still thinking` | `typing…` needs live keystroke presence, which is the phase-6 event lane. Two honest states beat three with one of them guessed. |
 
+| Six faces on `/join` (seven on `/host`) in one fixed row, no shuffle — and "Shuffle" as trailing text inside the host's nickname field | A window of **eight** drawn from a **sixty-four**-seed catalogue, with a **"Shuffle faces"** button in the picker's own header, on both screens | Seven faces is a set a room of up to twenty exhausts immediately, and two people wearing the same one is the game's own joke turned against it. A catalogue only works if you can re-roll what is on offer, so the control belongs beside the faces it re-rolls. It is not in the nickname field because the design's placement there reads as a *nickname* generator — which is a thing we have never built, and now visibly have not. Eight keeps the design's single row above `md` and its existing wrap below it (six-and-two at 390px; seven already wrapped). Window position 7 repeats position 0's preview colour, because the palette is seven — and the colour was always a preview, not a promise. |
 | Reconnect: `Reconnecting… attempt 3` | `Reconnecting…` | The transport retries internally and reports no count. A number here would be one the screen invented from a timer — the same reason the reveal's `auto-advancing in 6s` was dropped. |
 | Reconnect: the 60-second countdown, always | Only when a seat is genuinely held | A seat is held by the *host*. When the host is what vanished there is no grace window, so the bar and the countdown are absent and the body says "Nothing is lost" instead of promising a deadline nobody is keeping. |
 

@@ -18,8 +18,20 @@ import styles from './page.module.scss'
 
 const REPO = 'https://github.com/Jmeza081/captionist'
 
-/** The design's overlapping avatar stack. Real seat colours, no artwork yet. */
-const FACES = ['Vic', 'Jesska', 'Melania', 'Lukasz', 'Jack']
+/**
+ * The design's overlapping avatar stack.
+ *
+ * The first five faces of the picker's catalogue, on the first five seat
+ * colours — so the proof row is literally "here are five of the faces you can
+ * pick", rather than five arbitrary ones.
+ */
+const FACES = [
+  { name: 'Vic', seed: 'ember' },
+  { name: 'Jesska', seed: 'sunfish' },
+  { name: 'Melania', seed: 'orbit' },
+  { name: 'Lukasz', seed: 'lagoon' },
+  { name: 'Jack', seed: 'moss' },
+] as const
 
 export default async function HomePage() {
   const tiles = await wallTiles()
@@ -50,10 +62,11 @@ export default async function HomePage() {
 
           <div className={styles.proof}>
             <span className={styles.faces}>
-              {FACES.map((name, i) => (
-                <span key={name} className={styles.face}>
+              {FACES.map((face, i) => (
+                <span key={face.name} className={styles.face}>
                   <Avatar
-                    name={name}
+                    name={face.name}
+                    avatarSeed={face.seed}
                     color={PLAYER_COLORS[i % PLAYER_COLORS.length] ?? '#FF787D'}
                     size={34}
                   />

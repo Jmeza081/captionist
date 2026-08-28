@@ -122,6 +122,35 @@ test.describe('the landing page', () => {
     expect(html.split('/media/stub-').length - 1).toBeGreaterThanOrEqual(20)
   })
 
+  test('fills every cell of the wall, at any window the grid is asked for', async ({
+    page,
+  }) => {
+    // The wall's tile count is fixed at twenty, so the grid has to declare
+    // exactly twenty cells at every viewport or the leftover ones show as
+    // holes in the page's background. It used to size the tile and let the
+    // column count fall out of the window, which was full only at the widths
+    // where the columns happened to divide twenty.
+    for (const size of [
+      { width: 390, height: 844 },
+      { width: 1280, height: 800 },
+      { width: 1600, height: 900 },
+      { width: 2560, height: 1440 },
+    ]) {
+      await page.setViewportSize(size)
+      await page.goto('/')
+
+      const wall = page.getByTestId('hero-wall')
+      const cells = await wall.evaluate((grid) => {
+        const style = getComputedStyle(grid)
+        const tracks = (axis: string) => style.getPropertyValue(axis).split(' ').length
+        return { declared: tracks('grid-template-columns') * tracks('grid-template-rows') }
+      })
+
+      expect(cells.declared, `${size.width}x${size.height}`).toBe(20)
+      await expect(wall.locator('> div')).toHaveCount(20)
+    }
+  })
+
   test('lets anyone stop the background', async ({ page }) => {
     await page.goto('/')
 
@@ -135,6 +164,19 @@ test.describe('the landing page', () => {
 
     await page.getByRole('button', { name: 'Play background' }).click()
     await expect.poll(stills).toBe(0)
+  })
+
+  test('wears the faces you can actually pick', async ({ page }) => {
+    await page.goto('/')
+
+    // The proof row used to be five initials on coloured circles. It is now the
+    // first five seeds of the picker's catalogue, so the row is a sample of the
+    // thing it is claiming — five people, five faces you could choose.
+    const faces = page.locator('[class*="faces"] img')
+    await expect(faces).toHaveCount(5)
+    for (const src of await faces.evaluateAll((els) => els.map((el) => el.getAttribute('src')))) {
+      expect(src).toMatch(/^data:image\/svg\+xml/)
+    }
   })
 
   test('does not scroll horizontally', async ({ page }) => {

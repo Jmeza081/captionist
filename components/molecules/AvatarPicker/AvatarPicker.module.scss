@@ -1,22 +1,20 @@
 @use 'theme' as t;
 
-.picker {
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
 .label {
-  padding: 0;
   @include t.eyebrowText;
   color: t.$text-caption;
 }
 
+/**
+ * Eight faces. They hold one line from `md` up and wrap to six-and-two on a
+ * phone, which is the same wrap seven already had — a 46px tile against the
+ * 44px touch floor cannot be shrunk to fit eight across 342px, and the design's
+ * tile size wins over the single row.
+ */
 .row {
   display: flex;
   flex-wrap: wrap;
   gap: t.$space-10;
-  margin-top: t.$space-12;
 }
 
 .face {

@@ -14,17 +14,32 @@
  * Tilted and oversized, so no tile edge is ever visible inside the viewport.
  * The overhang is in `vw` rather than pixels because the rotation means a
  * wider screen needs proportionally more of it.
+ *
+ * The track counts are fixed and the tracks are fractions, so the wall's
+ * twenty tiles always land in exactly `columns × rows` cells and the grid is
+ * full at every viewport. Sizing the tile instead — `auto-fill` over a 300px
+ * minimum — made the column count a function of the window, and every width
+ * where it stopped dividing twenty left the last row half empty.
  */
 .grid {
   position: absolute;
   inset: -(t.$wall-overhang);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(t.$wall-tile, 1fr));
-  grid-auto-rows: t.$wall-tile-height;
+  // `minmax(0, 1fr)`, not `1fr`: a bare `1fr` floors at the content's minimum
+  // size, and a track full of media would refuse to shrink below it.
+  grid-template-columns: repeat(t.$wall-columns, minmax(0, 1fr));
+  grid-template-rows: repeat(t.$wall-rows, minmax(0, 1fr));
   gap: t.$wall-gap;
   transform: rotate(t.$wall-tilt);
   // The wall never animates its own layout; only its contents move.
   will-change: transform;
+
+  // Wider screens turn the wall back the way the design draws it: five across,
+  // four down. Same twenty tiles, landscape instead of portrait.
+  @include t.mq(md) {
+    grid-template-columns: repeat(t.$wall-columns-md, minmax(0, 1fr));
+    grid-template-rows: repeat(t.$wall-rows-md, minmax(0, 1fr));
+  }
 }
 
 .tile {

@@ -41,7 +41,7 @@ recalled APIs.
 | Command | Does |
 | --- | --- |
 | `npm run dev` | Dev server on `http://127.0.0.1:3000` |
-| `npm run verify` | `lint` + `typecheck` + `build` — the gate before any push |
+| `npm run verify` | `lint` + `typecheck` + `test:unit` + `build` — the gate before any push |
 | `npm run test:e2e` | Playwright, mobile + desktop |
 | `npm run docs:pack` | Repomix pack (input to `/ship`, gitignored) |
 

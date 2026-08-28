@@ -16,7 +16,11 @@ test.describe('joining', () => {
     await expect(page.getByRole('heading', { name: 'Got a room code?' })).toBeVisible()
     await expect(page.getByText('Ask whoever is sharing their screen.')).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Room code' })).toBeVisible()
-    await expect(page.getByRole('radio', { name: 'Face 1' })).toBeVisible()
+    const faces = page.getByRole('radiogroup', { name: 'Pick your face' })
+    await expect(faces).toBeVisible()
+    // `ember` is the catalogue's first seed and the default a browser with no
+    // stored identity gets, so the opening window is always page one.
+    await expect(faces.getByRole('radio', { name: 'Ember' })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Nickname' })).toBeVisible()
     await expect(page.getByText('Codes are 7 characters and always start with C')).toBeVisible()
   })
@@ -69,15 +73,57 @@ test.describe('joining', () => {
     await page.goto('/join')
     await page.getByRole('textbox', { name: 'Room code' }).fill('F34213')
     await page.getByRole('textbox', { name: 'Nickname' }).fill('Roberto')
-    await page.getByRole('radio', { name: 'Face 3' }).click()
+    // Named for the seed rather than a position, which is what makes this
+    // assertion mean anything: the window the picker offers is a function of
+    // the stored seed, so coming back reproduces it.
+    await page.getByRole('radio', { name: 'Fern' }).click()
     await page.getByRole('button', { name: 'Join the room' }).click()
     await expect(page).toHaveURL(/\/room\//)
 
     await page.goto('/join')
     await expect(page.getByRole('textbox', { name: 'Nickname' })).toHaveValue('Roberto')
-    await expect(page.getByRole('radio', { name: 'Face 3' })).toHaveAttribute(
+    await expect(page.getByRole('radio', { name: 'Fern' })).toHaveAttribute(
       'aria-checked',
       'true',
     )
+  })
+
+  test('shuffles what is on offer without shuffling away your pick', async ({ page }) => {
+    await page.goto('/join')
+
+    const faces = page.getByRole('radiogroup', { name: 'Pick your face' })
+    await faces.getByRole('radio', { name: 'Fern' }).click()
+
+    const offered = () => faces.getByRole('radio').evaluateAll((els) => els.map((el) => el.ariaLabel))
+    const before = await offered()
+    expect(before).toHaveLength(8)
+
+    await page.getByRole('button', { name: 'Shuffle faces' }).click()
+    const after = await offered()
+
+    // Seven of the eight are redrawn from the other sixty-three; the odds of
+    // reproducing the same seven are about one in half a billion.
+    expect(after).not.toEqual(before)
+    expect(after).toContain('Fern')
+    await expect(faces.getByRole('radio', { name: 'Fern' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+  })
+
+  test('walks the faces with the arrow keys', async ({ page }) => {
+    await page.goto('/join')
+
+    const faces = page.getByRole('radiogroup', { name: 'Pick your face' })
+    // Roving tabindex: the group is one tab stop, and the arrows move within
+    // it. Without them the other seven would be unreachable.
+    await faces.getByRole('radio', { name: 'Ember' }).focus()
+    await page.keyboard.press('ArrowRight')
+
+    await expect(faces.getByRole('radio', { name: 'Sunfish' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    await expect(faces.getByRole('radio', { name: 'Sunfish' })).toBeFocused()
   })
 })

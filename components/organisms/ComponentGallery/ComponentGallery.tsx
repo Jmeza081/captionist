@@ -51,14 +51,15 @@ import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import { ATTACHMENT, MEDIA, PLAYER_COLORS } from './placeholders'
 import styles from './ComponentGallery.module.scss'
 
+/** Seeded, so the gallery shows the faces the app actually draws. */
 const PLAYERS = {
-  jesse: { name: 'Jesse', color: PLAYER_COLORS.red },
-  jesska: { name: 'Jesska', color: PLAYER_COLORS.turquoise },
-  melania: { name: 'Melania', color: PLAYER_COLORS.amber },
-  lukasz: { name: 'Lukasz', color: PLAYER_COLORS.olive },
-  jack: { name: 'Jack', color: PLAYER_COLORS.purple },
-  vic: { name: 'Vic', color: PLAYER_COLORS.yellow },
-  roberto: { name: 'Roberto', color: PLAYER_COLORS.green },
+  jesse: { name: 'Jesse', color: PLAYER_COLORS.red, avatarSeed: 'ember' },
+  jesska: { name: 'Jesska', color: PLAYER_COLORS.turquoise, avatarSeed: 'sunfish' },
+  melania: { name: 'Melania', color: PLAYER_COLORS.amber, avatarSeed: 'orbit' },
+  lukasz: { name: 'Lukasz', color: PLAYER_COLORS.olive, avatarSeed: 'lagoon' },
+  jack: { name: 'Jack', color: PLAYER_COLORS.purple, avatarSeed: 'moss' },
+  vic: { name: 'Vic', color: PLAYER_COLORS.yellow, avatarSeed: 'amber' },
+  roberto: { name: 'Roberto', color: PLAYER_COLORS.green, avatarSeed: 'fern' },
 }
 
 

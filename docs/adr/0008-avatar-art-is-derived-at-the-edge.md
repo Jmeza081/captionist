@@ -1,6 +1,6 @@
 # 0008 — Avatar art is derived at the edge
 
-**Status:** accepted · 2026-08-27
+**Status:** accepted · 2026-08-27 · amended 2026-08-28 (see *Amendment*)
 
 ## Context
 
@@ -26,7 +26,7 @@ treats it as trusted input is treating a stranger's string as trusted input.
 ## Decision
 
 **The seed travels; the art is rendered locally by whoever displays it.**
-`lib/avatar.ts` turns a seed into a DiceBear `funEmoji` face, memoised per seed
+`lib/avatar.ts` turns a seed into a DiceBear `critters` face, memoised per seed
 because a twenty-player scoreboard would otherwise rebuild every face on every
 broadcast. `Avatar` takes `avatarSeed` and resolves it; `toAvatarProps` forwards
 it; nothing writes it back into state.
@@ -62,3 +62,43 @@ are present.
   avatar in the app from one constant, which is the upside; it also means a
   breaking change in that package is a visual regression rather than a build
   failure, and only a screenshot would catch it.
+
+## Amendment · 2026-08-28 — the style, and what changing it cost
+
+The decision above is unchanged: the seed travels, the art is derived locally,
+and it is drawn as `<img src>`. What changed is the style, and the move was not
+the one-constant edit the last consequence below promised.
+
+**`funEmoji` became `critters`,** because the catalogue grew from seven faces to
+sixty-four and seven flat emoji faces do not stay tellable apart sixty-four
+times. Critters is combinatorial — bodies, eyes, mouths, hats, patterns and two
+palettes — which is what makes a catalogue that size readable at all. CC0 1.0,
+so attribution is not a constraint on where it appears.
+
+**It forced a major version.** Critters exists only in DiceBear 10, and there is
+no version 10 of `@dicebear/collection`. So the dependency became
+`@dicebear/core@10` plus `@dicebear/styles`, a style is now a JSON definition
+rather than a module, and `createAvatar(style, options)` became
+`new Avatar(new Style(definition), options)`. Two option values moved with it:
+
+- **`backgroundColor: 'transparent'` is now `'00000000'`.** Version 10 validates
+  colours as hex and rejects the CSS keywords its predecessor took. This one is
+  load-bearing rather than cosmetic — critters paints an opaque background by
+  default, so getting it wrong covers every player's seat colour.
+- **`animationVariant` is pinned to `'none'`.** Critters is an animated style.
+  Its moving variants carry `weight: 0` upstream today, so `none` already wins
+  — but that is a value in a third party's JSON, and a patch release that
+  flipped one to `1` would set every avatar in the app moving with no build
+  failure to catch it. Which is this ADR's own last consequence, so it is now
+  guarded rather than merely noted: `lib/avatar.test.ts` asserts both the
+  transparent background and the absent animation.
+
+**The measured cost.** Version 10 ships ~420KB of JavaScript against version 9's
+~52KB, three quarters of it compiled Ajv schema validators that `Style`'s
+constructor calls and so cannot be shaken out. They do reach the browser. The
+chunk carrying them is 217KB raw and **34KB gzipped**, and total client
+JavaScript moved from 1368KB to 1370KB raw — the validators compress extremely
+well, and that number is the reason art is still a data URI rather than a file
+under `public/`. If it ever stops being true, the escape hatch is the one this
+ADR already describes: `Player.src` wins over `avatarSeed`, so committed SVGs
+served same-origin are a change to one function.

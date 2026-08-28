@@ -26,6 +26,14 @@ export interface AvatarProps {
   selected?: boolean
   /** Not chosen, or not yet acted: drops to 55%. */
   dimmed?: boolean
+  /**
+   * Drops out of the accessibility tree entirely.
+   *
+   * For when a parent already names this player — the picker's face buttons
+   * are labelled with the seed, and a labelled `role="img"` inside a labelled
+   * button is the same player announced twice.
+   */
+  decorative?: boolean
 }
 
 /**
@@ -44,6 +52,7 @@ export function Avatar({
   size = 40,
   selected = false,
   dimmed = false,
+  decorative = false,
 }: AvatarProps) {
   const classes = [
     styles.avatar,
@@ -61,8 +70,9 @@ export function Avatar({
     <span
       className={classes}
       style={{ width: size, height: size, backgroundColor: color }}
-      role="img"
-      aria-label={selected ? `${name}, selected` : name}
+      {...(decorative
+        ? { 'aria-hidden': true }
+        : { role: 'img', 'aria-label': selected ? `${name}, selected` : name })}
     >
       {image ? (
         // Avatar art is a fixed-size sprite, not a responsive image, so

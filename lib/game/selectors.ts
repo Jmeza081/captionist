@@ -1186,7 +1186,6 @@ export interface HostSetupCopy {
   capLabel: string
   roundsLabel: string
   action: string
-  shuffle: string
 }
 
 export function hostSetupCopy(): HostSetupCopy {
@@ -1206,7 +1205,6 @@ export function hostSetupCopy(): HostSetupCopy {
     capLabel: 'Submission time limit',
     roundsLabel: 'Number of rounds',
     action: 'Open the room',
-    shuffle: 'Shuffle',
   }
 }
 
