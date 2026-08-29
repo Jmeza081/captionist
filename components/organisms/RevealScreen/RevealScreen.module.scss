@@ -6,21 +6,42 @@
   --reveal-star: #{t.$winner};
 
   position: relative;
+    // A stacking context, or the glow escapes to the root one and `RoomShell`'s
+    // opaque canvas paints over it — block backgrounds come after negative
+    // z-index descendants, so it never appeared at all. See `LobbyScreen`.
+  isolation: isolate;
   text-align: center;
   // `clip` rather than `hidden`: the glow below is wider than a phone, and
   // without this it widens the page itself and the whole room scrolls
   // sideways. `clip` contains it without making this a scroll container.
-  overflow: clip;
+  //
+  // Horizontally only. This box is shorter than the glow — the screen's
+  // content ends well above the circle's bottom — so clipping both axes cut
+  // the fade off mid-gradient and drew a hard line across the canvas. The
+  // vertical spill has nowhere bad to go: `RoomShell` clips the viewport, and
+  // the header paints over it.
+  overflow-x: clip;
+  overflow-y: visible;
 
   &::before {
     content: '';
     position: absolute;
     left: 50%;
-    top: -260px;
-    width: 1000px;
-    height: 1000px;
-    max-width: 260%;
-    transform: translateX(-50%);
+    top: 0;
+    /**
+     * Never wider than the box that clips it.
+     *
+     * `radial-gradient(circle, …)` sizes to `farthest-corner`, so the stop
+     * below lands most of the way to the *side* and the circle is still lit at
+     * its own edge. Any width past the column's turns `clip` into a hard edge
+     * and the glow into a lit rectangle — which nobody saw while it was
+     * painting behind the canvas. The design's figure is the ceiling; a
+     * narrower column gets the same shape at its own size, and the offset is a
+     * fraction so it rides up proportionally. Same treatment as `LobbyScreen`.
+     */
+    width: min(1000px, 100%);
+    aspect-ratio: 1;
+    transform: translate(-50%, -26%);
     border-radius: t.$radius-avatar;
     background: radial-gradient(circle, rgba(123, 97, 255, 0.22), rgba(123, 97, 255, 0) 68%);
     pointer-events: none;

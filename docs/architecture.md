@@ -63,6 +63,43 @@ of rail docked, the window no longer describes the column the lobby is laid out
 in, and the room code, the player names and the empty seat were all wrapping or
 truncating against a measure that had silently shrunk.
 
+**The lobby is two layouts, because the design draws two artboards.** A host's
+lobby is a work surface — a QR to share, a mode to set, a button to press — and
+it is laid out as one. A guest's is a waiting room: one centred column under
+the accent glow, a headline at `displaySmallText`, one 820px card carrying the
+roster and the rules read-only, and a `StatusPill` under it. That is not the
+host's screen with its controls hidden, which is what a guest used to get — the
+host's two-column layout with the left column empty and everything shoved
+against one edge. `LobbyScreen` still owns both, as `HostLobby` and
+`GuestLobby` in one file: they are one phase, they share `lobbyCopy`,
+`settingsSummary` and `PlayerRow`, and only the arrangement differs. Branching
+on *role* is not the thing the mode rule forbids — that rule is about never
+forking a screen on `settings.mode`, and neither half of this one reads it.
+
+**Four glows had never painted, and the fix was `isolation: isolate`.** The
+accent circle every big screen carries is a `::before` at `z-index: -1`.
+Without a stacking context on its own element it escapes to the root one, where
+`RoomShell`'s opaque canvas background paints *over* it — block backgrounds are
+painted after negative-z-index descendants. The design's own guest-lobby
+artboard carries `isolation:isolate` on exactly that wrapper, which is the
+tell. `RevealScreen`, `PodiumScreen` and `TiebreakScreen` had declared the same
+glow since phase 3 and none of them had ever shown it: the same shape of silent
+failure as the five animations below, found the same way — by drawing the thing
+and noticing it was not there.
+
+Turning them on exposed the second half of the bug, which only a *visible* glow
+can have. `radial-gradient(circle, …)` sizes to `farthest-corner`, so its last
+stop lands about 96% of the way to the box's side and the circle is still lit
+at its own edge; a fixed 900–1300px circle inside a 353px phone column was
+therefore a lit rectangle with `overflow: clip` for edges. Two changes fix it
+everywhere: the circle is `min(<design px>, 100%)` of the column with its
+offset expressed as a fraction of its own height, so a narrower column gets the
+same shape at its own size; and on the three round screens the clip is
+horizontal only — their content ends well above the circle's bottom, so
+clipping both axes cut the fade off mid-gradient and drew a line across the
+canvas. The vertical spill has nowhere bad to go: `RoomShell` clips the
+viewport and the header paints over it.
+
 **Two structural fixes rode along with it, and one of them was silent.** Five
 animations had never run. `theme/_motion.scss` declared its keyframes once in a
 *global* stylesheet, and CSS Modules rewrite `animation-name` into module scope
@@ -2386,8 +2423,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 384 Playwright
-tests across the two viewports — 192 per project, over 27 spec files. 374 of the 384 run; the
+210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 388 Playwright
+tests across the two viewports — 194 per project, over 27 spec files. 378 of the 388 run; the
 other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.

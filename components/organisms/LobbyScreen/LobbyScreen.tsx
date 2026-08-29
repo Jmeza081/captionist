@@ -7,6 +7,8 @@ import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { SegmentedControl } from '@/components/atoms/SegmentedControl'
 import { Stack } from '@/components/atoms/Stack'
+import { StatusPill } from '@/components/atoms/StatusPill'
+import { WaitingDots } from '@/components/atoms/WaitingDots'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { RoomShare } from '@/components/molecules/RoomShare'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
@@ -20,22 +22,29 @@ import {
   startLabel,
   toAvatarProps,
 } from '@/lib/game/selectors'
-import type { GameMode } from '@/lib/game/types'
+import type { GameMode, GameState, PlayerId } from '@/lib/game/types'
 import { useRoom } from '@/lib/room/useRoom'
 import styles from './LobbyScreen.module.scss'
 
 /**
  * The room before it starts: how to get in, who is in, and the one button.
  *
- * Covers all three designed lobby states — host, guest, and "not enough
- * players" — as one screen with branched values. The blocked start is not a
- * separate screen but the same layout with a different headline and a CTA that
- * says what is missing, which is the design's own rule.
+ * **Two layouts, because the design draws two artboards.** A host's lobby is a
+ * work surface — a QR to share, a mode to set, a button to press — and it is
+ * laid out as one, two columns of controls. A guest's is a waiting room: the
+ * design centres it, sets the headline at display scale, and gives it exactly
+ * one card and no controls at all. That is not a host lobby with things hidden,
+ * and pretending otherwise is what left a guest reading the host's column
+ * layout with its left-hand side empty.
+ *
+ * The two are branches here rather than two organisms because they are one
+ * phase and share their whole vocabulary — `lobbyCopy`, `settingsSummary`,
+ * `PlayerRow`, the roster. What differs is arrangement, which is what a branch
+ * is for. Compare the mode/format branching *inside* each: values, never forks.
  *
  * **A guest is shown, not offered.** The share block, the mode control and the
- * start button are all the host's: a guest gets the settings read-only and a
- * line saying what they are waiting for, because every one of those controls
- * would only ever hand them a refusal.
+ * start button are all the host's, because every one of them would only ever
+ * hand a guest a refusal.
  */
 
 const MODES: Array<{ value: GameMode; label: string }> = [
@@ -63,6 +72,111 @@ export function LobbyScreen() {
   const { notify, openHelp } = useRoomShell()
   if (!state) return null
 
+  return isHost ? (
+    <HostLobby state={state} selfId={selfId} send={send} notify={notify} openHelp={openHelp} />
+  ) : (
+    <GuestLobby state={state} selfId={selfId} />
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Guest                                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Waiting for the host, centred.
+ *
+ * Answers the only two questions a waiting player has — am I actually in, and
+ * who else is here — and answers them in that order, top to bottom. Everything
+ * a host would act on is absent rather than disabled, because there is nothing
+ * here for a guest to do but read.
+ */
+function GuestLobby({ state, selfId }: { state: GameState; selfId?: PlayerId }) {
+  const copy = lobbyCopy(state, selfId)
+
+  return (
+    <div className={styles.guest}>
+      <Stack gap={34} align="center" className={styles.guestColumn}>
+        <Stack gap={52} align="center" className={styles.guestBlocks}>
+          <Stack gap={26} align="center">
+            {/* Decorative: the headline under it already says what the wait is,
+                and announcing it twice is once too many. */}
+            <WaitingDots />
+            <Stack gap={20} align="center">
+              <h1 className={styles.guestHeading}>{copy.heading}</h1>
+              <p className={styles.guestBlurb}>{copy.body}</p>
+            </Stack>
+          </Stack>
+
+          <Box background="card" radius="modal" padding={26} className={styles.guestCard}>
+            <Stack gap={20}>
+              <Inline justify="between" align="baseline">
+                <h2 className={styles.rosterTitle}>In the room</h2>
+                <span className={styles.count}>
+                  {state.players.length} {state.players.length === 1 ? 'player' : 'players'}
+                </span>
+              </Inline>
+
+              <ul className={styles.rosterPills}>
+                {state.players.map((player) => (
+                  <li key={player.id}>
+                    <PlayerRow
+                      player={toAvatarProps(player)}
+                      variant="pill"
+                      host={player.isHost}
+                      you={player.id === selfId}
+                    />
+                  </li>
+                ))}
+              </ul>
+
+              <hr className={styles.rule} />
+
+              {/* The rules, read-only. The same four pairs the host set, in the
+                  same order they set them. */}
+              <dl className={styles.settings}>
+                {settingsSummary(state).map((pair) => (
+                  <div key={pair.label} className={styles.setting}>
+                    <dt className={styles.settingLabel}>{pair.label}</dt>
+                    <dd className={styles.settingValue}>{pair.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Stack>
+          </Box>
+        </Stack>
+
+        <StatusPill waiting>{WAITING_LINE}</StatusPill>
+      </Stack>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Host                                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The room's work surface: share it, set it, start it.
+ *
+ * Two columns once the container can hold them — the share block is a fixed
+ * measure and the roster takes the rest. The blocked start is not a separate
+ * screen but the same layout with a different headline and a CTA that says
+ * what is missing, which is the design's own rule.
+ */
+function HostLobby({
+  state,
+  selfId,
+  send,
+  notify,
+  openHelp,
+}: {
+  state: GameState
+  selfId?: PlayerId
+  send: ReturnType<typeof useRoom>['send']
+  notify: (message: string) => void
+  openHelp: () => void
+}) {
   const copy = lobbyCopy(state, selfId)
   const gate = canStart(state)
   const joinUrl = joinUrlFor(state.roomCode)
@@ -76,10 +190,6 @@ export function LobbyScreen() {
   return (
     <Inline gap={44} align="start" className={styles.lobby}>
       <Stack gap={26} className={styles.share}>
-        {/* The design's guest lobby has no share block: inviting people is the
-            host's job, and a guest handed a QR would be sharing a room they do
-            not own. */}
-        {isHost && (
         <Stack gap={12}>
           <Eyebrow>Scan or type the code</Eyebrow>
           <RoomShare
@@ -95,26 +205,14 @@ export function LobbyScreen() {
             }}
           />
         </Stack>
-        )}
 
         <Inline gap={10} wrap={false}>
-          {isHost ? (
-            <SegmentedControl
-              label="Game mode"
-              value={state.settings.mode}
-              onChange={setMode}
-              options={MODES}
-            />
-          ) : (
-            <dl className={styles.settings}>
-              {settingsSummary(state).map((pair) => (
-                <div key={pair.label} className={styles.setting}>
-                  <dt className={styles.settingLabel}>{pair.label}</dt>
-                  <dd className={styles.settingValue}>{pair.value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
+          <SegmentedControl
+            label="Game mode"
+            value={state.settings.mode}
+            onChange={setMode}
+            options={MODES}
+          />
           <button
             type="button"
             className={styles.help}
@@ -131,30 +229,17 @@ export function LobbyScreen() {
         </Stack>
 
         <Stack gap={10} align="stretch">
-          {isHost ? (
-            <>
-              {/* Blocked, never disabled: the control stays live and focusable
-                  and the label carries the reason. */}
-              <Button
-                size="form"
-                fullWidth
-                blocked={!gate.ok}
-                onClick={() => send({ type: 'game/started' })}
-              >
-                {startLabel(state)}
-              </Button>
-              <p className={styles.note}>Late joiners can still hop in between rounds</p>
-            </>
-          ) : (
-            /* Starting is the host's, so a guest is told what they are waiting
-               for rather than handed a button that would only refuse them. The
-               guest lobby the design draws — its own screen, with no share
-               block — arrives with real joining in phase 4. */
-            <p className={styles.waiting}>
-              <span className={styles.waitingDot} aria-hidden="true" />
-              {WAITING_LINE}
-            </p>
-          )}
+          {/* Blocked, never disabled: the control stays live and focusable and
+              the label carries the reason. */}
+          <Button
+            size="form"
+            fullWidth
+            blocked={!gate.ok}
+            onClick={() => send({ type: 'game/started' })}
+          >
+            {startLabel(state)}
+          </Button>
+          <p className={styles.note}>Late joiners can still hop in between rounds</p>
         </Stack>
       </Stack>
 
@@ -167,12 +252,12 @@ export function LobbyScreen() {
             </span>
           </Inline>
 
-          <ul className={`${styles.roster} ${isHost ? '' : styles.rosterPills}`}>
+          <ul className={styles.roster}>
             {state.players.map((player) => (
               <li key={player.id}>
                 <PlayerRow
                   player={toAvatarProps(player)}
-                  variant={isHost ? 'roster' : 'pill'}
+                  variant="roster"
                   host={player.isHost}
                   you={player.id === selfId}
                 />

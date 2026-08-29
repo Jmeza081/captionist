@@ -79,25 +79,105 @@
   color: t.$text-meta;
 }
 
-.waiting {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: t.$space-10;
+/* ------------------------------------------------------------------ */
+/* Guest                                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The waiting room, centred under a glow.
+ *
+ * The glow is the design's own — the same 900px circle of accent at 22% that
+ * the reveal, podium and tiebreak carry, clipped by the screen so it reads as
+ * light coming from above the fold rather than as a shape on the page.
+ *
+ * `clip` rather than `hidden`, for the reason `RevealScreen` gives: the circle
+ * is wider than a phone, and `hidden` would make the whole room scroll
+ * sideways instead of containing it. `clip` contains it without turning this
+ * into a scroll container.
+ */
+.guest {
+  position: relative;
+  // The glow below sits at `z-index: -1`, and without a stacking context here
+  // it escapes to the root one — where `RoomShell`'s opaque canvas background
+  // paints *over* it, because block backgrounds are painted after negative
+  // z-index descendants. `isolation` is the design's own answer: its artboard
+  // carries `isolation:isolate` on this same wrapper.
+  isolation: isolate;
+  overflow: clip;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    /**
+     * Never wider than the box that clips it.
+     *
+     * `radial-gradient(circle, …)` sizes to `farthest-corner` by default, so
+     * the `68%` stop lands at 0.68 × half-diagonal — about 96% of the way to
+     * the *side*. The circle is therefore still lit almost to its own edge,
+     * and any width past the column's turns the clip into a hard edge and the
+     * glow into a lit rectangle. 900px is the design's figure and a desktop
+     * column is wide enough for it; a phone gets the same circle at its own
+     * width.
+     */
+    width: min(900px, 100%);
+    aspect-ratio: 1;
+    /**
+     * The design's `top: -260px` on a 900px circle — as a fraction, so a
+     * narrower circle rides up by proportionally less and keeps its bright
+     * half behind the headline instead of above the fold.
+     */
+    transform: translate(-50%, -29%);
+    border-radius: t.$radius-avatar;
+    background: radial-gradient(circle, rgba(123, 97, 255, 0.22), rgba(123, 97, 255, 0) 68%);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+// The design starts the column 96px down from the header, which is what puts
+// the dots inside the glow's bright half rather than above it. `$screen-pad-v`
+// is already on `.content`, so this is the remainder.
+.guestColumn {
+  padding-top: t.$space-52;
+}
+
+// The stack the card lives in has to be full width for the card's own
+// `max-width` to centre it; the column above centres everything else.
+.guestBlocks {
+  align-self: stretch;
+}
+
+.guestHeading {
   margin: 0;
-  padding: t.$space-12 t.$space-20;
-  border-radius: t.$radius-pill;
-  background-color: t.$fill-subtle;
+  text-align: center;
+  @include t.displaySmallText;
+}
+
+.guestBlurb {
+  margin: 0;
+  // The design breaks this line once, under the headline rather than across
+  // the card. Capping the measure is what does that at any width.
+  max-width: 44ch;
+  text-align: center;
   @include t.bodyText;
   color: t.$text-body;
 }
 
-.waitingDot {
-  width: t.$space-8;
-  height: t.$space-8;
-  flex: none;
-  border-radius: t.$radius-pip;
-  background-color: t.$status-waiting;
+.guestCard {
+  width: 100%;
+  max-width: t.$lobby-guest-card;
+  margin-inline: auto;
+}
+
+// The card's one divider: roster above, rules below.
+.rule {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background-color: t.$line-hairline-strong;
 }
 
 .rosterTitle {
@@ -156,6 +236,14 @@
   flex-wrap: wrap;
   gap: t.$space-20;
   margin: 0;
+
+  // The design's own 44 between the four pairs — narrower and "CAPTION TIME"
+  // starts reading as part of the value beside it. Only once there is room for
+  // it: on a phone 44 pushes the four onto three ragged rows, where 20 lays
+  // them out two by two.
+  @include t.mq('md') {
+    gap: t.$space-44;
+  }
 }
 
 .setting {
@@ -185,6 +273,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: t.$space-10;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 // Two columns, once there is room for the share column, the gap and two roster

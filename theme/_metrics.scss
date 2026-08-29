@@ -314,6 +314,12 @@ $lobby-columns: 1080px;
 // "Waiting for a friend…" wrapped onto two lines.
 $lobby-player-min: 276px;
 $lobby-help-key: 36px;
+
+/// The guest lobby's card, and the dots above it. The card is narrower than
+/// the host's `$lobby-max` on purpose: a guest has one thing to read, and a
+/// roster stretched across 1360px reads as a table rather than a crowd.
+$lobby-guest-card: 820px;
+$waiting-dot: 11px;
 $share-qr: 142px;
 
 // The landing page. One-off measures, so they live here rather than on the

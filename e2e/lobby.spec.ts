@@ -76,10 +76,66 @@ test.describe('the lobby', () => {
     await page.goto('/room/DEV?seed=42&phase=lobby&as=p2')
 
     // Starting and switching mode are both host-only, so offering either would
-    // hand a guest a control that can only refuse them.
+    // hand a guest a control that can only refuse them. The share block goes
+    // with them: a guest handed a QR would be inviting people to a room that
+    // is not theirs.
     await expect(page.getByRole('button', { name: /Start game/ })).toHaveCount(0)
     await expect(page.getByRole('radiogroup')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Copy link' })).toHaveCount(0)
     await expect(page.getByText('Waiting on the host to start')).toBeVisible()
+  })
+
+  /**
+   * The guest lobby is its own artboard, not the host's with controls hidden:
+   * one centred column, a headline at display scale, one card, and the rules
+   * read-only underneath the roster.
+   */
+  test('gives a guest the waiting room rather than the host’s work surface', async ({
+    page,
+  }) => {
+    await page.goto('/room/DEV?seed=42&phase=lobby&as=p2')
+
+    // The card names itself for what a waiting player is looking at, and the
+    // roster carries the count rather than the host's "5 of 20" capacity.
+    await expect(page.getByRole('heading', { name: /You’re in, / })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'In the room' })).toBeVisible()
+    await expect(page.getByText('5 players')).toBeVisible()
+
+    // The rules the host set, read-only — the same four pairs, in order.
+    for (const label of ['Rounds', 'Caption time', 'Format', 'Voting']) {
+      await expect(page.getByRole('term').filter({ hasText: label })).toBeVisible()
+    }
+    await expect(page.getByRole('definition').filter({ hasText: '90 sec' })).toBeVisible()
+  })
+
+  test('centres the guest column rather than stacking it against one edge', async ({
+    page,
+  }) => {
+    await page.goto('/room/DEV?seed=42&phase=lobby&as=p2')
+
+    // The bug this replaces: a guest read the host's two-column layout with
+    // its left-hand column empty, so the whole screen sat hard left.
+    //
+    // Measured against each other rather than against `main`: below `md` the
+    // content column is padded asymmetrically to clear the floating toolbox,
+    // so its border box's midpoint is 9px off the midpoint anything inside it
+    // is centred on. What the layout actually claims is that these three
+    // share one centre line.
+    const heading = await page.getByRole('heading', { name: /You’re in, / }).boundingBox()
+    const card = await page.getByRole('heading', { name: 'In the room' }).boundingBox()
+    // The pill itself, not its label: the label sits right of the waiting dot,
+    // so its own midpoint is half a dot off the pill's.
+    const status = await page
+      .getByText('Waiting on the host to start')
+      .locator('xpath=..')
+      .boundingBox()
+    for (const box of [heading, card, status]) expect(box).not.toBeNull()
+
+    const mid = (box: { x: number; width: number } | null) => (box?.x ?? 0) + (box?.width ?? 0) / 2
+    expect(Math.abs(mid(heading) - mid(status))).toBeLessThanOrEqual(2)
+    // And the card under them is a block they sit centred over, not a column
+    // they are aligned to the left edge of.
+    expect(card?.x ?? 0).toBeLessThan(mid(heading))
   })
 
   test('blocks the start without disabling it, and says why out loud', async ({ page }) => {

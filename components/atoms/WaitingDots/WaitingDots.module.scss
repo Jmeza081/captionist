@@ -1,0 +1,51 @@
+@use 'theme' as t;
+
+@include t.pulseKeyframes;
+
+.dots {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-10;
+}
+
+.dot {
+  flex: none;
+  width: t.$waiting-dot;
+  height: t.$waiting-dot;
+  border-radius: t.$radius-pip;
+  background-color: t.$accent;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+// The wave. Each dot is a fifth of a cycle behind the one before it, which is
+// what makes the row read left to right rather than blink as a block.
+.dot:nth-child(2) {
+  animation-delay: 0.28s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.56s;
+}
+
+/**
+ * Stillness gets the design's own drawing: full, 55%, 25%. It is the same
+ * ramp the animation moves through, held at one instant — so the row still
+ * reads as a direction rather than three identical dots.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+
+  .dot:nth-child(2) {
+    opacity: 0.55;
+  }
+
+  .dot:nth-child(3) {
+    opacity: 0.25;
+  }
+}
+
+.label {
+  @include t.srOnly;
+}

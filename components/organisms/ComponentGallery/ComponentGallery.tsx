@@ -25,6 +25,7 @@ import { TallyPill } from '@/components/atoms/TallyPill'
 import { TextField } from '@/components/atoms/TextField'
 import { TimerPill, formatClock } from '@/components/atoms/TimerPill'
 import { Toggle } from '@/components/atoms/Toggle'
+import { WaitingDots } from '@/components/atoms/WaitingDots'
 import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatMessage } from '@/components/molecules/ChatMessage'
 import { ChatRail } from '@/components/molecules/ChatRail'
@@ -299,6 +300,9 @@ export function ComponentGallery() {
               4 of 7 have voted
             </StatusPill>
           </Inline>
+        </Case>
+        <Case label="Waiting dots — the room is doing something, and it is not yours to do">
+          <WaitingDots label="Waiting for the host" />
         </Case>
         <Case label="Avatar picker — the face you play as">
           <AvatarPicker label="Pick your face" value={face} onChange={setFace} />

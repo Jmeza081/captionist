@@ -85,12 +85,23 @@ test.describe('opening a room', () => {
     await page.getByRole('button', { name: 'Join the room' }).click()
 
     // The states are announced in words as well as drawn, so a screen reader
-    // hears the same progress the rail shows. The *first* row, deliberately:
-    // the last one is done at the same instant the screen hands over, so
-    // catching it there would be a race against the hand-off it causes. The
-    // four states are asserted exhaustively in the gallery instead.
-    await expect(step(page, 'Finding the room')).toContainText('In progress')
-    await expect(step(page, 'Seating you in the lobby')).toContainText('Not started')
+    // hears the same progress the rail shows.
+    //
+    // Which word, deliberately not: every mid-boot state is a transient this
+    // test has no way to synchronise on. The floors in `bootTimeline.ts` make
+    // the sequence *readable*, not observable on demand — a busy machine can
+    // deschedule the runner past the whole 900ms boot between the click and
+    // the first poll, and then "In progress" has already become "Done" and the
+    // assertion fails on nothing. It asserted the first row for exactly that
+    // reason and still raced. The four states are asserted exhaustively in the
+    // gallery, where they are props rather than a moment.
+    //
+    // What is worth asserting here is what only a real boot can show: that all
+    // three rows are announced, and that the last word any of them reaches is
+    // the one that hands the room over.
+    for (const label of ['Finding the room', 'Waiting for the host', 'Seating you in the lobby']) {
+      await expect(step(page, label)).toContainText(/Not started|In progress|Done/)
+    }
 
     // And the sequence really does end in the room.
     await expect(step(page, 'Finding the room')).toContainText('Done')
