@@ -204,22 +204,25 @@ Route (app)       Revalidate  Expire
 ƒ /api/ably/token
 ƒ /api/gifs
 ○ /components
-○ /host
+○ /host                  1h      1y
 ○ /join
 ƒ /join/[code]
 ƒ /room/[code]
 ```
 
-`/`, `/components`, `/host` and `/join` are prerendered at build time. `/` is
-still static even though it awaits remote data: `wallTiles()` reaches Giphy
-through a `fetch` carrying `next: { revalidate: 3600 }`, so the page is built
-once and refreshed hourly rather than rendered per request. The revalidate
-column only appears in `next build` when a `GIPHY_API_KEY` is present — with no
-key the wall resolves from the offline shelf, nothing is fetched, and `/` is
-plain static. `/host` and `/join` are static because **nothing before the room
-needs a server**: a code is generated in the browser, and whether a room already
-exists is a question only the transport can answer, which happens after the
-push. `/join/[code]` is dynamic solely because it awaits `params`;
+`/`, `/components`, `/host` and `/join` are prerendered at build time. `/` and
+`/host` are still static even though they await remote data: both call
+`wallTiles()`, which reaches Giphy through a `fetch` carrying
+`next: { revalidate: 3600 }`, so each page is built once and refreshed hourly
+rather than rendered per request — and because it is the same call with the
+same arguments, the two pages share one upstream request and one set of tiles,
+so a host arriving from the front door already has every one of them in cache.
+The revalidate column only appears in `next build` when a `GIPHY_API_KEY` is
+present — with no key the wall resolves from the offline shelf, nothing is
+fetched, and both are plain static. `/host` and `/join` still ask no server
+about the *room*, because **nothing before the room needs one**: a code is
+generated in the browser, and whether a room already exists is a question only
+the transport can answer, which happens after the push. `/join/[code]` is dynamic solely because it awaits `params`;
 `/room/[code]` is dynamic and everything inside it is client-driven.
 `/api/gifs`, `/api/ably/seat` and `/api/ably/token` are route handlers — no
 layout, no React, JSON only.
@@ -229,7 +232,7 @@ graph TD
   L["app/layout.tsx<br/><i>root layout · Inter · globals.css + tokens.scss</i>"]
   P["app/page.tsx<br/><i>/ — landing · static ○ · revalidate 1h</i>"]
   C["app/components/page.tsx<br/><i>/components — the gallery · static ○</i>"]
-  H["app/host/page.tsx<br/><i>/host — set the rules · static ○</i>"]
+  H["app/host/page.tsx<br/><i>/host — set the rules · static ○ · revalidate 1h</i>"]
   J["app/join/page.tsx<br/><i>/join — type a code · static ○</i>"]
   JC["app/join/[code]/page.tsx<br/><i>/join/[code] — the QR target · dynamic ƒ</i>"]
   R["app/room/[code]/page.tsx<br/><i>/room/[code] — dynamic ƒ</i>"]
@@ -305,7 +308,20 @@ under it rather than 404ing, because on a screen whose whole job is that field,
 correcting it is the point.
 
 **`/host` is the only screen where a room's rules are decided**, and its
-defaults are playable untouched. On submit it writes the chosen `RoomSettings`
+defaults are playable untouched. It is one column below `xl` and two above it:
+the form holds its 600px either way, and the 60% beside it is `HeroWall` — the
+landing page's own wall, at its `soft` scrim weight, which is the only thing on
+a screen of toggles that says what the room is for. Below `xl` the wall is not
+rendered at all rather than stacked under a form nobody scrolled to. The CTA
+left the card and became the form column's docked action bar, sticky against
+the page's scroll on a phone and against the column's own from `xl`, so "Open
+the room" is never the thing you scroll two Steppers to find. The form column
+is a *query container* — `.modes` reflows on the column's width, not the
+window's, because a viewport query cannot see that 60% went to the wall — and
+that containment is why `HelpModal` renders outside it: a query container is
+the containing block for its `position: fixed` descendants.
+
+On submit it writes the chosen `RoomSettings`
 to `sessionStorage` through `lib/room/pendingSettings.ts`, generates a code and
 pushes. The settings ride in storage rather than the query string: seven of them
 would make an unreadable URL on a screen whose next act is reading a code out
@@ -330,8 +346,11 @@ now rather than on `/`, as does `QuickJoin` — and note that the gallery is the
 `AvatarPicker` and `TextField`, because the design's join screen is a form with
 a face on it rather than a panel. It is a spare part until something needs a
 QR-and-code pair outside the lobby. The gap in it is the three
-page-shaped landing components: `HeroWall`, `LandingNav` and `LandingActions`
-are single-use, so `e2e/landing.spec.ts` covers them on the real page instead.
+page-shaped landing components: `LandingNav` and `LandingActions` are
+single-use, so `e2e/landing.spec.ts` covers them on the real page instead.
+`HeroWall` no longer is — `/host` renders it too — but it is still covered on
+its pages rather than in the gallery, because a wall of twenty tiles inside a
+component grid is a demo of nothing.
 Phase 3's two new atoms, `StatusPill` and `RankSlot`, are both in the gallery,
 and so are phase 4's two new molecules, `AvatarPicker` and `ModeCard` — they are
 shared by `/join` and `/host`, which is exactly why they are molecules and not

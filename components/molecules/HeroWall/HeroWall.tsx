@@ -29,13 +29,29 @@ import styles from './HeroWall.module.scss'
  * server-renders — that is what a client component does in the App Router — so
  * none of the above waits on hydration.
  */
+/**
+ * How hard the wall is veiled.
+ *
+ * `full` is the landing hero's, and it is not decoration: it is what holds
+ * 98px type legible over media we do not control. `soft` is for a wall
+ * nothing sits on top of — there the veil only has to keep the tiles reading
+ * as background, and the hero's weight just looks like the page failed to
+ * load.
+ */
+export type HeroWallScrim = 'full' | 'soft'
+
 export interface HeroWallProps {
   tiles: readonly WallTile[]
   /** Describes the wall for anyone who can't see it. */
   label?: string
+  scrim?: HeroWallScrim
 }
 
-export function HeroWall({ tiles, label = 'a wall of looping reaction GIFs' }: HeroWallProps) {
+export function HeroWall({
+  tiles,
+  label = 'a wall of looping reaction GIFs',
+  scrim = 'full',
+}: HeroWallProps) {
   const videos = useRef<HTMLVideoElement[]>([])
   // `useReducedMotion` reports stillness until it knows otherwise, so this
   // starts paused and nothing plays before we know whether it should.
@@ -93,9 +109,9 @@ export function HeroWall({ tiles, label = 'a wall of looping reaction GIFs' }: H
           ))}
         </div>
 
-        {/* Over the wall, under the content. This is what holds 98px type
-            legible against media we do not control. */}
-        <div className={styles.scrim} />
+        {/* Over the wall, under the content. At `full` this is what holds 98px
+            type legible against media we do not control. */}
+        <div className={`${styles.scrim} ${styles[scrim]}`} />
       </div>
 
       {/* Outside the wall on purpose: the wall is inert and makes its own

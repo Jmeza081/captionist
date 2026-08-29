@@ -75,6 +75,21 @@
   }
 }
 
+/**
+ * A button that has to align with what is under it.
+ *
+ * The pill's 34px of horizontal padding is right for a filled control and
+ * wrong for a bare label at the edge of a column: it inset "Shuffle faces" by
+ * 34px while the field directly below sat flush, so the two read as
+ * misaligned. `text` drops the horizontal padding and lets the 44px
+ * min-height carry the touch target on its own — which it can, because the
+ * label is wider than it is tall.
+ */
+.text {
+  padding-right: 0;
+  padding-left: 0;
+}
+
 // The share pills the lobby draws beside the room code: narrow enough that a
 // pair of them fits the column. Height still clears the 44px touch target —
 // the design draws them shorter, and that is the one place we don't follow it.

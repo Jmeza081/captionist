@@ -1,17 +1,132 @@
 @use 'theme' as t;
 
+/**
+ * One column, then two.
+ *
+ * The design's own setup surface — a shade off the app canvas, so the card
+ * reads as a sheet rather than a panel — and from `xl` a 40/60 split with a
+ * wall of the app's own GIFs in the larger half.
+ *
+ * `xl` rather than `md` or `lg`: at 1024px the 40% track is about 410px, which
+ * is narrower than the card the design draws, so the split would be buying the
+ * wall with the form's legibility.
+ */
 .screen {
-  // The design's own setup surface — a shade off the app canvas, so the card
-  // reads as a sheet rather than a panel.
   min-height: 100vh;
-  padding: t.$screen-pad-v t.$space-20 t.$space-52;
   background-color: t.$surface-vote;
+
+  @include t.mq('xl') {
+    display: grid;
+    grid-template-columns: 40fr 60fr;
+    // The page itself stops scrolling here and the form column takes over.
+    // The wall is the fixed half of the pair — it is the thing you look at
+    // while reading the form, so it must not slide away as you fill it in.
+    height: 100vh;
+    overflow: hidden;
+  }
+}
+
+/**
+ * The form's half.
+ *
+ * A query container so `.modes` can reflow on *this column's* width rather
+ * than the window's — a viewport `mq()` cannot see that 60% of the screen
+ * went to the wall, and at 1280px it would put two body-copy cards into 450px
+ * because the window says there is room. `LobbyScreen` does the same thing for
+ * the same reason.
+ *
+ * Note the containment this buys is also why `HelpModal` renders outside this
+ * element: a query container is the containing block for its `position: fixed`
+ * descendants.
+ */
+.formColumn {
+  container: setup / inline-size;
+
+  @include t.mq('xl') {
+    display: flex;
+    flex-direction: column;
+    // Without this the flex item floors at its content's height and never
+    // scrolls; the overflow then belongs to nobody and the dock never sticks.
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+.form {
+  padding: t.$screen-pad-v t.$space-20 0;
+}
+
+/**
+ * The CTA, pinned.
+ *
+ * One rule covers both layouts: below `xl` it sticks against the page's
+ * scroll, from `xl` against `.formColumn`'s. `margin-top: auto` pushes it to
+ * the bottom of a short form so it is docked rather than floating mid-column.
+ *
+ * A gradient with real ground in it rather than a fade to nothing — see
+ * `VoteScreen`'s `.lockDock`. The button sits over scrolling controls, and a
+ * pure fade lets a Stepper read through the middle of it.
+ */
+.dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  // The top pad is the fade's runway. Anything shorter and the gradient is
+  // still translucent where the button is, so a Stepper or a mode card reads
+  // through the middle of the CTA.
+  padding: t.$space-52 t.$space-20 t.$space-20;
+  background: linear-gradient(
+    to top,
+    t.$surface-vote 0%,
+    // Opaque past the top of the 51px button, so it has real ground under it
+    // and the fade happens in the runway above.
+    t.$surface-vote 72%,
+    t.$surface-vote-fade 100%
+  );
+
+  > * {
+    width: 100%;
+    max-width: t.$setup-column-width;
+  }
+}
+
+/**
+ * The wall's half. Not rendered below `xl` — a phone has no room for it, and
+ * stacking twenty tiles under a form nobody has scrolled to would be twenty
+ * pieces of media bought for nothing.
+ *
+ * `position: relative` because `HeroWall`'s own wrapper is `absolute; inset: 0`
+ * and needs a positioned ancestor to fill; the landing page gives it the same
+ * thing. The overhang comes down from the default because `vw` is measured
+ * against the window either way, and 12vw of overhang inside 60% of the window
+ * crops the tiles about twice as hard as it does across all of it.
+ */
+.showcase {
+  display: none;
+
+  @include t.mq('xl') {
+    --wall-overhang: 5vw;
+
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
 }
 
 .heading {
   margin: 0;
   @include t.screenTitleText;
   text-align: center;
+
+  // Centred over a 40% column beside a wall reads as a mistake rather than a
+  // choice; the form's own edge is what it should line up with.
+  @include t.mq('xl') {
+    align-self: stretch;
+    text-align: start;
+  }
 }
 
 .card {
@@ -32,12 +147,16 @@
 
 // Stacked on a phone, side by side once there is room: two cards of body copy
 // squeezed into a 390px row would be four words a line.
+//
+// A container query, not `mq('sm')`: from `xl` this column is 40% of the
+// window, so the window's width stopped being an answer to "is there room for
+// two cards" the moment the wall took the other 60%.
 .modes {
   display: grid;
   grid-template-columns: 1fr;
   gap: t.$space-10;
 
-  @include t.mq('sm') {
+  @container setup (min-width: #{t.$bp-sm}) {
     grid-template-columns: 1fr 1fr;
   }
 }

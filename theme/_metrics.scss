@@ -273,6 +273,11 @@ $wall-rows-md: 4;
 $wall-gap: 26px;
 $wall-tilt: -8deg;
 $wall-overhang: 12vw;
+// The veil's blur, paired with `$scrim-wall` / `$scrim-wall-soft`. A wall with
+// nothing on top of it wants far less: 6px is what makes display type readable,
+// and applied to a wall that carries no type it just looks out of focus.
+$wall-scrim-blur: 6px;
+$wall-scrim-blur-soft: 2px;
 
 // The landing page's join pill. Its own control, not the `/join` route's slots:
 // one is a glance-and-go field beside a headline, the other is a thumb-sized
@@ -336,9 +341,11 @@ $duel-card-width: 392px;
 $reveal-winner-width: 400px;
 $reveal-column-width: 440px;
 
-/// The single column `/join` and `/host` are built in. Both are entry screens
-/// that stay one column at every width — the design draws them as phone
-/// screens a desktop also shows.
+/// The single column `/join` and `/host` are built in. `/join` stays one column
+/// at every width — the design draws it as a phone screen a desktop also shows.
+/// `/host` holds this width as its form column, and from `xl` puts a GIF wall
+/// in the 60% beside it, because a page of settings with nothing either side
+/// says nothing about what the room is for.
 $join-column-width: 420px;
 $setup-column-width: 600px;
 

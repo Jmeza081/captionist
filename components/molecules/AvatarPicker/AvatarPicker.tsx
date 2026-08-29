@@ -95,8 +95,10 @@ export function AvatarPicker({ value, onChange, label, seeds = AVATAR_SEEDS }: A
           {label}
         </span>
         {/* Says what it does rather than relying on an `aria-label` the visible
-            text would then have to contain. */}
-        <Button variant="ghost" size="inline" onClick={shuffle}>
+            text would then have to contain. `text` rather than the default
+            size because it ends the row: the pill's horizontal padding would
+            inset the label from the edge the field below is flush with. */}
+        <Button variant="ghost" size="text" onClick={shuffle}>
           Shuffle faces
         </Button>
       </Inline>

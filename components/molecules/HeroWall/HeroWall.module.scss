@@ -23,7 +23,10 @@
  */
 .grid {
   position: absolute;
-  inset: -(t.$wall-overhang);
+  // A custom property, so a consumer that gives the wall a column rather than
+  // the viewport can dial the overhang back — `vw` is measured against the
+  // window either way, so the same 12vw crops far harder inside 60% of it.
+  inset: calc(-1 * var(--wall-overhang, #{t.$wall-overhang}));
   display: grid;
   // `minmax(0, 1fr)`, not `1fr`: a bare `1fr` floors at the content's minimum
   // size, and a track full of media would refuse to shrink below it.
@@ -59,12 +62,24 @@
 /**
  * The design's 75% black with a 6px blur. It is what makes 98px type legible
  * over arbitrary media — the wall cannot be trusted to be dark.
+ *
+ * `soft` is the same veil for a wall that carries no type. Half the black and
+ * a third of the blur: enough to sit the tiles behind the page, not enough to
+ * read as out of focus.
  */
 .scrim {
   position: absolute;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
+}
+
+.full {
+  background-color: t.$scrim-wall;
+  backdrop-filter: blur(t.$wall-scrim-blur);
+}
+
+.soft {
+  background-color: t.$scrim-wall-soft;
+  backdrop-filter: blur(t.$wall-scrim-blur-soft);
 }
 
 .toggle {

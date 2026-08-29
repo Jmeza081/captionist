@@ -52,4 +52,61 @@ test.describe('setting a room up', () => {
 
     await expect(page.getByRole('listitem').filter({ hasText: 'Jesska' })).toBeVisible()
   })
+
+  /**
+   * The screen's own layout, which is a claim about reach rather than looks.
+   *
+   * Both projects run this file, and the split turns on at `xl` (1280px) — so
+   * desktop at 1440 sees two columns and the phone sees one. The tests below
+   * branch on the viewport rather than skipping, because "no wall on a phone"
+   * is as much the requirement as "a wall on a desktop".
+   */
+  test('keeps the CTA in reach without scrolling', async ({ page }) => {
+    await page.goto('/host')
+
+    // Not `toBeVisible` — that is true of anything below the fold. This is the
+    // assertion that the dock does its job: the button is on screen before
+    // anybody scrolls past two Steppers to find it.
+    await expect(page.getByRole('button', { name: 'Open the room' })).toBeInViewport()
+  })
+
+  test('shows the wall beside the form on a desktop, and not on a phone', async ({ page }) => {
+    await page.goto('/host')
+
+    const wall = page.locator('[data-testid="hero-wall"]')
+    const split = (page.viewportSize()?.width ?? 0) >= 1280
+
+    if (split) {
+      await expect(wall).toBeVisible()
+      // It is the larger half. Anything less and it reads as a margin.
+      const wallBox = await wall.boundingBox()
+      const card = await page.getByRole('textbox', { name: 'Nickname' }).boundingBox()
+      expect(wallBox).not.toBeNull()
+      expect(card).not.toBeNull()
+      // The form is entirely to the left of where the wall's column begins.
+      expect(card?.x ?? 0).toBeLessThan((page.viewportSize()?.width ?? 0) * 0.4)
+    } else {
+      await expect(wall).toBeHidden()
+    }
+  })
+
+  test('lines the shuffle button up with the field under it', async ({ page }) => {
+    await page.goto('/host')
+
+    const shuffle = await page.getByRole('button', { name: 'Shuffle faces' }).boundingBox()
+    // The field's own box, not the `<input>` inside it — the input sits within
+    // the field's horizontal padding, so its edge is not the one you see.
+    const field = await page
+      .getByRole('textbox', { name: 'Nickname' })
+      .locator('xpath=..')
+      .boundingBox()
+    expect(shuffle).not.toBeNull()
+    expect(field).not.toBeNull()
+
+    // The bug this replaced: the button's pill padding inset its own right
+    // edge 34px from the column, so the two controls did not share an edge.
+    const shuffleRight = (shuffle?.x ?? 0) + (shuffle?.width ?? 0)
+    const fieldRight = (field?.x ?? 0) + (field?.width ?? 0)
+    expect(Math.abs(shuffleRight - fieldRight)).toBeLessThanOrEqual(2)
+  })
 })

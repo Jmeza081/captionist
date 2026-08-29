@@ -41,6 +41,7 @@ decision the name has to make for you.
 | `$surface-track` | `#242425` | Segmented-control track |
 | `$surface-tab-active` | `#2A2B2C` | The reaction picker's selected pack tab |
 | `$surface-field` | `#303031` | Fields, active segment |
+| `$surface-vote-fade` | `rgba(19,20,21,0)` | The transparent end of `$surface-vote`, for a dock fading into what scrolls under it |
 
 Accents:
 
@@ -57,6 +58,12 @@ Accents:
 These carry meaning and must not be used decoratively. Tints and borders are
 tokenised too (`$accent-fill-weak/-fill/-fill-strong`, `$accent-border-*`,
 `$urgent-fill`, `$winner-fill*`) — pick one rather than inventing an alpha.
+
+Scrims are tokenised for the same reason: `$scrim-wall` (`rgba(0,0,0,.75)`) is
+the GIF wall's veil where display type sits on top of it, `$scrim-wall-soft`
+(`.45`) where nothing does — `HeroWall`'s `scrim` prop picks between them, with
+`$wall-scrim-blur` / `$wall-scrim-blur-soft` as the matching backdrop blurs.
+`$scrim-own-entry`, `$scrim-tally` and `$scrim-backdrop` cover the rest.
 
 Text on dark is named by role: `$text-primary` (`#fff`), `$text-chat` (.78),
 `$text-body` (.55), `$text-label` (.45), `$text-meta` (.4), `$text-caption`
@@ -242,7 +249,7 @@ primitives.
 | Component | Tier | Use when |
 | --- | --- | --- |
 | `Icon` | atom | Any glyph. Eleven stroked paths traced from the design; `currentColor` by default |
-| `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why"; `href` renders it as a link when the action is really a navigation |
+| `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `text` (no horizontal padding, for a label that has to share an edge with the column it sits in), `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why"; `href` renders it as a link when the action is really a navigation |
 | `Eyebrow` | atom | The small uppercase marker above a heading. Uppercases in CSS, so the string stays sentence case |
 | `Tag` | atom | A role or ownership marker — HOST, YOU, 1st |
 | `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected |
@@ -290,7 +297,7 @@ primitives.
 | `QuickJoin` | molecule | Typing a room code on the landing page, where it sits beside a headline on glass. One masked field, `C-______`, with an inline key — not `CodeEntry` at another size |
 | `RoomShare` | molecule | The lobby share block — QR, code, copy and Slack |
 | `LandingNav` | molecule | The public front door's bar. Not `AppHeader` — that one is live room state, this is static links and a way in |
-| `HeroWall` | molecule | The landing page's tilted wall of looping GIFs. Video over GIF, still-first, and stoppable |
+| `HeroWall` | molecule | A tilted wall of looping GIFs — the landing hero's background, and the 60% beside `/host`'s form. Video over GIF, still-first, and stoppable. `scrim` picks the veil's weight: `full` for a wall carrying display type, `soft` for one carrying nothing |
 | `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
 | `AvatarPicker` | molecule | Choosing a face on `/join` and `/host`. Offers a window of eight from the sixty-four-seed catalogue with a "Shuffle faces" that re-rolls the offer and keeps your pick. A real radiogroup with roving tabindex and arrow keys. Owns the seed-to-preview-colour mapping so two screens cannot drift |
 | `ModeCard` | molecule | One of the two game modes, as a card with the sentence that explains it — a format, not a setting |
@@ -313,7 +320,7 @@ primitives.
 | `ScoreScreen` | organism | Standings between rounds, and the advance that starts the next one |
 | `PodiumScreen` | organism | The champion, the final three, and the two ways on |
 | `JoinScreen` | organism | Entering somebody else's room: the code, a face and a name, before a seat is asked for |
-| `HostSetupScreen` | organism | The only screen where a room's rules are set — and its defaults are playable untouched |
+| `HostSetupScreen` | organism | The only screen where a room's rules are set — and its defaults are playable untouched. One column below `xl`, a 40/60 form-and-wall split above it, with the CTA docked to the form column in both |
 | `LandingActions` | organism | The two ways into a room, side by side — start one, or type a code. Routes, which is what puts it at this tier |
 
 An organism is anything that calls `useRoom()` — that is what puts these here

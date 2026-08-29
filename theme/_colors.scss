@@ -19,6 +19,11 @@ $surface-track: #242425; //       segmented-control track
 $surface-tab-active: #2a2b2c; //  the reaction picker's selected pack tab
 $surface-field: #303031; //       fields, active segment
 
+// The transparent end of `$surface-vote`, for a dock that fades into the
+// controls scrolling under it. Same colour, no alpha — a gradient to
+// `transparent` goes through black in some engines and greys the fade out.
+$surface-vote-fade: rgba(19, 20, 21, 0);
+
 // --- Accents ----------------------------------------------------------------
 
 $accent: #7b61ff; //              primary action, focus ring, selection
@@ -92,6 +97,13 @@ $glass-fill: rgba(255, 255, 255, 0.08);
 $glass-line: rgba(255, 255, 255, 0.16);
 $glass-key: rgba(255, 255, 255, 0.1); //   the action inside the pill
 $glass-text: rgba(255, 255, 255, 0.6); //  the code mask
+
+// The GIF wall's veil, in two weights. `$scrim-wall` is what holds 98px type
+// legible over media we do not control — the landing hero. `$scrim-wall-soft`
+// is for a wall nothing sits on top of, where the veil only has to keep the
+// tiles behind the page rather than in front of it.
+$scrim-wall: rgba(0, 0, 0, 0.75);
+$scrim-wall-soft: rgba(0, 0, 0, 0.45);
 
 // Scrim over a player's own entry, and the modal backdrop.
 $scrim-own-entry: rgba(10, 10, 11, 0.5);
