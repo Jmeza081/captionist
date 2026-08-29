@@ -1,0 +1,52 @@
+@use 'theme' as t;
+
+@include t.spinKeyframes;
+
+.ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+
+// The track and the arc are one element: a full hairline border, with a single
+// side repainted in the accent. Rotating that gives the travelling arc for the
+// price of one box — an SVG here would be four more nodes saying the same thing.
+.arc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: t.$boot-ring-stroke solid t.$line-hairline;
+  border-top-color: t.$accent;
+  animation: spin 1.1s linear infinite;
+}
+
+// Done. The whole circle goes accent and the rotation stops, so a completed
+// ring reads as a closed loop rather than a stalled one.
+.still {
+  border-color: t.$accent;
+  animation: none;
+}
+
+.slot {
+  display: grid;
+  place-items: center;
+}
+
+.badge {
+  width: t.$boot-ring;
+  height: t.$boot-ring;
+}
+
+.inline {
+  width: t.$boot-step-marker;
+  height: t.$boot-step-marker;
+}
+
+// The ring says "working" and the checklist beside it says what. With motion
+// off, the arc holds still and the words carry it alone.
+@media (prefers-reduced-motion: reduce) {
+  .arc {
+    animation: none;
+  }
+}

@@ -6,9 +6,10 @@ export interface RoomCodeProps {
   /**
    * `display` is the entry screen's, sized to the viewport. `compact` is the
    * lobby's, sitting beside the QR inside a fixed-width column — where a
-   * viewport-scaled size would simply overflow.
+   * viewport-scaled size would simply overflow. `pill` is the boot screen's,
+   * inline beside its own label.
    */
-  size?: 'display' | 'compact'
+  size?: 'display' | 'compact' | 'pill'
 }
 
 /**

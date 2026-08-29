@@ -24,6 +24,14 @@
   transition: width 1s linear;
 }
 
+.accent {
+  background-color: t.$accent;
+  // Boot steps land in a few hundred milliseconds, not over a minute. The
+  // countdown's one-second sweep would still be catching up when the room
+  // opens, so this one keeps pace with what it measures.
+  transition-duration: t.$duration-toggle;
+}
+
 .urgent {
   background-color: t.$urgent;
 }

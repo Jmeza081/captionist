@@ -34,23 +34,6 @@
   min-width: 0;
 }
 
-.wordmark {
-  // The design's phone topbar carries no wordmark — there is only room for
-  // where you are and how long is left.
-  display: none;
-
-  @include t.mq('md') {
-    display: block;
-  }
-
-  font-family: t.$font-sans;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: t.$text-primary;
-  white-space: nowrap;
-}
-
 .phase {
   font-family: t.$font-sans;
   font-size: 13px;

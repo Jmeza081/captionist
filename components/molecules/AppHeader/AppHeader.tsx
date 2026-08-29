@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { Logo } from '@/components/atoms/Logo'
 import { Tag } from '@/components/atoms/Tag'
+import { Wordmark } from '@/components/molecules/Wordmark'
 import styles from './AppHeader.module.scss'
 
 export interface AppHeaderProps {
@@ -38,8 +38,7 @@ export function AppHeader({
   return (
     <header className={`${styles.header} ${styles[surface]}`}>
       <div className={styles.left}>
-        <Logo />
-        <span className={styles.wordmark}>Captionist</span>
+        <Wordmark />
         {host && <Tag>Host</Tag>}
         {phase && <span className={styles.phase}>{phase}</span>}
       </div>

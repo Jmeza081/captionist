@@ -98,13 +98,6 @@
   }
 }
 
-.connecting {
-  margin: 0;
-  padding: t.$screen-pad-v t.$screen-pad-h;
-  @include t.bodyText;
-  color: t.$text-meta;
-}
-
 // `contents` rather than `block`: the rail has to stay a flex sibling of the
 // content column, not sit inside an extra box that would break the full-height
 // stretch it relies on above `md`. Below it, the rail positions itself as a

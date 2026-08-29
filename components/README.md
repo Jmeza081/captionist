@@ -23,12 +23,15 @@ could ever import. Forbidding it would push genuinely atomic components like
 Nothing else gets this exemption: if a component imports anything from
 `components/` other than `Icon`, it is a molecule.
 
-**A molecule may hold another molecule, and two do.** `HelpModal` configures
+**A molecule may hold another molecule, and three do.** `HelpModal` configures
 `Modal` — the walkthrough is a thing the product has rather than a thing each
 of its four entry points writes, and it holds nothing but which step and which
 format you are reading. `RoomToolbox` renders `ReactionToolbar` inside its body — the picker is a section of the
 toolbox rather than a popover over it, which is how the room's reactions stay
-one open surface rather than two. The tier is about *dependencies*, not depth:
+one open surface rather than two. `AppHeader` and `LandingNav` both render
+`Wordmark`, which is a molecule for the narrower reason below: it is two
+elements and no state, but it imports `Logo`, and `Icon` is the only exemption.
+The tier is about *dependencies*, not depth:
 neither component fetches, subscribes or routes, so both are still molecules
 and the organism above them is still the only thing that knows a room exists.
 The rule this does not licence is composing your way out of a tier — if the

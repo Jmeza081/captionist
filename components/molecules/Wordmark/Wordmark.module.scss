@@ -1,0 +1,33 @@
+@use 'theme' as t;
+
+.lockup {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  min-width: 0;
+}
+
+.name {
+  font-family: t.$font-sans;
+  font-weight: 800;
+  color: t.$text-primary;
+  white-space: nowrap;
+}
+
+// The in-room topbar. The design's phone layout carries no wordmark there —
+// only where you are and how long is left — so the name stands down and the
+// mark alone holds the corner.
+.header .name {
+  display: none;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+
+  @include t.mq('md') {
+    display: block;
+  }
+}
+
+.landing .name {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}

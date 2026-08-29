@@ -3,12 +3,12 @@ import styles from './Logo.module.scss'
 export interface LogoProps {
   /**
    * Which mark the design draws. `header` is the 26px in-room bar, `landing`
-   * the 34px front door.
+   * the 34px front door, `badge` the 56px one the boot interstitial rings.
    *
    * A named size rather than a number: both are `theme/` metrics, and a
    * numeric prop would put raw px back in the call site.
    */
-  size?: 'header' | 'landing'
+  size?: 'header' | 'landing' | 'badge'
 }
 
 /**

@@ -10,7 +10,9 @@ import {
   useSyncExternalStore,
 } from 'react'
 import type { ActionInput } from '@/lib/game/actions'
+import type { RoomCode } from '@/lib/game/types'
 import type { ChatEntry, EventSnapshot, EventStore, Tally } from './events'
+import type { Identity } from './identity'
 import { tallyKey } from './events'
 import type { RoomSnapshot, RoomStore } from './store'
 import { shallowEqual } from './store'
@@ -29,6 +31,33 @@ export interface RoomBinding {
   roomNow: () => number
   /** Fires when the host refuses something *this* player asked for. */
   onRefused: (listener: (reason: string) => void) => Unsubscribe
+  /**
+   * Who this tab is, as chosen on `/join` or `/host`.
+   *
+   * Not in the store, because it never changes and nothing re-renders on it.
+   * The boot screen is what needs it: it draws the player's own face before
+   * there is a roster to read one from.
+   */
+  identity: Identity
+  /**
+   * The room this tab is opening, known from the URL rather than from state.
+   * The boot screen shows it before any broadcast has arrived to carry it.
+   */
+  roomCode: RoomCode
+  /**
+   * `?fast=`, so the boot interstitial's pacing scales with the room's clock
+   * exactly as everything else timed does. Read by `useBootTimeline`.
+   */
+  fast?: number
+  /**
+   * Whether the boot is worth pacing at all.
+   *
+   * False for a `?phase=` fixture, which *is* the room: it asks no server for
+   * a seat and claims nothing, so there is no work to report and holding a
+   * progress screen over it would be the invented stage this whole screen
+   * exists not to have.
+   */
+  pacedBoot: boolean
   /** Chat and reactions, which are never room state. */
   events: EventStore
   publish: (event: RoomEvent) => void
@@ -51,6 +80,26 @@ export function useRoom(): RoomSnapshot & { send: (action: ActionInput) => void 
     binding.store.getServerSnapshot,
   )
   return { ...snapshot, send: binding.send }
+}
+
+/** The local player's chosen name and face. Constant for the tab's life. */
+export function useIdentity(): Identity {
+  return useBinding().identity
+}
+
+/** Which room this is. Constant, and known before the room exists. */
+export function useRoomCode(): RoomCode {
+  return useBinding().roomCode
+}
+
+/** The room's clock scale, or `undefined` for real time. */
+export function useClockScale(): number | undefined {
+  return useBinding().fast
+}
+
+/** False when the room is a local fixture with no boot to watch. */
+export function usePacedBoot(): boolean {
+  return useBinding().pacedBoot
 }
 
 export function useRoomSend(): (action: ActionInput) => void {

@@ -12,6 +12,12 @@ export interface ProgressRailProps {
    * mechanics, same colours, twice the height and a radius.
    */
   size?: 'header' | 'bar'
+  /**
+   * `default` is the countdown's white fill. `accent` is the boot
+   * interstitial's, where the rail measures work rather than time and the
+   * design puts it in the same purple as the ring above it.
+   */
+  tone?: 'default' | 'accent'
 }
 
 /**
@@ -25,6 +31,7 @@ export function ProgressRail({
   urgent = false,
   label,
   size = 'header',
+  tone = 'default',
 }: ProgressRailProps) {
   const pct = Math.min(100, Math.max(0, fraction * 100))
 
@@ -39,7 +46,7 @@ export function ProgressRail({
       aria-hidden={label ? undefined : true}
     >
       <div
-        className={`${styles.fill} ${urgent ? styles.urgent : ''}`}
+        className={`${styles.fill} ${styles[tone]} ${urgent ? styles.urgent : ''}`}
         style={{ width: `${pct}%` }}
       />
     </div>

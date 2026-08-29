@@ -42,6 +42,10 @@ test.describe('the lobby', () => {
   test('reads the roster left to right rather than one name per row', async ({ page }) => {
     test.skip(page.viewportSize()!.width < 768, 'single column below the breakpoint')
     await page.goto('/room/DEV?seed=42&phase=lobby')
+    // Measure the roster, not whatever list is on screen first. The boot
+    // interstitial's steps are list items too, and `boundingBox` does not wait
+    // for the *right* list — so without this the measurement races the room.
+    await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
 
     const rows = page.getByRole('listitem')
     const first = await rows.nth(0).boundingBox()

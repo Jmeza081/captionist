@@ -56,6 +56,25 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
 
 // The hero number on the podium and the room code. Inter's tabular figures
 // keep columns of scores from shifting as they count up.
+// Text for assistive tech only.
+//
+// Four modules had hand-written copies of this before it was a mixin: the room
+// code spells itself out, the round pips and the tally say in words what they
+// draw, and the hero wall names itself. The boot checklist, which reports each
+// step's state, would have been the fifth. `display: none` would take all five out of the accessibility tree,
+// which is the one thing they exist to be in.
+@mixin srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @mixin tabularFigures {
   font-variant-numeric: tabular-nums;
 }
@@ -202,4 +221,14 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
 
   font-size: 2.75rem;
   letter-spacing: 0.04em;
+}
+
+// Inside a pill, beside its own label — the boot screen's "Room C-F34213".
+// Here the code is being *identified*, not read out to a room, so it sits at
+// label weight rather than dominating the card the title owns.
+@mixin roomCodePillText {
+  @include roomCodeText;
+
+  font-size: 1.0625rem;
+  letter-spacing: 0.06em;
 }

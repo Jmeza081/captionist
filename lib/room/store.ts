@@ -14,6 +14,39 @@ import type { TransportStatus, Unsubscribe } from './transport'
  *    a function instead. The visible countdown is a hook that touches no store
  *    state at all.
  */
+/**
+ * How far the room has got towards existing.
+ *
+ * Four values because four things actually happen — the seat probe, the claim,
+ * the wait for a first broadcast, and (a guest's alone) the wait to be seated.
+ * There is no `ready`: being seated is a fact about `state` and `selfId`, so
+ * `isSeated` derives it rather than a fifth stamp that could disagree.
+ * Nothing here is invented to fill a gap: see `bootTimeline`, which paces what
+ * is real rather than adding to it.
+ */
+export type BootStage = 'probing' | 'claiming' | 'waiting' | 'seating'
+
+export interface BootProgress {
+  readonly stage: BootStage
+  /**
+   * Which interstitial to draw. Seeded from what this tab *meant* to do — a
+   * tab arriving from `/host` carries its pending settings — and corrected the
+   * moment the claim answers. Without the seed a host opens on the guest's
+   * screen and flips a beat later, because nobody knows who hosts until the
+   * election resolves.
+   */
+  readonly role: 'host' | 'guest'
+  /**
+   * A boot that stopped, in a sentence.
+   *
+   * Distinct from `error`, which is a room that could never have existed. This
+   * one is a room that exists and would not have us — a full room refusing a
+   * seat, most likely, whose refusal has no snackbar to land in while the
+   * interstitial is still up.
+   */
+  readonly failure?: string
+}
+
 export interface RoomSnapshot {
   readonly state: PublicState | undefined
   readonly status: TransportStatus
@@ -24,10 +57,12 @@ export interface RoomSnapshot {
    *
    * Distinct from `status`, which is a connection that exists and is unwell.
    * This is a room that could not be built — no realtime configured, most
-   * likely — and without it that case renders as "Joining the room…" forever,
-   * which is the one thing a misconfigured server must not do.
+   * likely. Without it that case spins on the boot screen forever, which is
+   * the one thing a misconfigured server must not do; with it, the screen
+   * says so where `boot.failure` would. See `RoomBootScreen`.
    */
   readonly error?: string
+  readonly boot: BootProgress
 }
 
 export interface RoomStore {
@@ -48,14 +83,21 @@ export interface RoomStore {
    */
   setIdentity(selfId: PlayerId, isHost: boolean): void
   setError(error: string): void
+  /** Where the boot has got to. Merged, so a stage stamp can't clear a role. */
+  setBoot(patch: Partial<BootProgress>): void
 }
 
-export function createRoomStore(selfId: PlayerId, isHost: boolean): RoomStore {
+export function createRoomStore(
+  selfId: PlayerId,
+  isHost: boolean,
+  role: BootProgress['role'] = 'guest',
+): RoomStore {
   let snapshot: RoomSnapshot = {
     state: undefined,
     status: 'connecting',
     selfId,
     isHost,
+    boot: { stage: 'probing', role },
   }
   const server = snapshot
   const listeners = new Set<() => void>()
@@ -86,12 +128,42 @@ export function createRoomStore(selfId: PlayerId, isHost: boolean): RoomStore {
       snapshot = { ...snapshot, error }
       emit()
     },
+    setBoot(patch) {
+      const next = { ...snapshot.boot, ...patch }
+      // Same contract as every other setter: `getSnapshot` must return a stable
+      // reference between real changes, and React 19 re-reads it during render.
+      if (
+        next.stage === snapshot.boot.stage &&
+        next.role === snapshot.boot.role &&
+        next.failure === snapshot.boot.failure
+      ) {
+        return
+      }
+      snapshot = { ...snapshot, boot: next }
+      emit()
+    },
     setIdentity(nextSelfId, nextIsHost) {
       if (snapshot.selfId === nextSelfId && snapshot.isHost === nextIsHost) return
       snapshot = { ...snapshot, selfId: nextSelfId, isHost: nextIsHost }
       emit()
     },
   }
+}
+
+/**
+ * Is this tab actually *in* the room yet?
+ *
+ * The boot is not over when the first broadcast lands — that only proves the
+ * room exists. A guest still has to ask for a seat and be given one, and until
+ * they are, the lobby would draw a roster they are not on. So both the screen's
+ * hand-off and the refusal path read this one predicate, and cannot disagree
+ * about what "joined" means.
+ *
+ * True for a host on their first broadcast: `createRoom` seats them.
+ */
+export function isSeated(snapshot: RoomSnapshot): boolean {
+  const { state, selfId } = snapshot
+  return state !== undefined && state.players.some((player) => player.id === selfId)
 }
 
 /**

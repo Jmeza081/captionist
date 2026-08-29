@@ -15,7 +15,7 @@ import { createEventStore } from './events'
 import { ensureIdentity, type Identity } from './identity'
 import { readLevers, type Levers } from './levers'
 import { clearPendingSettings, readPendingSettings } from './pendingSettings'
-import { createRoomStore } from './store'
+import { createRoomStore, isSeated, type BootProgress } from './store'
 import type { RoomTransport } from './transport'
 import { RoomContext, type RoomBinding } from './useRoom'
 
@@ -153,6 +153,23 @@ function resolveSeat(levers: Levers): Seat {
   return { identity, hostId: identity.id, declared: false }
 }
 
+/**
+ * Which interstitial to open on, before anybody knows who hosts.
+ *
+ * The claim probe is the authority and it takes 180ms on the tab transport,
+ * 400ms of settle on Ably — long enough that a host seeded as a guest opens on
+ * "Joining the room" and flips. So the *intent* seeds it and the claim
+ * corrects it, from two signals that are already synchronous at mount: a
+ * fixture declares itself the room, and a tab arriving from `/host` left its
+ * chosen settings in `sessionStorage` on the way out.
+ *
+ * Peeked, never consumed — `startAsHost` still owns clearing them.
+ */
+function intendedRole(seat: Seat): BootProgress['role'] {
+  if (seat.declared) return 'host'
+  return readPendingSettings() ? 'host' : 'guest'
+}
+
 export function RoomProvider({ roomCode, search, children }: RoomProviderProps) {
   const levers = useMemo(() => readLevers(toSearchParams(search)), [search])
   const seat = useMemo(() => resolveSeat(levers), [levers])
@@ -160,7 +177,7 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
 
   // `isHost` starts false and is corrected the moment the claim resolves: a tab
   // that assumed it was hosting would flash the host's controls at a guest.
-  const [store] = useState(() => createRoomStore(selfId, false))
+  const [store] = useState(() => createRoomStore(selfId, false, intendedRole(seat)))
   /**
    * Chat and reactions, in their own store beside the room's.
    *
@@ -212,6 +229,8 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         : await probeRealtime(roomCode, selfId)
       if (cancelled) return
       const stubbed = realtime.stubbed
+      // The seat is signed; the room itself is the next question.
+      store.setBoot({ stage: 'claiming' })
 
       // **Play under the seat the server signed, not the one we minted.** On a
       // first visit the local id has no signature, so the route issues a fresh
@@ -235,6 +254,14 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
       }
       cleanups.push(() => hostEndpoint.close())
 
+      // The claim is the authority on which screen this is. It overrides the
+      // seed `intendedRole` opened on — including the case that seed cannot
+      // predict: a guest who typed a code nobody was hosting and just won it.
+      store.setBoot({
+        stage: 'waiting',
+        role: hostEndpoint.isHost ? 'host' : 'guest',
+      })
+
       if (hostEndpoint.isHost) {
         await startAsHost(hostEndpoint, stubbed, activeId, hostId)
       } else {
@@ -250,8 +277,8 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         return
       }
       // Anything else is a bug. It still gets a sentence, because a bug that
-      // leaves the page on "Joining the room…" forever is the worst shape it
-      // could take, but the detail belongs in the log.
+      // leaves the boot screen spinning forever is the worst shape it could
+      // take, but the detail belongs in the log.
       store.setError('This room didn’t open. Reload, or start a new one.')
       console.error('[room] could not connect', error)
     })
@@ -429,6 +456,7 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
           if (mine && mine.connection === 'online') return
 
           asked = true
+          store.setBoot({ stage: 'seating' })
           if (mine) {
             transport.sendIntent({ type: 'player/reconnected' })
             return
@@ -466,7 +494,21 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         if (selfTransportRef.current === transport) selfTransportRef.current = undefined
       })
       // The one road a refusal can take to another tab.
-      cleanups.push(transport.onRefusal(announce))
+      cleanups.push(
+        transport.onRefusal((reason) => {
+          // A refusal arriving before we are seated has nowhere to land: the
+          // interstitial is still up, and it returns before the snackbar
+          // renders. So a room that would not have us — full, most likely —
+          // said so into silence and left the boot spinning forever. It goes
+          // on the screen that is actually showing instead.
+          //
+          // Only here, not in `announce`: the in-process callback is the
+          // host's own mid-game refusals, and a host is never refused a seat
+          // in a room they just built.
+          if (!isSeated(store.getSnapshot())) store.setBoot({ failure: reason })
+          announce(reason)
+        }),
+      )
       // Chat and reactions. Deliberately not through `GuestClient`, which is
       // about state ordering and clock skew — an event has neither a `rev` nor
       // a deadline, so routing it through there would only borrow machinery it
@@ -497,6 +539,10 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         guestRef.current?.send(action)
       },
       roomNow: () => guestRef.current?.roomNow() ?? Date.now(),
+      identity: seat.identity,
+      roomCode,
+      fast: levers.fast,
+      pacedBoot: !seat.declared,
       onRefused: (listener) => {
         refusalListeners.current.add(listener)
         return () => refusalListeners.current.delete(listener)
@@ -517,7 +563,7 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         selfTransportRef.current?.publishEvent(event)
       },
     }),
-    [store, events],
+    [store, events, seat.identity, seat.declared, levers.fast, roomCode],
   )
 
   return <RoomContext.Provider value={binding}>{children}</RoomContext.Provider>

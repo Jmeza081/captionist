@@ -45,6 +45,7 @@ import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { RevealReactionBar } from '@/components/molecules/RevealReactionBar'
 import { RoomShare } from '@/components/molecules/RoomShare'
 import { RoundOpener, type GameMode } from '@/components/molecules/RoundOpener'
+import { RoomBootScreen } from '@/components/organisms/RoomBootScreen'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
 import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import { ATTACHMENT, MEDIA, PLAYER_COLORS } from './placeholders'
@@ -641,6 +642,48 @@ export function ComponentGallery() {
               onOpenToolbar={() => undefined}
             />
             <ReactionFloaters burst={burst} />
+          </div>
+        </Case>
+      </Section>
+
+      {/* ---------------- Boot ---------------- */}
+      <Section id="boot" title="Room boot" spec="host · guest · refused">
+        <Case label="Guest — the seat has been asked for, not yet given">
+          <div className={styles.bootDemo}>
+            <RoomBootScreen
+              variant="guest"
+              code="C-F34213"
+              states={['done', 'done', 'active']}
+              fraction={5 / 6}
+              player={PLAYERS.vic}
+              cancelHref="/join/C-F34213"
+            />
+          </div>
+        </Case>
+
+        <Case label="Host — the room is being built around the code they picked">
+          <div className={styles.bootDemo}>
+            <RoomBootScreen
+              variant="host"
+              code="C-F34213"
+              states={['done', 'active', 'pending']}
+              fraction={0.5}
+              cancelHref="/host"
+            />
+          </div>
+        </Case>
+
+        <Case label="Refused — a full room, said on the screen that is showing">
+          <div className={styles.bootDemo}>
+            <RoomBootScreen
+              variant="guest"
+              code="C-F34213"
+              states={['done', 'done', 'failed']}
+              fraction={2 / 3}
+              player={PLAYERS.vic}
+              cancelHref="/join/C-F34213"
+              failure="This room is full — 20 players is the limit."
+            />
           </div>
         </Case>
       </Section>

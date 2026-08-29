@@ -134,8 +134,8 @@ function defer(run: () => void): void {
  *
  * Resolves once the question is settled, which is why it is async: every
  * caller above needs the answer before it can decide whether to build an
- * engine. The wait is one `probeMs` at worst, and zero perceived cost — the
- * shell already draws its chrome and "Joining the room…" while state is absent.
+ * engine. The wait is one `probeMs` at worst, and it is not dead time: this
+ * *is* the boot screen's first step, and it reports as `claiming`.
  */
 export async function connectBroadcast(options: BroadcastOptions): Promise<RoomTransport> {
   const { roomCode, selfId } = options

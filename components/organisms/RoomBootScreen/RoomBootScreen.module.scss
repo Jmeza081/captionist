@@ -1,0 +1,75 @@
+@use 'theme' as t;
+
+// Centred on the viewport rather than docked under a header: nothing is behind
+// this screen yet, so there is no room chrome for it to sit inside. It is the
+// only full-page screen in the app that is not a phase.
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: t.$space-34;
+  min-height: 100dvh;
+  padding: t.$screen-pad-v t.$space-20;
+
+  @include t.mq('md') {
+    padding: t.$screen-pad-v-lg t.$screen-pad-h;
+  }
+}
+
+.card {
+  width: 100%;
+  max-width: t.$boot-card-width;
+  box-shadow: t.$shadow-modal;
+}
+
+// The host's badge. The mark carries its own ground and its own corners, so
+// this only sizes the slot the ring is drawn around — see `Logo`.
+.mark {
+  display: grid;
+  place-items: center;
+  width: t.$boot-badge;
+  height: t.$boot-badge;
+}
+
+.title {
+  @include t.screenTitleText;
+
+  margin: 0;
+  text-align: center;
+}
+
+// Label and code on one plate, so the code reads as the thing being labelled
+// rather than as a second line of the title.
+.codePill {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-10;
+  padding: t.$space-8 t.$space-14;
+  border-radius: t.$radius-pill;
+  background-color: t.$fill-secondary;
+}
+
+.codeLabel {
+  @include t.labelText;
+
+  color: t.$text-body;
+}
+
+.failure {
+  @include t.bodyText;
+
+  margin: 0;
+  color: t.$urgent;
+  text-align: center;
+}
+
+.footnote {
+  @include t.bodyText;
+
+  max-width: t.$boot-card-width;
+  margin: 0;
+  color: t.$text-caption;
+  text-align: center;
+  text-wrap: balance;
+}

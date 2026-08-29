@@ -121,6 +121,20 @@
   }
 }
 
+// The boot interstitial's ring. A rotation rather than an arc that grows and
+// shrinks: the ring reports "still working", and a length that varies would
+// read as progress the room cannot actually measure.
+@mixin spinKeyframes {
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
 $duration-toast: 0.2s;
 $duration-toggle: 0.16s;
 

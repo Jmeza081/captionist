@@ -20,9 +20,18 @@ test.describe('replying to a caption', () => {
   }) => {
     await page.goto(`/room/${REPLY}?seed=42&phase=vote&as=p2&gifs=stub`)
 
-    // Chat is collapsed by default at both sizes, so staging a reply has to
-    // open it — a quote staged behind a shut rail is a dead end.
+    // Shut the rail rather than assuming it starts shut. It does on a phone and
+    // does *not* above `md` — `chatOpen` falls back to `useWideViewport()` — so
+    // the old unconditional assertion only ever held on desktop by resolving
+    // before the room had finished rendering. What is being tested is that
+    // staging a reply *opens* chat, and that needs chat shut at both sizes.
+    await expect(page.locator('main[data-phase]')).toBeVisible()
+    const closeChat = page.getByRole('button', { name: 'Close chat' })
+    if (await closeChat.isVisible()) await closeChat.click()
     await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeHidden()
+
+    // A quote staged behind a shut rail is a dead end, so this is the assertion
+    // the whole test turns on.
 
     await page.getByRole('button', { name: 'Reply in chat to It compiles. Ship it.' }).click()
     await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()

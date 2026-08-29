@@ -1,0 +1,83 @@
+@use 'theme' as t;
+
+.list {
+  // The colours the marker icons are drawn in. Icon takes a CSS colour rather
+  // than a token, so the two live here where the rest of the palette is.
+  --boot-check: #{t.$success};
+  --boot-fail: #{t.$urgent};
+
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: t.$space-14;
+  // The plate the active row sits on, drawn on every row so a step changing
+  // state does not change the row's height or shift the ones under it.
+  padding: t.$space-12 t.$space-14;
+  border-radius: t.$radius-field;
+  background-color: transparent;
+  transition: background-color t.$duration-toggle ease;
+}
+
+.marker {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: t.$boot-step-marker;
+  height: t.$boot-step-marker;
+}
+
+.label {
+  @include t.bodyText;
+
+  min-width: 0;
+}
+
+.dot {
+  width: t.$space-6;
+  height: t.$space-6;
+  border-radius: 50%;
+  background-color: t.$text-caption;
+}
+
+// Behind you: the sentence stands down, because the room has moved on from it.
+.done .label {
+  color: t.$text-body;
+}
+
+// Where the room is. The plate and the weight are the whole reason a glance
+// finds this row rather than reading all three.
+.active {
+  background-color: t.$fill-secondary;
+}
+
+.active .label {
+  color: t.$text-primary;
+  font-weight: 700;
+}
+
+.pending .label {
+  color: t.$text-caption;
+}
+
+.failed .label {
+  color: t.$urgent;
+  font-weight: 700;
+}
+
+.srOnly {
+  @include t.srOnly;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step {
+    transition: none;
+  }
+}

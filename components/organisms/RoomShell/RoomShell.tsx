@@ -15,6 +15,7 @@ import { HelpModal } from '@/components/molecules/HelpModal'
 import { ReconnectOverlay } from '@/components/molecules/ReconnectOverlay'
 import { RoundOpener } from '@/components/molecules/RoundOpener'
 import { ChatPanel } from '@/components/organisms/ChatPanel'
+import { RoomBootScreen } from '@/components/organisms/RoomBootScreen'
 import {
   isUrgent,
   modeName,
@@ -33,14 +34,22 @@ import { SEAT_GRACE_MS } from '@/lib/game/constants'
 import type { Clock, RoomPhase } from '@/lib/game/types'
 import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import type { ChatQuote } from '@/lib/room/transport'
+import { previewColor } from '@/lib/avatar'
+import { useBootTimeline } from '@/lib/room/bootTimeline'
+import { clearPendingSettings } from '@/lib/room/pendingSettings'
+import { isSeated } from '@/lib/room/store'
 import { ROOM_TARGET } from '@/lib/room/transport'
 import { useCountdown } from '@/lib/room/useCountdown'
 import { useWideViewport } from '@/lib/useWideViewport'
 import {
   useChat,
   useChatLog,
+  useClockScale,
+  useIdentity,
+  usePacedBoot,
   useLastReaction,
   useRoom,
+  useRoomCode,
   useRoomRefusal,
   useUnread,
 } from '@/lib/room/useRoom'
@@ -90,8 +99,20 @@ export interface RoomShellProps {
 
 export function RoomShell({ screens = {} }: RoomShellProps) {
   const router = useRouter()
-  const { state, status, error, selfId, isHost, send } = useRoom()
+  const room = useRoom()
+  const { state, status, error, selfId, isHost, boot, send } = room
   const countdown = useCountdown(state?.clock)
+
+  // The boot, and the pacing that makes it readable. Above every early return,
+  // because the interstitial *is* one of them — see the hand-off below.
+  const identity = useIdentity()
+  const roomCode = useRoomCode()
+  const timeline = useBootTimeline({
+    boot,
+    ready: isSeated(room),
+    fast: useClockScale(),
+    paced: usePacedBoot(),
+  })
 
   // The held seat is a deadline like any other, so it gets the same clock the
   // round does — which is also what keeps `Date.now()` out of the render path.
@@ -210,19 +231,52 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
     [react],
   )
 
-  // SSR and the moment before the first broadcast. The chrome renders so the
-  // page has shape; nothing below may read `state`.
-  if (!state) {
+  /**
+   * SSR, and everything up to being seated in the room.
+   *
+   * Deliberately *not* `!state`, which is what it used to be. A first
+   * broadcast only proves the room exists — a guest still has to be given a
+   * seat, and handing over before that drew a lobby with the viewer missing
+   * from its own roster. `isSeated` is the predicate both this and the
+   * refusal path read, so they cannot disagree about what "joined" means.
+   *
+   * Nothing below may read `state`.
+   */
+  if (!state || !timeline.settled) {
+    // Which room, from the viewer's side. A host who reloads mid-game is
+    // already in the roster, so the seat's colour is real by then; before that
+    // it is a preview, exactly as the picker on the way in was.
+    const me = state ? playerById(state, selfId) : undefined
+    const host = boot.role === 'host'
+
     return (
-      <div className={styles.shell}>
-        <AppHeader />
-        <p className={styles.connecting}>
-          {error ??
-            (status === 'disconnected'
-              ? 'Lost the room. Reconnecting…'
-              : 'Joining the room…')}
-        </p>
-      </div>
+      <RoomBootScreen
+        variant={boot.role}
+        code={roomCode}
+        states={timeline.states}
+        fraction={timeline.fraction}
+        player={
+          host
+            ? undefined
+            : {
+                name: me?.name ?? identity.name,
+                color: me?.color ?? previewColor(0),
+                avatarSeed: me?.avatarSeed ?? identity.avatarSeed,
+              }
+        }
+        // Back through the door they came in by. `/join/[code]` prefills the
+        // code, so a guest who cancels is one tap from trying again.
+        cancelHref={host ? '/host' : `/join/${roomCode}`}
+        // A host's chosen rules are written before the push and only consumed
+        // once a room is actually built, so a cancelled host would otherwise
+        // hand them to whatever room this tab opened next.
+        onCancel={host ? clearPendingSettings : undefined}
+        failure={
+          boot.failure ??
+          error ??
+          (status === 'disconnected' ? 'Lost the room. Reconnecting…' : undefined)
+        }
+      />
     )
   }
 

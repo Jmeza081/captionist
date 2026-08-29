@@ -188,6 +188,12 @@ One deliberate departure, recorded here rather than silently absorbed:
 `eyebrowText` applies `text-transform`, so the string in the `.tsx` stays
 sentence case and readable.
 
+Two mixins there are not about size. `tabularFigures()` lines digits up in a
+column, and `srOnly()` is text for assistive tech only — four modules had
+hand-written copies of that clip-rect block before it was a mixin, and
+`display: none` would take every one of them out of the tree they exist to
+be in.
+
 ### Elevation — `theme/_elevation.scss`
 
 Shadows named for the surface they lift, because they aren't a ramp:
@@ -201,7 +207,7 @@ the ladder, not by guessing a bigger number.
 
 One mixin per animation — `popKeyframes()`, `pulseKeyframes()`,
 `riseKeyframes()`, `caretKeyframes()`, `toastinKeyframes()`,
-`genieKeyframes()` — included by the module that uses it. The spec requires
+`genieKeyframes()`, `spinKeyframes()` — included by the module that uses it. The spec requires
 these live in a stylesheet, never driven inline from JS.
 
 **Include them per module, not once globally.** A `.module.scss` has its
@@ -303,14 +309,14 @@ primitives.
 | `Tag` | atom | A role or ownership marker — HOST, YOU, 1st |
 | `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected |
 | `TimerPill` | atom | The round clock. Flips to urgent at ≤15s, or on demand for sudden death |
-| `ProgressRail` | atom | The 3px rail under the header that drains with the timer |
+| `ProgressRail` | atom | The 3px rail under the header that drains with the timer. `size='bar'` is the thicker one the reconnect overlay counts down with; `tone='accent'` is the boot screen's, where the rail measures work rather than time |
 | `StatusPill` | atom | A short statement of where the room is — "Locked in" over media, "4 of 7 have voted" on the canvas |
 | `RankSlot` | atom | One place in a ranked ballot. Dashed when empty, gold at first, clears when tapped. A single-vote room draws one, named rather than numbered |
 | `ReactionGlyph` | atom | One reaction's face — a character, a Slackmoji, or a catalog emoji, from one glyph string. The wire carries the glyph and four surfaces render it, so the branch lives here rather than four times. Also owns the animated upgrade: the still first, then Google's CDN once the tile is near the viewport and motion is welcome |
 | `TallyPill` | atom | One reaction's running count. Carries its own scrim over media |
 | `PresencePill` | atom | "7 here" — live room presence |
 | `RoundProgress` | atom | How far through the game the room is, as pips |
-| `Logo` | atom | The Captionist mark, at `header` (26px) or `landing` (34px). The delivered SVG verbatim, so it resolves at any size. Its `rx=60` ground carries its own rounded corners — never round it again. Decorative: every call site sits it beside the wordmark |
+| `Logo` | atom | The Captionist mark, at `header` (26px), `landing` (34px) or `badge` (56px, the one the boot ring is drawn around). The delivered SVG verbatim, so it resolves at any size. Its `rx=60` ground carries its own rounded corners — never round it again. Decorative: every call site sits it beside the wordmark, or inside a `ProgressRing` |
 | `Avatar` / `AvatarOverflow` | atom | A player, at one of eight sizes. Art from a seed, a resolved `src`, or the initial when there is neither. `decorative` drops it out of the accessibility tree, for when a parent already names the player |
 | `TextField` | atom | Every text input — `caption` (62px), `search` (52), `composer` (46), `popover` (34) |
 | `Toggle` | atom | A room setting, on or off. Controlled |
@@ -318,7 +324,8 @@ primitives.
 | `SegmentedControl` | atom | A small exclusive choice. A real radiogroup |
 | `Snackbar` | atom | Confirms an action with no other visible result |
 | `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+`. Appears on all five sites the design names — caption cards, chat messages, the composer, the collapsed rail and the reveal bar. Takes an `aria-label` override, so a log of twenty messages does not hand a screen reader twenty controls called "Add a reaction" |
-| `RoomCode` | atom | A room code, for reading aloud or typing. `display` on the entry screen, `compact` beside the lobby's QR — where it is `white-space: nowrap`, because a code is read out and typed by hand and `C-D77KR` above a lone `T` is one somebody will get wrong. The column gives instead: `$lobby-share-width` is sized around it |
+| `RoomCode` | atom | A room code, for reading aloud or typing. `display` on the entry screen, `compact` beside the lobby's QR, `pill` inline beside its own label on the boot screen — where the code is being identified rather than read out, so it sits at label weight instead of owning the card — where it is `white-space: nowrap`, because a code is read out and typed by hand and `C-D77KR` above a lone `T` is one somebody will get wrong. The column gives instead: `$lobby-share-width` is sized around it |
+| `ProgressRing` | atom | An indeterminate arc spinning around whatever it wraps — the guest's face, the app's mark, or nothing at `inline` size in a checklist row. Deliberately not a prop on `Avatar`: the host's boot rings the mark rather than a face, so a ring that could only wrap an avatar would be half a component. `still` closes the loop and stops it, for a step that is done |
 
 **Molecules**
 
@@ -351,6 +358,8 @@ primitives.
 | `AvatarPicker` | molecule | Choosing a face on `/join` and `/host`. Offers a window of eight from the sixty-four-seed catalogue with a "Shuffle faces" that re-rolls the offer and keeps your pick. A real radiogroup with roving tabindex and arrow keys. Owns the seed-to-preview-colour mapping so two screens cannot drift |
 | `ModeCard` | molecule | One of the two game modes, as a card with the sentence that explains it — a format, not a setting |
 | `ReconnectOverlay` | molecule | The room is still there; you are not attached to it. Red rather than purple, over the blurred room rather than instead of it. **Not in this gallery** — it is `position: fixed` with no dismiss, so it would cover the page; `e2e/reconnect.spec.ts` covers it against a real room |
+| `Wordmark` | molecule | The mark and the name together, at `header` or `landing`. Extracted when the boot screen would have been the third inline copy of a lockup `AppHeader` and `LandingNav` each carried their own. The name is real text, not artwork — it is the only place the app says what it is called. A molecule rather than an atom because it imports `Logo`, and the tier is a dependency fact |
+| `BootChecklist` | molecule | The steps a room takes to open, and which one it is on. Four states per row — `pending`, `active` (a plate and the weight, so a glance finds it), `done`, `failed` — each named in words for assistive tech as well as drawn. Not `StatusPill`, which carries a sentence about the room to everyone in it; this is a private list whose order is the meaning, so it is a real `<ol>` |
 
 **Organisms**
 
@@ -358,6 +367,7 @@ primitives.
 | --- | --- | --- |
 | `ComponentGallery` | organism | The review surface at `/components` — every component in its states |
 | `RoomShell` | organism | The chrome around every in-room screen — header, clock, rail, host toolbox, snackbar |
+| `RoomBootScreen` | organism | The screen a room opens behind, host or guest. One `variant` branching values — copy, badge, and where Cancel goes — never a forked sibling. Replaced a bare "Joining the room…" paragraph that served both roles identically and offered no way out. Every checklist row is a milestone that actually resolves; the two rows the mockups drew over work the app does not do were relabelled onto the real sequence rather than the work being faked to match |
 | `ChatPanel` | organism | The message list and composer inside the rail. An organism because it composes four molecules and reads the room; `ChatRail` is only the container and has no idea what a message is. Its reaction surface carries *what it is aimed at* — a message you picked, or the room when there is none |
 | `LobbyScreen` | organism | The room before it starts: share block, roster, and the one button |
 | `BriefScreen` | organism | Setting the round up, and watching someone else do it — all four `viewKey` faces |

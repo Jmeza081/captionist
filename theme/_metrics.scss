@@ -357,3 +357,15 @@ $setup-column-width: 600px;
 /// The reconnect overlay's card. Wider than the help modal because it carries
 /// a countdown and an identity row rather than one step of a walkthrough.
 $reconnect-card-width: 620px;
+
+/// The boot interstitial. The ring's badge is the largest avatar the design
+/// specifies, and the ring is drawn on a box a little wider so the arc clears
+/// the art rather than tracing its edge.
+$boot-badge: 88px;
+$boot-mark: 56px;
+$boot-ring: 124px;
+$boot-ring-stroke: 2px;
+$boot-card-width: 560px;
+/// The step rows' leading indicator column, so a check, a ring and a dot all
+/// land on the same vertical line whatever the row's state.
+$boot-step-marker: 20px;

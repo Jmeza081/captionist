@@ -129,6 +129,37 @@ design-specified and stays, but nothing in production sets it, because the
 uploader tabs were its only caller and the gallery case demonstrating it was
 demonstrating them.
 
+**Since then a room opens on a screen rather than a sentence.** `RoomShell`'s
+early return was a bare `AppHeader` and the words "Joining the room…",
+identical for the person building a room and the person asking to be let into
+one, with no way out of either. It is `RoomBootScreen` now — one organism, one
+`variant` prop, values rather than a fork: the same card, ringed badge and
+three-row checklist both times, with the copy, what the ring holds and where
+Cancel goes branching on the role. **The gate under it moved too, and that is
+the bug the screen found.** It was `!state`, which only ever proved *a room
+exists*; a guest still has to ask for a seat and be given one, so for as long as
+that took the lobby drew a roster its own viewer was missing from. Both the
+hand-off and the refusal path read one predicate now — `isSeated(snapshot)` in
+`lib/room/store.ts` — so they cannot disagree about what "joined" means. And a
+refusal arriving before seating, a full room most likely, lands in
+`boot.failure` on the screen that is actually showing rather than in a snackbar
+the boot branch never rendered, which is how a refused guest used to spin
+forever.
+
+**What the rows say is what the room actually does.** `RoomSnapshot` carries a
+`BootProgress` — `probing → claiming → waiting → seating` — stamped by
+`RoomProvider` through the boot it was already running, and `boot.role` is
+seeded from *intent*, since nobody knows who hosts until the election resolves
+and a host seeded as a guest would open on the wrong screen and flip a beat
+later. The only invented thing is *pacing*, not progress:
+`lib/room/bootTimeline.ts` holds a row for 220ms and the whole screen for 900ms
+before it may hand over, both scaled by `?fast=` and skipped entirely for a
+`?phase=` fixture, which is the room rather than a boot of one. The rule the
+whole screen is built on — every row names a milestone that actually resolves,
+and where the work does not exist the copy moves rather than the work being
+invented to match it — is
+[ADR 0015](./adr/0015-a-progress-screen-may-not-invent-a-stage.md).
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -166,7 +197,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Styling | Sass modules + `theme/` tokens | `sassOptions.loadPaths` makes `@use 'theme'` resolve from anywhere |
 | Layout | `Stack` · `Inline` · `Box` · `Grid` | Spacing is a token-typed prop; see "Token flow" below |
 | Game state | `lib/game/` — pure reducer, no React | `reduce()` is total and pure; randomness is a seeded PRNG cursor in state |
-| Room runtime | `lib/room/` — `RoomTransport` + `HostEngine` | The host browser is the server — see [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md) |
+| Room runtime | `lib/room/` — `RoomTransport` + `HostEngine` | The host browser is the server — see [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md). `RoomSnapshot.boot` is the same runtime reporting where an *opening* room has got to, and `isSeated()` is the one predicate that says whether this tab is in it yet |
 | Chat + tallies | `lib/room/events.ts` — a second store, beside `RoomStore` | [ADR 0010](./adr/0010-chat-is-a-second-store-and-its-sender-is-stamped.md) — the event lane, never game state: a message must not bump the `rev` guests drop stale game updates against. Every guard runs on *receive* — membership, 1.5s per sender on the local clock, 140 characters, 50 messages of scrollback, and since phase 7 an origin check on every URL a message carries |
 | Image origins | `lib/gifs/allow.ts` — `isAllowedImageSrc` | One allowlist for everything a *sender* can point an `<img>` at: a chat attachment, a quote's thumbnail, a reaction's glyph. Same-origin `/media/*.svg` or `/media/emoji/*.svg` — **one optional path segment, not a wildcard**, so the surface it opens is exactly the directory the importer writes — and `https://` hosts at or under `giphy.com`, parsed with `URL` so a lookalike fails on hostname. **The catalog added no host**: `fonts.gstatic.com` is still refused, and `allow.test.ts` asserts the refusal. [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md) · [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
 | Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the toolbox's react row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
@@ -281,6 +312,7 @@ graph TD
   JS["JoinScreen<br/><i>normalizeCode · writeIdentity</i>"]
   RP["lib/room/RoomProvider<br/><i>'use client' · claims the code</i>"]
   SH["RoomShell<br/><i>chrome · rail + chat · overlays · one snackbar</i>"]
+  BT["RoomBootScreen<br/><i>the interstitial · host or guest<br/>no chrome — it is the whole page</i>"]
   SC["screens.ts<br/><i>RoomPhase → ComponentType</i>"]
   SCR["The phase's screen<br/><i>one per phase, lobby…podium<br/>opener has none — the shell covers it</i>"]
 
@@ -306,7 +338,10 @@ graph TD
   RP -.->|"connectAbly · authUrl mints the token"| TK
   RP -.->|"control + per-recipient state channels"| AB
   SC -->|"screens={SCREENS}"| SH
-  SH -->|"screens[state.phase]"| SCR
+  SH -->|"until isSeated(snapshot)"| BT
+  BT -->|"Cancel — a link, not a handler"| H
+  BT -->|"Cancel — code still prefilled"| JC
+  SH -->|"seated → screens[state.phase]"| SCR
   SCR -.->|"joinUrlFor() — QR + copy link"| JC
   SCR -.->|"useGifSearch() → fetch"| A
   SH -.->|"ChatPanel's GifPanel — same hook, same route"| A
@@ -389,6 +424,13 @@ and so are phase 4's two new molecules, `AvatarPicker` and `ModeCard` — they a
 shared by `/join` and `/host`, which is exactly why they are molecules and not
 markup inside either screen.
 
+**`RoomBootScreen` is the one organism the gallery renders**, at `#boot`, in
+three states: a host, a guest, and a refused guest. It can be, because it reads
+nothing — `RoomShell` owns the boot state and hands it finished props, so the
+whole screen draws from a fixture with no transport near it. That is also where
+the four checklist row states are asserted exhaustively, since on a live boot
+the last row is done for the frame before the screen it is on hands over.
+
 **`/room/[code]` is one route for the whole room; the phase is a render switch
 inside it, not a URL.** A route per phase was rejected on purpose: transitions
 are host-pushed and simultaneous for up to twenty clients, so each would be
@@ -407,6 +449,16 @@ now just `screens[state.phase]`, so a missing entry means the map is wrong
 rather than the work is unfinished. `opener` is the one deliberate absence:
 the shell draws its interstitial over the whole page, and a screen behind it
 would be one nobody can see announcing itself.
+
+**There is an eleventh thing that route can render, and it is not a phase.**
+Before the room is this tab's, `RoomShell` returns `RoomBootScreen` instead of
+its own chrome — no header, no rail, no `<main data-phase>` — so the whole page
+is the interstitial and there is nothing behind it to be half-drawn. It is
+deliberately not an entry in `screens.ts`: the map is keyed by `RoomPhase`, and
+the boot is the state of *not having one yet*. The condition is
+`!state || !timeline.settled`, and the first half of that is the old `!state`
+guard kept only for SSR — what actually holds the screen up is
+`isSeated(snapshot)`, read through `useBootTimeline`.
 
 The phase is on the DOM as well as in state: `RoomShell` renders
 `<main data-phase={state.phase}>`, and every room spec drives
@@ -463,7 +515,7 @@ to be about markup the owner of room authority instead.
 ```mermaid
 graph LR
   U["components/organisms/ + app/<br/><i>markup only</i>"]
-  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown</i>"]
+  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown · bootTimeline</i>"]
   G["lib/game/<br/><i>pure — types · reducer · authorize<br/>selectors · project · rng</i>"]
   F["lib/gifs/<br/><i>types · samples · giphy · wall · useGifSearch<br/>allow — isAllowedImageSrc</i>"]
   AV["lib/avatar.ts<br/><i>seed → data URI, cached · DiceBear 10 critters<br/>64 seeds · avatarPage · seedLabel</i>"]
@@ -545,7 +597,9 @@ even though they have no state to read: `joinCopy()` and `hostSetupCopy()` take
 no arguments and still live in `selectors.ts`, because copy is pure logic and
 `lib/game/selectors.test.ts` is where the words are asserted. The mutable half
 is reached only through `lib/room/`, and what a screen sees of that is
-`useRoom()`, `useRoomRefusal()` and `useCountdown()`.
+`useRoom()`, `useRoomRefusal()` and `useCountdown()` — plus `useBootTimeline()`,
+which only the shell calls, because the only thing it decides is whether there
+is a screen yet.
 
 **The lobby is one screen with two faces**, and it is `lobbyCopy(state,
 viewerId)` that decides which. A guest sees the settings as a read-only
@@ -821,8 +875,33 @@ store: `isHost` is no longer knowable at mount, so it starts `false` rather than
 being a constructor argument. A tab that assumed otherwise would flash the
 host's controls at a guest. A room that cannot be built at all — asking for
 `?transport=ably` against a server with no key — ends at `store.setError`, and
-the shell prints the sentence where "Joining the room…" would be, because a page
-that waits forever on a misconfigured server looks exactly like a slow one.
+the interstitial carries the sentence in place of its rail, because a page that
+waits forever on a misconfigured server looks exactly like a slow one.
+
+**That boot now reports itself, in four stamps and one seed.** `store.setBoot`
+is a merging patch on `RoomSnapshot.boot`, and `RoomProvider` stamps it at the
+milestones it was already passing: `probing` at mount, `claiming` once the seat
+is signed, `waiting` once the claim answers, and `seating` on the one-shot ask
+that sends `player/joined` or `player/reconnected`. Nothing is added to the
+sequence to have something to show. The seed is the interesting half:
+`intendedRole(seat)` decides which interstitial opens *before* anyone knows who
+hosts, from the two signals already synchronous at mount — a `?phase=` fixture
+declares itself the room, and a tab arriving from `/host` left its chosen
+settings in `sessionStorage` on the way out. It **peeks** at those settings
+rather than consuming them; `startAsHost` still owns clearing them, and
+`RoomBootScreen`'s Cancel clears them too, so a host who backs out cannot hand
+their rules to whatever room this tab opens next. The claim then overrides the
+seed, including the case the seed cannot predict: a guest who typed a code
+nobody was hosting and won the election.
+
+**A refusal reaching a tab that has no seat yet is the other half.**
+`transport.onRefusal` used to hand everything to `announce`, which is a
+snackbar `RoomShell` only renders once it is past the boot branch — so a room
+that would not have us said so into a component that was not on screen, and the
+boot spun forever. The listener now checks `isSeated(store.getSnapshot())` and
+routes an unseated refusal into `boot.failure` as well. Deliberately only there
+and not in the in-process `announce` callback: that one is the host's own
+mid-game refusals, and a host is never refused a seat in a room they just built.
 
 **The guest's first ask is now two asks, and that is phase 5's bug fix.** It
 still fires once on the first broadcast, but it asks for the right thing: not
@@ -976,8 +1055,8 @@ Seven details are load-bearing:
   room costs nothing.
 - **A member appearing has to trigger a publish.** `recipients()` already
   unioned `members()`, but nothing published when that set grew, so a guest
-  attaching after `start()` waited on a broadcast that never came and sat on
-  "Joining the room…" forever. `HostEngine.start()` now republishes on
+  attaching after `start()` waited on a broadcast that never came and never got
+  off the boot interstitial. `HostEngine.start()` now republishes on
   `transport.onPresence`. It is safe to over-publish: a republish is idempotent
   and guests drop anything at or below the rev they hold. The guest re-asks
   (`sync`) on every heartbeat until state arrives, because the first publish
@@ -1177,6 +1256,15 @@ the host's clock rather than the page's, because `page.clock` is per-page and
 would desynchronise a room split across tabs. What each one is for is in
 [the roadmap](./roadmap.md#the-url-levers).
 
+**Both of those levers now reach the boot screen, and neither gained a
+branch.** `?fast=` divides the interstitial's two pacing floors exactly as it
+divides a round, so the harness URLs the suite opens over and over pay almost
+nothing while a real room gets the pacing the design draws. `?phase=` turns the
+pacing *off* — `pacedBoot` is `!seat.declared`, so a fixture, which is the room
+rather than a boot of one, hands over on the frame it is ready. Walking a
+fixture through three rows nobody asked for would be the invented stage that
+screen exists not to have.
+
 `?bots=` also attaches `lib/room/autopilot.ts`, which drives the transitions
 that have no deadline — `lobby`, `reveal` and `score`. On the untimed two it now
 **dwells** rather than advancing on the broadcast it just saw. That was
@@ -1214,8 +1302,9 @@ graph BT
     Layout["Stack · Inline · Box · Grid"]
     Icon["Icon"]
     Controls["Button · TextField · Toggle<br/>Stepper · SegmentedControl · Chip · RankSlot"]
-    Status["TimerPill · TallyPill · PresencePill · StatusPill<br/>Tag · Eyebrow · RoundProgress · ProgressRail"]
+    Status["TimerPill · TallyPill · PresencePill · StatusPill<br/>Tag · Eyebrow · RoundProgress<br/>ProgressRail · ProgressRing"]
     Ident["Avatar · RoomCode"]
+    Brand["Logo<br/><i>the delivered SVG — header · landing · badge</i>"]
     Feedback["Snackbar · ReactionCTA"]
     Glyph["ReactionGlyph<br/><i>'use client' · a character, or the still —<br/>which upgrades to the animation</i>"]
   end
@@ -1229,9 +1318,12 @@ graph BT
     Lobby["CodeEntry · RoomShare · Podium"]
     Entry["AvatarPicker · ModeCard"]
     Landing["HeroWall · LandingNav · QuickJoin"]
+    Boot["BootChecklist<br/><i>an ol — the order is the meaning</i>"]
+    Mark["Wordmark<br/><i>the mark and the name — a molecule<br/>because it imports Logo, and Icon<br/>is the only atom exemption</i>"]
   end
   subgraph organisms["organisms/ — room state or routing"]
     Shell["RoomShell<br/>+ context (notify)"]
+    BootScreen["RoomBootScreen<br/><i>a screen, and props only —<br/>no useRoom, no router</i>"]
     Panel["ChatPanel<br/><i>the rail's contents — neither a screen nor the shell</i>"]
     Screens["LobbyScreen · BriefScreen · ComposeScreen<br/>WaitingScreen · VoteScreen · TiebreakScreen<br/>RevealScreen · ScoreScreen · PodiumScreen"]
     Gallery["ComponentGallery"]
@@ -1277,6 +1369,10 @@ graph BT
   Landing -->|"QuickJoin only"| Gallery
   Controls --> Compose
   Ident --> Lobby
+  Brand -->|"Logo — the only atom Wordmark<br/>is allowed to reach for"| Mark
+  Mark -->|"AppHeader — one lockup,<br/>drawn by all three surfaces"| Compose
+  Mark -->|"LandingNav"| Landing
+  BootScreen -->|"host · guest · refused —<br/>it reads nothing, so it fits"| Gallery
   Gallery --> Comp
 
   Chat -->|"ChatMessage · UnreadDivider"| Panel
@@ -1292,6 +1388,16 @@ graph BT
   Feedback -->|"ReactionCTA — the toolbox's<br/>own picker key"| Overlay
   Glyph -->|"the burst, and the reveal's one-tap row"| Compose
   Panel -->|"rendered as ChatRail's child"| Shell
+
+  Icon -->|"check · close"| Boot
+  Status -->|"ProgressRing — the active row's"| Boot
+  Boot --> BootScreen
+  Mark -->|"Wordmark — the third bar to draw it"| BootScreen
+  Brand -->|"Logo — badge, inside the host's ring"| BootScreen
+  Ident -->|"Avatar in the ring · RoomCode on the pill"| BootScreen
+  Status -->|"ProgressRing — badge, round the mark or the face<br/>ProgressRail — tone accent"| BootScreen
+  Controls -->|"Button href — Cancel is a link"| BootScreen
+  BootScreen -->|"returned in place of the chrome,<br/>until isSeated()"| Shell
 
   Status -->|"TimerPill · RoundProgress · ProgressRail"| Shell
   Feedback --> Shell
@@ -1373,7 +1479,16 @@ because it composes `Button` — and it is **not** a variant of `AppHeader`, whi
 is 88px of live room state redrawn on every broadcast. They share a wordmark and
 nothing else, so a shared component would have each carrying props the other
 never sets; that is the one case where the *variant is a prop* rule does not
-apply. `HeroWall` is `'use client'` only for the reduced-motion query and the
+apply. **The wordmark itself is shared now, which is that argument reaching its
+own conclusion**: `Wordmark` is one component taking one `size`, both bars
+render it, and the boot screen — which would have been the third inline copy of
+the same lockup — is what made a shared component cheaper than a convention. It
+is a **molecule**, not an atom, and the rule decided that rather than its size:
+it imports `Logo`, and `Icon` is the only atom-to-atom exemption
+[`components/README.md`](../components/README.md) grants. That also makes
+`AppHeader` and `LandingNav` the second and third molecules to hold a molecule,
+which the README now names.
+`HeroWall` is `'use client'` only for the reduced-motion query and the
 pause control — its markup still server-renders, which is what puts the whole
 wall in the first HTML. **Its grid counts tracks rather than sizing tiles.** It
 was `auto-fill` over a 300px minimum, which made the column count a function of
@@ -1591,6 +1706,35 @@ depending on timing nobody could see. They post now, and the burst rides along:
 `say(glyph)` plus `react('room', ROOM_TARGET, glyph)`, one wire event each, the
 event lane unchanged.
 
+**The boot screen added three components and grew three, and the split is the
+usual one.** New: `ProgressRing` as an atom, `Wordmark` and `BootChecklist` as
+molecules. Grown, per rule 2: `ProgressRail` gained `tone='accent'` (the boot
+rail measures work rather than time, so it also drops the countdown's
+one-second sweep, which would still be catching up when the room opened),
+`RoomCode` gained `size='pill'`, `Logo` gained `size='badge'`. `ProgressRing` is
+deliberately not a prop on `Avatar`: the host's boot rings the app's mark rather
+than a face, so a ring that could only wrap an avatar would be half a
+component — it takes `children` and knows nothing about them, which is also what
+lets the checklist reuse it at 16px in place of a check.
+
+**One of those placements bends `components/README.md`'s table and one only
+looked like it did, and the difference is worth naming rather than leaving to
+be rediscovered.** `Wordmark` reads as an atom — two elements, one prop, no
+state — and it is filed as a **molecule**, because it imports `Logo` and the
+table's exemption is `Icon` alone. Widening that exemption to "any leaf that
+renders one `<svg>`" was the tempting edit and would have cost the rule its
+edge, so the component moved instead of the rule. What follows is only that
+`AppHeader` and `LandingNav` now hold a molecule apiece, which is depth rather
+than a tier break: neither fetches, subscribes or routes.
+`RoomBootScreen` is the case that really bends it — an organism that calls
+neither `useRoom()` nor a router. It takes the boot as props, which is what puts
+it in the gallery. It is filed by what it *is* — a full-page screen, the
+eleventh thing `/room/[code]` can render — rather than by what it depends on,
+which is the one axis that table says decides a tier. The alternative was a
+molecule holding a `<h1>` and the page's only wordmark, which would make the
+tier say less. If a second such case appears, the table needs an edit rather
+than a footnote here.
+
 ## Token flow
 
 Values exist exactly once. Sass owns them; React reads them by name.
@@ -1726,17 +1870,57 @@ sequenceDiagram
 renders an empty shell — the store's `getServerSnapshot()` returns the
 never-connected room precisely so `useSyncExternalStore` has something to hand
 SSR — and everything after that happens in the browser. There is no server
-state. `RoomShell` renders its chrome and a "Joining the room…" line while
-`state` is undefined, so the page has shape before the first broadcast; nothing
-below that guard may read `state`. **That guard now covers a real wait, and it
-got longer.** The browser fetches a signed seat from `/api/ably/token`, connects,
-finds out by presence whether it is the host, and only then knows which branch
-it is on: a host builds the room and the first render comes from its own
-broadcast looped back in process; a guest's comes from the host's `publishState`
-on its private state channel, after which it asks for a seat — or for its old
-one back. That is one round trip plus a connection, against chrome that is
-already on screen; the tab bus's claim probe is ~180ms of it. If the room cannot
-be built at all, the same line carries the reason instead of the wait.
+state. **What fills that wait is now a screen, and the wait is longer than the
+one it used to cover.** The browser fetches a signed seat from `/api/ably/seat`,
+connects, finds out by presence whether it is the host, and only then knows
+which branch it is on: a host builds the room and the first render comes from
+its own broadcast looped back in process; a guest's comes from the host's
+`publishState` on its private state channel, after which it asks for a seat — or
+for its old one back. That is one round trip plus a connection, and the tab
+bus's claim probe is ~180ms of it.
+
+`RoomShell` returns `RoomBootScreen` for all of it, in place of its own chrome
+rather than around it, and hands over on `isSeated(snapshot)` — not on the first
+broadcast, which only proves the room exists. If the room cannot be built at
+all, or a host refuses the seat, the same screen carries the sentence in place
+of its rail. Nothing below that guard may read `state`.
+
+```mermaid
+sequenceDiagram
+  participant P as RoomProvider
+  participant S as RoomStore
+  participant T as useBootTimeline
+  participant V as RoomShell
+
+  P->>S: setBoot { stage: probing, role: intendedRole(seat) }
+  Note over P: the seed is intent — a fixture, or<br/>/host's pending settings in sessionStorage
+  S-->>V: boot
+  V->>T: { boot, ready: isSeated(room), fast, paced }
+  T-->>V: states · fraction · settled=false
+  Note over V: RoomBootScreen — no header, no main[data-phase]
+
+  P->>S: setBoot { stage: claiming }
+  P->>S: setBoot { stage: waiting, role: claim's answer }
+  Note over S: the election overrides the seed —<br/>including a guest who just won an empty code
+  P->>S: setBoot { stage: seating }
+  Note over P: player/joined, or player/reconnected
+
+  alt the host seats us
+    S-->>V: state arrives, and we are in players
+    T-->>V: settled once both floors have passed
+    V->>V: screens[state.phase] — the room
+  else the host refuses
+    P->>S: setBoot { failure } — only while !isSeated
+    T-->>V: settled stays false — the row goes failed
+    V->>V: the reason, and Cancel becomes Go back
+  end
+```
+
+Two things that diagram is saying. **The stages are stamps on work that was
+already happening**, not a script the screen plays — `bootTimeline` may hold a
+row back but never runs ahead of one. And **a failure never settles**: the
+screen it lands on is the screen that is showing, which is the whole reason the
+refusal is routed to `boot.failure` rather than to a snackbar underneath it.
 
 The third path is `/`, and it is the third shape: a Server Component that
 **awaits remote data before it answers at all**, with a client island for the
@@ -1986,13 +2170,33 @@ The four omissions in the round-flow screens, in phase order:
 Each of those is a *decision*, not a gap in the sweep — which is why they are
 listed here rather than left for the next pass to rediscover.
 
+**The boot interstitial is the one room surface with no design to omit
+anything from.** `design/` draws sixteen state branches and this is not one of
+them — the delivered prototype goes straight from the front door to the lobby —
+so the screen was designed during the feature and the usual "the code omits what
+the design draws" reading does not apply to it. Its own mockups drew three
+things that were dropped for the reason the table above uses: two rows the app
+has no work behind — reserving the room code, which is `generateCode(Date.now())`
+and reserved nowhere, and loading a GIF deck, which nothing does at boot — and a
+footnote promising the room stays open for 30 minutes, which no timeout keeps.
+The rows were moved onto the sequence that really happens rather than the work
+being faked to match the copy, and the footnote says the true half instead: a
+player can join between rounds, which `lib/game/actions.ts` actually allows.
+That is the rule rather than this screen's own excuse —
+[ADR 0015](./adr/0015-a-progress-screen-may-not-invent-a-stage.md) — and it
+prices the next loading surface too: prefetching a GIF deck at host boot is
+still a reasonable feature, it just may not arrive attached to a sentence that
+needed it to be true.
+
 The component library is complete — see the inventory in
 [design-system.md](./design-system.md#component-inventory). The design's
 prototype has **16 state branches**. Three of them — landing, join and setup —
 are routes rather than phases, because no room exists during them, and all three
 are now built: `/`, `/join` (with `/join/[code]` as its prefilled twin) and
 `/host`. The remaining 13, plus the round opener overlay, are the **14 in-room
-states**.
+states**. `RoomBootScreen` is a fifteenth surface and belongs to none of those
+counts: it is the state of not having a room yet, which the prototype skips
+over.
 Those normalise to the **10 room phases** in `RoomPhase`
 (`lib/game/types.ts`): `pick`/`pickwait`/`prompt`/`promptwait` are one phase
 (`brief`) rendered four ways, and `caption`/`submit` are another (`compose`).
@@ -2026,8 +2230,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-202 unit tests (`lib/**/*.test.ts`, node) and 340 Playwright tests across the
-two viewports — 170 per project, over 23 spec files. 330 of the 340 run; the
+210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 368 Playwright
+tests across the two viewports — 184 per project, over 26 spec files. 358 of the 368 run; the
 other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.
@@ -2096,6 +2300,31 @@ composer emoji **posts** rather than vanishing into a burst, and a message
 reaction lands on the message you aimed at rather than the newest. No unit test
 changed in that pass, which is the honest reading of it — nothing moved in
 `lib/`.
+
+**The boot screen's share is `e2e/boot.spec.ts`, 6 tests per project, and
+`lib/room/store.test.ts`, 8 in node.** Five of the six specs drive a real boot end to end, which is the
+only place the thing under test exists: a host opens on the host's screen
+*before* the claim resolves (the seed from `/host`'s pending settings), a guest
+opens on the guest's and is not handed the room until its own name is in the
+roster, the rows report their state in words as well as in shape, Cancel goes
+back through the door each role came in by, and a cancelled host's rules do not
+turn up in the next room this tab opens. The sixth is on `/components`, where
+the four row states can be asserted exhaustively — on a live boot the last row
+is `done` for the frame before the screen hands over, so catching it there would
+be a race against the hand-off it causes. That the pacing floors make any of
+this observable is the point of them; without `bootTimeline` the whole sequence
+resolves in a few hundred milliseconds on the tab bus and there is nothing to
+catch. **The unit half is the predicate itself.** `isSeated` is pure and
+node-reachable, and being the one thing two independent paths agree on is
+exactly what makes a browser-only proof too indirect: five of the eight pin the
+cases the boot gate turns on — no broadcast at all, a room that exists without
+you in it, a host on its own first broadcast, and a seat that is only
+reconnecting — and the other three cover the boot channel: that the snapshot
+opens on the role it was seeded with, that `setBoot` merges a patch rather than
+replacing the progress, and that a patch changing nothing returns the *same*
+object. That last one is the store's whole contract rather than a nicety —
+`useSyncExternalStore` re-reads `getSnapshot` during render and loops forever on
+a fresh one, and a merging setter is the easiest kind to get wrong.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a
@@ -2207,7 +2436,11 @@ rather than code:
 12. **`isHost` is learned, not given.** It is the answer to a presence
    election on Ably and to a claim probe on the tab bus, so it starts `false`
    and arrives via `store.setIdentity`. Nothing may assume host-ness at mount —
-   a tab that does flashes the host's controls at a guest.
+   a tab that does flashes the host's controls at a guest. **`boot.role` is the
+   one thing that guesses, and it is not the same fact:** it decides which
+   *interstitial* opens, from what this tab meant to do, and the election
+   overwrites it. Nothing but the boot screen may read it, and nothing
+   authoritative may be drawn from it.
 13. **A real room is Ably; the tab transport is the suite's.** Which one a room
    gets is `transportKind(levers, stubbed)` in `lib/room/connect.ts` and nothing
    above `useRoom()` may ask. Unlike Giphy there is no offline stand-in for

@@ -127,3 +127,15 @@
   display: flex;
   align-items: flex-end;
 }
+
+// The boot screen sizes itself to the viewport, which is right in the room and
+// wrong in a gallery of cases stacked down a page. Scoped back to a box here.
+.bootDemo {
+  display: flow-root;
+  border-radius: t.$radius-card;
+  background-color: t.$surface-canvas;
+
+  > * {
+    min-height: 0;
+  }
+}

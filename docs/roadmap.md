@@ -121,6 +121,22 @@ not compare a ballot's kind to the room's rule either, so the bug was reachable
 from any client, not just that screen. Nothing covered either setting end to
 end, which is why both survived four phases.
 
+## After the phases
+
+**The boot interstitial.** Not a phase — the room's join screen, which had been
+a paragraph since phase 1 and was the last thing in the flow with no design.
+Host and guest now get their own, and the audit that produced them is
+[ADR 0015](./adr/0015-a-progress-screen-may-not-invent-a-stage.md): of the six
+checklist rows the mockups drew, three named real work, one was a mislabel, and
+two described work the app does not do. The copy moved onto the sequence rather
+than the sequence being faked to match it.
+
+Two bugs fell out of drawing the steps, both invisible while the boot was a
+sentence. The hand-off fired on the first broadcast rather than on being seated,
+so a guest briefly saw a lobby they were missing from. And a refusal arriving
+before seating — a full room, a duplicate nickname — published into a snackbar
+the boot branch returned before rendering, leaving the spinner turning forever.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.
