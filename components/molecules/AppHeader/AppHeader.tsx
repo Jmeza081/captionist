@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Logo } from '@/components/atoms/Logo'
 import { Tag } from '@/components/atoms/Tag'
 import styles from './AppHeader.module.scss'
 
@@ -37,7 +38,7 @@ export function AppHeader({
   return (
     <header className={`${styles.header} ${styles[surface]}`}>
       <div className={styles.left}>
-        <span className={styles.mark} aria-hidden="true" />
+        <Logo />
         <span className={styles.wordmark}>Captionist</span>
         {host && <Tag>Host</Tag>}
         {phase && <span className={styles.phase}>{phase}</span>}

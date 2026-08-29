@@ -1,0 +1,16 @@
+@use 'theme' as t;
+
+.logo {
+  display: block;
+  flex: none;
+}
+
+.header {
+  width: t.$header-logo;
+  height: t.$header-logo;
+}
+
+.landing {
+  width: t.$landing-mark;
+  height: t.$landing-mark;
+}

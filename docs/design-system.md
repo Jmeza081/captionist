@@ -310,6 +310,7 @@ primitives.
 | `TallyPill` | atom | One reaction's running count. Carries its own scrim over media |
 | `PresencePill` | atom | "7 here" — live room presence |
 | `RoundProgress` | atom | How far through the game the room is, as pips |
+| `Logo` | atom | The Captionist mark, at `header` (26px) or `landing` (34px). The delivered SVG verbatim, so it resolves at any size. Its `rx=60` ground carries its own rounded corners — never round it again. Decorative: every call site sits it beside the wordmark |
 | `Avatar` / `AvatarOverflow` | atom | A player, at one of eight sizes. Art from a seed, a resolved `src`, or the initial when there is neither. `decorative` drops it out of the accessibility tree, for when a parent already names the player |
 | `TextField` | atom | Every text input — `caption` (62px), `search` (52), `composer` (46), `popover` (34) |
 | `Toggle` | atom | A room setting, on or off. Controlled |

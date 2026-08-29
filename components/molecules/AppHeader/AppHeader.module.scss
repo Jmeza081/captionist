@@ -34,15 +34,6 @@
   min-width: 0;
 }
 
-// Stands in for the logo until the asset lands.
-.mark {
-  flex: none;
-  width: t.$header-logo;
-  height: t.$header-logo;
-  border-radius: t.$radius-media-lg;
-  background: linear-gradient(135deg, t.$accent, t.$accent-text);
-}
-
 .wordmark {
   // The design's phone topbar carries no wordmark — there is only room for
   // where you are and how long is left.

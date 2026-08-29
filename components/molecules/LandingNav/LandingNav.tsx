@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/atoms/Button'
+import { Logo } from '@/components/atoms/Logo'
 import { HelpModal } from '@/components/molecules/HelpModal'
 import styles from './LandingNav.module.scss'
 
@@ -32,7 +33,7 @@ export function LandingNav({ joinHref, repoHref }: LandingNavProps) {
   return (
     <header className={styles.nav}>
       <span className={styles.brand}>
-        <span className={styles.mark} aria-hidden="true" />
+        <Logo size="landing" />
         <span className={styles.wordmark}>Captionist</span>
       </span>
 

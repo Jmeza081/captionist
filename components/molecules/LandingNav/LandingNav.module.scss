@@ -22,15 +22,6 @@
   min-width: 0;
 }
 
-// Stands in for the logo until the asset lands, same as the in-room header.
-.mark {
-  flex: none;
-  width: t.$landing-mark;
-  height: t.$landing-mark;
-  border-radius: t.$radius-media-lg;
-  background: linear-gradient(135deg, t.$accent, t.$accent-text);
-}
-
 .wordmark {
   font-family: t.$font-sans;
   font-size: 20px;

@@ -13,7 +13,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Captionist',
   description: 'Live captions for the room. Scan the code to join.',
-  icons: { icon: '/favicon.ico' },
 }
 
 export const viewport: Viewport = {
