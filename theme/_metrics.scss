@@ -161,8 +161,13 @@ $modal-width: 880px;
 // Both are the tallest step measured plus a little headroom; 408px is also the
 // design's own figure for the card (Screens 3g). A short viewport still wins —
 // `max-height: 100%` clamps the card and it scrolls, as it always did.
+//
+// Re-measure these when body leading changes — they are a measurement, not a
+// round number, and `e2e/help.spec.ts` fails if a step outgrows them. The phone
+// figure went 664 → 680 when body leading moved from 1.5 to the spec's 1.55:
+// the tallest step is 668px, and 664 had left it two pixels of headroom.
 $modal-height: 408px;
-$modal-height-sm: 664px;
+$modal-height-sm: 680px;
 $modal-rail: 380px;
 $modal-rail-min-height: 352px;
 $modal-rail-height-sm: 220px;

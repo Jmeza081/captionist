@@ -13,6 +13,18 @@
   // there stacks above it rather than fighting it for the same 44px.
   --room-dock-bottom: #{t.$space-20};
 
+  // The horizontal counterpart. The floating keys sit `right: $space-14` and
+  // are a 44px tap target wide, so they own 58px of the right edge — while the
+  // column is padded to `$screen-pad-h` (40px) and therefore runs 18px
+  // *underneath* them. Any control reaching the column's right edge loses that
+  // much of itself to whatever floats there: on the vote screen the right end
+  // of "Rank this" opened chat instead of ranking. Reserved, not hoped for —
+  // the same reason `.hasToolbox .content` reserves the bottom.
+  //
+  // 58px is inside the 40–60px the spec gives for horizontal screen padding,
+  // so this stays a padding choice rather than a new geometry.
+  --room-dock-gutter: calc(#{t.$space-14} + #{t.$tap-target-min});
+
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -57,8 +69,12 @@
   // instead of scrolling itself.
   min-width: 0;
   padding: t.$screen-pad-v t.$screen-pad-h;
+  // Only the right edge — the keys stack in that one corner.
+  padding-right: var(--room-dock-gutter);
 
   @include t.mq('md') {
+    // The rail is docked beside the column from here up and nothing floats
+    // over it, so the gutter goes back to being plain padding.
     padding: t.$screen-pad-v-lg t.$screen-pad-h-lg;
     // The one thing that scrolls, now that the shell is the viewport.
     overflow-y: auto;

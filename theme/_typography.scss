@@ -1,11 +1,52 @@
 @use 'colors';
 
-// Type — taken verbatim from DESIGNSYSTEM.md §2.
+// Type — taken from DESIGNSYSTEM.md §2.
 //
 // Mixins, not variables, so a call site gets family, size, weight, tracking,
-// line-height and colour together. Where the spec gives a size range, it is
-// expressed as `clamp()` so one declaration covers phone through desktop —
-// the low end of the range is what a 393px phone gets.
+// line-height and colour together.
+//
+// ## How the fluid sizes are built
+//
+// Every size is `clamp(min, Arem + Bvw, max)` — a slope-intercept line, not a
+// guessed `vw`. Two rules follow from that, and both were bugs before:
+//
+// 1. **A bare `vw` preferred value fails WCAG SC 1.4.4** (technique F94):
+//    `7.2vw` is 7.2% of the viewport no matter what the reader sets as their
+//    default font size, so text-size preferences did nothing at all. The `rem`
+//    term is what restores them. Nothing here is sized in bare `vw`, and the
+//    fixed sizes are in `rem` for the same reason.
+//
+// 2. **A guessed slope puts the floor in the wrong place.** `clamp(38px,
+//    7.2vw, 98px)` reaches its floor at 38 ÷ .072 = 528px, so it was a
+//    constant 38px on every phone ever made and only started scaling on a
+//    tablet. Deriving the slope from the anchors instead means the minimum is
+//    reached *at* the minimum viewport, by construction, and the curve is live
+//    across the whole phone range.
+//
+// The anchors are 360px → 1440px: 360 is the narrow end of the real phone
+// spread (360/393/402/430), and 1440 is the width a Zoom screen-share is
+// actually presented at. To derive a row:
+//
+//     slope     = (max − min) ÷ (1440 − 360)
+//     intercept = min − (slope × 360)
+//     clamp( min/16 rem , intercept/16 rem + slope×100 vw , max/16 rem )
+//
+// Below 360px and above 1440px the clamp bounds hold it flat.
+//
+// ## How the leading is built
+//
+// Leading is inversely proportional to size: display type set tight reads as
+// deliberate, body type set tight reads as mushed. DESIGNSYSTEM.md gives
+// leading as *ranges* for exactly this reason (display `.94–1.06`, body
+// `1.45–1.6`); the previous version collapsed each to one number and picked
+// the tight end, so 38px phone headlines got leading calibrated for a 98px
+// desktop one and collided descender-into-cap.
+//
+// Where the size range is wide enough for one ratio not to fit it (display
+// spans 2.1×, screen title 1.4×), the leading is a second clamp on the same
+// anchors, expressed as a length so it can cross below 1.0. A length
+// `line-height` does not inherit as a ratio — which is safe here only because
+// every mixin declares its own size and leading together. Keep it that way.
 //
 // Inter is loaded once in app/layout.tsx via next/font and exposed as
 // --font-inter. Nothing here goes below 12px, per the spec.
@@ -19,54 +60,87 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
   font-variant-numeric: tabular-nums;
 }
 
+// 48px → 98px, the hero's own ramp in the prototype
+// (`clamp(48px,7.2vw,98px)`, Prototype.dc.html line 31).
+//
+// DESIGNSYSTEM.md §2 gives Display as `clamp(38px,5–7.2vw,98px)`, but that row
+// is a *summary of five separate ramps* — 38/5vw/58 (×2), 42/5.6vw/68,
+// 46/6vw/72, 48/7vw/82 and this one. Reading it as a single token pairs the
+// floor of the smallest with the ceiling of the largest, which is what the
+// first implementation did and why the hero started 10px below its own design.
+// No instance in the prototype is 38 → 98. Prefer the markup over the table
+// when the two disagree; the table is lossy by construction.
+//
+// ## Leading is anchored to the ink, not to the em box
+//
+// Inter 800 is a tall face: a descender plus a cap-height sum to **0.978em**
+// ('p' 0.204 + 'S' 0.774, measured). So any leading under ~0.98 puts the
+// descender of one line *inside* the capital below it whenever the copy
+// happens to stack them — and "Caption this. / Ship that." stacks exactly
+// that pair. The prototype's 0.94 was overlapping its own ink by 3.7px at
+// 98px, and the spec's stated floor of .94 cannot be used on two-line copy in
+// this typeface at all.
+//
+// So the ramp targets a constant *optical* gap of ~7px rather than a constant
+// ratio: 1.12 at 360px down to 1.04 at 1440px, which holds the visible space
+// between the two lines even across the whole range while the ratio still
+// falls with size. That is what the eye judges, and it is why the small end
+// sits above the spec's stated 1.06 ceiling — a ratio ceiling authored against
+// the em box, not against Inter's ink.
 @mixin displayText {
   font-family: $font-sans;
-  font-size: clamp(38px, 7.2vw, 98px);
+  font-size: clamp(3rem, 1.9583rem + 4.6296vw, 6.125rem);
   font-weight: 800;
-  line-height: 0.94;
+  line-height: clamp(3.36rem, 2.3567rem + 4.4593vw, 6.37rem);
   letter-spacing: -0.04em;
   color: colors.$text-primary;
   text-wrap: balance;
 }
 
+// 30px → 42px, leading 1.15 → 1.08. A 30px title on a phone wraps to two or
+// three lines where a 42px desktop one wraps to one, so it needs the air more.
 @mixin screenTitleText {
   font-family: $font-sans;
-  font-size: clamp(30px, 4vw, 42px);
+  font-size: clamp(1.875rem, 1.625rem + 1.1111vw, 2.625rem);
   font-weight: 800;
-  line-height: 1.06;
+  line-height: clamp(2.1562rem, 1.93rem + 1.0056vw, 2.835rem);
   letter-spacing: -0.03em;
   color: colors.$text-primary;
   text-wrap: balance;
 }
 
+// 20px → 22px. A 1.1× spread, so one ratio covers it.
 @mixin cardTitleText {
   font-family: $font-sans;
-  font-size: clamp(20px, 2.4vw, 22px);
+  font-size: clamp(1.25rem, 1.2083rem + 0.1852vw, 1.375rem);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   color: colors.$text-primary;
 }
 
 @mixin sectionHeadingText {
   font-family: $font-sans;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.3;
   color: colors.$text-primary;
 }
 
+// 16px → 21px, leading 1.55 — the middle of the spec's 1.45–1.6, where 1.5 sat
+// on its floor. Body copy here is set at 55% white on near-black, and
+// low-contrast text needs more leading than the ratio alone suggests.
 @mixin bodyText {
   font-family: $font-sans;
-  font-size: clamp(16px, 2vw, 21px);
+  font-size: clamp(1rem, 0.8958rem + 0.463vw, 1.3125rem);
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.55;
   color: colors.$text-body;
   text-wrap: pretty;
 }
 
 @mixin chatBodyText {
   font-family: $font-sans;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.45;
   color: colors.$text-chat;
@@ -75,17 +149,22 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
 
 @mixin labelText {
   font-family: $font-sans;
-  font-size: clamp(13px, 1.6vw, 15px);
+  font-size: clamp(0.8125rem, 0.7708rem + 0.1852vw, 0.9375rem);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.45;
   color: colors.$text-primary;
 }
 
 // Small, wide, uppercase — the `PROMPT` and `ROUND 3` markers. Uppercase is
 // applied here, so the string in the .tsx stays sentence case and readable.
+//
+// Floor is 12px, not the 10px the spec's own table lists: the same section
+// states "Never below 12px", and the prose rule is the one that matches the
+// file's stated contract. Uppercase at 0.1em tracking supplies the apparent
+// air, so this keeps a tight 1.2.
 @mixin eyebrowText {
   font-family: $font-sans;
-  font-size: clamp(10px, 1.2vw, 14px);
+  font-size: clamp(0.75rem, 0.7083rem + 0.1852vw, 0.875rem);
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: 0.1em;
@@ -93,9 +172,10 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
   color: colors.$accent-text;
 }
 
+// Single-line numerics, so the leading only has to clear the digits.
 @mixin scoreText {
   font-family: $font-sans;
-  font-size: clamp(24px, 3vw, 32px);
+  font-size: clamp(1.5rem, 1.3333rem + 0.7407vw, 2rem);
   font-weight: 800;
   line-height: 1.1;
   color: colors.$text-primary;
@@ -106,7 +186,7 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
 // wide tracking to keep character boundaries unambiguous.
 @mixin roomCodeText {
   font-family: $font-sans;
-  font-size: clamp(44px, 7vw, 58px);
+  font-size: clamp(2.75rem, 2.4583rem + 1.2963vw, 3.625rem);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: 0.08em;
@@ -120,6 +200,6 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
 @mixin roomCodeCompactText {
   @include roomCodeText;
 
-  font-size: 44px;
+  font-size: 2.75rem;
   letter-spacing: 0.04em;
 }

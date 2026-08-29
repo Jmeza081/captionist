@@ -131,13 +131,62 @@ quote* from one that edges a surface.
 ### Type — `theme/_typography.scss`
 
 Mixins, not variables, so a call site gets family, size, weight, tracking,
-line-height and colour together. Where the spec gives a range it's `clamp()`-ed,
-low end on a phone: `displayText`, `screenTitleText`, `cardTitleText`,
-`sectionHeadingText`, `bodyText`, `chatBodyText`, `labelText`, `eyebrowText`,
-`scoreText`, `roomCodeText`.
+line-height and colour together: `displayText`, `screenTitleText`,
+`cardTitleText`, `sectionHeadingText`, `bodyText`, `chatBodyText`, `labelText`,
+`eyebrowText`, `scoreText`, `roomCodeText`.
 
-Nothing goes below 12px. `eyebrowText` applies `text-transform`, so the string
-in the `.tsx` stays sentence case and readable.
+**Sizes are `clamp(min, Arem + Bvw, max)` on 360px → 1440px anchors.** Two
+rules, both of which the first implementation broke:
+
+- *Never a bare `vw` preferred value.* WCAG technique **F94** names it a
+  failure of SC 1.4.4 — `7.2vw` is 7.2% of the viewport whatever the reader
+  sets as their default font size, so text-size preferences did nothing. The
+  `rem` term restores them, and fixed sizes are in `rem` for the same reason.
+- *Derive the slope, never guess it.* `clamp(38px, 7.2vw, 98px)` reaches its
+  floor at 38 ÷ .072 = 528px, so it was a constant on every phone and only
+  began scaling on a tablet. Nine of the ten mixins were flat below 750px.
+  From the anchors, `slope = (max − min) ÷ 1080` and `intercept = min − slope ×
+  360`, so the minimum lands *at* the minimum viewport by construction.
+
+**Leading is inversely proportional to size**, which is why DESIGNSYSTEM.md
+gives it as ranges (display `.94–1.06`, body `1.45–1.6`). Collapsing each to one
+number and taking the tight end put 98px-desktop leading on a 38px phone
+headline. Where the size range is wide enough that one ratio can't cover it —
+`displayText` spans 2.0×, `screenTitleText` 1.4× — the leading is a second clamp
+on the same anchors, expressed as a *length*. A length `line-height` does not
+inherit as a ratio; that is safe only because every mixin declares its size and
+leading together, so keep it that way.
+
+**For `displayText`, target the optical gap, not the ratio.** Inter 800 sums a
+descender and a cap-height to **0.978em** ('p' 0.204 + 'S' 0.774, measured), so
+any leading under ~0.98 drives one line's descender into the capital below it
+wherever the copy stacks that pair — and the landing hero, "Caption this. / Ship
+that.", stacks exactly it. The spec's `.94` was overlapping its own ink by 3.7px
+at 98px and by 1.0px at 66px; it is not a usable value for two-line copy in this
+typeface, whatever the table says. The ramp therefore holds a constant ~7px
+visible gap (1.12 at 360px → 1.04 at 1440px) rather than a constant ratio. The
+ratio still falls with size, which is the principle; it is simply anchored to
+where the ink actually lands. `e2e/typography.spec.ts` measures that gap
+directly with `actualBoundingBox*` rather than asserting a ratio.
+
+**Where DESIGNSYSTEM.md and the `.dc.html` files disagree, the markup wins.**
+The guide's token tables are summaries, and one of them is lossy in a way that
+silently corrupted the display scale. §2 gives Display as
+`clamp(38px,5–7.2vw,98px)`, but the prototype has *five* separate display
+ramps — `38/5vw/58` (×2), `42/5.6vw/68`, `46/6vw/72`, `48/7vw/82`, and the hero
+at `48/7.2vw/98`. Read as one token, that row pairs the smallest ramp's floor
+with the largest ramp's ceiling, and no instance in the design is 38 → 98. The
+hero shipped 10px below its own design for that reason. `displayText` follows
+the hero's ramp; check the markup before trusting a range in the guide.
+
+One deliberate departure, recorded here rather than silently absorbed:
+
+| Mixin | Spec | Here | Why |
+|---|---|---|---|
+| `eyebrowText` | `10–14px` | `12–14px` | The same section states "Never below 12px". The table and the prose contradict each other; the prose is stricter and matches this file's contract. |
+
+`eyebrowText` applies `text-transform`, so the string in the `.tsx` stays
+sentence case and readable.
 
 ### Elevation — `theme/_elevation.scss`
 
