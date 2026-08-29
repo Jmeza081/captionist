@@ -161,6 +161,36 @@ and where the work does not exist the copy moves rather than the work being
 invented to match it — is
 [ADR 0015](./adr/0015-a-progress-screen-may-not-invent-a-stage.md).
 
+**Since then the app answers a URL it doesn't have.** `app/not-found.tsx` makes
+`/_not-found` ours rather than Next's default black page, and being a *root*
+`not-found.tsx` it catches both an unmatched URL and any `notFound()` thrown
+deeper — today `/room/[code]` refusing a code that was never a code. It is the
+best evidence so far that rule 1 is holding: a whole page arrived and the
+component tier map did not move, because `MediaCard`, `TallyPill`, `Wordmark`,
+`Eyebrow` and two `Button href`s already existed and the page is a round nobody
+won. The route is [below](#routes).
+
+**The card it borrows changed shape under every screen that draws one.**
+`$media-ratio: 1 / 1` replaced the design's fixed `$media-height` /
+`$media-height-lg`, because at the widths a card is actually laid out at — 307px
+in the vote grid, 520px in the compose preview — a 186px image is a 1.6:1
+letterbox with the caption stranded in a strip across it. That is a **departure
+from the design rather than an omission of it** — `DESIGNSYSTEM.md` §3 states
+both the height and the caption's 14–32px, and both are overruled — so it is
+[ADR 0016](./adr/0016-a-media-card-is-square-and-a-caption-scales-with-it.md)
+and a row in [design-system.md](./design-system.md) rather than a quiet edit.
+The overlays went with it: they are sized in `cqw` against the card rather than
+the window, which is what `container-type: inline-size` on `.frame` is for — a
+307px vote tile and a 550px hero card sit at the same viewport, so a single `vw`
+clamp would be right for exactly one of them.
+
+**The GIF picker stopped being a grid for the same underlying reason.** A GIF is
+any ratio it likes and Giphy's `fixed_width` rendition pins only the width, so a
+grid of fixed-height tiles cropped every one of them; `GifResult` now carries
+that rendition's `width`/`height`, the tiles are CSS `columns` with each tile's
+own `aspect-ratio` on it, and nothing on the wire moved — the dimensions are a
+rendering hint `toMediaRef()` drops with `id` and `keywords`.
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -211,7 +241,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Identity | `localStorage` person + `sessionStorage` seat, **server-signed** | `lib/room/identity.ts`. The nickname and face are per browser; the player id is per tab, because two tabs are two players. The seat now rides with an HMAC from `lib/ably/seat.ts`, because Ably's `clientId` guarantee is worthless if a tab can ask for a token bearing someone else's id |
 | Avatars | `@dicebear/core@10` + `@dicebear/styles`, the `critters` style | `lib/avatar.ts` turns a seed into a data URI *at the edge*, and only the seed ever travels in state. **Sixty-four seeds, eight pages of eight**, with `avatarPage(seed)` deriving which page a stored face sits on so the picker's opening window is the same on the server and in the browser. `@dicebear/collection@9` is gone — `critters` exists only in DiceBear 10 and there is no 10 of that package — which made this a major bump rather than a one-constant edit: a style is a JSON definition now, so `createAvatar(funEmoji, …)` is `new Avatar(new Style(definition), …)`, and 10 validates colours as hex, so a transparent background is `'00000000'` rather than `'transparent'`. CC0 1.0, so nothing about where a face appears is constrained by attribution. [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) |
 | GIF search | Giphy, proxied by `/api/gifs` | `GIPHY_API_KEY` is server-only; `lib/gifs/` holds the fetcher, the offline shelf and the shared types |
-| GIF renditions | `fixed_width` MP4 · WebP · GIF, plus `fixed_width_still` | `GifResult` carries all four. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
+| GIF renditions | `fixed_width` MP4 · WebP · GIF, plus `fixed_width_still` | `GifResult` carries all four, **and now the rendition's own `width`/`height`** — read off the same rendition `src` came from, so the ratio describes the image actually rendered. It is a rendering hint and nothing depends on it: the picker reserves each tile's shape from it before the image lands, `SAMPLE_GIFS` states its artwork's 320×200, and `toMediaRef()` drops it with `id` and `keywords`. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
 
@@ -276,7 +306,8 @@ Route (app)       Revalidate  Expire
 ƒ /room/[code]
 ```
 
-`/`, `/components`, `/host` and `/join` are prerendered at build time. `/` and
+`/`, `/_not-found`, `/components`, `/host` and `/join` are prerendered at build
+time. `/` and
 `/host` are still static even though they await remote data: both call
 `wallTiles()`, which reaches Giphy through a `fetch` carrying
 `next: { revalidate: 3600 }`, so each page is built once and refreshed hourly
@@ -306,7 +337,13 @@ GIF is a hard-coded Giphy URL in `lib/gifs/notFound.ts` rather than a search: a
 page that exists to say something went wrong should not need an upstream API to
 answer. `GIFS_STUB` swaps in the offline shelf there exactly as it does in
 `wallTiles()`, which is what lets the suite assert the art at all — Playwright
-resolves no host but the dev server.
+resolves no host but the dev server. **The page is prerendered and still costs
+no request of ours**: the URL goes into the HTML and the browser fetches it off
+Giphy's CDN like any other image, so unlike `/` this page reaches a third party
+only from the client. One consequence of being prerendered is worth knowing
+before editing `notFoundGif()`: it is a function so the switch is read per
+request in dev, which is where the suite runs, but a `next build` resolves it
+once and bakes the answer in.
 
 ```mermaid
 graph TD
@@ -340,6 +377,8 @@ graph TD
   L --> JC
   L --> R
   L --> NF
+  R -.->|"notFound() — a code that never normalised"| NF
+  NF -.->|"notFoundGif() — one hard-coded CDN URL<br/>in the HTML. No API call, no key.<br/>GIFS_STUB swaps the offline shelf"| GY
   P -->|"await wallTiles()"| W
   W -.->|"searchGiphy · cached 1h"| GY
   P --> LA
@@ -365,9 +404,12 @@ graph TD
   A -.->|"searchGiphy"| GY
 ```
 
-`/` is the only page that reaches a third party from the server render; every
-other Giphy call goes through the route handler. Both doors are the same
-function, `searchGiphy()`, and the key stops at the server in both.
+`/` is still the only page that reaches a third party from the server render;
+every other Giphy *call* goes through the route handler. Both doors are the same
+function, `searchGiphy()`, and the key stops at the server in both. The 404 is
+neither door and that is why its arrow is dotted straight to Giphy: it makes no
+call at all, in either place — it ships a URL and lets the browser fetch the
+picture.
 
 **`/` is the landing page from artboard 1a**, and it composes three things:
 `LandingNav`, the hero copy, and `LandingActions`. It holds no markup of its
@@ -1353,6 +1395,7 @@ graph BT
     JoinPage["join/page.tsx<br/>join/[code]/page.tsx"]
     HostPage["host/page.tsx"]
     RoomPage["room/[code]/page.tsx<br/>+ screens.ts"]
+    NotFound["not-found.tsx<br/><i>markup in the route, like the landing's</i>"]
   end
 
   Icon --> Feedback
@@ -1387,10 +1430,16 @@ graph BT
   Controls --> Compose
   Ident --> Lobby
   Brand -->|"Logo — the only atom Wordmark<br/>is allowed to reach for"| Mark
-  Mark -->|"AppHeader — one lockup,<br/>drawn by all three surfaces"| Compose
+  Mark -->|"AppHeader — one lockup,<br/>drawn by all four surfaces"| Compose
   Mark -->|"LandingNav"| Landing
   BootScreen -->|"host · guest · refused —<br/>it reads nothing, so it fits"| Gallery
   Gallery --> Comp
+
+  Layout -->|"Stack · Inline · Grid"| NotFound
+  Controls -->|"Button href — both ways out are links"| NotFound
+  Status -->|"Eyebrow · TallyPill"| NotFound
+  Media -->|"MediaCard — the round nobody won"| NotFound
+  Mark -->|"Wordmark — the fourth surface to draw it"| NotFound
 
   Chat -->|"ChatMessage · UnreadDivider"| Panel
   Compose -->|"Composer"| Panel
@@ -1439,7 +1488,7 @@ graph BT
 `organisms/` is the tier that grew, and phase 3 is most of the growth: **nine
 screens now, one per phase but `opener`.** An organism is anything that reaches
 outside itself — room state or routing — which, not size, is why a
-60-line `ScoreScreen` is one and a 190-line `GifPanel` is not. Until the landing
+60-line `ScoreScreen` is one and a 218-line `GifPanel` is not. Until the landing
 page every organism qualified on `useRoom()`; `LandingActions` was the first to
 qualify on the other half of
 [`components/README.md`](../components/README.md)'s rule, since it does no more
@@ -1752,6 +1801,32 @@ molecule holding a `<h1>` and the page's only wordmark, which would make the
 tier say less. If a second such case appears, the table needs an edit rather
 than a footnote here.
 
+**The 404 added a page and no component, and three components changed without
+gaining a prop.** `app/not-found.tsx` composes `Grid`, `Stack`, `Inline`,
+`Eyebrow`, two `Button href`s, `Wordmark`, `MediaCard` and two `TallyPill`s, and
+holds its own markup for the reason the landing does — one page, so
+`e2e/not-found.spec.ts` covers it rather than the gallery. The three that
+changed did so **in their stylesheets**, which is the case rule 2 does not
+reach: a variant is a prop, but a component being the wrong *shape* everywhere
+is a fix rather than a variant. `MediaCard`'s frame is square at every width and
+a query container, so the caption sizes against the card; `TallyPill` is
+`ReactionCTA`'s 32px, because a reaction four people left should not read as a
+footnote to the control offering a fifth, and it sizes an image glyph in `em` so
+a Slackmoji and a character land the same size without a call site passing one;
+`QuickJoin`'s field takes the slack with `flex: 1 0 auto`, so the key sits on
+the pill's right edge wherever the pill is wider than its contents. None of the
+three needed a caller to know.
+
+**`GifPanel` is the fourth and the interesting one, because it changed layout
+model rather than metrics.** Both of its variants — the `popover` in chat and
+the `board` on the brief — are CSS `columns` now instead of `grid`, since a grid
+row is as tall as its tallest cell and ragged GIF heights leave a hole under
+every short one. Two costs are stated rather than discovered: reading order
+becomes column-major (tab order still follows the DOM), and the popover's
+scroller had to become a **wrapper** around the columns, because a multicol box
+with a capped height treats that height as its fragmentainer and lays the rest
+out sideways off the panel.
+
 ## Token flow
 
 Values exist exactly once. Sass owns them; React reads them by name.
@@ -1804,6 +1879,36 @@ right end was under the pill. The metrics stay Sass constants because no React
 prop takes them, so
 publishing a custom property for each would be a bridge with nothing crossing
 it. The rule is the same either way: the number exists once, in `theme/`.
+
+**This pass put ten names into that file and took five out, and the interesting
+part is that the new ones are mostly not lengths.** Out: `$media-height` and
+`$media-height-lg`, `$gif-panel-tile-height`, `$gif-board-tile`, and
+`$tally-pad-y`. In: `$media-ratio: 1 / 1` and `$gif-tile-ratio: 5 / 4`, which
+are *shapes*; `$media-overlay-size`, a `clamp(1.375rem, 8cqw, 2.625rem)` whose
+middle term is container-relative, which is the whole reason `MediaCard`'s frame
+declares `container-type: inline-size`; `$media-overlay-shadow`, `$tally-height`
+· `$tally-glyph` · `$tally-count` (the two `$tally-pad-x` values stayed and were
+redrawn around the new height), `$gif-panel-scroll-cap`
+(320px, its own value rather than the `$toolbar-scroll-cap` it used to borrow
+from the reaction toolbar, because a tile can now be as tall as its column is
+wide), and the 404's own two page measures, `$notfound-width` and
+`$notfound-lead-width` — one-offs that belong to a page rather than to any
+component on it, exactly as `$landing-*` do. A height is right at one width; a
+ratio is right at all of them, which is why swapping the media card back is one
+line and why `$gif-tile-ratio` can be the fallback for a GIF that reports no
+dimensions of its own.
+
+**`theme/_typography.scss` gained a mixin, and it is not on the token bridge at
+all.** `displaySmallText` is the ramp one step below the hero's — 42→68px, the
+prototype's `42/5.6vw/68` — derived from the same 360→1440 anchors as
+`displayText` rather than shrunk from it. Its only call site is the 404's
+headline, because at the hero's 98px ceiling that headline took four lines
+beside a card and read as a shout rather than a joke.
+[design-system.md §1](./design-system.md) records that the prototype carries
+five ramps and that the guide's single row is a lossy summary of them; this is
+the second of the five to exist in code. Type mixins never cross into
+`theme/tokens.ts` — nothing in React takes a font size as a prop — so the rule
+that holds here is the plainer half: the numbers exist once, in `theme/`.
 
 **`theme/_motion.scss` stopped being one mixin and became six.** There is no
 `keyframes()` any more and `app/tokens.scss` includes nothing from it: each
@@ -1858,9 +1963,12 @@ popovers (the vote card's and the composer's).
 
 ## Rendering path
 
-Five shapes, across nine routes. The simple one is prerendered HTML with
+Five shapes, across ten routes. The simple one is prerendered HTML with
 hydration reaching only the `'use client'` islands inside it — `/components`,
-and now `/host` and `/join` as well. The entry screens qualify because nothing
+`/host`, `/join`, and now `/_not-found`, which is the thinnest example the app
+has: every piece of it is a Server Component except `Button`, so the only thing
+hydration reaches are two links wearing a button's classes. The entry screens
+qualify because nothing
 they do needs a server: the code is validated by `normalizeCode` in the browser,
 the person comes out of `localStorage`, and the room is the next page's problem.
 `/join/[code]` is the same page rendered per request, and only because it awaits
@@ -1873,7 +1981,7 @@ sequenceDiagram
   participant S as Static output
 
   Note over N,S: build time
-  N->>S: prerender /components · /host · /join
+  N->>S: prerender /components · /host · /join · /_not-found
 
   Note over B,S: request time
   B->>N: GET /join
@@ -2039,6 +2147,16 @@ that fork are the same URL from the same origin, which is what makes one
 allowlist enough. Nothing in `lib/gifs/` had to change to serve it beyond the
 allowlist itself.
 
+**One field has since been added to what comes back, and it stops at the
+picker.** `toResult()` reads the chosen rendition's `width` and `height` —
+decimal strings on the wire, so a junk one is simply absent rather than `NaN` —
+and `GifPanel` writes them onto each tile as a `--tile-ratio` custom property,
+which is how a masonry column reserves a GIF's real shape *before* the image
+arrives. It is a rendering hint and deliberately nothing more: `toMediaRef()`
+drops it with `id` and `keywords`, so `GameState` and the wire are unchanged,
+and a source that reports no dimensions still renders — at `$gif-tile-ratio`,
+the stylesheet's stated fallback.
+
 ### The realtime path
 
 The fifth shape is the room's own, and it is the GIF path's sibling: browser →
@@ -2117,6 +2235,15 @@ in place: custom team emoji is blocked by licensing, and uploads by a decision
 that went the other way ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)).
 They stay listed because the design draws both and a reader is owed the reason,
 not because either is queued.
+
+**A third category exists now and is deliberately not in this section.** A
+*departure* — a value the design states and the code overrules — is not a gap,
+so it does not belong in a list of what is missing. There are two: uploads,
+above, and the media card's shape and caption scale
+([ADR 0016](./adr/0016-a-media-card-is-square-and-a-caption-scales-with-it.md)).
+Both are recorded where a reader would look for them — the ADR, and
+[design-system.md](./design-system.md)'s departures table — rather than here,
+because nothing about either is waiting on a phase.
 
 Phase 4 removed two rows from this table rather than editing them. **Joining a
 room** is built — the routes are in the [route map](#routes), the election that
@@ -2247,8 +2374,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 368 Playwright
-tests across the two viewports — 184 per project, over 26 spec files. 358 of the 368 run; the
+210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 378 Playwright
+tests across the two viewports — 189 per project, over 27 spec files. 368 of the 378 run; the
 other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.
@@ -2342,6 +2469,30 @@ replacing the progress, and that a patch changing nothing returns the *same*
 object. That last one is the store's whole contract rather than a nicety —
 `useSyncExternalStore` re-reads `getSnapshot` during render and loops forever on
 a fresh one, and a merging setter is the easiest kind to get wrong.
+
+**The 404's share is `e2e/not-found.spec.ts`, 5 tests per project and no unit
+test, because nothing pure moved.** Two of the five are the ones a pretty error
+page usually skips: the **status code** on an unmatched URL, since a 404 served
+as 200 tells a crawler the URL exists, and the `notFound()` path through
+`/room/not-a-code`, which asserts the markup and pointedly *not* the status —
+Next answers a streamed segment 200 with the 404 in the body. A third asserts
+the art is the offline shelf and reads its `src`, which is only meaningful
+because the browser resolves no host but the dev server: a live Giphy URL there
+would be a broken frame nothing caught. The other two are the ways out and the
+tab order.
+
+**`e2e/targets.spec.ts` narrowed what it claims, and that is worth reading as a
+change in coverage rather than a fix.** Its `hits()` helper now drops a control
+whose every sample point resolves to painted ground on top of it. The cause is
+the vote screen's lock dock — `position: sticky; bottom: 0` over a solid
+background, deliberately not a fade, so caption text is not legible through
+it — which means a phone voter always has *some* card's foot row buried under
+it. That is how a sticky bar over a scrolling grid works and the row is not
+offered to anybody: you scroll, and it appears. What the spec still catches is
+the thing it exists for — two controls the viewer can **see**, one silently
+taking the other's tap — because a control is dropped only when all five points
+are occluded, and the bug that motivated the file (the lock button's right end
+under the chat key) has an unoccluded centre.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

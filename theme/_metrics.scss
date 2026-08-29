@@ -374,10 +374,13 @@ $landing-cta-height: 56px;
 // The 404 page. One-off measures, for the same reason the landing has its own:
 // values that belong to a page rather than to any component on it.
 //
-// 1190px is the design's two columns and the gutter between them, and it is
-// deliberately narrower than the lobby's 1080px measure is wide — the copy
-// column has to hold display type at its 98px ceiling without "Nobody" and
-// "could" landing on one line, which is where the joke's timing lives.
+// 1190px is the comp's own content width — the two columns and the gutter
+// between them — which makes each column about 570px. That is the number the
+// copy side is really sized by: `displaySmallText` tops out at 68px, and the
+// headline wants to break as "Nobody could / caption this page." rather than
+// four lines, which is where the joke's timing lives. It is wider than the
+// lobby's 1080px `$lobby-columns` because that measure holds a roster and this
+// one holds a card beside display type.
 $notfound-width: 1190px;
 // Where the supporting sentence stops. Narrower than the landing's 640px lead
 // because this one shares its row with a card rather than owning the viewport.

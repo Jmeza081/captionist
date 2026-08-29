@@ -171,7 +171,11 @@ was written for a shape we do not draw:
 | shadow `0 ±1.5–2px 0 #000` | `$media-overlay-shadow: 2px` | The top of the same range. At 14px 1.5px held the letter off the image; at 42px it is a hairline |
 
 Changing the shape back is one line: `$media-ratio: 4 / 3` and every screen
-follows.
+follows. The decision, and what it cost elsewhere, is
+[ADR 0016](./adr/0016-a-media-card-is-square-and-a-caption-scales-with-it.md) —
+including the one place `CLAUDE.md`'s "if code and design disagree, the code is
+the bug" does not hold, and why a departure gets a row in a table rather than a
+quiet edit.
 
 ### Type — `theme/_typography.scss`
 

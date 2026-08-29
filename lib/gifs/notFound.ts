@@ -48,9 +48,15 @@ const OFFLINE = SAMPLE_GIFS.find((gif) => gif.id === 'sample-prod')
 /**
  * Which GIF the 404 page shows.
  *
- * A function rather than a constant so the stub switch is read at request
- * time, the way `wallTiles()` reads it — a module constant would bake in
- * whatever the environment looked like when the bundle was built.
+ * A function rather than a constant, so the stub switch is read when the page
+ * renders rather than when the module is first evaluated — the way
+ * `wallTiles()` reads it.
+ *
+ * Be honest about how far that goes: `/_not-found` is prerendered (`○` in
+ * `next build`), so a production build resolves this once and bakes the answer
+ * in either way. Where it earns its keep is `next dev`, which renders per
+ * request — and that is where the Playwright suite runs, with `GIFS_STUB=1`
+ * set by `playwright.config.ts`.
  */
 export function notFoundGif(): GifResult {
   if (process.env.GIFS_STUB === '1') return OFFLINE ?? TRAVOLTA
