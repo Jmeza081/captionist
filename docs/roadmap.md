@@ -107,7 +107,7 @@ Both of the first two are recorded in
    `lib/gifs/allow.ts` now gates the attachment, the quote thumbnail and the
    glyph against the same allowlist, and `ReactionGlyph` renders it so no
    tally prints a URL as text.
-3. **The Slackmoji blocker was the uploader's, not this one's.** See
+3. **The Slackmoji blocker belonged to user uploads, not to these tiles.** See
    [design-system.md §5](./design-system.md).
 4. **The reply affordance is ours.** Screens 2c draws the message and never the
    control that produces it, so `MediaCard` gained a `reply` slot beside
@@ -143,7 +143,7 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
 | --- | --- |
 | Authority | The host browser is the server. Ably is pub/sub + presence. No database. |
 | Role holder | **Does not compete.** Sets the round up, sits it out, then votes. |
-| Uploads | **Blocked in v1** — no storage target exists. `Dropzone` says why. |
+| Uploads | **Not a feature.** Priced the storage target and removed the scaffolding — [ADR 0014](./adr/0014-uploads-are-not-a-feature.md). Giphy covers both modes. |
 | GIFs | Real Giphy, proxied through a route handler so the key stays server-side. |
 | Chat | Deferred to phase 6; it is a `RoomEvent`, never game state. |
 | `format:'one'`, `voting:'single'` | Implemented in phase 7. Both were live controls in `/host` that no screen read — a single-vote room paid 3/2/1, and "One line" changed nothing but a summary label. |

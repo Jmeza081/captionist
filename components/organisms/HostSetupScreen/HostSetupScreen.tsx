@@ -142,13 +142,6 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
                   checked={settings.uniqueNicknames}
                   onChange={(uniqueNicknames) => patch({ uniqueNicknames })}
                 />
-                {/* Blocked rather than hidden: the design draws it, and saying why
-                    is more honest than pretending it was never offered. */}
-                <Stack gap={5}>
-                  <Toggle label={copy.uploadsLabel} checked={false} onChange={() => {}} disabled />
-                  <p className={styles.reason}>{copy.uploadsReason}</p>
-                </Stack>
-
                 <hr className={styles.rule} />
 
                 {/* The design drops this row entirely in react mode — there is no

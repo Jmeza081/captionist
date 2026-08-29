@@ -40,9 +40,9 @@ export interface GifSearchResponse {
 /**
  * The adapter between what a picker returns and what the room stores.
  *
- * `id` and `keywords` are dropped on purpose: `MediaRef` has no id, and giving
- * one to every uploaded image later would mean inventing one.
+ * `id` and `keywords` are dropped on purpose: `MediaRef` has no id, and the
+ * room has no use for the search terms that surfaced a GIF.
  */
 export function toMediaRef(gif: GifResult): MediaRef {
-  return { src: gif.src, alt: gif.alt, source: 'giphy' }
+  return { src: gif.src, alt: gif.alt }
 }

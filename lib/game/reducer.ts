@@ -319,7 +319,7 @@ function fallbackSubject(state: GameState): [RoundSubject, number] {
   // Caption mode has no offline GIF to fall back to, so an empty subject with
   // honest alt text is better than a broken image. The brief screen's own
   // "Surprise me" is the real answer; this is the clock running out.
-  return [{ kind: 'media', media: { src: '', alt: 'No image was picked in time', source: 'giphy' } }, state.seed]
+  return [{ kind: 'media', media: { src: '', alt: 'No image was picked in time' } }, state.seed]
 }
 
 /* ------------------------------------------------------------------ */

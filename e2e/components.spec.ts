@@ -17,7 +17,6 @@ test.describe('component gallery', () => {
       'Segmented control',
       'Text field',
       'Toggle & stepper',
-      'Dropzone',
       'Status & labels',
       'Avatar & player rows',
       'Media card',

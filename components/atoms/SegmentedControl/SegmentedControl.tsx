@@ -6,7 +6,7 @@ import styles from './SegmentedControl.module.scss'
 export interface SegmentedOption<T extends string> {
   value: T
   label: string
-  /** Optional leading glyph — the uploader tabs always carry theirs. */
+  /** Optional leading glyph. Specified by the design; no surface uses it today. */
   icon?: ReactNode
   /** A green dot marking the room's actual mode in the help modal. */
   marked?: boolean
@@ -23,7 +23,7 @@ export interface SegmentedControlProps<T extends string> {
 }
 
 /**
- * A small, mutually exclusive choice — mode, caption format, uploader source.
+ * A small, mutually exclusive choice — game mode, caption format, voting.
  *
  * A real radiogroup, so arrow keys move between options and the selection is
  * announced. Two options that aren't exclusive want checkboxes instead.

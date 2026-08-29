@@ -30,7 +30,6 @@ import { ChatMessage } from '@/components/molecules/ChatMessage'
 import { ChatRail } from '@/components/molecules/ChatRail'
 import { CodeEntry } from '@/components/molecules/CodeEntry'
 import { Composer } from '@/components/molecules/Composer'
-import { Dropzone } from '@/components/molecules/Dropzone'
 import { GifPanel, type GifResult } from '@/components/molecules/GifPanel'
 import { RoomToolbox } from '@/components/molecules/RoomToolbox'
 import { JoinPanel } from '@/components/molecules/JoinPanel'
@@ -119,7 +118,6 @@ function Case({ label, children }: { label: string; children: React.ReactNode })
 export function ComponentGallery() {
   const [mode, setMode] = useState<GameMode>('caption')
   const [face, setFace] = useState<string>('ember')
-  const [source, setSource] = useState<'giphy' | 'upload'>('giphy')
   const [caption, setCaption] = useState('When prod goes down')
   const [search, setSearch] = useState('')
   const [giphySearch, setGiphySearch] = useState(false)
@@ -192,18 +190,6 @@ export function ComponentGallery() {
             ]}
           />
         </Case>
-        <Case label="Uploader source — always carries its icons">
-          <SegmentedControl
-            label="Image source"
-            surface="card"
-            value={source}
-            onChange={setSource}
-            options={[
-              { value: 'giphy', label: 'Search Giphy', icon: <Icon name="search" size={14} /> },
-              { value: 'upload', label: 'Upload your own', icon: <Icon name="uploadTray" size={14} /> },
-            ]}
-          />
-        </Case>
       </Section>
 
       {/* ---------------- Inputs ---------------- */}
@@ -268,25 +254,6 @@ export function ComponentGallery() {
             />
           </Stack>
         </Case>
-      </Section>
-
-      <Section id="dropzone" title="Dropzone" spec="empty · drag-over · file-ready">
-        <Grid columns={1} mdColumns={2} gap={20}>
-          <Case label="Empty — click or drop">
-            <Dropzone onFile={() => undefined} />
-          </Case>
-          <Case label="File ready">
-            <Dropzone
-              file={{
-                name: 'server-rack.png',
-                size: '2.4MB',
-                dimensions: '1200×900',
-                previewUrl: MEDIA.serverRack,
-              }}
-              onFile={() => undefined}
-            />
-          </Case>
-        </Grid>
       </Section>
 
       {/* ---------------- Status ---------------- */}

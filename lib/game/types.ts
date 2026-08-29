@@ -33,12 +33,6 @@ export type GameMode = 'caption' | 'react'
 export interface MediaRef {
   src: string
   alt: string
-  /**
-   * `upload` is modelled but unreachable in v1 — there is no storage target,
-   * and a blob URL only resolves in the tab that made it. Keep the variant so
-   * the shape doesn't have to change when storage lands.
-   */
-  source: 'giphy' | 'upload'
 }
 
 export type ConnectionState = 'online' | 'reconnecting' | 'gone'

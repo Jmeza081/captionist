@@ -10,8 +10,6 @@ import styles from './Icon.module.scss'
  */
 export type IconName =
   | 'search'
-  | 'upload'
-  | 'uploadTray'
   | 'smiley'
   | 'plus'
   | 'send'
@@ -40,14 +38,6 @@ const PATHS: Record<IconName, PathSpec> = {
     circles: [{ cx: 11, cy: 11, r: 7 }],
     d: ['M16.5 16.5 21 21'],
     width: 2.2,
-  },
-  upload: {
-    d: ['M12 16V4M7.5 8.5 12 4l4.5 4.5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16'],
-    width: 1.9,
-  },
-  uploadTray: {
-    d: ['M12 15.5V4.5M8 8.5 12 4.5l4 4M4.5 15.5v3A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-3'],
-    width: 2.1,
   },
   smiley: {
     circles: [{ cx: 11, cy: 12, r: 8.2 }],

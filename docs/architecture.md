@@ -96,6 +96,39 @@ window, and at every width where that count did not divide twenty the last row
 came up short. It counts tracks now: `$wall-columns` × `$wall-rows`, 4×5 on a
 phone and 5×4 from `md` up, so twenty tiles fill twenty cells at any viewport.
 
+**Since then uploads stopped being a not-yet and became a no.** Custom image
+upload had been drawn, built and blocked since the design landed: `Dropzone`
+rendered `blocked` in the gallery and nowhere else, `BriefScreen` carried a
+"Search Giphy / Upload your own" tab pair whose second tab explained itself
+instead of working, `/host` drew a permanently disabled toggle with a reason
+under it, and `MediaRef.source` was a `'giphy' | 'upload'` union nothing read.
+The storage target was finally priced, and the cost was never the problem —
+what it bought was a vendor and a token in an app whose authority model is "no
+database", a cleanup cron, and a "the image lives only for the game" claim a
+CDN cache makes unkeepable. So the scaffolding went rather than staying as a
+promise: `components/molecules/Dropzone/` is deleted, `GifPanel` renders
+unconditionally on the brief, the `/host` row is **absent rather than
+disabled**, `MediaRef` is `{ src, alt }`, `Icon` is back to the eleven glyphs
+its docblock always claimed, and four `$dropzone-*` metrics left
+`theme/_metrics.scss`. Giphy is the only image source, in both modes.
+[ADR 0014](./adr/0014-uploads-are-not-a-feature.md).
+
+**Two things about that removal are worth reading carefully.** It suspends this
+repo's own rule that the design is the source of truth: `design/DESIGNSYSTEM.md`
+§126 still specs the Dropzone, and `design/` is left untouched rather than
+edited, because the delivered design is a record of what was designed rather
+than a mutable file. Everywhere else the code omits something the design draws,
+this file lists it as an omission; here the ADR is the explanation instead.
+And the *absence* is what `e2e/host.spec.ts` asserts now — `/upload/i` matches
+nothing on `/host`, so the removal is a test rather than a habit. `CLAUDE.md`'s
+rule 10, *blocked is not disabled*, is for an action unavailable *right now*; it is
+the wrong shape for one that will never be available, and the caption-format
+row — dropped entirely in react mode rather than shown dead — already set that
+precedent. `SegmentedControl`'s `icon` prop is the one survivor: it is
+design-specified and stays, but nothing in production sets it, because the
+uploader tabs were its only caller and the gallery case demonstrating it was
+demonstrating them.
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -558,7 +591,7 @@ and the only server-side one outside a route handler — it turns `GifResult`s
 into `WallTile`s, a smaller shape carrying just a poster, a motion source and
 alt text, so `HeroWall` never sees a search result. `toMediaRef()` is the
 one-way door between a search result and game state — `id` and `keywords` are dropped, because `MediaRef` has no id and
-inventing one for a future upload would be a lie. `allow.ts` is phase 7's
+the room has no use for the terms that surfaced a GIF. `allow.ts` is phase 7's
 addition and the fourth caller's supplier: `isAllowedImageSrc` is what
 `lib/room/events.ts` runs every sender-supplied URL through. It belongs here
 rather than beside the store for the same reason `GifResult` does — it is a
@@ -607,9 +640,9 @@ keeps it server-side by construction rather than by convention.
 ordered list, their pack, and the glyph-to-id hop the wire needs. It moved out
 of `ComponentGallery` in phase 6, where it had been fine until a second surface
 needed it, and phase 7 grew it from ten to 32 — **including the four Slackmoji
-tiles this file used to say were unbuildable.** That blocker was the uploader's
-and got borrowed: Slackmoji are a *workspace's* own uploads with nowhere to
-live, but these four are ours, authored as SVGs under `public/media/` beside the
+tiles this file used to say were unbuildable.** That blocker belonged to user
+uploads and got borrowed: Slackmoji are a *workspace's* own uploads with nowhere
+to live, but these four are ours, authored as SVGs under `public/media/` beside the
 24 sample tiles already there. The honest deviation left is that they are SVG
 rather than animated GIF, which is the deviation `stub-*.svg` already makes.
 Because a glyph can now be a location, three things follow: `isImageGlyph`
@@ -1190,7 +1223,7 @@ graph BT
     Room["JoinPanel · PlayerRow · PromptBanner"]
     Media["MediaCard"]
     Chat["ChatMessage · UnreadDivider<br/>ChatRail · ChatToast"]
-    Overlay["HelpModal · RoundOpener · RoomToolbox<br/>Dropzone · ReactionToolbar · GifPanel<br/>ReconnectOverlay"]
+    Overlay["HelpModal · RoundOpener · RoomToolbox<br/>ReactionToolbar · GifPanel<br/>ReconnectOverlay"]
     Dialog["Modal<br/><i>the stepped dialog — chrome and paging only</i>"]
     Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
     Lobby["CodeEntry · RoomShare · Podium"]
@@ -1267,7 +1300,7 @@ graph BT
   Compose -->|"AppHeader · ReactionFloaters"| Shell
   Room -->|"PlayerRow · PromptBanner"| Screens
   Media --> Screens
-  Overlay -->|"GifPanel · Dropzone · ReactionToolbar"| Screens
+  Overlay -->|"GifPanel · ReactionToolbar"| Screens
   Lobby -->|"RoomShare · Podium"| Screens
   Compose -->|"RevealReactionBar"| Screens
   Status -->|"StatusPill · Eyebrow · TallyPill"| Screens
@@ -1876,9 +1909,13 @@ side of that diagram is unreached, and that is the state this machine is in.
 
 Designed but not implemented. The shape is settled — `DESIGNSYSTEM.md` and the
 three `.dc.html` files specify all of it, and since the spine landed the state
-model does too. What's missing is code, in the order
+model does too. What's missing is mostly code, in the order
 [the roadmap](./roadmap.md#phases) gives; that table is the plan and is not
-repeated here.
+repeated here. **Two rows are not waiting on a phase at all**, and each says so
+in place: custom team emoji is blocked by licensing, and uploads by a decision
+that went the other way ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)).
+They stay listed because the design draws both and a reader is owed the reason,
+not because either is queued.
 
 Phase 4 removed two rows from this table rather than editing them. **Joining a
 room** is built — the routes are in the [route map](#routes), the election that
@@ -1910,13 +1947,15 @@ block* (Screens 2d) — `ChatQuote` is a denormalised `{ src?, caption }`, stage
 on `RoomShellContext` and drawn by `ChatMessage`; the "what happens when the
 quoted message falls off the 50-message cap" question this table used to pose is
 answered by the quote being a copy, so the cap never touches it. *The four
-Slackmoji tiles* (DESIGNSYSTEM.md §4.4) — the blocker was borrowed from the
-uploader and did not apply: those are a *workspace's* uploads, these four are
+Slackmoji tiles* (DESIGNSYSTEM.md §4.4) — the blocker was borrowed from user
+uploads and did not apply: those are a *workspace's* uploads, these four are
 ours, drawn as SVGs beside the sample shelf. All three are drawn in
 [the event lane](#the-event-lane) and reasoned out in
 [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md). Uploads
-stay in the table below, unchanged and for the original reason: there is still
-nowhere for a *player's own file* to live.
+kept their row below but inverted it: what exists is now *nothing* rather than a
+blocked `Dropzone`, and what is missing is missing by decision
+([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)) rather than by a storage
+target that never arrived.
 
 **The catalog import removed no row and added one.** 616 reactions is not a gap
 closed by time — the ask was slackmojis.com's directory, and it cannot be taken:
@@ -1925,14 +1964,15 @@ source changed and the goal survived as Noto under CC BY 4.0
 ([ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md);
 attribution is on `/components` and in `public/media/emoji/LICENSE.txt`). What
 is left out is the part no import can supply — a *workspace's own* custom emoji
-— and it is the uploads row's reason again rather than a new one.
+— and it is the same missing storage target, now declined outright
+([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)).
 
 | Area | What exists | What doesn't |
 | --- | --- | --- |
 | The round-flow screens | **All ten phases**, inside the `RoomShell` chrome drawn above — `opener` as the `RoundOpener` overlay, the other nine through the [tier map](#component-tiers). `PhasePending` is gone | Four pieces of the design, each left out for a reason rather than for time — see below the table |
 | Iconography | `Icon` ships the design's own SVG paths | `@phosphor-icons/react` is installed and unused |
-| Custom team emoji | 616 reactions from `lib/reactions.ts` — 32 authored, four of them Slackmoji-style, plus 584 Noto imports under CC BY 4.0 | A *workspace's* own emoji, which is what the ask meant. Blocked by licensing rather than by time — slackmojis.com's terms forbid compiling their directory and it does not own the art ([ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md)). The honest route is host-supplied URLs, which needs the storage target the row below is also waiting on |
-| Uploads | `Dropzone` renders `blocked` with the reason on it | Anywhere for a *player's own file* to live. Blocked in v1 by decision, not by omission — `BriefScreen`'s "Upload your own" tab says so rather than hiding. `Player.src` is the same door on the avatar side: the prop exists, nothing populates it, and seeds cover every face the app draws. The three rows that used to borrow this reason were phase 7's, and none of them actually needed a storage target; the row above it is the one that genuinely does |
+| Custom team emoji | 616 reactions from `lib/reactions.ts` — 32 authored, four of them Slackmoji-style, plus 584 Noto imports under CC BY 4.0 | A *workspace's* own emoji, which is what the ask meant. Blocked by licensing rather than by time — slackmojis.com's terms forbid compiling their directory and it does not own the art ([ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md)). The honest route is host-supplied URLs, which needs a storage target this app has decided not to acquire ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)) |
+| Uploads | Nothing — Giphy is the only image source, in both modes | A *player's own file*, by decision rather than omission. The storage target was priced and declined ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)), and the `Dropzone`, the source tabs and the `/host` toggle were removed rather than left explaining themselves. `Player.src` is the same door on the avatar side and stays open: the prop exists, nothing populates it, and seeds cover every face the app draws |
 
 The four omissions in the round-flow screens, in phase order:
 
@@ -1986,8 +2026,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-202 unit tests (`lib/**/*.test.ts`, node) and 334 Playwright tests across the
-two viewports — 167 per project, over 23 spec files. 324 of the 334 run; the
+202 unit tests (`lib/**/*.test.ts`, node) and 340 Playwright tests across the
+two viewports — 170 per project, over 23 spec files. 330 of the 340 run; the
 other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.

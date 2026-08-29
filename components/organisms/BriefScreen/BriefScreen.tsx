@@ -7,10 +7,8 @@ import { Button } from '@/components/atoms/Button'
 import { Chip } from '@/components/atoms/Chip'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Inline } from '@/components/atoms/Inline'
-import { SegmentedControl } from '@/components/atoms/SegmentedControl'
 import { Stack } from '@/components/atoms/Stack'
 import { TextField } from '@/components/atoms/TextField'
-import { Dropzone } from '@/components/molecules/Dropzone'
 import { GifPanel } from '@/components/molecules/GifPanel'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
@@ -29,19 +27,11 @@ import styles from './BriefScreen.module.scss'
  * which mode the room is in. That is what stops this forking in two.
  */
 
-type Source = 'giphy' | 'upload'
-
-const SOURCES: Array<{ value: Source; label: string }> = [
-  { value: 'giphy', label: 'Search Giphy' },
-  { value: 'upload', label: 'Upload your own' },
-]
-
 export function BriefScreen() {
   const { state, selfId, send } = useRoom()
   const { notify } = useRoomShell()
   const gifs = useGifSearch()
 
-  const [source, setSource] = useState<Source>('giphy')
   const [picked, setPicked] = useState<GifResult | undefined>(undefined)
   const [draft, setDraft] = useState('')
 
@@ -163,47 +153,31 @@ export function BriefScreen() {
         <span className={styles.note}>Powered by Giphy · SFW filter on</span>
       </Inline>
 
-      <SegmentedControl
-        label="Image source"
-        surface="card"
-        value={source}
-        onChange={setSource}
-        options={SOURCES}
+      <GifPanel
+        variant="board"
+        results={gifs.results}
+        status={gifs.status}
+        message={gifs.message}
+        query={gifs.query}
+        onQueryChange={() => {}}
+        onSubmit={gifs.search}
+        suggestions={SEARCH_SUGGESTIONS}
+        selectedId={picked?.id}
+        selectionLabel="Selected"
+        onPick={setPicked}
+        tools={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void gifs.surprise().then((gif) => {
+                if (gif) setPicked(gif)
+              })
+            }}
+          >
+            Surprise me
+          </Button>
+        }
       />
-
-      {source === 'upload' ? (
-        <Dropzone
-          onFile={() => {}}
-          blocked
-          reason="Uploads need somewhere to live. Search Giphy for now."
-        />
-      ) : (
-        <GifPanel
-          variant="board"
-          results={gifs.results}
-          status={gifs.status}
-          message={gifs.message}
-          query={gifs.query}
-          onQueryChange={() => {}}
-          onSubmit={gifs.search}
-          suggestions={SEARCH_SUGGESTIONS}
-          selectedId={picked?.id}
-          selectionLabel="Selected"
-          onPick={setPicked}
-          tools={
-            <Button
-              variant="secondary"
-              onClick={() => {
-                void gifs.surprise().then((gif) => {
-                  if (gif) setPicked(gif)
-                })
-              }}
-            >
-              Surprise me
-            </Button>
-          }
-        />
-      )}
 
       <Box background="none" padding={0}>
         <Inline gap={14} justify="between">

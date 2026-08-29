@@ -1178,9 +1178,6 @@ export interface HostSetupCopy {
   settingsSection: string
   giphyLabel: string
   uniqueLabel: string
-  uploadsLabel: string
-  /** Uploads are blocked in v1 by decision, so the control says why. */
-  uploadsReason: string
   formatLabel: string
   votingLabel: string
   capLabel: string
@@ -1198,8 +1195,6 @@ export function hostSetupCopy(): HostSetupCopy {
     settingsSection: 'Room settings',
     giphyLabel: 'Let the picked player search Giphy',
     uniqueLabel: 'Enforce unique nicknames',
-    uploadsLabel: 'Allow custom image uploads',
-    uploadsReason: 'Uploads need somewhere to live. Not in this version.',
     formatLabel: 'Caption format',
     votingLabel: 'Voting',
     capLabel: 'Submission time limit',

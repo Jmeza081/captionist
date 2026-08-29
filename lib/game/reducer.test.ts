@@ -85,7 +85,7 @@ function playRound(state: GameState): GameState {
   state = expire(state) // opener -> brief
   state = apply(state, state.round?.roleHolderId ?? 'p0', {
     type: 'round/subjectLocked',
-    subject: { kind: 'media', media: { src: 'g.gif', alt: 'a gif', source: 'giphy' } },
+    subject: { kind: 'media', media: { src: 'g.gif', alt: 'a gif' } },
   })
   expectPhase(state, 'compose')
   state = submitAll(state)

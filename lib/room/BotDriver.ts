@@ -119,7 +119,7 @@ export class BotDriver {
       const gif = sampleAt(n)
       return {
         kind: 'media',
-        media: { src: gif.src, alt: gif.alt, source: 'giphy' },
+        media: { src: gif.src, alt: gif.alt },
       }
     }
     return {
@@ -136,7 +136,7 @@ export class BotDriver {
     const gif = sampleAt(state.roundNumber + index)
     return {
       kind: 'media',
-      media: { src: gif.src, alt: gif.alt, source: 'giphy' },
+      media: { src: gif.src, alt: gif.alt },
     }
   }
 }

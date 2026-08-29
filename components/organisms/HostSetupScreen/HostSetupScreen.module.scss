@@ -187,12 +187,6 @@
   color: t.$text-primary;
 }
 
-.reason {
-  margin: 0;
-  @include t.labelText;
-  color: t.$text-caption;
-}
-
 .rule {
   width: 100%;
   height: 1px;

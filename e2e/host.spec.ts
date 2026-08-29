@@ -38,11 +38,13 @@ test.describe('setting a room up', () => {
     await expect(page.getByText('Caption format')).toHaveCount(0)
   })
 
-  test('says why uploads are off rather than hiding them', async ({ page }) => {
+  test('offers no upload control at all', async ({ page }) => {
     await page.goto('/host')
+    await expect(page.getByText('Enforce unique nicknames')).toBeVisible()
 
-    await expect(page.getByText('Allow custom image uploads')).toBeVisible()
-    await expect(page.getByText('Uploads need somewhere to live. Not in this version.')).toBeVisible()
+    // Uploads are not a feature, so the row is not a disabled control with a
+    // reason under it — it is absent. See ADR 0014.
+    await expect(page.getByText(/upload/i)).toHaveCount(0)
   })
 
   test('names the host in their own room', async ({ page }) => {

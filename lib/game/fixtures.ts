@@ -79,7 +79,7 @@ function answerFor(state: GameState, index: number): EntryAnswer {
   }
   return {
     kind: 'media',
-    media: { src: '', alt: `Answer ${index + 1}`, source: 'giphy' },
+    media: { src: '', alt: `Answer ${index + 1}` },
   }
 }
 
@@ -103,7 +103,7 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
     type: 'round/subjectLocked',
     subject:
       state.settings.mode === 'caption'
-        ? { kind: 'media', media: { src: '', alt: 'The round’s image', source: 'giphy' } }
+        ? { kind: 'media', media: { src: '', alt: 'The round’s image' } }
         : { kind: 'prompt', text: 'The deploy went out at 4:59pm on a Friday.' },
   })
   if (phase === 'compose') return state

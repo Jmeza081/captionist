@@ -49,8 +49,8 @@ export type ReactionPack = 'slackmojis' | 'smileys' | 'objects' | 'nature' | 'pl
  *
  * **On the Slackmojis.** Phase 6 left these out on the grounds that "Slackmoji
  * are a workspace's own uploads and this app has no storage target". That
- * blocker is about *user uploads* — it is the uploader's reason, not this
- * one's. The app already shipped 24 authored SVGs under `public/media/`, and the
+ * reasoning borrowed a blocker belonging to *user uploads*, which these are
+ * not. The app already shipped 24 authored SVGs under `public/media/`, and the
  * design's own 2b names `:shipit:` and `:works-on-my-machine:` under a
  * "SHIPS WITH CAPTIONIST" heading. So these four are ours, drawn here, and the
  * one honest deviation left is that they are SVG rather than animated GIF —

@@ -281,7 +281,6 @@ primitives.
 | `ChatMessage` | molecule | One chat message, or a host announcement with `announcement` — which **nothing in the room sets**: it used to be `author.isHost`, so every line the host typed was an accent card signed "HOST · HOST", and since that branch drew only the body a GIF from the host was an empty one. The host is a player, so their chat is chat. An attachment is bounded by 180×120 rather than forced to it, so a Slackmoji posted from the composer stays its own size. `onReact` puts the CTA in the meta row — revealed on hover where a pointer can hover, always lit on touch, and `opacity` not `display`, so it keeps its place in the tab order |
 | `UnreadDivider` | molecule | Where you stopped reading |
 | `ReactionToolbar` | molecule | The searchable reaction picker. Controlled by `open` so it can animate out, dismissed by Escape or a click anywhere outside it, and genie-in/out from the edge its `flipped` anchor sits on. No printed title — the thing you opened it from already said what it is for. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
-| `Dropzone` | molecule | Upload. Empty, drag-over and file-ready in one component |
 | `RoundOpener` | molecule | The interstitial before each round |
 | `Modal` | molecule | The multi-step card, 880px and one fixed height at every step, so it does not resize under a Next click. Its rail is a `ReactNode`, not a `src` — full-bleed, 380px beside the copy above `md` and a band above it on a phone, so Back and Next stay last. Three ways out — the close key, Escape, and a click on the backdrop, which ignores a selection drag that merely ended out there |
 | `HelpModal` | molecule | "How Captionist works", wherever it opens from: the landing nav, the host's setup screen, the lobby's help key, the room toolbox. Four steps per format, and a switcher that reads the other format without changing the room — the room's own mode is only the starting point and the green dot. Its rail carries a miniature of the screen each step describes (Screens 2e–2h): the picked image wearing its Selected pill, that same image being captioned, a vote grid mid-ranking, then the champion |
@@ -343,7 +342,7 @@ From `DESIGNSYSTEM.md` §4. These are product rules, not suggestions.
 
 1. **One primary action per screen** — the one that advances the phase.
 2. **Every invisible action confirms** with a snackbar (copy link, share, mode
-   switch, upload accepted).
+   switch).
 3. **One overlay surface at a time** — opening one picker closes the others.
 4. **Reaction affordances are uniform** — smiley-plus icon, searchable toolbar,
    everywhere. Never a bare `+`.
@@ -353,7 +352,6 @@ From `DESIGNSYSTEM.md` §4. These are product rules, not suggestions.
    keep the control live and focusable. That's what `Button`'s `blocked` prop is.
 8. **Chat is never modal** — it docks beside content, never over it.
 9. **Mode is always legible** — header settings line, round opener, help modal.
-10. **Uploads are first-class** — wherever Giphy is offered, upload is too.
 
 ---
 
@@ -397,7 +395,9 @@ the next person reads this rather than "fixing" them back.
 **The Slackmoji tiles are ours, and they are SVG.** DESIGNSYSTEM §4.4 draws the
 picker's four non-emoji defaults as animated Slackmoji GIFs. Phase 6 left them
 out on the grounds that Slackmoji are a workspace's own uploads and this app has
-no storage target — but that is the *uploader's* blocker, and the design's own
+no storage target — but that borrowed a blocker belonging to *user uploads*,
+which these are not (see [ADR 0014](./adr/0014-uploads-are-not-a-feature.md)),
+and the design's own
 2b heading reads `SLACKMOJIS · SHIPS WITH CAPTIONIST`. So phase 7 drew four
 (`public/media/slackmoji-*.svg`), in the same authored-SVG style as the 26
 offline sample GIFs, and the deviation left is medium rather than content: SVG
