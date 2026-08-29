@@ -1171,6 +1171,8 @@ export const JOIN_ERRORS = {
 
 export interface HostSetupCopy {
   heading: string
+  /** One line under the heading, in the shape `JoinCopy` uses. */
+  body: string
   hostSection: string
   modeSection: string
   modeBody: string
@@ -1187,7 +1189,11 @@ export interface HostSetupCopy {
 
 export function hostSetupCopy(): HostSetupCopy {
   return {
-    heading: 'Set the room up',
+    heading: 'New game room',
+    // The design's own note about this screen, in the room's own voice:
+    // nothing here is required, so a host who reads none of it still gets a
+    // working game.
+    body: 'Pick your chaos. Or don’t, I’m not your boss.',
     hostSection: 'Host info',
     modeSection: 'Game mode',
     modeBody: 'Who supplies the image, and who supplies the words.',

@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
 import { Button } from '@/components/atoms/Button'
+import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { AVATAR_SEEDS, AVATAR_WINDOW, avatarPage, previewColor, seedLabel } from '@/lib/avatar'
@@ -97,8 +98,13 @@ export function AvatarPicker({ value, onChange, label, seeds = AVATAR_SEEDS }: A
         {/* Says what it does rather than relying on an `aria-label` the visible
             text would then have to contain. `text` rather than the default
             size because it ends the row: the pill's horizontal padding would
-            inset the label from the edge the field below is flush with. */}
+            inset the label from the edge the field below is flush with.
+
+            The glyph is decorative — the label already says "Shuffle faces" —
+            and it is there because this is the one control on the row that
+            does something rather than selecting something. */}
         <Button variant="ghost" size="text" onClick={shuffle}>
+          <Icon name="shuffle" size={14} />
           Shuffle faces
         </Button>
       </Inline>

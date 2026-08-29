@@ -303,7 +303,7 @@ primitives.
 
 | Component | Tier | Use when |
 | --- | --- | --- |
-| `Icon` | atom | Any glyph. Eleven stroked paths traced from the design; `currentColor` by default |
+| `Icon` | atom | Any glyph. Twelve stroked paths traced from the design; `currentColor` by default |
 | `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `text` (no horizontal padding, for a label that has to share an edge with the column it sits in), `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why"; `href` renders it as a link when the action is really a navigation |
 | `Eyebrow` | atom | The small uppercase marker above a heading. Uppercases in CSS, so the string stays sentence case |
 | `Tag` | atom | A role or ownership marker — HOST, YOU, 1st |

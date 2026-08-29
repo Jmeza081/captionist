@@ -116,17 +116,35 @@
   }
 }
 
-.heading {
-  margin: 0;
-  @include t.screenTitleText;
+/**
+ * The heading and its line, held to the card's own width.
+ *
+ * Without the `max-width` the title tracks the column while the card stays at
+ * 600px, so from `xl` the two start at different left edges and the heading
+ * reads as belonging to the page rather than to the form under it.
+ */
+.intro {
+  width: 100%;
+  max-width: t.$setup-column-width;
   text-align: center;
 
   // Centred over a 40% column beside a wall reads as a mistake rather than a
   // choice; the form's own edge is what it should line up with.
   @include t.mq('xl') {
-    align-self: stretch;
     text-align: start;
   }
+}
+
+.heading {
+  margin: 0;
+  @include t.screenTitleText;
+}
+
+// The same pair `JoinScreen` sets: title, then one line at label weight.
+.body {
+  margin: 0;
+  @include t.bodyText;
+  color: t.$text-label;
 }
 
 .card {

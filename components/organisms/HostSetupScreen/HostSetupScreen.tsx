@@ -84,7 +84,10 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
     <div className={styles.screen}>
       <div className={styles.formColumn}>
         <Stack as="main" gap={26} align="center" className={styles.form}>
-          <h1 className={styles.heading}>{copy.heading}</h1>
+          <Stack gap={8} className={styles.intro}>
+            <h1 className={styles.heading}>{copy.heading}</h1>
+            <p className={styles.body}>{copy.body}</p>
+          </Stack>
 
           <Box background="card" radius="modal" padding={26} className={styles.card}>
             <Stack gap={26}>
