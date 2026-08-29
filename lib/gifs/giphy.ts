@@ -25,6 +25,9 @@ interface GiphyImage {
   url?: string
   mp4?: string
   webp?: string
+  // Giphy sends these as decimal strings, not numbers.
+  width?: string
+  height?: string
 }
 
 interface GiphyItem {
@@ -36,6 +39,12 @@ interface GiphyItem {
     fixed_width_still?: GiphyImage
     original?: GiphyImage
   }
+}
+
+/** Giphy's dimensions arrive as strings. A missing or junk one is simply absent. */
+function size(raw: string | undefined): number | undefined {
+  const value = Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : undefined
 }
 
 /** Titles are noisy; this is enough for the panel's local narrowing. */
@@ -78,6 +87,10 @@ function toResult(item: GiphyItem, query: string | undefined): GifResult | undef
     mp4: rendition?.mp4,
     webp: rendition?.webp,
     still: item.images?.fixed_width_still?.url,
+    // Off the same rendition `src` came from, so the ratio describes the image
+    // actually being rendered rather than the original it was resized from.
+    width: size(rendition?.width),
+    height: size(rendition?.height),
   }
 }
 

@@ -128,6 +128,25 @@ Three colours came with them — `$fill-quote` (`rgba(255,255,255,.04)`),
 `$accent-border-strong` because the design distinguishes a rule that *marks a
 quote* from one that edges a surface.
 
+**A GIF picker's tiles are the GIF's own shape.** `GifPanel` used to draw a
+grid of fixed-height tiles — 76px in the popover, 200px on the board — which
+cropped every result to a letterbox, because Giphy's `fixed_width` rendition
+pins the width at 200px and lets the height fall wherever the source does. The
+tiles now carry `aspect-ratio` from `GifResult.width`/`height`, set per tile as
+a `--tile-ratio` custom property, with `$gif-tile-ratio` (5:4) as the shape of
+a GIF whose source reports no dimensions.
+
+That means masonry, so the layout is CSS `columns` rather than `grid`: a grid
+row is as tall as its tallest cell, and ragged tiles would leave a hole under
+every short one. Two things follow, and both are in the stylesheet's comments.
+Reading order becomes column-major, though tab order still follows the DOM. And
+**the scroller has to be a wrapper, never the columns themselves** — a multicol
+box with a capped height treats that height as its fragmentainer and lays the
+overflow out sideways, which showed three tiles and hid the other nine.
+`$gif-panel-scroll-cap` (320px) is also its own value now rather than the
+`$toolbar-scroll-cap` it shared with the reaction toolbar: 196px is several
+rows of 36px emoji tiles and about one and a half GIFs.
+
 **A tally pill is `ReactionCTA`'s height**, `$tally-height: 32px`. §4.4 gives
 that pill its colours and nothing else, so the 4/8/12/11 it used to be drawn at
 was ours rather than the design's — and beside a 32px CTA it read as a footnote
@@ -378,7 +397,7 @@ primitives.
 | `ChatRail` | molecule | Room chat: docked beside content above `md`, a sheet over it below. Collapses to a 64px strip, or one floating key on a phone. Both sizes are one component and the branch is entirely CSS. The strip carries no reaction key — reacting to the room is a `RoomToolbox` tool, not a chat one |
 | `ChatToast` | molecule | An arriving message while chat is shut. Not `Snackbar` — that one is the room's single centred voice for something *you* did and carries no author |
 | `Composer` | molecule | The chat composer. Sends on text *or* an attachment, and carries the staged reply above them |
-| `GifPanel` | molecule | Giphy search above the composer. Picking attaches and closes; it never sends |
+| `GifPanel` | molecule | Giphy search above the composer. Picking attaches and closes; it never sends. Masonry columns, each tile at its GIF's own ratio |
 | `RevealReactionBar` | molecule | Five one-tap reactions on the reveal, plus the CTA to the full toolbar |
 | `ReactionFloaters` | molecule | The decorative emoji burst. `pointer-events: none`, hidden from assistive tech. Renders through `ReactionGlyph`, having once printed `/media/slackmoji-lgtm.svg` up the screen in 30px text. Four to seven per reaction, 16–58px on a squared roll so most stay small and the occasional big one reads as an accent — the old 20–36 was a burst of one size with jitter. Keyed on the burst's `key`, never on the prop object, or a clock tick re-fires it |
 | `AppHeader` | molecule | The bar on every in-room screen — phase left, clock right |

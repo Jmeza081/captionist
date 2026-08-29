@@ -35,6 +35,10 @@ export const SAMPLE_GIFS: readonly GifResult[] = TILES.map(([slug, title]) => ({
   still: `/media/stub-${slug}-still.svg`,
   alt: title,
   keywords: [slug, ...title.split(' ')],
+  // The committed artwork's own viewBox. Stated for the same reason Giphy's is
+  // read: the picker reserves a tile's shape from it.
+  width: 320,
+  height: 200,
 }))
 
 /** A stable pick, so a bot's answer and a seeded test are reproducible. */

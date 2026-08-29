@@ -26,6 +26,21 @@ export interface GifResult {
   webp?: string
   /** A single frame. What a paused or reduced-motion viewer sees. */
   still?: string
+  /**
+   * The intrinsic size of `src`, when the source reports one.
+   *
+   * Carried so a picker can reserve each tile's real shape *before* the image
+   * arrives. A GIF is any ratio it likes — Giphy's `fixed_width` rendition
+   * pins the width at 200 and lets the height fall where it may — so a grid of
+   * fixed-height tiles crops every one of them, and a grid that waits for the
+   * image to size itself reflows on every load.
+   *
+   * Optional because it is a rendering hint and nothing depends on it:
+   * `toMediaRef` drops it with `id` and `keywords`, and a source that reports
+   * no dimensions still renders, at the fallback height.
+   */
+  width?: number
+  height?: number
 }
 
 export interface GifSearchResponse {

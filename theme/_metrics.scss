@@ -262,12 +262,30 @@ $composer-attach-close: 26px;
 
 // --- GIF panel ------------------------------------------------------------
 
-$gif-panel-tile-height: 76px;
+/**
+ * The shape of a picker tile whose GIF reports no dimensions.
+ *
+ * A ratio, not a height: the columns are fluid, so a height would be right at
+ * exactly one width. 5:4 is a little wider than the shelf's own 320×200 art
+ * and close to the middle of what Giphy actually returns, so an unknown GIF is
+ * cropped as gently as a guess allows.
+ */
+$gif-tile-ratio: 5 / 4;
+/**
+ * How much of the picker is visible before it scrolls.
+ *
+ * Its own value rather than `$toolbar-scroll-cap`, which it used to share with
+ * the reaction toolbar: 196px shows several rows of 36px emoji tiles and about
+ * one and a half GIFs. The tiles are the GIF's own shape now, so the cap has
+ * to be read against a tile that can be as tall as the column is wide. 320
+ * shows two and the top of a third, which is what says "there is more" without
+ * the panel taking the whole rail.
+ */
+$gif-panel-scroll-cap: 320px;
 
 // The page-scale picker on the brief and compose screens. Wider tiles than the
 // composer popover because it is the screen's subject, not an attachment.
 $gif-board-min: 240px;
-$gif-board-tile: 200px;
 
 // The compose screen's live preview column. Wide enough that the caption
 // renders at the size the vote grid will show it.

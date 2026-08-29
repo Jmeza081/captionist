@@ -50,12 +50,28 @@
   }
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: t.$space-6;
-  max-height: t.$toolbar-scroll-cap;
+/**
+ * Masonry, not a grid — because a GIF is any shape it likes.
+ *
+ * Giphy's `fixed_width` rendition pins the width at 200px and lets the height
+ * fall where it may, so a row of fixed-height tiles crops every one of them:
+ * a tall reaction shot arrives as a letterboxed strip of somebody's chest.
+ * Columns let each tile keep its own ratio and stack tightly under the one
+ * above, which is what Giphy's own picker does.
+ *
+ * `columns` rather than `grid`: a grid row is as tall as its tallest cell, so
+ * ragged-height tiles would leave a hole under every short one. The cost is
+ * that reading order becomes column-major — down the first column, then the
+ * second. Tab order still follows the DOM.
+ */
+.gridScroll {
+  max-height: t.$gif-panel-scroll-cap;
   overflow-y: auto;
+}
+
+.grid {
+  columns: 2;
+  column-gap: t.$space-6;
 }
 
 .tile {
@@ -63,6 +79,15 @@
 
   // The board's "Selected" badge is positioned against this.
   position: relative;
+  display: block;
+  width: 100%;
+  // Multicol fragments a tall box across the column break by default, which
+  // would slice a GIF in half and leave its bottom at the top of the next
+  // column.
+  break-inside: avoid;
+  // The gap between tiles *within* a column. `column-gap` only spaces the
+  // columns themselves, so the vertical rhythm has to be a margin.
+  margin-bottom: t.$space-6;
   padding: 0;
   border: 1px solid t.$line-hairline-strong;
   border-radius: t.$radius-media-lg;
@@ -78,7 +103,13 @@
   img {
     display: block;
     width: 100%;
-    height: t.$gif-panel-tile-height;
+    /**
+     * The GIF's own ratio, set per tile by the component. The fallback is
+     * `$gif-tile-ratio` rather than a height: a source that reports no
+     * dimensions still gets a sensibly-shaped tile at any column width, and
+     * `cover` crops only that one.
+     */
+    aspect-ratio: var(--tile-ratio, #{t.$gif-tile-ratio});
     object-fit: cover;
   }
 }
@@ -123,16 +154,17 @@
   color: t.$text-meta;
 }
 
-// `auto-fill` rather than a fixed column count: the grid has to survive a
-// 360px phone and a 1440px screen-share without a breakpoint for each.
+// A column *width* rather than a count, for the same reason the grid used
+// `auto-fill`: the board has to survive a 360px phone and a 1440px
+// screen-share without a breakpoint for each. The browser fits as many
+// `$gif-board-min` columns as there is room for.
 .board {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(t.$gif-board-min, 1fr));
-  gap: t.$space-12;
+  columns: t.$gif-board-min;
+  column-gap: t.$space-12;
 }
 
-.board .tile img {
-  height: t.$gif-board-tile;
+.board .tile {
+  margin-bottom: t.$space-12;
 }
 
 // A ring rather than a border, so choosing a tile does not reflow the grid.

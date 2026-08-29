@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
@@ -104,34 +104,65 @@ export function GifPanel({
     />
   )
 
+  const tiles = (
+    <div className={board ? styles.board : styles.grid}>
+      {shown.map((gif) => (
+        <button
+          key={gif.id}
+          type="button"
+          className={`${styles.tile} ${gif.id === selectedId ? styles.selected : ''}`}
+          /**
+           * The GIF's own shape, reserved before it loads.
+           *
+           * A ratio rather than a height, because the column is fluid and a
+           * height would only be right at one width. `--tile-ratio` falls back
+           * to a stated default in the stylesheet when a source reports no
+           * dimensions, so an unknown GIF still gets a tile rather than a
+           * zero-height one.
+           */
+          style={
+            gif.width && gif.height
+              ? ({ '--tile-ratio': `${gif.width} / ${gif.height}` } as CSSProperties)
+              : undefined
+          }
+          onClick={() => onPick(gif)}
+          aria-label={board ? `Pick ${gif.alt}` : `Attach ${gif.alt}`}
+          aria-pressed={gif.id === selectedId}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={gif.src} alt="" />
+          {board && gif.id === selectedId && (
+            <span className={styles.badge}>{selectionLabel}</span>
+          )}
+        </button>
+      ))}
+    </div>
+  )
+
   const grid =
     shown.length === 0 ? (
       <p className={styles.empty}>
         {status === 'error'
-          ? (message ?? 'That search didn’t come back. Try again.')
+          ? (message ?? 'That search didn\u2019t come back. Try again.')
           : status === 'loading'
-            ? 'Looking…'
-            : `No GIFs for “${value}”. Try a shorter word.`}
+            ? 'Looking\u2026'
+            : `No GIFs for \u201c${value}\u201d. Try a shorter word.`}
       </p>
+    ) : board ? (
+      // The board grows with the page, so it is its own scroller.
+      tiles
     ) : (
-      <div className={board ? styles.board : styles.grid}>
-        {shown.map((gif) => (
-          <button
-            key={gif.id}
-            type="button"
-            className={`${styles.tile} ${gif.id === selectedId ? styles.selected : ''}`}
-            onClick={() => onPick(gif)}
-            aria-label={board ? `Pick ${gif.alt}` : `Attach ${gif.alt}`}
-            aria-pressed={gif.id === selectedId}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={gif.src} alt="" />
-            {board && gif.id === selectedId && (
-              <span className={styles.badge}>{selectionLabel}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      /**
+       * The popover's scroller is a *wrapper*, never the columns themselves.
+       *
+       * A multicol box with a capped height treats that height as its
+       * fragmentainer: it fills the first column to the cap, then the second,
+       * then keeps laying out sideways past the edge of the panel — three
+       * tiles visible and the other nine off-screen. Letting the columns take
+       * their natural height and scrolling the box around them is what makes
+       * the list vertical again.
+       */
+      <div className={styles.gridScroll}>{tiles}</div>
     )
 
   if (board) {
