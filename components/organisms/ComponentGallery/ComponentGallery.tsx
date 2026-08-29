@@ -438,9 +438,11 @@ export function ComponentGallery() {
         <Grid columns={1} mdColumns={2} gap={20}>
           <Case label="Messages">
             <Stack gap={14}>
-              {/* `onReact` is what puts the CTA in the meta row, so a reaction
-                  lands on this message rather than on whatever arrived last.
-                  Inert here, like the bare `ReactionCTA` demo below it. */}
+              {/* `onReact` is what puts the CTA in the row under the bubble, so
+                  a reaction lands on this message rather than on whatever
+                  arrived last. Every line carries it, because that is the shape
+                  the log has — a message with no way to react to it is the odd
+                  one out. Inert here, like the bare `ReactionCTA` demo below. */}
               <ChatMessage
                 author={PLAYERS.jack}
                 time="2:14"
@@ -451,6 +453,7 @@ export function ComponentGallery() {
                 author={PLAYERS.lukasz}
                 time="2:15"
                 body="that one is mine and I stand by it"
+                onReact={() => undefined}
                 tallies={
                   <>
                     <TallyPill glyph="💀" count={5} mine context="chat" label="Skull" />
@@ -468,18 +471,21 @@ export function ComponentGallery() {
                 author={PLAYERS.roberto}
                 time="2:16"
                 body="my exact face during standup"
+                onReact={() => undefined}
                 attachment={{ src: ATTACHMENT, alt: 'A pair of eyes' }}
               />
               <ChatMessage
                 author={PLAYERS.jesska}
                 time="2:16"
                 body="this is the correct answer and I will hear nothing else"
+                onReact={() => undefined}
                 replyTo={{ src: ATTACHMENT, caption: 'Nuff said!' }}
               />
               <ChatMessage
                 author={PLAYERS.melania}
                 time="2:17"
                 body=""
+                onReact={() => undefined}
                 attachment={{ src: ATTACHMENT, alt: 'A pair of eyes' }}
                 replyTo={{ caption: 'Day three of the two-hour migration.' }}
               />

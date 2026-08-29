@@ -10,7 +10,7 @@ export interface ChatMessageProps {
   body: string
   /** Already formatted for reading — "2:14", not a timestamp. */
   time: string
-  /** A GIF the player attached, rendered at 180×120. */
+  /** A GIF the player attached, bounded by 180×120. */
   attachment?: { src: string; alt: string }
   /**
    * The caption this message answers.
@@ -19,14 +19,14 @@ export interface ChatMessageProps {
    * name here would hand back what `project()` strips.
    */
   replyTo?: { src?: string; caption: string }
-  /** Reaction tallies under the body. */
+  /** Reaction tallies, in the row under the bubble. */
   tallies?: ReactNode
   /**
    * Opens the reaction picker aimed at *this* message.
    *
-   * Optional because the gallery draws a message with no room behind it — and
-   * because an announcement has no affordance. Without it, chat reactions could
-   * only ever land on whatever arrived last, which is what they did until now.
+   * Optional because the gallery draws a message with no room behind it.
+   * Without it, chat reactions could only ever land on whatever arrived last,
+   * which is what they did until now.
    */
   onReact?: () => void
   /**
@@ -47,8 +47,15 @@ export interface ChatMessageProps {
 /**
  * One message in the room chat.
  *
+ * Three bands, and the separation is the point: the **name row** labels it, the
+ * **bubble** is what was said, and the **reaction row** underneath is what the
+ * room did about it. Everything a message carries — body, quote, attachment —
+ * goes inside the one plate, so a GIF with a caption reads as a single object
+ * rather than as two things that happen to be stacked.
+ *
  * Host announcements are the same component with `announcement`, because they
- * occupy the same slot in the same list — a sibling component would drift.
+ * occupy the same slot in the same list — a sibling component would drift. The
+ * accent card is its own plate, so it takes the avatar gutter too.
  */
 export function ChatMessage({
   author,
@@ -62,12 +69,31 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const react = onReact && (
     <ReactionCTA
-      className={styles.react}
       onClick={onReact}
       // Not the default "Add a reaction": a log of twenty messages would hand a
       // screen reader twenty controls with one name.
       aria-label={`React to ${author.name}'s message`}
     />
+  )
+
+  // An empty plate is not a message. A Slackmoji posted from the composer
+  // arrives as a bare attachment and a caption-less reply cannot happen, but
+  // the bubble should never draw for nothing at all.
+  const hasBubble = Boolean(body || replyTo || attachment)
+
+  const picture = attachment && (
+    <div className={styles.attachment}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- remote
+          animated GIF; next/image would rasterise it. */}
+      <img src={attachment.src} alt={attachment.alt} />
+    </div>
+  )
+
+  const reactions = (tallies || react) && (
+    <div className={styles.reactions}>
+      {tallies}
+      {react}
+    </div>
   )
 
   if (announcement) {
@@ -77,26 +103,17 @@ export function ChatMessage({
           <Icon name="send" size={13} />
         </span>
         <div className={styles.announceBody}>
-          <div className={styles.meta}>
-            {/* The room's own host is named "Host", and "HOST · HOST" reads as
-                a bug whether or not it is one. */}
-            <Eyebrow>
-              {author.name.toLowerCase() === 'host' ? 'host' : `${author.name} · host`}
-            </Eyebrow>
-            {react}
-          </div>
+          {/* The room's own host is named "Host", and "HOST · HOST" reads as a
+              bug whether or not it is one. */}
+          <Eyebrow>
+            {author.name.toLowerCase() === 'host' ? 'host' : `${author.name} · host`}
+          </Eyebrow>
           {body && <p className={styles.announceText}>{body}</p>}
           {/* An announcement can carry a picture and can be reacted to, same as
               any other line. Drawing only the body is what made a host's GIF an
               empty purple card. */}
-          {attachment && (
-            <div className={styles.attachment}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote
-                  animated GIF; next/image would rasterise it. */}
-              <img src={attachment.src} alt={attachment.alt} />
-            </div>
-          )}
-          {tallies && <div className={styles.tallies}>{tallies}</div>}
+          {picture}
+          {reactions}
         </div>
       </div>
     )
@@ -104,42 +121,43 @@ export function ChatMessage({
 
   return (
     <article className={styles.message}>
-      <Avatar {...author} size={30} />
+      <div className={styles.meta}>
+        <span className={styles.name}>{author.name}</span>
+        <time className={styles.time}>{time}</time>
+      </div>
+
+      {/* Wrapped because `Avatar` takes no `className` — and it stays that way,
+          since a face is a face wherever it is placed. */}
+      <span className={styles.face}>
+        <Avatar {...author} size={30} />
+      </span>
 
       <div className={styles.content}>
-        <div className={styles.meta}>
-          <span className={styles.name}>{author.name}</span>
-          <time className={styles.time}>{time}</time>
-          {react}
-        </div>
+        {hasBubble && (
+          <div className={styles.bubble}>
+            {body && <p className={styles.body}>{body}</p>}
 
-        {body && <p className={styles.body}>{body}</p>}
-
-        {/* After the body, the way the design draws it: you read what someone
-            said, then what they said it about. */}
-        {replyTo && (
-          <div className={styles.quote}>
-            {replyTo.src && (
-              /* eslint-disable-next-line @next/next/no-img-element -- the
-                 round's own art, already remote and animated. */
-              <img className={styles.quoteThumb} src={replyTo.src} alt="" />
+            {/* After the body, the way the design draws it: you read what
+                someone said, then what they said it about. */}
+            {replyTo && (
+              <div className={styles.quote}>
+                {replyTo.src && (
+                  /* eslint-disable-next-line @next/next/no-img-element -- the
+                     round's own art, already remote and animated. */
+                  <img className={styles.quoteThumb} src={replyTo.src} alt="" />
+                )}
+                <div className={styles.quoteBody}>
+                  <Eyebrow tone="muted">Replying to</Eyebrow>
+                  <span className={styles.quoteCaption}>{replyTo.caption}</span>
+                </div>
+              </div>
             )}
-            <div className={styles.quoteBody}>
-              <Eyebrow tone="muted">Replying to</Eyebrow>
-              <span className={styles.quoteCaption}>{replyTo.caption}</span>
-            </div>
+
+            {picture}
           </div>
         )}
 
-        {attachment && (
-          <div className={styles.attachment}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- remote
-                animated GIF; next/image would rasterise it. */}
-            <img src={attachment.src} alt={attachment.alt} />
-          </div>
-        )}
-
-        {tallies && <div className={styles.tallies}>{tallies}</div>}
+        {reactions}
       </div>
     </article>
   )

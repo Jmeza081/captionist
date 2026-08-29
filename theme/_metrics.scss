@@ -117,6 +117,11 @@ $media-ring-winner: 4px;
 
 $chat-avatar: 30px;
 $chat-gap: 10px;
+// The plate behind a message. It carries the body, the quote and the
+// attachment as one object, which is what lets the reaction row underneath
+// read as a footer to the message rather than as another line of it.
+$chat-bubble-pad-y: 10px;
+$chat-bubble-pad-x: 13px;
 $chat-attachment-width: 180px;
 $chat-attachment-height: 120px;
 $chat-header-height: 48px;
