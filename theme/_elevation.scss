@@ -81,3 +81,63 @@ $z-snackbar: 95;
   backdrop-filter: blur(18px) saturate(160%);
   box-shadow: $shadow-glass;
 }
+
+/**
+ * The accent bloom every big screen sits under.
+ *
+ * One mixin because it was five copies of the same twenty lines, and two
+ * things about it are easy to get wrong in a copy:
+ *
+ * 1. **`isolation`.** The circle is a `::before` at `z-index: -1`. Without a
+ *    stacking context on the element carrying it, it escapes to the root one —
+ *    where `RoomShell`'s opaque canvas background paints *over* it, because
+ *    block backgrounds are painted after negative-z-index descendants. Four
+ *    glows had been declared and never seen for exactly this reason. The
+ *    design's own guest-lobby artboard carries `isolation:isolate` on the same
+ *    wrapper, which is the tell.
+ * 2. **Its size relative to the box.** `radial-gradient(circle, …)` sizes to
+ *    `farthest-corner`, so the last stop lands about 96% of the way to the
+ *    *side*: the circle is still lit at its own edge, and any width past the
+ *    column's turns a clip into a hard edge and the glow into a lit rectangle.
+ *    Hence `min($width, 100%)` — the design's figure is a ceiling, and a
+ *    narrower column gets the same shape at its own size.
+ *
+ * The caller owns `overflow`, because the right answer differs: the circle
+ * rides up off the top of its box, so a box that starts below the header wants
+ * `overflow-y: visible` and lets `AppHeader` cover the cut. Every caller wants
+ * `overflow-x: clip` — the circle is wider than a phone, and `visible` there
+ * widens the page and scrolls the whole room sideways.
+ *
+ * `$rise` is the design's negative `top` as a fraction of the circle's own
+ * height, so a narrower circle rides up by proportionally less and keeps its
+ * bright half behind the headline rather than above the fold.
+ */
+@mixin screenGlow(
+  $width: 900px,
+  $color: colors.$accent,
+  $alpha: 0.22,
+  $stop: 68%,
+  $rise: 29%,
+  $ratio: 1
+) {
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: min(#{$width}, 100%);
+    aspect-ratio: $ratio;
+    transform: translate(-50%, -#{$rise});
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(red($color), green($color), blue($color), $alpha),
+      rgba(red($color), green($color), blue($color), 0) $stop
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+}

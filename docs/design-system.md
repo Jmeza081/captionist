@@ -255,9 +255,21 @@ be in.
 Shadows named for the surface they lift, because they aren't a ramp:
 `$shadow-popover`, `$shadow-toolbox`, `$shadow-snackbar`, `$shadow-modal`
 (purple glow), `$shadow-modal-error` (destructive swap), `$shadow-winner`.
-Plus `focusRing()`, `hairline($side)`, `backdrop()`, and the full z-index
-ladder (`$z-rail` 40 → `$z-snackbar` 95) so a new overlay is placed by reading
-the ladder, not by guessing a bigger number.
+Plus `focusRing()`, `hairline($side)`, `backdrop()`, `screenGlow()`, and the
+full z-index ladder (`$z-rail` 40 → `$z-snackbar` 95) so a new overlay is
+placed by reading the ladder, not by guessing a bigger number.
+
+`screenGlow()` is the accent bloom the big screens sit under — both lobbies,
+the reveal, the podium and the tiebreak. A mixin rather than five copies
+because two things about it are easy to get wrong in a copy, and both had
+been: it needs `isolation` on the element carrying it, or the `z-index: -1`
+circle escapes to the root stacking context and the canvas background paints
+over it; and its width has to be `min($width, 100%)` of the column, because
+`radial-gradient(circle, …)` sizes to `farthest-corner` and is therefore still
+lit at its own edge. The caller keeps `overflow`, because the answer differs —
+every caller wants `overflow-x: clip`, and a box that starts below the header
+wants `overflow-y: visible` so `AppHeader` covers the cut instead of a hard
+line landing mid-page.
 
 ### Motion — `theme/_motion.scss`
 

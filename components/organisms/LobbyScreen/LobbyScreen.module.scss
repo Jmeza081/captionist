@@ -11,10 +11,18 @@
 // cramped one with chat open. `t.mq()` is still right for everything the
 // viewport genuinely decides; this is not one of those.
 .lobby {
+  // The same glow the guest's half carries, and the design's own host
+  // artboards draw it too — this is one room before it starts, not two.
+  // `container-type` already makes this a stacking context, so the glow could
+  // not escape to the root one even without `screenGlow`'s `isolation`.
+  @include t.screenGlow;
+
   container-type: inline-size;
   width: 100%;
   max-width: t.$lobby-max;
   margin-inline: auto;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /**
@@ -87,53 +95,21 @@
  * The waiting room, centred under a glow.
  *
  * The glow is the design's own — the same 900px circle of accent at 22% that
- * the reveal, podium and tiebreak carry, clipped by the screen so it reads as
- * light coming from above the fold rather than as a shape on the page.
- *
- * `clip` rather than `hidden`, for the reason `RevealScreen` gives: the circle
- * is wider than a phone, and `hidden` would make the whole room scroll
- * sideways instead of containing it. `clip` contains it without turning this
- * into a scroll container.
+ * the reveal, podium and tiebreak carry, riding up off the top of the screen
+ * so it reads as light coming from above the fold rather than as a shape on
+ * the page.
  */
 .guest {
-  position: relative;
-  // The glow below sits at `z-index: -1`, and without a stacking context here
-  // it escapes to the root one — where `RoomShell`'s opaque canvas background
-  // paints *over* it, because block backgrounds are painted after negative
-  // z-index descendants. `isolation` is the design's own answer: its artboard
-  // carries `isolation:isolate` on this same wrapper.
-  isolation: isolate;
-  overflow: clip;
+  @include t.screenGlow;
 
-  &::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 0;
-    /**
-     * Never wider than the box that clips it.
-     *
-     * `radial-gradient(circle, …)` sizes to `farthest-corner` by default, so
-     * the `68%` stop lands at 0.68 × half-diagonal — about 96% of the way to
-     * the *side*. The circle is therefore still lit almost to its own edge,
-     * and any width past the column's turns the clip into a hard edge and the
-     * glow into a lit rectangle. 900px is the design's figure and a desktop
-     * column is wide enough for it; a phone gets the same circle at its own
-     * width.
-     */
-    width: min(900px, 100%);
-    aspect-ratio: 1;
-    /**
-     * The design's `top: -260px` on a 900px circle — as a fraction, so a
-     * narrower circle rides up by proportionally less and keeps its bright
-     * half behind the headline instead of above the fold.
-     */
-    transform: translate(-50%, -29%);
-    border-radius: t.$radius-avatar;
-    background: radial-gradient(circle, rgba(123, 97, 255, 0.22), rgba(123, 97, 255, 0) 68%);
-    pointer-events: none;
-    z-index: -1;
-  }
+  // The glow rides up past this box's top edge, and the design's artboard cuts
+  // it at the window. This box starts *below* the header, so cutting it here
+  // instead drew a lit band with a hard line across the top of it. Let it
+  // spill: `AppHeader` is opaque and paints over it, and `RoomShell` clips the
+  // viewport. Horizontally it is still clipped, because the circle is wider
+  // than a phone and `visible` there would widen the page itself.
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 // The design starts the column 96px down from the header, which is what puts

@@ -5,11 +5,8 @@
 .screen {
   --podium-star: #{t.$winner};
 
-  position: relative;
-    // A stacking context, or the glow escapes to the root one and `RoomShell`'s
-    // opaque canvas paints over it — block backgrounds come after negative
-    // z-index descendants, so it never appeared at all. See `LobbyScreen`.
-  isolation: isolate;
+  @include t.screenGlow($width: 1300px, $alpha: 0.24, $stop: 64%, $rise: 28%, $ratio: 13 / 12);
+
   text-align: center;
   // `clip` rather than `hidden`: the glow below is wider than a phone, and
   // without this it widens the page itself and the whole room scrolls
@@ -22,31 +19,6 @@
   // the header paints over it.
   overflow-x: clip;
   overflow-y: visible;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 0;
-    /**
-     * Never wider than the box that clips it.
-     *
-     * `radial-gradient(circle, …)` sizes to `farthest-corner`, so the stop
-     * below lands most of the way to the *side* and the circle is still lit at
-     * its own edge. Any width past the column's turns `clip` into a hard edge
-     * and the glow into a lit rectangle — which nobody saw while it was
-     * painting behind the canvas. The design's figure is the ceiling; a
-     * narrower column gets the same shape at its own size, and the offset is a
-     * fraction so it rides up proportionally. Same treatment as `LobbyScreen`.
-     */
-    width: min(1300px, 100%);
-    aspect-ratio: 13 / 12;
-    transform: translate(-50%, -28%);
-    border-radius: t.$radius-avatar;
-    background: radial-gradient(circle, rgba(123, 97, 255, 0.24), rgba(123, 97, 255, 0) 64%);
-    pointer-events: none;
-    z-index: -1;
-  }
 }
 
 .headline {

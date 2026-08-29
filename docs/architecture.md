@@ -76,7 +76,7 @@ against one edge. `LobbyScreen` still owns both, as `HostLobby` and
 on *role* is not the thing the mode rule forbids — that rule is about never
 forking a screen on `settings.mode`, and neither half of this one reads it.
 
-**Four glows had never painted, and the fix was `isolation: isolate`.** The
+**Five glows, one mixin — and four of them had never painted.** The
 accent circle every big screen carries is a `::before` at `z-index: -1`.
 Without a stacking context on its own element it escapes to the root one, where
 `RoomShell`'s opaque canvas background paints *over* it — block backgrounds are
@@ -98,7 +98,11 @@ same shape at its own size; and on the three round screens the clip is
 horizontal only — their content ends well above the circle's bottom, so
 clipping both axes cut the fade off mid-gradient and drew a line across the
 canvas. The vertical spill has nowhere bad to go: `RoomShell` clips the
-viewport and the header paints over it.
+viewport and the header paints over it. The guest lobby needed the same: its
+box starts below the header, so clipping there drew the hard line mid-page that
+the round screens had. It is all one `screenGlow()` in `theme/_elevation.scss`
+now, and the host's half of the lobby carries it too — the design's host
+artboards draw it, and this is one room before it starts rather than two.
 
 **Two structural fixes rode along with it, and one of them was silent.** Five
 animations had never run. `theme/_motion.scss` declared its keyframes once in a
