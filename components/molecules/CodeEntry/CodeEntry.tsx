@@ -71,6 +71,7 @@ export function CodeEntry({
 
       <div
         className={`${styles.slots} ${styles[size]}`}
+        data-testid="code-slots"
         onClick={() => inputRef.current?.focus()}
         aria-hidden="true"
       >

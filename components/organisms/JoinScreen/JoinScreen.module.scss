@@ -1,12 +1,74 @@
 @use 'theme' as t;
 
+/**
+ * One column, then two — `HostSetupScreen`'s layout, for the screen on the
+ * other side of the same handshake.
+ *
+ * The design draws join as a 600px card on the app canvas and host as a 600px
+ * card on a setup surface; what it does not draw is either of them at 1440,
+ * where a lone column of three fields leaves two thirds of the window empty.
+ * Both front doors answer that the same way: the card holds its width, and
+ * from `xl` a wall of the app's own GIFs takes the rest.
+ */
 .screen {
   min-height: 100vh;
-  padding: t.$screen-pad-v t.$space-20 t.$space-52;
+  background-color: t.$surface-vote;
+
+  @include t.mq('xl') {
+    display: grid;
+    grid-template-columns: 40fr 60fr;
+    // The page itself stops scrolling here and the form column takes over, so
+    // the wall stays put while the form is filled in.
+    height: 100vh;
+    overflow: hidden;
+  }
+}
+
+/**
+ * The form's half. See `HostSetupScreen`: `min-height: 0` is what gives this
+ * column the overflow, and without the overflow the dock has nothing to stick
+ * against.
+ *
+ * No `container` here, unlike host — nothing inside reflows on this column's
+ * width. The code slots shrink to their row, which is flexbox rather than a
+ * query.
+ */
+.formColumn {
+  @include t.mq('xl') {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/**
+ * The form's block. Three fields do not fill a column the way `/host`'s dozen
+ * controls do, so from `xl` this takes an auto margin of its own: the free
+ * space splits evenly between the top of the column and the gap above the
+ * dock, and the card sits in the middle of its half rather than clinging to
+ * the ceiling with a void under it. Below `xl` the page scrolls and there is
+ * no free space to split, so the rule costs nothing.
+ */
+.form {
+  padding: t.$screen-pad-v t.$space-20 0;
+
+  @include t.mq('xl') {
+    margin-top: auto;
+  }
+}
+
+/**
+ * The heading and its line, held to the card's width so they share its left
+ * edge from `xl` rather than tracking a column the card does not fill.
+ */
+.intro {
+  width: 100%;
+  max-width: t.$setup-column-width;
   text-align: center;
 
-  @include t.mq('md') {
-    padding: t.$screen-pad-v-lg t.$screen-pad-h-lg t.$space-52;
+  @include t.mq('xl') {
+    text-align: start;
   }
 }
 
@@ -21,17 +83,71 @@
   color: t.$text-label;
 }
 
-// One column at any width: the design's join is a phone screen that a desktop
-// happens to also show, not a layout that reflows.
-.form {
+.card {
   width: 100%;
-  max-width: t.$join-column-width;
-  text-align: left;
+  max-width: t.$setup-column-width;
 }
 
+/**
+ * The footnote under the card, not a hint on the field: it describes the shape
+ * of every code, which is what you need *before* you have one to type.
+ */
 .helper {
+  width: 100%;
+  max-width: t.$setup-column-width;
   margin: 0;
   text-align: center;
   @include t.labelText;
   color: t.$text-caption;
+}
+
+/**
+ * The actions, pinned. One rule for both layouts: below `xl` it sticks against
+ * the page's scroll, from `xl` against `.formColumn`'s, and `margin-top: auto`
+ * docks it to the bottom of a short form rather than floating it mid-column.
+ *
+ * The gradient has real ground in it rather than fading to nothing — the same
+ * reason as `HostSetupScreen` and `VoteScreen`: a face picker reading through
+ * the middle of the CTA is worse than a visible edge.
+ */
+.dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding: t.$space-52 t.$space-20 t.$space-20;
+  background: linear-gradient(
+    to top,
+    t.$surface-vote 0%,
+    t.$surface-vote 72%,
+    t.$surface-vote-fade 100%
+  );
+}
+
+.actions {
+  width: 100%;
+  max-width: t.$setup-column-width;
+}
+
+/**
+ * The wall's half. Not rendered below `xl` — a phone has no room for it, and
+ * twenty pieces of media under a form nobody scrolled to are twenty pieces of
+ * media bought for nothing.
+ *
+ * `position: relative` because `HeroWall`'s own wrapper is `absolute; inset: 0`.
+ * The overhang comes down from the default because `vw` is measured against the
+ * window either way, and the default crops about twice as hard inside 60% of it.
+ */
+.showcase {
+  display: none;
+
+  @include t.mq('xl') {
+    --wall-overhang: 5vw;
+
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
 }

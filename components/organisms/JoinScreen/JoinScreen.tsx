@@ -2,13 +2,16 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Stack } from '@/components/atoms/Stack'
 import { TextField } from '@/components/atoms/TextField'
 import { AvatarPicker } from '@/components/molecules/AvatarPicker'
 import { CodeEntry } from '@/components/molecules/CodeEntry'
+import { HeroWall } from '@/components/molecules/HeroWall'
 import { normalizeCode } from '@/lib/game/codes'
 import { JOIN_ERRORS, joinCopy } from '@/lib/game/selectors'
+import type { WallTile } from '@/lib/gifs/wall'
 import { writeIdentity } from '@/lib/room/identity'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
 import styles from './JoinScreen.module.scss'
@@ -24,6 +27,13 @@ import styles from './JoinScreen.module.scss'
  * Nickname and face are written to `localStorage` on submit rather than sent
  * anywhere. `RoomProvider` reads them back when it asks the host for a seat, so
  * this screen never has to know a transport exists.
+ *
+ * **The same surface as `/host`**, and for the same reasons: the three fields
+ * sit on a card rather than loose on the canvas, the CTA is docked instead of
+ * being the thing you scroll a face picker to find, and from `xl` a wall of the
+ * app's own GIFs takes the 60% beside it. The two front doors are one screen
+ * apart in a guest's session — a host reads a code out, a guest types it — and
+ * they were the only two screens in the app that did not look like each other.
  */
 
 const LENGTH = 6
@@ -31,9 +41,11 @@ const LENGTH = 6
 export interface JoinScreenProps {
   /** Prefilled from `/join/[code]` — the QR and the shared link land here. */
   initialCode?: string
+  /** The wall beside the form, resolved on the server. See `app/join/page.tsx`. */
+  tiles: readonly WallTile[]
 }
 
-export function JoinScreen({ initialCode = '' }: JoinScreenProps) {
+export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
   const router = useRouter()
   const copy = joinCopy()
 
@@ -65,48 +77,69 @@ export function JoinScreen({ initialCode = '' }: JoinScreenProps) {
   }
 
   return (
-    <Stack as="main" gap={34} align="center" className={styles.screen}>
-      <Stack gap={10} align="center">
-        <h1 className={styles.heading}>{copy.heading}</h1>
-        <p className={styles.body}>{copy.body}</p>
-      </Stack>
+    <div className={styles.screen}>
+      <div className={styles.formColumn}>
+        <Stack as="main" gap={26} align="center" className={styles.form}>
+          <Stack gap={10} className={styles.intro}>
+            <h1 className={styles.heading}>{copy.heading}</h1>
+            <p className={styles.body}>{copy.body}</p>
+          </Stack>
 
-      <Stack gap={26} className={styles.form}>
-        <CodeEntry
-          value={code}
-          onChange={(next) => {
-            setCode(next)
-            if (error) setError(undefined)
-          }}
-          error={error}
-          size="lg"
-        />
+          <Box background="card" radius="modal" padding={26} className={styles.card}>
+            <Stack gap={26}>
+              <CodeEntry
+                value={code}
+                onChange={(next) => {
+                  setCode(next)
+                  if (error) setError(undefined)
+                }}
+                error={error}
+                size="lg"
+              />
 
-        <AvatarPicker label={copy.faceLabel} value={seed} onChange={setPickedSeed} />
+              {/* One group, because it is one question: who is asking for the
+                  seat. The code above it is the other. */}
+              <Stack gap={14}>
+                <AvatarPicker label={copy.faceLabel} value={seed} onChange={setPickedSeed} />
 
-        <TextField
-          label={copy.nicknameLabel}
-          size="caption"
-          primary
-          value={name}
-          maxLength={20}
-          placeholder={copy.nicknamePlaceholder}
-          onChange={(e) => setTypedName(e.target.value)}
-        />
+                <TextField
+                  label={copy.nicknameLabel}
+                  size="caption"
+                  primary
+                  value={name}
+                  maxLength={20}
+                  placeholder={copy.nicknamePlaceholder}
+                  onChange={(e) => setTypedName(e.target.value)}
+                />
+              </Stack>
+            </Stack>
+          </Box>
 
-        {/* Blocked, never disabled: the label says what is still missing. */}
-        <Button size="form" fullWidth blocked={!ready} onClick={() => ready && join()}>
-          {ready ? copy.action : code.length < LENGTH ? 'Enter the code' : JOIN_ERRORS.noName}
-        </Button>
-
-        <Stack gap={12} align="center">
-          {/* Kept visible for a guest who arrived before the host did. */}
-          <Button variant="ghost" href="/host">
-            {copy.secondary}
-          </Button>
           <p className={styles.helper}>{copy.helper}</p>
         </Stack>
-      </Stack>
-    </Stack>
+
+        {/* Both actions dock, not just the primary — `/host`'s dock carries one
+            because a host has nowhere else to be. A guest who arrived before
+            the host does, and "Make your own" is no use to them if it sits
+            under a face picker they have to scroll past. */}
+        <div className={styles.dock}>
+          <Stack gap={12} align="center" className={styles.actions}>
+            {/* Blocked, never disabled: the label says what is still missing. */}
+            <Button size="form" fullWidth blocked={!ready} onClick={() => ready && join()}>
+              {ready ? copy.action : code.length < LENGTH ? 'Enter the code' : JOIN_ERRORS.noName}
+            </Button>
+            <Button variant="ghost" href="/host">
+              {copy.secondary}
+            </Button>
+          </Stack>
+        </div>
+      </div>
+
+      {/* Not `aria-hidden` on the wrapper: the wall inside it already is, and
+          the pause control it renders beside the wall is real UI. */}
+      <aside className={styles.showcase}>
+        <HeroWall tiles={tiles} scrim="soft" />
+      </aside>
+    </div>
   )
 }

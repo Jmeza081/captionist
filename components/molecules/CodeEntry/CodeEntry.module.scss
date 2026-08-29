@@ -34,7 +34,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: none;
+  // Never grows, and gives up width before the row does. From `xl` the join
+  // card sits inside a 40% column, where seven `lg` slots at their drawn width
+  // are wider than the card is — shrinking is what keeps them on one line, and
+  // the row is the only thing here that must not wrap.
+  flex: 0 1 auto;
+  min-width: 0;
   width: t.$slot-width;
   height: t.$slot-height;
   border-radius: t.$radius-field;

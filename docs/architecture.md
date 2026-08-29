@@ -301,25 +301,26 @@ Route (app)       Revalidate  Expire
 ƒ /api/gifs
 ○ /components
 ○ /host                  1h      1y
-○ /join
+○ /join                  1h      1y
 ƒ /join/[code]
 ƒ /room/[code]
 ```
 
 `/`, `/_not-found`, `/components`, `/host` and `/join` are prerendered at build
-time. `/` and
-`/host` are still static even though they await remote data: both call
+time. `/`, `/host` and
+`/join` are still static even though they await remote data: all three call
 `wallTiles()`, which reaches Giphy through a `fetch` carrying
 `next: { revalidate: 3600 }`, so each page is built once and refreshed hourly
 rather than rendered per request — and because it is the same call with the
-same arguments, the two pages share one upstream request and one set of tiles,
-so a host arriving from the front door already has every one of them in cache.
+same arguments, the three pages share one upstream request and one set of
+tiles, so a guest arriving from the front door already has every one of them in
+cache.
 The revalidate column only appears in `next build` when a `GIPHY_API_KEY` is
 present — with no key the wall resolves from the offline shelf, nothing is
-fetched, and both are plain static. `/host` and `/join` still ask no server
+fetched, and all three are plain static. `/host` and `/join` still ask no server
 about the *room*, because **nothing before the room needs one**: a code is
 generated in the browser, and whether a room already exists is a question only
-the transport can answer, which happens after the push. `/join/[code]` is dynamic solely because it awaits `params`;
+the transport can answer, which happens after the push. `/join/[code]` is dynamic solely because it awaits `params` — it awaits the wall too, but so does its static twin;
 `/room/[code]` is dynamic and everything inside it is client-driven.
 `/api/gifs`, `/api/ably/seat` and `/api/ably/token` are route handlers — no
 layout, no React, JSON only.
@@ -425,7 +426,14 @@ already the answer to the only question a join screen asks.
 
 **`/join` collects the three things a seat needs** — which room, what to call
 you, which face — and `/join/[code]` is the same screen with the code
-prefilled. That is the QR target and the link `RoomShare` copies. It is
+prefilled. **It is `/host`'s surface, field for field**: the three controls sit
+on the same 600px card, the CTA is docked rather than floating in the flow, and
+from `xl` the same `HeroWall` takes the 60% beside it. The two front doors are
+one screen apart in a guest's session — a host reads a code out, a guest types
+it in — and join was the only one of them that still looked like a form on a
+bare canvas. Its dock carries *both* actions, which `/host`'s does not: a guest
+who arrived before the host did needs "Make your own" to be as reachable as the
+button they cannot press yet. That is the QR target and the link `RoomShare` copies. It is
 deliberately not a redirect into the room: a guest arriving unnamed would be
 seated as a stranger, and the nickname and face have to exist before
 `RoomProvider` can ask for a place. Neither screen sends anything anywhere —
@@ -475,8 +483,8 @@ a face on it rather than a panel. It is a spare part until something needs a
 QR-and-code pair outside the lobby. The gap in it is the three
 page-shaped landing components: `LandingNav` and `LandingActions` are
 single-use, so `e2e/landing.spec.ts` covers them on the real page instead.
-`HeroWall` no longer is — `/host` renders it too — but it is still covered on
-its pages rather than in the gallery, because a wall of twenty tiles inside a
+`HeroWall` no longer is — `/host` and `/join` render it too — but it is still
+covered on its pages rather than in the gallery, because a wall of twenty tiles inside a
 component grid is a demo of nothing.
 Phase 3's two new atoms, `StatusPill` and `RankSlot`, are both in the gallery,
 and so are phase 4's two new molecules, `AvatarPicker` and `ModeCard` — they are
@@ -1855,7 +1863,8 @@ gap silently falls back to `0` and no other test would fail.
 `theme/_metrics.scss` is the other half of the picture and deliberately *not* on
 that road: fixed sizes the design names once and only a stylesheet ever needs —
 `$duel-card-width`, `$reveal-winner-width` and `$reveal-column-width` are phase
-3's three, `$join-column-width` and `$setup-column-width` are phase 4's two,
+3's three, `$setup-column-width` is phase 4's one — the 600px card `/host` and
+`/join` are both built on,
 `$reconnect-card-width` is phase 5's one, the hero wall's
 `$wall-columns` · `$wall-rows` · `$wall-columns-md` · `$wall-rows-md` are four
 that replaced the `$wall-tile`/`$wall-tile-height` pair — a *count* rather than
@@ -1969,8 +1978,11 @@ hydration reaching only the `'use client'` islands inside it — `/components`,
 has: every piece of it is a Server Component except `Button`, so the only thing
 hydration reaches are two links wearing a button's classes. The entry screens
 qualify because nothing
-they do needs a server: the code is validated by `normalizeCode` in the browser,
-the person comes out of `localStorage`, and the room is the next page's problem.
+they do needs a server *about the room*: the code is validated by `normalizeCode`
+in the browser, the person comes out of `localStorage`, and the room is the next
+page's problem. The wall both entry screens await is the one thing that leaves
+the process, and it is hourly-cached rather than per-request, which is why they
+are still prerendered.
 `/join/[code]` is the same page rendered per request, and only because it awaits
 `params` to prefill one field.
 
@@ -2374,8 +2386,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 378 Playwright
-tests across the two viewports — 189 per project, over 27 spec files. 368 of the 378 run; the
+210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 384 Playwright
+tests across the two viewports — 192 per project, over 27 spec files. 374 of the 384 run; the
 other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.
@@ -2389,7 +2401,10 @@ catalogue to being sixty-four *distinct drawings* rather than sixty-four names
 for a handful, and pins the original seven to indices 0–6, which is what stops a
 stored seed falling out of the picker's opening page. `e2e/join.spec.ts` gained
 the shuffle and the arrow-key walk — the two behaviours that only exist in a
-real browser — and `e2e/landing.spec.ts` gained one for the seeded proof row and
+real browser — and later three more when join took `/host`'s layout: both
+actions in the viewport without scrolling, the wall present at 1440 and absent
+at 393, and the seven code slots on one line with no overflow, which is the
+only way to catch slots that shrank into the card instead of out of it — and `e2e/landing.spec.ts` gained one for the seeded proof row and
 one that resizes the window and asserts the wall's grid is still exactly full,
 which is the regression the `auto-fill` layout would have reintroduced quietly.
 

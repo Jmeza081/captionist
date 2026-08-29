@@ -111,6 +111,61 @@ test.describe('joining', () => {
     )
   })
 
+  /**
+   * The screen's own layout, which is a claim about reach rather than looks.
+   *
+   * `/join` was the one front door that stayed a bare column at every width;
+   * it now shares `/host`'s surface, so it inherits `/host`'s two assertions —
+   * the CTA is in reach without scrolling, and the wall is the larger half on
+   * a desktop and absent on a phone. Both projects run this file, and the
+   * split turns on at `xl` (1280px), so the tests branch on the viewport
+   * rather than skipping: "no wall on a phone" is as much the requirement as
+   * "a wall on a desktop".
+   */
+  test('keeps both ways out in reach without scrolling', async ({ page }) => {
+    await page.goto('/join')
+
+    // Not `toBeVisible` — that is true of anything below the fold. A guest
+    // must not have to scroll past a face picker to find either of these.
+    await expect(page.getByRole('button', { name: 'Enter the code' })).toBeInViewport()
+    await expect(page.getByRole('link', { name: 'Make your own' })).toBeInViewport()
+  })
+
+  test('shows the wall beside the form on a desktop, and not on a phone', async ({ page }) => {
+    await page.goto('/join')
+
+    const wall = page.locator('[data-testid="hero-wall"]')
+    const split = (page.viewportSize()?.width ?? 0) >= 1280
+
+    if (split) {
+      await expect(wall).toBeVisible()
+      // The form is entirely to the left of where the wall's column begins.
+      const field = await page.getByRole('textbox', { name: 'Nickname' }).boundingBox()
+      expect(field).not.toBeNull()
+      expect(field?.x ?? 0).toBeLessThan((page.viewportSize()?.width ?? 0) * 0.4)
+    } else {
+      await expect(wall).toBeHidden()
+    }
+  })
+
+  test('keeps the seven code slots on one line at every width', async ({ page }) => {
+    await page.goto('/join')
+
+    // The row must never wrap — a code broken across two lines stops reading
+    // as a code — and from `xl` the card it sits in is a 40% column, narrower
+    // than seven `lg` slots are drawn. They give up width instead of
+    // overflowing, which is a thing only the rendered box can tell us.
+    const row = page.locator('[data-testid="code-slots"]')
+    const overflow = await row.evaluate((el) => el.scrollWidth - el.clientWidth)
+    expect(overflow).toBeLessThanOrEqual(1)
+
+    const tops = await row
+      .locator('span')
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
+    expect(tops).toHaveLength(7)
+    expect(new Set(tops).size).toBe(1)
+  })
+
   test('walks the faces with the arrow keys', async ({ page }) => {
     await page.goto('/join')
 

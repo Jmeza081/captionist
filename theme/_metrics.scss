@@ -422,12 +422,11 @@ $duel-card-width: 392px;
 $reveal-winner-width: 400px;
 $reveal-column-width: 440px;
 
-/// The single column `/join` and `/host` are built in. `/join` stays one column
-/// at every width — the design draws it as a phone screen a desktop also shows.
-/// `/host` holds this width as its form column, and from `xl` puts a GIF wall
-/// in the 60% beside it, because a page of settings with nothing either side
-/// says nothing about what the room is for.
-$join-column-width: 420px;
+/// The sheet `/host` and `/join` are both built on — the 600px card the design
+/// draws for each of them. Both hold it as the width of their form column, and
+/// from `xl` both put a GIF wall in the 60% beside it, because a page of
+/// settings, or of three fields, with nothing either side of it says nothing
+/// about what the room is for.
 $setup-column-width: 600px;
 
 /// The reconnect overlay's card. Wider than the help modal because it carries
