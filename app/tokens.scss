@@ -15,3 +15,34 @@
   @include t.rootVars;
 }
 
+/**
+ * The app's scrollbars.
+ *
+ * `color-scheme: dark` in globals.css only buys Chrome's *default* dark bar,
+ * which is a solid grey rail sitting on near-black — loud enough to read as
+ * chrome rather than as an edge, most obviously down the setup form's own
+ * scroll container. This takes it to the hairline weight the dividers use:
+ * there when you look for it, invisible when you are not.
+ *
+ * The standard properties rather than `::-webkit-scrollbar-*`, because setting
+ * either of these makes Chrome ignore the webkit pseudo-elements entirely —
+ * and this pair is what Firefox and Safari read as well.
+ *
+ * Split across two rules because only one of them inherits. `scrollbar-color`
+ * does, so `html` reaches every nested scroll container; `scrollbar-width` does
+ * not, and on `html` alone it left the setup column's own bar at the default
+ * width with a hairline thumb inside it. Hence the universal selector — which
+ * carries no specificity, so `ReactionToolbar` still hides its own with
+ * `scrollbar-width: none`.
+ *
+ * Here rather than in globals.css because that file is plain CSS and cannot see
+ * a colour token.
+ */
+html {
+  scrollbar-color: t.$line-hairline-strong transparent;
+}
+
+* {
+  scrollbar-width: thin;
+}
+

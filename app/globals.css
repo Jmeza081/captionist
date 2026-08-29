@@ -2,6 +2,12 @@ html,
 body {
   padding: 0;
   margin: 0;
+  /* The app is dark-only, and this is what tells the browser so. Without it
+     Chrome paints its default light scrollbar over #0a0a0b — most visibly on
+     the setup form's own scroll container — along with light native controls
+     and caret. It is not a colour; it is the declaration every UA style hangs
+     off. */
+  color-scheme: dark;
   background-color: #0a0a0b;
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, Segoe UI,
     Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue,
