@@ -11,7 +11,8 @@ The event lane's `chat` variant now takes an optional `attachment` and a
 `replyTo` quote, the reaction picker put its 32 reactions behind pack tabs
 with the design's four Slackmoji tiles among them, and the two `/host` settings
 that no screen read — `voting: 'single'` and `format: 'one'` — are read. Still
-nine routes and ten phases; nothing about the shape of a room moved.
+nine routes and ten phases; nothing about the shape of a room moved. (A tenth
+route has landed since: the 404 page below.)
 
 **Since then the reaction catalog grew from 32 to 616, and the wire did not
 change.** 584 emoji were imported from Google's Noto Animated Emoji under CC BY
@@ -258,7 +259,8 @@ rendering.
 
 ## Routes
 
-Nine routes of ours plus Next's own not-found, as `next build` reports them:
+Ten routes of ours, as `next build` reports them — `/_not-found` used to be
+Next's default black page and is now `app/not-found.tsx`:
 
 ```
 Route (app)       Revalidate  Expire
@@ -291,6 +293,21 @@ the transport can answer, which happens after the push. `/join/[code]` is dynami
 `/api/gifs`, `/api/ably/seat` and `/api/ably/token` are route handlers — no
 layout, no React, JSON only.
 
+**`/_not-found` is a root `not-found.tsx`, so it catches both halves of the
+problem**: a URL that matches no route at all, and any `notFound()` a segment
+throws — which today is `/room/[code]` refusing a code that was never a code.
+The two differ in one way worth knowing before reading `e2e/not-found.spec.ts`:
+an unmatched URL is answered 404 at the routing level, while a `notFound()`
+inside a streamed segment is answered **200 with the 404 in the body**, because
+the headers left before the segment threw. Its markup lives in the route rather
+than in an organism, for the same reason the landing's does — one page, so its
+own spec covers it (see [components/README.md](../components/README.md)). Its
+GIF is a hard-coded Giphy URL in `lib/gifs/notFound.ts` rather than a search: a
+page that exists to say something went wrong should not need an upstream API to
+answer. `GIFS_STUB` swaps in the offline shelf there exactly as it does in
+`wallTiles()`, which is what lets the suite assert the art at all — Playwright
+resolves no host but the dev server.
+
 ```mermaid
 graph TD
   L["app/layout.tsx<br/><i>root layout · Inter · globals.css + tokens.scss</i>"]
@@ -304,7 +321,7 @@ graph TD
   SE["app/api/ably/seat/route.ts<br/><i>/api/ably/seat — route handler ƒ<br/>a signed seat · is realtime on</i>"]
   TK["app/api/ably/token/route.ts<br/><i>/api/ably/token — route handler ƒ<br/>bare TokenRequest · no-store</i>"]
   AB["Ably"]
-  NF["app/_not-found<br/><i>Next default</i>"]
+  NF["app/not-found.tsx<br/><i>/_not-found — every URL we don't have · static ○</i>"]
   W["lib/gifs/wall.ts<br/><i>wallTiles() — server only</i>"]
   GY["Giphy"]
   LA["LandingActions<br/><i>'use client' · a link and a code field</i>"]

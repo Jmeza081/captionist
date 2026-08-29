@@ -12,12 +12,18 @@
   position: relative;
   border-radius: t.$radius-media;
   overflow: hidden;
+  // The overlays size themselves in `cqw`, against the card rather than the
+  // window — see `$media-overlay-size`. Inline-size containment only; the
+  // frame's height still comes from the image inside it.
+  container-type: inline-size;
 }
 
 .image {
   display: block;
   width: 100%;
-  height: t.$media-height;
+  // Square, at every width — see `$media-ratio` for why this is a ratio and
+  // not the design's fixed height.
+  aspect-ratio: t.$media-ratio;
   object-fit: cover;
   // Unselected cards sit slightly back so a ranked one comes forward.
   opacity: 0.85;
@@ -42,12 +48,16 @@
   padding: 0 t.$space-10;
   text-align: center;
   font-family: t.$font-sans;
-  font-size: 14px;
+  font-size: t.$media-overlay-size;
   font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   text-transform: uppercase;
   color: t.$text-primary;
-  text-shadow: 0 1.5px 0 #000, 0 -1.5px 0 #000, 1.5px 0 0 #000,
-    -1.5px 0 0 #000;
+  text-shadow: 0 t.$media-overlay-shadow 0 #000,
+    0 (-(t.$media-overlay-shadow)) 0 #000, t.$media-overlay-shadow 0 0 #000,
+    (-(t.$media-overlay-shadow)) 0 0 #000;
+  text-wrap: balance;
 }
 
 .top {

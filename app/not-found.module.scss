@@ -1,0 +1,107 @@
+@use 'theme' as t;
+
+/**
+ * A full-height page with the lockup at the top and the round itself centred
+ * under it — the same shape as the landing, minus the wall. Nothing here is
+ * over media, so the canvas is the plain app ground.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: t.$space-34 t.$space-20;
+  background-color: t.$surface-canvas;
+
+  @include t.mq('md') {
+    padding: t.$space-52 t.$landing-pad-h;
+  }
+}
+
+.mark {
+  display: flex;
+  justify-content: center;
+  align-self: center;
+  border-radius: t.$radius-field;
+  @include t.focusRing;
+}
+
+// The two columns sit in the middle of whatever is left, so the page is
+// balanced at 1440px and simply stacks on a phone.
+.body {
+  flex: 1;
+  align-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: t.$notfound-width;
+  margin: t.$space-44 auto 0;
+
+  @include t.mq('md') {
+    margin-block: 0;
+  }
+}
+
+/**
+ * Centred on a phone, where the card sits under the copy and a centred column
+ * reads as one thing; left-aligned from `md`, where it has a card beside it to
+ * line up against.
+ */
+.copy {
+  text-align: center;
+
+  @include t.mq('md') {
+    text-align: left;
+  }
+}
+
+/**
+ * The design's second display ramp, not the landing hero's.
+ *
+ * 42 → 68px rather than 48 → 98px: at the hero ramp this headline took four
+ * lines in a column that shares its row with a card, and a 404 shouting louder
+ * than the front door has the emphasis backwards.
+ */
+.headline {
+  margin: 0;
+  @include t.displaySmallText;
+}
+
+.lead {
+  margin: 0 auto;
+  max-width: t.$notfound-lead-width;
+  @include t.bodyText;
+
+  @include t.mq('md') {
+    margin-inline: 0;
+  }
+}
+
+.actions {
+  justify-content: center;
+
+  @include t.mq('md') {
+    justify-content: flex-start;
+  }
+}
+
+// The scoreline. Deliberately the quietest text on the page — it is the last
+// joke, not information anybody needs.
+.score {
+  margin: 0;
+  @include t.labelText;
+  color: t.$text-caption;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-12;
+}
+
+.credit {
+  margin: 0;
+  @include t.labelText;
+  color: t.$text-meta;
+  text-align: center;
+  text-wrap: balance;
+}

@@ -107,8 +107,36 @@ $player-row-pad-x: 14px;
 
 // --- Media ----------------------------------------------------------------
 
-$media-height: 186px;
-$media-height-lg: 210px;
+/**
+ * A media card is square, and that is a deliberate departure.
+ *
+ * DESIGNSYSTEM.md §3 draws the image at a fixed 170–210px height, which at the
+ * widths the card is actually laid out at — 307px in the vote grid, 520px in
+ * the compose preview — is a 1.6:1 letterbox with the caption stranded in a
+ * strip across it. A meme is square, the thing being captioned should fill the
+ * card, and the compose preview left half a column empty underneath itself.
+ *
+ * A ratio rather than a height, so one number governs every width: change this
+ * to `4 / 3` and every screen follows.
+ */
+$media-ratio: 1 / 1;
+/**
+ * Caption overlays, sized against the *card* rather than the viewport.
+ *
+ * `cqw` is why `.frame` declares `container-type: inline-size`: a 307px vote
+ * tile and a 550px hero card sit at the same viewport, so a `vw` clamp would
+ * give both the same type and only one of them would be right. 8cqw reaches
+ * the 42px ceiling at 525px and holds a 22px floor below 275px.
+ *
+ * The ceiling is above the 14–32px the design states. That range was written
+ * against the letterbox above; on a square card 32px is still a label rather
+ * than a caption, and the meme format this game is playing sets its text large
+ * on purpose.
+ */
+$media-overlay-size: clamp(1.375rem, 8cqw, 2.625rem);
+// The top of the design's `0 ±1.5–2px` range. At 14px 1.5px held the letter
+// off the image; at 42px it is a hairline.
+$media-overlay-shadow: 2px;
 $media-rank-badge: 28px;
 $media-ring: 3px;
 $media-ring-winner: 4px;
@@ -309,6 +337,18 @@ $quickjoin-key-min: 118px;
  * round. It is also closer to artboard 1a, which draws both at about this size.
  */
 $landing-cta-height: 56px;
+
+// The 404 page. One-off measures, for the same reason the landing has its own:
+// values that belong to a page rather than to any component on it.
+//
+// 1190px is the design's two columns and the gutter between them, and it is
+// deliberately narrower than the lobby's 1080px measure is wide — the copy
+// column has to hold display type at its 98px ceiling without "Nobody" and
+// "could" landing on one line, which is where the joke's timing lives.
+$notfound-width: 1190px;
+// Where the supporting sentence stops. Narrower than the landing's 640px lead
+// because this one shares its row with a card rather than owning the viewport.
+$notfound-lead-width: 480px;
 
 // --- Reveal reaction bar --------------------------------------------------
 

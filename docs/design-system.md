@@ -128,10 +128,28 @@ Three colours came with them — `$fill-quote` (`rgba(255,255,255,.04)`),
 `$accent-border-strong` because the design distinguishes a rule that *marks a
 quote* from one that edges a surface.
 
+The 404 page has two of its own — `$notfound-width` (1190px, the two columns
+and the gutter between them) and `$notfound-lead-width` (480px) — for the same
+reason the landing does: they belong to a page, not to any component on it.
+
+**A media card is square, and its caption is sized against the card.** Both are
+deliberate departures from DESIGNSYSTEM.md §3, and both replaced a number that
+was written for a shape we do not draw:
+
+| §3 says | Here | Why |
+| --- | --- | --- |
+| image height 170–210px | `$media-ratio: 1 / 1` | At the widths the card is actually laid out at — 307px in the vote grid, 520px in the compose preview, 570px on the 404 — a 186px height is a 1.6:1 letterbox. A meme is square, the compose preview left half a column empty beneath itself, and a ratio governs every width from one number |
+| caption overlay 14–32px | `$media-overlay-size: clamp(1.375rem, 8cqw, 2.625rem)` | 14px was the floor of that range and the only value ever used, which on a square card is a label rather than a caption. The unit is `cqw`, not `vw`: a 307px vote tile and a 570px hero card sit at the same viewport, so only a card-relative unit gets both right. `.frame` declares `container-type: inline-size` for it |
+| shadow `0 ±1.5–2px 0 #000` | `$media-overlay-shadow: 2px` | The top of the same range. At 14px 1.5px held the letter off the image; at 42px it is a hairline |
+
+Changing the shape back is one line: `$media-ratio: 4 / 3` and every screen
+follows.
+
 ### Type — `theme/_typography.scss`
 
 Mixins, not variables, so a call site gets family, size, weight, tracking,
-line-height and colour together: `displayText`, `screenTitleText`,
+line-height and colour together: `displayText`, `displaySmallText`,
+`screenTitleText`,
 `cardTitleText`, `sectionHeadingText`, `bodyText`, `chatBodyText`, `labelText`,
 `eyebrowText`, `scoreText`, `roomCodeText`.
 
@@ -178,6 +196,12 @@ at `48/7.2vw/98`. Read as one token, that row pairs the smallest ramp's floor
 with the largest ramp's ceiling, and no instance in the design is 38 → 98. The
 hero shipped 10px below its own design for that reason. `displayText` follows
 the hero's ramp; check the markup before trusting a range in the guide.
+
+`displaySmallText` is the ramp below it — the prototype's `42/5.6vw/68` — for a
+page that is display-scale but is not the front door. The 404 is the first call
+site: at the hero ramp its headline took four lines in a column that shares its
+row with a card, and a 404 shouting louder than the landing page has the
+emphasis backwards. Reach for it before writing a one-off `font-size`.
 
 One deliberate departure, recorded here rather than silently absorbed:
 
@@ -334,7 +358,7 @@ primitives.
 | `JoinPanel` | molecule | A room's code and QR on their own, for a screen shared to a wall. **No caller today** — `/join` is built from `CodeEntry` + `AvatarPicker`, and the lobby's own share block is `RoomShare` |
 | `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line |
 | `PlayerRow` | molecule | One player in a list — `roster`, `tracker`, or `standing` |
-| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Its foot takes `caption`, `reply`, `reaction` and `action` as peers |
+| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Square at every width, with caption overlays sized against the card. Its foot takes `caption`, `reply`, `reaction` and `action` as peers |
 | `ChatMessage` | molecule | One chat message in three bands: a **name row**, a **bubble** carrying body, quote and attachment together, and a **reaction row** under it. The bubble is `fit-content`, so four words read as four words rather than as a plate with 200px of nothing after them, and the avatar drops to the bubble's top edge — the face belongs to what was said, the name is the label on it. `onReact` puts the CTA at the end of the reaction row, **always lit**: under the plate it is out of the reading path, which is what lets it stay visible, and a hover-only affordance is no affordance on a phone. A host announcement is the same component with `announcement` — its own accent plate, taking the avatar gutter too — which **nothing in the room sets**: it used to be `author.isHost`, so every line the host typed was a card signed "HOST · HOST", and since that branch drew only the body a GIF from the host was an empty one. The host is a player, so their chat is chat. An attachment is bounded by 180×120 rather than forced to it, so a Slackmoji posted from the composer stays its own size |
 | `UnreadDivider` | molecule | Where you stopped reading |
 | `ReactionToolbar` | molecule | The searchable reaction picker. Controlled by `open` so it can animate out, dismissed by Escape or a click anywhere outside it, and genie-in/out from the edge its `flipped` anchor sits on. No printed title — the thing you opened it from already said what it is for. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
@@ -515,7 +539,13 @@ Not aspirational — these are merged-or-not conditions.
   overlap steal each other's taps, which is worse than the small target it set
   out to fix — where the design packs controls tightly, the spacing has to grow
   first. `e2e/targets.spec.ts` measures the real hit areas on a phone and fails
-  on any overlap; it is the load-bearing half of this rule.
+  on any overlap; it is the load-bearing half of this rule. It ignores a
+  control that is **completely behind painted ground**: the vote screen's lock
+  dock is `position: sticky` with a real background rather than a fade, so a
+  phone voter always has some card's foot row buried under it — and a buried
+  row is not offered to anybody, it appears when you scroll. Two controls the
+  viewer can *see*, one silently taking the other's tap, is the thing that
+  fails.
 
 Applied so far to the vote card's foot row (the reply key and the reaction CTA).
 Still below the floor and knowingly so: the composer's six one-tap keys and its

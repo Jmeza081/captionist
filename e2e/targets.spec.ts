@@ -25,11 +25,51 @@ interface Hit {
   label: string
 }
 
-/** The real hit area: the border box, or the `::after` that grew it. */
+/**
+ * The real hit area: the border box, or the `::after` that grew it.
+ *
+ * Controls that are **completely behind painted ground** are left out, and
+ * that exclusion is load-bearing rather than a loophole. The vote screen's
+ * lock dock is `position: sticky; bottom: 0` with a real background — not a
+ * fade, deliberately, so caption text is not legible through it — and a phone
+ * voter therefore always has *some* card's foot row buried under it. That is
+ * how a sticky bar over a scrolling grid works, and the buried row is not
+ * offered to anybody: you scroll, and it appears.
+ *
+ * What this file exists to catch is the other thing — two controls the viewer
+ * can *see*, one silently taking the other's tap. So a control is dropped only
+ * when all five sample points resolve to a painted element that is neither it
+ * nor an ancestor of it. The bug in the comment below survives that filter:
+ * the lock button's own centre resolved to the lock button, and only its right
+ * end was under the chat key.
+ */
 async function hits(page: Page, selector: string): Promise<Hit[]> {
   return page.$$eval(selector, (els) =>
     els
       .filter((el) => !el.closest('nextjs-portal'))
+      .filter((el) => {
+        const r = el.getBoundingClientRect()
+        if (r.width === 0 || r.height === 0) return true
+        const inset = 1
+        const points: Array<[number, number]> = [
+          [r.x + r.width / 2, r.y + r.height / 2],
+          [r.x + inset, r.y + inset],
+          [r.right - inset, r.y + inset],
+          [r.x + inset, r.bottom - inset],
+          [r.right - inset, r.bottom - inset],
+        ]
+        return points.some(([x, y]) => {
+          const top = document.elementFromPoint(x, y)
+          if (!top) return true
+          if (top === el || el.contains(top) || top.contains(el)) return true
+          // Something else is on top. It only occludes if it actually paints.
+          const style = getComputedStyle(top)
+          const painted =
+            style.backgroundImage !== 'none' ||
+            !/^rgba\(.*,\s*0\)$/.test(style.backgroundColor)
+          return !painted
+        })
+      })
       .map((el) => {
         const r = el.getBoundingClientRect()
         const after = getComputedStyle(el, '::after')
