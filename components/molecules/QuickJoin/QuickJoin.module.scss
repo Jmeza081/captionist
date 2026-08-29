@@ -23,9 +23,23 @@
   }
 }
 
+/**
+ * The code takes the slack, so the key sits on the pill's right edge.
+ *
+ * Without this both children hug the left and any pill wider than its contents
+ * leaves a hole after the key — invisible on the landing page, where the pill
+ * is only as wide as it needs to be, and obvious anywhere it stretches.
+ *
+ * `1 0 auto` rather than `1`: the basis stays the mask's own width and the
+ * field never shrinks below it, so a narrow phone clips nothing. Growing the
+ * field rather than pushing the key with `margin-left: auto` also means the
+ * new space is part of the field — the whole gap focuses the code, which is
+ * what `cursor: text` here already promises.
+ */
 .field {
   position: relative;
   display: flex;
+  flex: 1 0 auto;
   align-items: center;
   cursor: text;
 }

@@ -128,6 +128,15 @@ Three colours came with them — `$fill-quote` (`rgba(255,255,255,.04)`),
 `$accent-border-strong` because the design distinguishes a rule that *marks a
 quote* from one that edges a surface.
 
+**A tally pill is `ReactionCTA`'s height**, `$tally-height: 32px`. §4.4 gives
+that pill its colours and nothing else, so the 4/8/12/11 it used to be drawn at
+was ours rather than the design's — and beside a 32px CTA it read as a footnote
+to the control that adds one. A reaction four people left should not be smaller
+than the button offering to leave a fifth. It is a height rather than vertical
+padding so the match is stated once and cannot drift when a glyph's leading
+changes, and `.glyph` sizes an image tile in `em` so a picture and a character
+come out the same without every call site passing a number.
+
 The 404 page has two of its own — `$notfound-width` (1190px, the two columns
 and the gutter between them) and `$notfound-lead-width` (480px) — for the same
 reason the landing does: they belong to a page, not to any component on it.
@@ -337,7 +346,7 @@ primitives.
 | `StatusPill` | atom | A short statement of where the room is — "Locked in" over media, "4 of 7 have voted" on the canvas |
 | `RankSlot` | atom | One place in a ranked ballot. Dashed when empty, gold at first, clears when tapped. A single-vote room draws one, named rather than numbered |
 | `ReactionGlyph` | atom | One reaction's face — a character, a Slackmoji, or a catalog emoji, from one glyph string. The wire carries the glyph and four surfaces render it, so the branch lives here rather than four times. Also owns the animated upgrade: the still first, then Google's CDN once the tile is near the viewport and motion is welcome |
-| `TallyPill` | atom | One reaction's running count. Carries its own scrim over media |
+| `TallyPill` | atom | One reaction's running count. Carries its own scrim over media. Drawn at `ReactionCTA`'s 32px, because the two share a row |
 | `PresencePill` | atom | "7 here" — live room presence |
 | `RoundProgress` | atom | How far through the game the room is, as pips |
 | `Logo` | atom | The Captionist mark, at `header` (26px), `landing` (34px) or `badge` (56px, the one the boot ring is drawn around). The delivered SVG verbatim, so it resolves at any size. Its `rx=60` ground carries its own rounded corners — never round it again. Decorative: every call site sits it beside the wordmark, or inside a `ProgressRing` |

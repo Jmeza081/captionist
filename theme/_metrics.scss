@@ -79,9 +79,24 @@ $presence-pad-y: 4px;
 $presence-pad-x: 9px;
 $presence-dot: 6px;
 
-$tally-pad-y: 4px;
-$tally-pad-x: 8px;
-$tally-pad-x-own: 9px;
+/**
+ * A tally pill is the reaction CTA's height, because they sit in the same row.
+ *
+ * DESIGNSYSTEM.md §4.4 gives this pill its colours and nothing else — the
+ * 4/8/12/11 it used to be drawn at was ours, not the design's, and beside the
+ * 32px `ReactionCTA` it read as a footnote to the control that adds one. A
+ * reaction that four people left should not be smaller than the button that
+ * offers to leave a fifth.
+ *
+ * A height rather than vertical padding, so the match to `ReactionCTA`'s
+ * `.pill` is stated once and cannot drift when a glyph's leading changes.
+ */
+$tally-height: 32px;
+$tally-pad-x: 12px;
+// A pixel more, because `mine` is the only variant whose 1px border is drawn.
+$tally-pad-x-own: 13px;
+$tally-glyph: 18px;
+$tally-count: 14px;
 
 $snackbar-pad-y: 13px;
 $snackbar-pad-right: 20px;

@@ -3,8 +3,9 @@
 .tally {
   display: inline-flex;
   align-items: center;
-  gap: t.$space-5;
-  padding: t.$tally-pad-y t.$tally-pad-x;
+  gap: t.$space-6;
+  height: t.$tally-height;
+  padding: 0 t.$tally-pad-x;
   border: 1px solid transparent;
   border-radius: t.$radius-pill;
   font-family: t.$font-sans;
@@ -33,13 +34,22 @@
 }
 
 .glyph {
-  font-size: 12px;
+  font-size: t.$tally-glyph;
   line-height: 1;
   display: inline-flex;
 }
 
+// A Slackmoji or an imported emoji arrives as an `<img>` carrying `width` and
+// `height` attributes sized for the old pill. `1em` re-hangs it off the glyph
+// size above, so a picture and a character are the same size here without
+// every call site passing one.
+.glyph :global(img) {
+  width: 1em;
+  height: 1em;
+}
+
 .count {
-  font-size: 11px;
+  font-size: t.$tally-count;
   font-weight: 700;
   color: t.$text-primary;
 }
