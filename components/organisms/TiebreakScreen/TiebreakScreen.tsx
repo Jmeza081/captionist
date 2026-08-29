@@ -48,6 +48,8 @@ export function TiebreakScreen() {
               <MediaCard
                 src={card.media?.src ?? ''}
                 alt={card.media?.alt ?? `Contender ${i + 1}`}
+                width={card.media?.width}
+                height={card.media?.height}
                 topText={card.lines?.[0]}
                 bottomText={card.lines?.[1]}
                 winner={myChoice === card.entryId}

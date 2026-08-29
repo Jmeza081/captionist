@@ -382,6 +382,27 @@ export function ComponentGallery() {
 
       {/* ---------------- Media ---------------- */}
       <Section id="media" title="Media card" spec="6 states · both modes">
+        {/* The shape band, first: every card below is drawn at its image's own
+            ratio, clamped, and these two are the ends of it. A 16:9 photo used
+            to be squared off and show 56% of itself. */}
+        <Grid columns={1} mdColumns={3} gap={20}>
+          <MediaCard
+            src={MEDIA.wide}
+            alt="A wide frame"
+            width={640}
+            height={360}
+            caption="16:9 source · drawn 4:3"
+          />
+          <MediaCard
+            src={MEDIA.tall}
+            alt="A tall frame"
+            width={360}
+            height={640}
+            caption="9:16 source · drawn 4:5"
+          />
+          <MediaCard src={MEDIA.retro} alt="A frame with no size" caption="No size · square" />
+        </Grid>
+
         <Grid columns={1} mdColumns={3} gap={20}>
           <MediaCard
             src={MEDIA.serverRack}

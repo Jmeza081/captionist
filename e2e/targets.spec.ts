@@ -38,10 +38,16 @@ interface Hit {
  *
  * What this file exists to catch is the other thing — two controls the viewer
  * can *see*, one silently taking the other's tap. So a control is dropped only
- * when all five sample points resolve to a painted element that is neither it
- * nor an ancestor of it. The bug in the comment below survives that filter:
- * the lock button's own centre resolved to the lock button, and only its right
- * end was under the chat key.
+ * when every sample point *that is on the screen* resolves to a painted
+ * element which is neither it nor an ancestor of it. The bug in the comment
+ * below survives that filter: the lock button's own centre resolved to the
+ * lock button, and only its right end was under the chat key.
+ *
+ * "On the screen" is load-bearing, and was not always: a control straddling
+ * the fold has sample points below the viewport, `elementFromPoint` answers
+ * `null` for those, and counting `null` as "nothing is painted here" made a
+ * foot row that was half under the dock and half below the fold read as fully
+ * visible.
  */
 async function hits(page: Page, selector: string): Promise<Hit[]> {
   return page.$$eval(selector, (els) =>
@@ -59,6 +65,13 @@ async function hits(page: Page, selector: string): Promise<Hit[]> {
           [r.right - inset, r.bottom - inset],
         ]
         return points.some(([x, y]) => {
+          // Off-screen is not evidence of anything. `elementFromPoint` answers
+          // `null` both for "nothing is painted here" and for "that is not on
+          // the screen", and reading the second as the first is how a control
+          // sitting on the fold — most of it below the viewport, the rest
+          // under the sticky dock — counted as visible and then clashed with
+          // the dock it was hidden behind.
+          if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return false
           const top = document.elementFromPoint(x, y)
           if (!top) return true
           if (top === el || el.contains(top) || top.contains(el)) return true

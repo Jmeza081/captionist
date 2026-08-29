@@ -32,6 +32,10 @@ export const MEDIA = {
   oncall: frame('#1B4D2E', '#0E0F10', '😐'),
   retro: frame('#4D1B3A', '#0E0F10', '🫠'),
   outage: frame('#4D4A1B', '#0E0F10', '🙃'),
+  // Two shapes outside the band, so the gallery shows what the clamp does to
+  // them rather than only describing it. See `mediaAspect` in `lib/media.ts`.
+  wide: frame('#1B3A4D', '#0E0F10', '🫠', 640, 360),
+  tall: frame('#2A1B4D', '#0E0F10', '👀', 360, 640),
 }
 
 export const ATTACHMENT = frame('#1B3A4D', '#0E0F10', '👀', 180, 120)

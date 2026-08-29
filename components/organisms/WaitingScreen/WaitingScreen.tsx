@@ -50,6 +50,8 @@ export function WaitingScreen() {
             <MediaCard
               src={media?.src ?? ''}
               alt={media?.alt ?? 'Your entry'}
+              width={media?.width}
+              height={media?.height}
               topText={lines?.[0]}
               bottomText={lines?.[1]}
             />

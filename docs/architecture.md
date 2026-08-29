@@ -76,6 +76,31 @@ against one edge. `LobbyScreen` still owns both, as `HostLobby` and
 on *role* is not the thing the mode rule forbids — that rule is about never
 forking a screen on `settings.mode`, and neither half of this one reads it.
 
+**A card is drawn at its image's shape now, clamped.** `MediaRef` gained
+optional `width`/`height`, `toMediaRef` stopped dropping Giphy's, and
+`mediaAspect` in `lib/media.ts` turns them into the ratio `MediaCard` sets as
+`--media-aspect`. The clamp is what keeps a vote grid a grid: unbounded, one
+9:16 tile beside one 16:9 tile is a 3× spread in height. Inside 4:5 → 4:3 a
+wide photo shows three quarters of itself instead of the half a square showed.
+Two numbers on the wire, and they have to be *on* it rather than measured on
+load — a card that learned its shape from the image arriving would resize under
+a caption somebody was already typing.
+
+The compose preview holds its **height** rather than its width, for the reason
+that fix creates: at a fixed 520px column, respecting a wide image's ratio only
+makes it shorter than the square it replaced. The column is sized from the
+ratio instead, so every preview is the same height and a wide image keeps the
+full column.
+
+The harness fixtures carry real art from the offline shelf now, rather than an
+empty `src`. A `?phase=` screen exists to be a spec for a screen, and a vote
+grid of blank frames is a worse one — it also hid this change, because a card
+with no image has no ratio to be drawn at. That is what surfaced a real defect
+in `e2e/targets.spec.ts`: its occlusion filter read `elementFromPoint`'s `null`
+as "nothing is painted here" when it also means "that is not on the screen", so
+a control straddling the fold — half under the sticky dock, half below the
+viewport — counted as fully visible.
+
 **Five glows, one mixin — and four of them had never painted.** The
 accent circle every big screen carries is a `::before` at `z-index: -1`.
 Without a stacking context on its own element it escapes to the root one, where
@@ -2427,8 +2452,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-210 unit tests (`lib/**/*.test.ts`, node, over 15 files) and 388 Playwright
-tests across the two viewports — 194 per project, over 27 spec files. 378 of the 388 run; the
+217 unit tests (`lib/**/*.test.ts`, node, over 16 files) and 390 Playwright
+tests across the two viewports — 195 per project, over 27 spec files. 380 of the 390 run; the
 other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.

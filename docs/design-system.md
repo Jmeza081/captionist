@@ -166,7 +166,7 @@ was written for a shape we do not draw:
 
 | §3 says | Here | Why |
 | --- | --- | --- |
-| image height 170–210px | `$media-ratio: 1 / 1` | At the widths the card is actually laid out at — 307px in the vote grid, 520px in the compose preview, 570px on the 404 — a 186px height is a 1.6:1 letterbox. A meme is square, the compose preview left half a column empty beneath itself, and a ratio governs every width from one number |
+| image height 170–210px | `aspect-ratio: var(--media-aspect, $media-ratio)` | At the widths the card is actually laid out at — 307px in the vote grid, 520px in the compose preview, 570px on the 404 — a 186px height is a 1.6:1 letterbox. A meme is square, the compose preview left half a column empty beneath itself, and a ratio governs every width from one number. **Amended in phase 7:** the square is now the *fallback*, not the rule. A GIF is any ratio it likes, and `cover` on a 16:9 photo forced into a square showed 56% of the frame — half the joke is usually in the other half. A card is drawn at its image's own ratio, clamped to the `MEDIA_ASPECT_MIN`–`MAX` band in `lib/media.ts` (4:5 → 4:3) so a vote grid stays a grid; a source that reports no size is still square |
 | caption overlay 14–32px | `$media-overlay-size: clamp(1.375rem, 8cqw, 2.625rem)` | 14px was the floor of that range and the only value ever used, which on a square card is a label rather than a caption. The unit is `cqw`, not `vw`: a 307px vote tile and a 570px hero card sit at the same viewport, so only a card-relative unit gets both right. `.frame` declares `container-type: inline-size` for it |
 | shadow `0 ±1.5–2px 0 #000` | `$media-overlay-shadow: 2px` | The top of the same range. At 14px 1.5px held the letter off the image; at 42px it is a hairline |
 

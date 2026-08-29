@@ -442,4 +442,30 @@ test.describe('the phase-3 atoms', () => {
     await expect(page.getByText('4 of 7 have voted')).toBeVisible()
     await expect(page.getByText(/can’t vote in their own duel/)).toBeVisible()
   })
+
+  /**
+   * The shape band.
+   *
+   * A card is drawn at its image's own ratio, clamped — see `mediaAspect`.
+   * Asserted on the rendered box rather than the helper, because the number
+   * has to survive a custom property, a `var()` fallback and `aspect-ratio`
+   * to mean anything, and any one of those failing leaves the card square
+   * with nothing else to notice.
+   */
+  test('draws a card at its image’s ratio, clamped at both ends', async ({ page }) => {
+    await page.goto('/components#media')
+
+    const ratioOf = async (alt: string) => {
+      const box = await page.getByRole('img', { name: alt }).boundingBox()
+      expect(box).not.toBeNull()
+      return (box?.width ?? 0) / (box?.height ?? 1)
+    }
+
+    // 16:9 in, 4:3 out — squared off it showed 56% of the frame.
+    expect(await ratioOf('A wide frame')).toBeCloseTo(4 / 3, 1)
+    // 9:16 in, 4:5 out, so a tall GIF is never a column in a vote grid.
+    expect(await ratioOf('A tall frame')).toBeCloseTo(4 / 5, 1)
+    // And a source that never reported a size is the square it always was.
+    expect(await ratioOf('A frame with no size')).toBeCloseTo(1, 1)
+  })
 })

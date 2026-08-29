@@ -69,6 +69,8 @@ export function RevealScreen() {
           <MediaCard
             src={winner?.media?.src ?? ''}
             alt={winner?.media?.alt ?? 'The winning entry'}
+            width={winner?.media?.width}
+            height={winner?.media?.height}
             topText={winner?.lines?.[0]}
             bottomText={winner?.lines?.[1]}
             winner

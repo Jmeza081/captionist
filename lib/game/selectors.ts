@@ -13,6 +13,7 @@ import type {
   EntryId,
   GameMode,
   GameState,
+  MediaRef,
   Player,
   PlayerId,
   RoundResult,
@@ -491,7 +492,7 @@ export function captionRemaining(text: string): number {
 
 export interface VoteCard {
   entryId: EntryId
-  media?: { src: string; alt: string }
+  media?: MediaRef
   lines?: readonly string[]
   /** The viewer's own entry: locked out of voting, and dimmed. */
   own: boolean
@@ -562,7 +563,7 @@ export interface RevealEntry {
   entryId: EntryId
   author?: Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
   points: number
-  media?: { src: string; alt: string }
+  media?: MediaRef
   lines?: readonly string[]
 }
 
@@ -880,7 +881,7 @@ export function lockGateFrom(state: GameState, viewerId: PlayerId, ranked: numbe
 export interface TiebreakCard {
   entryId: EntryId
   author?: Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
-  media?: { src: string; alt: string }
+  media?: MediaRef
   lines?: readonly string[]
   /** Contenders cannot vote in their own duel. */
   own: boolean

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { hasImage, imageSrc } from '@/lib/media'
+import type { CSSProperties, ReactNode } from 'react'
+import { hasImage, imageSrc, mediaAspect } from '@/lib/media'
 import styles from './MediaCard.module.scss'
 
 export interface MediaCardProps {
@@ -7,6 +7,17 @@ export interface MediaCardProps {
   src: string
   /** Describes the image for anyone who can't see it. */
   alt: string
+  /**
+   * The image's intrinsic size, from `MediaRef`.
+   *
+   * The card is drawn at that ratio, clamped by `mediaAspect` — see the band
+   * in `lib/media.ts`. Passed rather than measured because measuring means
+   * waiting for the image, and a card that resized on load would move a
+   * caption somebody was already typing. Absent, the card is square, which is
+   * what it always was.
+   */
+  width?: number
+  height?: number
   /**
    * Caption overlays. Caption mode draws them over the shared image; react
    * mode leaves them off, because the image *is* the answer.
@@ -63,6 +74,8 @@ export interface MediaCardProps {
 export function MediaCard({
   src,
   alt,
+  width,
+  height,
   topText,
   bottomText,
   rank,
@@ -80,6 +93,7 @@ export function MediaCard({
   // broken frame, the alt text becomes the content — it already says what
   // happened ("No image was picked in time").
   const missing = !hasImage(src)
+  const aspect = mediaAspect({ width, height })
 
   const frameClasses = [
     styles.frame,
@@ -94,7 +108,12 @@ export function MediaCard({
 
   return (
     <figure className={styles.card}>
-      <div className={frameClasses}>
+      <div
+        className={frameClasses}
+        // The CSS owns the fallback, so an unknown ratio sets nothing at all
+        // rather than a number this file and the stylesheet could disagree on.
+        style={aspect ? ({ '--media-aspect': `${aspect}` } as CSSProperties) : undefined}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- GIFs from
             Giphy are remote and animated; next/image would rasterise them. */}
         <img className={styles.image} src={imageSrc(src)} alt={missing ? '' : alt} />

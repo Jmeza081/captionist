@@ -3,6 +3,8 @@ import { authorize } from './authorize'
 import { createRoom } from './create'
 import { reduce } from './reducer'
 import { ballotFrom } from './selectors'
+import { sampleAt } from '@/lib/gifs/samples'
+import { toMediaRef } from '@/lib/gifs/types'
 import type { EntryAnswer, GameState, RoomPhase, RoomSettings } from './types'
 
 /**
@@ -77,10 +79,11 @@ function answerFor(state: GameState, index: number): EntryAnswer {
   if (state.settings.mode === 'caption') {
     return { kind: 'caption', lines: [CAPTIONS[index % CAPTIONS.length] ?? 'A caption'] }
   }
-  return {
-    kind: 'media',
-    media: { src: '', alt: `Answer ${index + 1}` },
-  }
+  // Real art from the offline shelf rather than an empty `src`. A harness
+  // screen exists to be a spec for a screen, and a vote grid of blank frames
+  // is a worse one — it also hid the fact that a card is drawn at its image's
+  // ratio, because a card with no image has no ratio to be drawn at.
+  return { kind: 'media', media: toMediaRef(sampleAt(index)) }
 }
 
 /**
@@ -103,7 +106,7 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
     type: 'round/subjectLocked',
     subject:
       state.settings.mode === 'caption'
-        ? { kind: 'media', media: { src: '', alt: 'The round’s image' } }
+        ? { kind: 'media', media: toMediaRef(sampleAt(0)) }
         : { kind: 'prompt', text: 'The deploy went out at 4:59pm on a Friday.' },
   })
   if (phase === 'compose') return state

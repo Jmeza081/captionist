@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
@@ -25,6 +25,7 @@ import {
 } from '@/lib/game/selectors'
 import { toMediaRef, type GifResult } from '@/lib/gifs/types'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
+import { mediaAspect } from '@/lib/media'
 import { useRoom } from '@/lib/room/useRoom'
 import styles from './ComposeScreen.module.scss'
 
@@ -156,6 +157,7 @@ export function ComposeScreen() {
   /* ---------------- Captioning the image ---------------- */
 
   const media = subject?.kind === 'media' ? subject.media : undefined
+  const previewAspect = mediaAspect(media)
   const fields = captionFields(state)
   const written = lines.some((line) => line.trim().length > 0)
 
@@ -166,13 +168,23 @@ export function ComposeScreen() {
 
   return (
     <div className={styles.split}>
-      <Stack gap={12} className={styles.previewColumn}>
+      <Stack
+        gap={12}
+        className={styles.previewColumn}
+        // The column is sized from the card's ratio so the preview keeps a
+        // constant *height* rather than a constant width — see the stylesheet.
+        style={
+          previewAspect ? ({ '--media-aspect': `${previewAspect}` } as CSSProperties) : undefined
+        }
+      >
         <Eyebrow>{copy.eyebrow}</Eyebrow>
         {/* The preview is the real card the room will vote on, so what you see
             while typing is exactly what they see. */}
         <MediaCard
           src={media?.src ?? ''}
           alt={media?.alt ?? 'The round’s image'}
+          width={media?.width}
+          height={media?.height}
           topText={lines[0]}
           bottomText={lines[1]}
         />

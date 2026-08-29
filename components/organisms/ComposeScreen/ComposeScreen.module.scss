@@ -40,11 +40,28 @@
   }
 }
 
+/**
+ * The preview holds its *height*, not its width.
+ *
+ * The card is drawn at the image's own ratio now (clamped — see
+ * `lib/media.ts`), and at a fixed 520px column that would make a wide photo
+ * shorter than the square it replaced: exactly the "make it big enough to
+ * read while typing" problem, reintroduced by the fix for the crop. Sizing the
+ * column from the ratio instead pins every preview to the same 520px tall and
+ * lets the width fall out of it — so a wide image keeps the full column and a
+ * tall one narrows rather than pushing the form down the page.
+ *
+ * `min()` and not `calc()` alone: 520 is the ceiling the form column can
+ * spare, so a wide image stops there and is 520 × 390 rather than 693 wide.
+ */
 .previewColumn {
   flex: none;
 
   @include t.mq('md') {
-    width: t.$compose-preview-width;
+    width: min(
+      #{t.$compose-preview-width},
+      calc(#{t.$compose-preview-width} * var(--media-aspect, 1))
+    );
     max-width: 100%;
   }
 }

@@ -175,6 +175,8 @@ export function VoteScreen() {
                 key={card.entryId}
                 src={card.media?.src ?? ''}
                 alt={card.media?.alt ?? `Entry ${i + 1}`}
+                width={card.media?.width}
+                height={card.media?.height}
                 topText={card.lines?.[0]}
                 bottomText={card.lines?.[1]}
                 own={card.own}

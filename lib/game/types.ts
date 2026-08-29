@@ -33,6 +33,21 @@ export type GameMode = 'caption' | 'react'
 export interface MediaRef {
   src: string
   alt: string
+  /**
+   * The image's intrinsic size, when the source reports one.
+   *
+   * Two numbers, and they travel because the *card's shape* depends on them:
+   * `mediaAspect` in `lib/media.ts` turns them into the ratio every
+   * `MediaCard` is drawn at, and a card that learned its shape from the image
+   * loading would resize under a caption somebody was already typing. They
+   * were dropped here until phase 7 — the card was square and nothing needed
+   * them.
+   *
+   * Optional because plenty of sources report nothing, and a card with no size
+   * falls back to the square it always was.
+   */
+  width?: number
+  height?: number
 }
 
 export type ConnectionState = 'online' | 'reconnecting' | 'gone'

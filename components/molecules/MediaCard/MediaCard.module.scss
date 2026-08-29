@@ -21,9 +21,10 @@
 .image {
   display: block;
   width: 100%;
-  // Square, at every width — see `$media-ratio` for why this is a ratio and
-  // not the design's fixed height.
-  aspect-ratio: t.$media-ratio;
+  // The image's own ratio where it reported one, clamped to the band in
+  // `lib/media.ts`; the design's square where it did not. A ratio rather than
+  // the design's fixed height, for the reason `$media-ratio` gives.
+  aspect-ratio: var(--media-aspect, #{t.$media-ratio});
   object-fit: cover;
   // Unselected cards sit slightly back so a ranked one comes forward.
   opacity: 0.85;

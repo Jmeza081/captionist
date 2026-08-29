@@ -35,9 +35,12 @@ export interface GifResult {
    * fixed-height tiles crops every one of them, and a grid that waits for the
    * image to size itself reflows on every load.
    *
-   * Optional because it is a rendering hint and nothing depends on it:
-   * `toMediaRef` drops it with `id` and `keywords`, and a source that reports
-   * no dimensions still renders, at the fallback height.
+   * `toMediaRef` carries it into `MediaRef` — the vote card is drawn at the
+   * image's own ratio now, so this stopped being only a picker hint. `id` and
+   * `keywords` are still dropped there; they are the picker's alone.
+   *
+   * Optional because plenty of sources report nothing, and one that does still
+   * renders — at the picker's fallback height, and at the card's square.
    */
   width?: number
   height?: number
@@ -59,5 +62,5 @@ export interface GifSearchResponse {
  * room has no use for the search terms that surfaced a GIF.
  */
 export function toMediaRef(gif: GifResult): MediaRef {
-  return { src: gif.src, alt: gif.alt }
+  return { src: gif.src, alt: gif.alt, width: gif.width, height: gif.height }
 }
