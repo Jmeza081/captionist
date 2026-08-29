@@ -577,7 +577,9 @@ Not aspirational — these are merged-or-not conditions.
   phone voter always has some card's foot row buried under it — and a buried
   row is not offered to anybody, it appears when you scroll. Two controls the
   viewer can *see*, one silently taking the other's tap, is the thing that
-  fails.
+  fails. What that costs — content under a sticky surface is out of scope now,
+  permanently — is
+  [ADR 0017](./adr/0017-a-buried-control-is-not-a-stolen-tap.md).
 
 Applied so far to the vote card's foot row (the reply key and the reaction CTA).
 Still below the floor and knowingly so: the composer's six one-tap keys and its

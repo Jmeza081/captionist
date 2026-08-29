@@ -2492,7 +2492,10 @@ offered to anybody: you scroll, and it appears. What the spec still catches is
 the thing it exists for — two controls the viewer can **see**, one silently
 taking the other's tap — because a control is dropped only when all five points
 are occluded, and the bug that motivated the file (the lock button's right end
-under the chat key) has an unoccluded centre.
+under the chat key) has an unoccluded centre. The decision, and the standing
+cost of it — content under a sticky surface is out of scope now, so a *second*
+sticky surface is the moment to re-read rather than assume — is
+[ADR 0017](./adr/0017-a-buried-control-is-not-a-stolen-tap.md).
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

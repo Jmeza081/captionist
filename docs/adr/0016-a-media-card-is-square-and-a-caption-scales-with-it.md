@@ -55,17 +55,12 @@ vote grid is roughly one card per screen instead of two. Voting is a
 scroll-and-rank task and the cards are now legible as memes, so this is a trade
 made knowingly rather than a side effect noticed later.
 
-**`e2e/targets.spec.ts` had to learn what an overlap is.** Square cards pushed
-the first vote card's foot row under the sticky lock dock, and the test failed.
-Looking rather than assuming showed the dock paints real ground — deliberately,
-per its own comment, so caption text is not legible through it — which means
-that row is *hidden*, not stolen, and that a sticky bar over a scrolling grid
-always buries some card's controls. The old layout only passed because short
-cards happened to clear the dock at scroll zero. The test now skips a control
-that is completely behind painted ground and still fails on the bug it was
-written for; reverting `.lockDock`'s `padding-right` reproduces
-`"Pick 3 more" over "Guest toolbox"`. That check is worth re-running by hand
-if the rule is ever loosened further.
+**A merged-or-not gate had to say what it meant.** Square cards pushed the
+first vote card's foot row under the vote screen's sticky lock dock, and
+`e2e/targets.spec.ts` failed — which turned out to be the test's proxy showing
+its seams rather than a defect in the layout. That is its own decision, with
+its own costs, and it is
+[ADR 0017](./0017-a-buried-control-is-not-a-stolen-tap.md).
 
 **`$media-height` and `$media-height-lg` are gone**, and a `MediaCard`
 `size="lg"` prop that briefly existed to reach the second one went with them: a
