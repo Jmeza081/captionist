@@ -209,7 +209,8 @@ consequence [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) had
 called a one-constant edit; the amendment records what it actually cost, in
 bytes that were measured. Nothing about the decision moved: the seed still
 travels and the art is still derived in each browser. `AvatarPicker` shows a
-window of ten, five and five, with its own `Shuffle faces` button — a real
+window of ten — one line inside a container that can hold it, five and five on
+a phone — with its own `Shuffle faces` button — a real
 `radiogroup` with arrow keys, faces named `Ember` and `Sunfish` rather than
 `Face 1` — and the opening window is `avatarPage(seed)`, a pure function, so the
 server and the browser draw the same ten and hydration has nothing to disagree
@@ -219,6 +220,18 @@ number of them ends in a short page. Widening the window from eight to ten grew
 the catalogue from sixty-four to seventy for that reason, by appending — a
 seed's index decides its page and its preview colour but never its face, so
 adding to the end orphans nobody's stored pick.
+
+**Ten of them fit on one line, and making that true fixed the front doors.**
+Both `/join` and `/host` split the page `40fr 60fr` from `xl`, which rendered
+the design's 600px card at 472px at 1280 and 484px at 1440 — a fraction
+squeezing the one width in that layout the design actually states, and the
+reason the picker had no room. The form column is sized to the card it carries
+(`$setup-column-width` plus the column's own padding) and the wall takes the
+rest, so the card is 600px at every width from `xl` up. `AvatarPicker` then
+asks a container query rather than a breakpoint, because its width comes from
+that card and not from the viewport: ten tiles at 46px with an 8px gap need
+532px against the card's 548px inner width, and a phone's 301px falls back to
+five and five.
 
 **The hero wall stopped leaving holes in itself.** Its grid sized tiles —
 `auto-fill` over a 300px minimum — which made the column count a function of the
@@ -1750,9 +1763,9 @@ once and the two screens cannot drift. The catalogue lives there rather than in
 on room authority.
 
 **A catalogue made it the one molecule that owns a control.** It draws a
-window of ten — a fixed five-column grid, because ten needs 550px to hold one
-line and the card is 484px — with a `Shuffle faces` ghost `Button` in its own
-header, which
+window of ten — a grid behind a **container query**, because whether ten fit on
+one line is a question about the column it was dropped into rather than about
+the window — with a `Shuffle faces` ghost `Button` in its own header, which
 is why `Controls → Entry` is a new edge above; the same button used to sit in
 `HostSetupScreen`'s nickname `trailing` slot, shuffling a picker it was not part
 of, and `hostSetupCopy().shuffle` went with it. It is a real `role="radiogroup"`

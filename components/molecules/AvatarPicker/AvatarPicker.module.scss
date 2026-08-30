@@ -6,23 +6,46 @@
 }
 
 /**
- * Ten faces, five and five.
+ * The picker measures *itself*, not the window.
  *
- * A fixed five-column grid rather than a wrapping row, because at ten the wrap
- * is where the window stops reading as a set: 46px tiles and a 10px gap need
- * 550px to hold one line, and neither the phone's 301px nor the card's 484px
- * has it — a flex wrap gave a phone five-and-five and a desktop a ragged
- * eight-and-two. Five columns is the same block at both, and the tile keeps
- * the design's size against the 44px touch floor either way.
+ * Whether ten faces fit on one line is a question about the column this is
+ * dropped into, and the two screens that use it put it in a 600px card whose
+ * width does not track the viewport — so a `md` breakpoint would answer for a
+ * page rather than for the row. `container-type: inline-size` makes the query
+ * below ask the only thing that decides it.
+ */
+.picker {
+  container-type: inline-size;
+}
+
+/**
+ * Ten faces: one line where the container can hold them, five and five where
+ * it cannot.
+ *
+ * A grid rather than a wrapping row, because a wrap is ragged by definition —
+ * it gave a phone five-and-five and a desktop eight-and-two. Ten tiles at the
+ * design's 46px with an 8px gap need 532px; the card's inner width is 548px,
+ * so it is one line on both front doors at every width they are drawn at, and
+ * a phone's 301px falls to the five-and-five below.
  *
  * `justify-content: start` rather than stretched columns: a tile is 46px
- * because the art is, and a fifth of the container is not.
+ * because the art is, and a tenth of the container is not.
  */
 .row {
   display: grid;
   grid-template-columns: repeat(5, auto);
   justify-content: start;
   gap: t.$space-10;
+}
+
+// The 8px gap buys the last tile its place — at 10px the row needs 550px and
+// the card has 548, which is the whole of the difference between one line and
+// two.
+@container (min-width: 540px) {
+  .row {
+    grid-template-columns: repeat(10, auto);
+    gap: t.$space-8;
+  }
 }
 
 .face {

@@ -128,9 +128,19 @@ stored pick, while reordering or renaming one would quietly change the face
 somebody chose. The original seven still hold indices 0–6, which is still what
 keeps every pre-catalogue `localStorage` value on page 0.
 
-**One layout consequence.** Ten tiles at the design's 46px with a 10px gap need
-550px to hold one line, and neither the phone's 301px nor the card's 484px has
-it — so the design's single row is gone at every width. `AvatarPicker` draws a
-fixed five-column grid instead of a wrapping row, because the wrap gave a phone
-five-and-five and a desktop a ragged eight-and-two. `docs/design-system.md` §3
-carries that as a stated departure, the way ADR 0016 requires.
+**One layout consequence, and it was a layout bug wearing a picker's clothes.**
+Ten tiles at the design's 46px with a 10px gap need 550px to hold one line, and
+the card measured 484px at 1440 and 420px at 1280 — so the first answer here
+was a fixed five-column grid at every width. That was treating the symptom. The
+card is 600px by design and its inner width is 548px; it was only ever narrower
+because both front doors split the page `40fr 60fr` at `xl`, and 40% of 1280 is
+512px. A fraction squeezes the one width in that layout the design actually
+states.
+
+So the form column is sized to the card it carries and the wall takes what is
+left, and `AvatarPicker` asks a **container query** rather than a breakpoint —
+whether ten faces fit is a question about the column it was dropped into, not
+about the window. Ten on one line at every width either front door is drawn at,
+five-and-five on a phone, and the gap goes 10px → 8px because at 10px the row
+needs 550 and the card has 548, which is the whole of the difference. The tile
+keeps the design's 46px and the 44px touch floor is untouched.

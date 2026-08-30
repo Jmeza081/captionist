@@ -92,7 +92,7 @@ export function AvatarPicker({ value, onChange, label, seeds = AVATAR_SEEDS }: A
   }
 
   return (
-    <Stack gap={12}>
+    <Stack gap={12} className={styles.picker}>
       <Inline gap={10} justify="between" align="center">
         <span id={labelId} className={styles.label}>
           {label}

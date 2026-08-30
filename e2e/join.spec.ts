@@ -177,6 +177,37 @@ test.describe('joining', () => {
     }
   })
 
+  test('holds the ten faces on one line wherever the card can', async ({ page }) => {
+    await page.goto('/join')
+
+    const faces = page.getByRole('radiogroup', { name: 'Pick your face' })
+    await expect(faces.getByRole('radio')).toHaveCount(10)
+
+    // The picker asks its own container, not the viewport — so this is really
+    // a question about the card, and the card is 600px at every width the
+    // design draws it at.
+    const rows = await faces.evaluate(
+      (el) =>
+        new Set(Array.from(el.children).map((k) => Math.round(k.getBoundingClientRect().top)))
+          .size,
+    )
+    expect(rows).toBe(page.viewportSize()!.width >= 768 ? 1 : 2)
+  })
+
+  test('gives the card the width the design draws it at', async ({ page }) => {
+    test.skip(page.viewportSize()!.width < 1280, 'the split only exists from `xl`')
+    await page.goto('/join')
+
+    // The form column used to be `40fr`, so at 1280 the 600px card rendered at
+    // 472 — which is what left the avatar picker without room for one line of
+    // ten. The column is sized to the card now and the wall takes the rest.
+    const card = await page.getByRole('textbox', { name: 'Nickname' }).evaluate((el) => {
+      const box = el.closest('[class*="card"]') as HTMLElement
+      return Math.round(box.getBoundingClientRect().width)
+    })
+    expect(card).toBe(600)
+  })
+
   test('keeps the seven code slots on one line at every width', async ({ page }) => {
     await page.goto('/join')
 

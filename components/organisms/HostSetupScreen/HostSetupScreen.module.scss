@@ -17,7 +17,13 @@
 
   @include t.mq('xl') {
     display: grid;
-    grid-template-columns: 40fr 60fr;
+    // The form column is sized to the card it carries — the design's 600px
+    // sheet plus the column's own padding — and the wall takes whatever is
+    // left. It was `40fr 60fr`, which is where the two rows of faces came
+    // from: 40% of 1280 is 512px, so the 600px card rendered at 472 and the
+    // avatar picker inside it never had room for one line of ten. A fraction
+    // squeezes the one width in this layout that the design actually states.
+    grid-template-columns: calc(#{t.$setup-column-width} + #{t.$space-20} * 2) 1fr;
     // The page itself stops scrolling here and the form column takes over.
     // The wall is the fixed half of the pair — it is the thing you look at
     // while reading the form, so it must not slide away as you fill it in.
