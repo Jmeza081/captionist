@@ -528,6 +528,7 @@ the next person reads this rather than "fixing" them back.
 
 | What the design says | What we ship | Why |
 | --- | --- | --- |
+| Compose: submitting leaves you on the composer, *"You can swap it until the clock runs out."* | Submitting hands you the waiting face, and there is no swap. The copy says *"You get one shot"* on the way in | A product call, not a layout one: a caption you can keep rewriting until the clock dies is a different game from one where the joke you commit to is the joke you are judged on — losing a round to a line you sent too fast is the fun. It also fixed a real read: the old screen answered a submit with a snackbar and an open field, which looks like nothing happened. The phase is still room-wide; `submitted` is its per-viewer face, exactly as `pickwait` is `brief`'s, and the reducer still upserts on author so a resent message cannot give one player two entries. |
 | Waiting: *"You can still edit until the clock hits zero…"*, with an "Edit my caption" / "Swap my GIF" button | *"It goes up anonymously when the clock hits zero, and the roasting begins."*, with no edit | Phase is room-wide and authoritative, so a guest cannot rewind the room to `compose`. An inline editor here would be a second composer to hold in step with the real one. The copy had to stop promising the button. |
 | Submission tracker: `submitted` / `typing…` / `still thinking` | `submitted` / `still thinking` | `typing…` needs live keystroke presence, which is the phase-6 event lane. Two honest states beat three with one of them guessed. |
 

@@ -12,6 +12,7 @@ import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { GifPanel } from '@/components/molecules/GifPanel'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
+import { WaitingScreen } from '@/components/organisms/WaitingScreen'
 import { CAPTION_MAX, SEARCH_SUGGESTIONS } from '@/lib/game/constants'
 import {
   captionFields,
@@ -22,6 +23,7 @@ import {
   submissionRows,
   submittedLine,
   toAvatarProps,
+  viewKey,
 } from '@/lib/game/selectors'
 import { toMediaRef, type GifResult } from '@/lib/gifs/types'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
@@ -32,9 +34,11 @@ import styles from './ComposeScreen.module.scss'
 /**
  * Answering the round — and, if you set it up, watching it happen.
  *
- * Three faces from `viewKey`. Submitting again replaces your entry rather than
- * adding one (the reducer upserts on author), which is what makes "you can
- * swap it until the clock runs out" true without a second action.
+ * Four faces from `viewKey`, and the fourth is `WaitingScreen`: submitting ends
+ * your round, so the composer hands over rather than sitting there with a
+ * snackbar and an open field. The reducer still upserts on author — a second
+ * entry from the same player replaces the first — but nothing in the UI offers
+ * a second one any more. Committing to the joke is the game.
  */
 
 export function ComposeScreen() {
@@ -61,6 +65,23 @@ export function ComposeScreen() {
     })
 
   if (!state) return null
+
+  /**
+   * Your entry is in, so your round is over — hand the screen to the one that
+   * says so.
+   *
+   * Read before the copy, because `composeCopy` has no face for this: there is
+   * nothing to describe that `WaitingScreen` does not already draw, and a
+   * second set of strings for "we are waiting" is two that drift. The phase is
+   * still `compose` and still room-wide; this is its per-viewer face, exactly
+   * as `pickwait` is `brief`'s.
+   *
+   * It also ends editing, which is the point. Submitting used to leave you on
+   * the composer with a snackbar — nothing visibly happened, and the caption
+   * stayed open to a rewrite until the clock died. Committing to the joke is
+   * the game.
+   */
+  if (viewKey(state, selfId) === 'submitted') return <WaitingScreen />
 
   const copy = composeCopy(state, selfId)
   const subject = requireSubject(state)

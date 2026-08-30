@@ -308,6 +308,31 @@ describe('scoring', () => {
   })
 })
 
+describe('an entry', () => {
+  it('replaces the author’s previous one rather than adding a second', () => {
+    let state = apply(room(4), 'p0', { type: 'game/started' })
+    state = expire(state) // opener -> brief
+    state = expire(state) // brief -> compose
+
+    state = apply(state, 'p1', {
+      type: 'round/entrySubmitted',
+      answer: { kind: 'caption', lines: ['First thought'] },
+    })
+    state = apply(state, 'p1', {
+      type: 'round/entrySubmitted',
+      answer: { kind: 'caption', lines: ['Better thought'] },
+    })
+
+    // The upsert is unreachable from the UI now — the composer hands over to
+    // the waiting face the moment you submit — so this is the only thing left
+    // holding it, and it still matters: a bot or a resent message must not
+    // give one player two entries in the grid.
+    const mine = state.round?.entries.filter((e) => e.authorId === 'p1') ?? []
+    expect(mine).toHaveLength(1)
+    expect(mine[0]?.answer).toEqual({ kind: 'caption', lines: ['Better thought'] })
+  })
+})
+
 describe('a brief nobody answered', () => {
   it('still hands the room an image to caption', () => {
     let state = apply(room(4), 'p0', { type: 'game/started' })

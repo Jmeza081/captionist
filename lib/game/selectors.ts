@@ -97,6 +97,8 @@ export type ViewKey =
   | 'promptwait'
   | 'caption'
   | 'submit'
+  /** Your entry is in and the room's clock is still running. */
+  | 'submitted'
   | 'watch'
 
 /**
@@ -116,6 +118,13 @@ export function viewKey(state: GameState, viewerId: PlayerId): ViewKey {
   if (state.phase === 'compose') {
     // The role holder sets the round up and sits it out — they watch.
     if (mine) return 'watch'
+    // **Submitting ends your round, not the room's.** The composer used to
+    // stay put with a snackbar, which read as nothing having happened and
+    // quietly offered a rewrite — and a caption you can keep editing until the
+    // clock dies is a different game from one where the joke you commit to is
+    // the joke you are judged on. The phase is still room-wide; this is the
+    // per-viewer face of it, the same split `pick`/`pickwait` is.
+    if (hasSubmitted(state, viewerId)) return 'submitted'
     return caption ? 'caption' : 'submit'
   }
   return 'watch'
@@ -150,6 +159,8 @@ const VIEW_STEPS: Partial<Record<ViewKey, string>> = {
   prompt: 'Write the prompt',
   caption: 'Caption this',
   submit: 'Answer the prompt',
+  // The room is still composing; you are not.
+  submitted: 'Waiting',
 }
 
 /**
@@ -296,7 +307,7 @@ export function composeCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       view,
       eyebrow: `${name} picked this`,
       headline: 'Make it hurt. Make it funny.',
-      body: 'Your colleagues will rank the top three captions. Yours is anonymous until the reveal, so go ahead and roast the deploy process.',
+      body: 'Your colleagues will rank the top three captions. Yours is anonymous until the reveal, so go ahead and roast the deploy process. You get one shot — submitting is final.',
       action: 'Submit caption',
       secondary: 'Skip this round',
     }
@@ -307,7 +318,7 @@ export function composeCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       view,
       eyebrow: `${name}’s prompt`,
       headline: 'Answer it with a GIF.',
-      body: 'Anonymous until the reveal. You can swap it until the clock runs out.',
+      body: 'Anonymous until the reveal. You get one shot — locking it in is final.',
       action: 'Lock in my answer',
     }
   }

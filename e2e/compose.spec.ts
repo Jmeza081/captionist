@@ -72,19 +72,31 @@ test.describe('composing', () => {
     expect(overflowed).toBe(false)
   })
 
-  test('replaces an entry rather than adding a second one', async ({ page }) => {
+  test('hands over to the wait once your entry is in, with no second bite', async ({
+    page,
+  }) => {
     await page.goto('/room/DEV?seed=42&phase=compose&as=p2&gifs=stub')
 
     await page.getByRole('textbox', { name: 'Top text' }).fill('First thought')
     await page.getByRole('button', { name: 'Submit caption' }).click()
-    await expect(page.getByText('1 of 4 have submitted')).toBeVisible()
 
-    // "You can swap it until the clock runs out" needs no second action: the
-    // reducer upserts on author.
-    await page.getByRole('textbox', { name: 'Top text' }).fill('Better thought')
-    await page.getByRole('button', { name: 'Submit caption' }).click()
-    await expect(page.getByRole('status')).toHaveText('Caption updated')
+    // Your round is over. The room's is not.
+    await expect(page.getByText('Nice one. Now we wait.')).toBeVisible()
     await expect(page.getByText('1 of 4 have submitted')).toBeVisible()
+    await expect(page.getByText('Locked in')).toBeVisible()
+
+    // The composer is gone, and the rewrite it used to offer with it — a
+    // caption you can keep editing until the clock dies is a different game.
+    await expect(page.getByRole('textbox', { name: 'Top text' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Submit caption' })).toHaveCount(0)
+
+    // Still `compose`: this is a per-viewer face, not the room moving on. The
+    // host's early exit belongs to the real waiting phase and is not offered
+    // here, where "everyone's in" is not yet true.
+    await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'compose')
+    await expect(
+      page.getByRole('button', { name: 'Everyone’s in — start voting' }),
+    ).toHaveCount(0)
   })
 
   test('lets a blank player skip without holding up the room', async ({ page }) => {

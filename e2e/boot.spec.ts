@@ -84,28 +84,23 @@ test.describe('opening a room', () => {
     await page.getByRole('textbox', { name: 'Nickname' }).fill('Roberto')
     await page.getByRole('button', { name: 'Join the room' }).click()
 
-    // The states are announced in words as well as drawn, so a screen reader
-    // hears the same progress the rail shows.
+    // **Nothing about the boot screen is asserted here, and that is the fix.**
+    // Every mid-boot row is a transient with no event to synchronise on: the
+    // floors in `bootTimeline.ts` make the sequence readable, not observable
+    // on demand, and a loaded machine can deschedule the runner past the whole
+    // ~900ms boot between the click and the first poll — at which point the
+    // screen has unmounted and an assertion about its rows fails on an element
+    // that is correctly gone. This test asserted the words and flaked on
+    // roughly half of full-suite runs; the previous attempt loosened them to
+    // `/Not started|In progress|Done/` and still raced, because the problem was
+    // never which word.
     //
-    // Which word, deliberately not: every mid-boot state is a transient this
-    // test has no way to synchronise on. The floors in `bootTimeline.ts` make
-    // the sequence *readable*, not observable on demand — a busy machine can
-    // deschedule the runner past the whole 900ms boot between the click and
-    // the first poll, and then "In progress" has already become "Done" and the
-    // assertion fails on nothing. It asserted the first row for exactly that
-    // reason and still raced. The four states are asserted exhaustively in the
-    // gallery, where they are props rather than a moment.
-    //
-    // What is worth asserting here is what only a real boot can show: that all
-    // three rows are announced, and that the last word any of them reaches is
-    // the one that hands the room over.
-    for (const label of ['Finding the room', 'Waiting for the host', 'Seating you in the lobby']) {
-      await expect(step(page, label)).toContainText(/Not started|In progress|Done/)
-    }
-
-    // And the sequence really does end in the room.
-    await expect(step(page, 'Finding the room')).toContainText('Done')
+    // The rows and all four of their states are asserted where they are props
+    // rather than a moment — see the gallery test at the bottom of this file.
+    // What only a real boot can show is that the sequence *ends in the room*,
+    // so that is the whole of what is checked here.
     await expect(room(page)).toBeVisible()
+    await expect(page.getByRole('listitem').filter({ hasText: 'Roberto' })).toBeVisible()
   })
 
   test('offers a way back out of a boot, per role', async ({ page, context }) => {
@@ -147,11 +142,13 @@ test.describe('opening a room', () => {
   test('draws every step state, and names it in words', async ({ page }) => {
     await page.goto('/components#boot')
 
-    const guest = page
-      .getByRole('listitem')
-      .filter({ hasText: 'Seating you in the lobby' })
-      .first()
-    await expect(guest).toContainText('In progress')
+    // The guest's three rows, in the three states the fixture pins them to.
+    // This is the home of that claim: a live boot cannot hold still for it.
+    const guest = (label: string) =>
+      page.getByRole('listitem').filter({ hasText: label }).first()
+    await expect(guest('Finding the room')).toContainText('Done')
+    await expect(guest('Waiting for the host')).toContainText('Done')
+    await expect(guest('Seating you in the lobby')).toContainText('In progress')
 
     const host = page.getByRole('listitem').filter({ hasText: 'Setting your rules' })
     await expect(host).toContainText('In progress')

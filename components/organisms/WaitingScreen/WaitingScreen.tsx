@@ -94,8 +94,11 @@ export function WaitingScreen() {
 
         {/* Ending the wait early is `host/skippedPhase` — the same code path
             the 12s clock takes, so the button and the timeout cannot diverge.
-            Host-only, because the action is. */}
-        {isHost && (
+            Host-only, because the action is — and waiting-phase only, because
+            this screen now also draws the `submitted` face of *compose*, where
+            "everyone's in" is not yet true and the same button would cut off
+            whoever is still typing. */}
+        {isHost && state.phase === 'waiting' && (
           <Button size="form" onClick={() => send({ type: 'host/skippedPhase' })}>
             {copy.action}
           </Button>
