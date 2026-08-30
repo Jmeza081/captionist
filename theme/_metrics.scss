@@ -116,6 +116,19 @@ $avatar-56: 56px;
 $avatar-88: 88px;
 $avatar-108: 108px;
 $avatar-art-ratio: 0.78;
+// A hat, as a fraction of the circle it sits on. One number covers all eight
+// sizes: the art is `viewBox="0 0 44 31"` on every hat, so the height follows.
+// 62% is a hat that fits a head rather than a hat the size of a person.
+$avatar-hat-ratio: 62%;
+// How far of itself the hat lifts above the rim. Perched rather than contained
+// — a hat sits *on* a head — and the one number that reverses that decision.
+$avatar-hat-rise: -52%;
+$avatar-hat-tilt: 14deg;
+// The picker's plates. Taller than the 44px touch floor because the plate is
+// what is being compared, and the hat needs room around it to read as an
+// object rather than a sticker on a button.
+$hat-tile-height: 62px;
+$hat-tile-art: 38px;
 
 $player-row-pad-y: 12px;
 $player-row-pad-x: 14px;

@@ -1,3 +1,4 @@
+import { CROWN } from '@/lib/hats'
 import {
   CAPTION_MAX,
   HOST_FALLBACK_NAME,
@@ -53,19 +54,61 @@ export function playerById(state: GameState, id: PlayerId | undefined): Player |
 }
 
 /**
+ * Who is leading, for the crown.
+ *
+ * **Nobody, until somebody has scored.** `standings()` sorts by score and then
+ * by name, so its first row at 0–0 is whoever is alphabetically first —
+ * crowning them would be the scoreboard's tiebreak leaking out as a claim
+ * about the game. A crown is earned: no history, no crown; no positive score,
+ * no crown.
+ *
+ * **Everyone level at the top wears one.** A crown for the sole leader blinks
+ * out after any round that levels two players, which in a small room is most
+ * of them, and a crown that vanishes reads as a bug where two crowns read as a
+ * tie.
+ *
+ * Memoised on `state.history`, which is a stable reference between rounds:
+ * `standings()` calls `toAvatarProps` once per player, and without this a
+ * twenty-player scoreboard would fold the whole history twenty times per
+ * render. Same argument as the cache in `lib/avatar.ts`.
+ */
+const LEADERS = new WeakMap<readonly RoundResult[], ReadonlySet<PlayerId>>()
+
+export function leaderIds(state: GameState): ReadonlySet<PlayerId> {
+  const cached = LEADERS.get(state.history)
+  if (cached) return cached
+
+  const totals = scoresFrom(state.history)
+  const top = Math.max(0, ...Object.values(totals))
+  const leaders = new Set<PlayerId>(
+    top > 0 ? Object.keys(totals).filter((id) => totals[id] === top) : [],
+  )
+  LEADERS.set(state.history, leaders)
+  return leaders
+}
+
+/**
  * The shape every player-rendering molecule takes.
  *
  * `avatarSeed` rides along because the art is derived at the edge: the seed is
  * what `GameState` carries, and `Avatar` turns it into a face locally. Nothing
  * upstream ever holds the rendered SVG.
+ *
+ * **`state` is required, and that is the point.** The crown is where the room
+ * stands drawn on a face, so it has to be resolved somewhere that can see the
+ * room — and resolving it *here*, at the one place a `Player` becomes
+ * something drawable, means no screen has to know the rule and no state has to
+ * remember it. Making the parameter optional would have turned "did I remember
+ * to crown here?" into a question; required, it is a compile error.
  */
-export function toAvatarProps(
-  player: Player,
-): PlayerFace {
+export function toAvatarProps(state: GameState, player: Player): PlayerFace {
   return {
     name: player.name,
     color: player.color,
     src: player.src,
+    // Beats the hat you picked for exactly as long as you lead, and is not
+    // stored anywhere: lose the lead and your own hat is simply back.
+    hat: leaderIds(state).has(player.id) ? CROWN : player.hat,
     avatarSeed: player.avatarSeed,
   }
 }
@@ -487,7 +530,7 @@ export function submissionRows(state: GameState): readonly SubmissionRow[] {
   return competitors(state).map((player) => {
     const done = state.round?.entries.some((e) => e.authorId === player.id) ?? false
     return {
-      player: toAvatarProps(player),
+      player: toAvatarProps(state, player),
       status: done ? 'submitted' : 'still thinking',
       done,
     }
@@ -587,7 +630,7 @@ function revealEntry(state: GameState, id: EntryId, result: RoundResult): Reveal
   const shared = subject?.kind === 'media' ? subject.media : undefined
   return {
     entryId: id,
-    author: author ? toAvatarProps(author) : undefined,
+    author: author ? toAvatarProps(state, author) : undefined,
     points: author ? (result.points[author.id] ?? 0) : 0,
     media: entry.answer.kind === 'media' ? entry.answer.media : shared,
     lines: entry.answer.kind === 'caption' ? entry.answer.lines : undefined,
@@ -655,7 +698,7 @@ export function standings(state: GameState): readonly Standing[] {
 
   return state.players
     .map((player) => ({
-      player: toAvatarProps(player),
+      player: toAvatarProps(state, player),
       id: player.id,
       score: totals[player.id] ?? 0,
       share: leader > 0 ? (totals[player.id] ?? 0) / leader : 0,
@@ -922,7 +965,7 @@ export function tiebreakCards(state: GameState, viewerId: PlayerId): readonly Ti
     return [
       {
         entryId: id,
-        author: author ? toAvatarProps(author) : undefined,
+        author: author ? toAvatarProps(state, author) : undefined,
         media: entry.answer.kind === 'media' ? entry.answer.media : shared,
         lines: entry.answer.kind === 'caption' ? entry.answer.lines : undefined,
         own: authorId === viewerId,
@@ -1142,6 +1185,8 @@ export interface JoinCopy {
   heading: string
   body: string
   faceLabel: string
+  hatLabel: string
+  hatBody: string
   nicknameLabel: string
   nicknamePlaceholder: string
   action: string
@@ -1155,6 +1200,9 @@ export function joinCopy(): JoinCopy {
     heading: 'Got a room code?',
     body: 'Ask whoever is sharing their screen.',
     faceLabel: 'Pick your face',
+    hatLabel: 'Your hat',
+    hatBody:
+      'Sits on your avatar all game. The crown goes to whoever is winning; this one is just yours.',
     nicknameLabel: 'Nickname',
     nicknamePlaceholder: 'What should we call you?',
     action: 'Join the room',
@@ -1187,6 +1235,9 @@ export interface HostSetupCopy {
   /** One line under the heading, in the shape `JoinCopy` uses. */
   body: string
   hostSection: string
+  /** The hat picker's own heading and the line under it. */
+  hatLabel: string
+  hatBody: string
   modeSection: string
   modeBody: string
   modeHelp: string
@@ -1208,6 +1259,9 @@ export function hostSetupCopy(): HostSetupCopy {
     // working game.
     body: 'Pick your chaos. Or don’t, I’m not your boss.',
     hostSection: 'Host info',
+    hatLabel: 'Host hat',
+    hatBody:
+      'Sits on your avatar all game. The crown goes to whoever is winning; this one is just yours.',
     modeSection: 'Game mode',
     modeBody: 'Who supplies the image, and who supplies the words.',
     modeHelp: 'How this mode works',

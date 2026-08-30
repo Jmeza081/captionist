@@ -250,7 +250,7 @@ export function ChatPanel() {
           // A message from somebody who has since left keeps its text — the
           // room heard it — but has no face to draw with.
           const props = author
-            ? toAvatarProps(author)
+            ? toAvatarProps(state, author)
             : { name: 'Someone who left', color: '#303031', avatarSeed: entry.from }
           const own: readonly Tally[] = tallies[tallyKey('message', entry.id)] ?? []
 

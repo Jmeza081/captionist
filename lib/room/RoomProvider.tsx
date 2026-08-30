@@ -321,6 +321,7 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
                 id: activeId,
                 name: seat.identity.name || HOST_FALLBACK_NAME,
                 avatarSeed: seat.identity.avatarSeed,
+                hat: seat.identity.hat,
               },
               // Whatever `/host` just chose, if this tab came through it.
               // Cleared on use so a later room does not silently inherit them.
@@ -467,6 +468,7 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
               id: activeId,
               name: seat.identity.name || 'Guest',
               avatarSeed: seat.identity.avatarSeed,
+              hat: seat.identity.hat,
             },
           })
         }),

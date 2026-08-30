@@ -119,7 +119,7 @@ export function BriefScreen() {
         <Stack gap={20} align="center" className={styles.waiting}>
           {holder && (
             <div className={styles.halo}>
-              <Avatar {...toAvatarProps(holder)} size={88} />
+              <Avatar {...toAvatarProps(state, holder)} size={88} />
               <span className={styles.badge}>{copy.eyebrow}</span>
             </div>
           )}
@@ -156,7 +156,7 @@ export function BriefScreen() {
       <div className={styles.split}>
         <Stack gap={20} className={styles.column}>
           <Inline gap={10}>
-            {holder && <Avatar {...toAvatarProps(holder)} size={30} />}
+            {holder && <Avatar {...toAvatarProps(state, holder)} size={30} />}
             <Eyebrow>{copy.eyebrow}</Eyebrow>
           </Inline>
 
@@ -209,7 +209,7 @@ export function BriefScreen() {
           <Eyebrow tone="muted">What the room sees</Eyebrow>
           <PromptBanner
             prompt={text || 'Your prompt lands here.'}
-            author={holder ? toAvatarProps(holder) : undefined}
+            author={holder ? toAvatarProps(state, holder) : undefined}
             label="Your prompt"
             size="lg"
           />
@@ -228,7 +228,7 @@ export function BriefScreen() {
   return (
     <Stack gap={20}>
       <Inline gap={10}>
-        {holder && <Avatar {...toAvatarProps(holder)} size={30} />}
+        {holder && <Avatar {...toAvatarProps(state, holder)} size={30} />}
         <Eyebrow>{copy.eyebrow}</Eyebrow>
       </Inline>
 

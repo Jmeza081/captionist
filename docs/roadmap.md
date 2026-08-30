@@ -33,6 +33,7 @@ not.** So the state machine went first.
 | **5** | `AblyTransport`, `/api/ably/token`, presence, reconnect overlay. Plus the ADR and the client↔API-route↔Ably diagram. | Two devices on the same wifi. | ✅ built, gate unverified — see below |
 | **6** | Chat + live reaction tallies on the event lane. | `ChatRail` fills; vote-card tallies go live. | ✅ done |
 | **7** | The three phase-6 deferrals — GIF attachments in chat, the "replying to" quote block, the Slackmoji tiles and pack tabs — plus the two host settings no screen read. | Screens `2b`, `2c` and `3k` are reachable; a single-vote room pays one point and a one-line room asks for one caption. | ✅ done |
+| **8** | Hats — a second cosmetic beside the face, on both entry screens, plus the crown the leader wears. | A hat picked at the door rides every avatar from 34px up; the room crowns whoever leads and takes it back when they are overtaken. | ✅ done |
 
 Nothing in phases 2–3 knows a transport exists beyond `useRoom()`, so **phase 5
 changes exactly one line**: which implementation `RoomProvider` constructs.

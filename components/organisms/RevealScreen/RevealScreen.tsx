@@ -95,7 +95,7 @@ export function RevealScreen() {
           {subject?.kind === 'prompt' && (
             <PromptBanner
               prompt={subject.text}
-              author={holder ? toAvatarProps(holder) : undefined}
+              author={holder ? toAvatarProps(state, holder) : undefined}
               size="sm"
             />
           )}

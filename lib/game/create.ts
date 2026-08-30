@@ -1,9 +1,10 @@
+import { asHatId } from '@/lib/hats'
 import { DEFAULT_SETTINGS, PLAYER_COLORS } from './constants'
-import type { GameState, Player, RoomCode, RoomSettings } from './types'
+import type { GameState, HatId, Player, RoomCode, RoomSettings } from './types'
 
 export interface CreateRoomInput {
   roomCode: RoomCode
-  host: { id: string; name: string; avatarSeed: string }
+  host: { id: string; name: string; avatarSeed: string; hat?: HatId }
   settings?: Partial<RoomSettings>
   seed: number
   at: number
@@ -20,6 +21,8 @@ export function createRoom(input: CreateRoomInput): GameState {
     id: input.host.id,
     name: input.host.name,
     color: PLAYER_COLORS[0] ?? '#FF787D',
+    // Narrowed like every other seat's — see `reducer.ts`.
+    hat: asHatId(input.host.hat),
     avatarSeed: input.host.avatarSeed,
     isHost: true,
     connection: 'online',

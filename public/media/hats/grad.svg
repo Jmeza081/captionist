@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 31" width="176" height="124" role="img" aria-label="Graduation cap">
+  <title>Graduation cap</title>
+  <path d="M13 17 H31 V24.4 C31 26.6 13 26.6 13 24.4 Z" fill="#39415A"></path>
+  <path d="M22 8 L40 14.6 L22 21.2 L4 14.6 Z" fill="#4B5573" stroke="rgba(255,255,255,.45)" stroke-width="1" stroke-linejoin="round"></path>
+  <path d="M39.4 15 V24.2" fill="none" stroke="#F6E338" stroke-width="1.6" stroke-linejoin="round"></path>
+  <path d="M39.4 25.8 a1.9 1.9 0 1 0 0.05 0 Z" fill="#F6E338"></path>
+</svg>

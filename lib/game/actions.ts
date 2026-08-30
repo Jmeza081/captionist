@@ -2,6 +2,7 @@ import type {
   Ballot,
   EntryAnswer,
   GameMode,
+  HatId,
   PlayerId,
   RoomCode,
   RoomPhase,
@@ -57,6 +58,8 @@ export interface NewPlayer {
   id: PlayerId
   name: string
   avatarSeed: string
+  /** Optional because bare-headed is the default. Narrowed by the reducer. */
+  hat?: HatId
 }
 
 export type ActionType = GameAction['type']

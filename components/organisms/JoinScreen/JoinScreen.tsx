@@ -8,9 +8,11 @@ import { Stack } from '@/components/atoms/Stack'
 import { TextField } from '@/components/atoms/TextField'
 import { AvatarPicker } from '@/components/molecules/AvatarPicker'
 import { CodeEntry } from '@/components/molecules/CodeEntry'
+import { HatPicker } from '@/components/molecules/HatPicker'
 import { HeroWall } from '@/components/molecules/HeroWall'
 import { normalizeCode } from '@/lib/game/codes'
 import { JOIN_ERRORS, joinCopy } from '@/lib/game/selectors'
+import type { HatId } from '@/lib/game/types'
 import type { WallTile } from '@/lib/gifs/wall'
 import { writeIdentity } from '@/lib/room/identity'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
@@ -67,6 +69,16 @@ export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
   const [pickedSeed, setPickedSeed] = useState<string | undefined>(undefined)
   const name = typedName ?? suggested
   const seed = pickedSeed ?? stored.avatarSeed
+  /**
+   * The hat, and a sentinel that is not `undefined`.
+   *
+   * `undefined` already means "bare-headed", so it cannot also mean "hasn't
+   * touched the picker" — `pickedHat ?? stored.hat` would make "No hat"
+   * unclickable, falling straight back to the stored one. The wrapper object
+   * is what tells the two apart.
+   */
+  const [pickedHat, setPickedHat] = useState<{ hat?: HatId } | undefined>(undefined)
+  const hat = pickedHat ? pickedHat.hat : stored.hat
 
   const ready = code.length >= LENGTH && name.trim().length > 0
 
@@ -78,7 +90,7 @@ export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
     }
     if (name.trim().length === 0) return
     // The room reads these back out of storage when it asks for a seat.
-    writeIdentity({ name: name.trim(), avatarSeed: seed })
+    writeIdentity({ name: name.trim(), avatarSeed: seed, hat })
     router.push(`/room/${normalized}`)
   }
 
@@ -106,7 +118,19 @@ export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
               {/* One group, because it is one question: who is asking for the
                   seat. The code above it is the other. */}
               <Stack gap={14}>
-                <AvatarPicker label={copy.faceLabel} value={seed} onChange={setPickedSeed} />
+                <AvatarPicker
+                  label={copy.faceLabel}
+                  value={seed}
+                  onChange={setPickedSeed}
+                  hat={hat}
+                />
+
+                <HatPicker
+                  label={copy.hatLabel}
+                  body={copy.hatBody}
+                  value={hat}
+                  onChange={(next) => setPickedHat({ hat: next })}
+                />
 
                 <TextField
                   label={copy.nicknameLabel}

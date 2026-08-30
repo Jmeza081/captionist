@@ -1,12 +1,53 @@
 @use 'theme' as t;
 
+/**
+ * The box, and the containing block for a hat.
+ *
+ * `overflow: hidden` moved inward to `.clip` rather than away: the circle
+ * still clips its own art, but it is no longer the thing that decides whether
+ * a hat may sit above the rim. Everything that measures a face — the 44px
+ * floor in `AvatarPicker`, the boundingBox assertions in `host.spec.ts` — sees
+ * the same box it always did.
+ */
 .avatar {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: t.$radius-avatar;
   flex: none;
+}
+
+// What the circle actually is: same centring, same clip, one level down.
+.clip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   overflow: hidden;
+}
+
+/**
+ * The hat, perched.
+ *
+ * Both percentages are of the hat's *own* box, which is what makes the perch a
+ * single number: `$avatar-hat-rise` is how much of itself sits above the rim,
+ * and `0%` would contain it entirely. `aspect-ratio` is declared rather than
+ * inherited from the file so the shape is right before the SVG has loaded and
+ * nothing jumps.
+ */
+.hat {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: t.$avatar-hat-ratio;
+  height: auto;
+  aspect-ratio: 44 / 31;
+  transform: translate(-50%, t.$avatar-hat-rise) rotate(t.$avatar-hat-tilt);
+  transform-origin: 50% 100%;
+  pointer-events: none;
 }
 
 .art {

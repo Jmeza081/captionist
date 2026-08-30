@@ -1,0 +1,106 @@
+@use 'theme' as t;
+
+/**
+ * Measures itself, not the window — the same reason `AvatarPicker` does. Both
+ * sit in a 600px card whose width does not track the viewport, so a `md`
+ * breakpoint would answer for a page rather than for this grid.
+ */
+.picker {
+  container-type: inline-size;
+}
+
+.label {
+  @include t.eyebrowText;
+  color: t.$text-caption;
+}
+
+// `/host` only: the same weight as "Host info" and "Game mode" beside it.
+.heading {
+  margin: 0;
+  @include t.sectionHeadingText;
+}
+
+// What you are wearing, in the row's right-hand slot. Accent, because it is
+// the one thing on the row that changes as you choose.
+.worn {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 700;
+  color: t.$accent;
+}
+
+.body {
+  margin: 0;
+  max-width: 52ch;
+  @include t.bodyText;
+  color: t.$text-body;
+}
+
+// Three across on a phone, six where the card can hold them — the mockup's
+// grid. `1fr` rather than `auto` because a tile is a surface, not a glyph: the
+// hats are different widths and a ragged row of plates reads as a mistake.
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: t.$space-8;
+}
+
+@container (min-width: 460px) {
+  .grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.tile {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // Taller than the 44px floor, because the plate is what is being compared
+  // and a hat needs room around it to read as an object rather than a sticker.
+  min-height: t.$hat-tile-height;
+  padding: t.$space-8;
+  border: 1px solid transparent;
+  border-radius: t.$radius-field;
+  background-color: t.$fill-subtle;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: t.$fill-secondary-hover;
+  }
+}
+
+.chosen {
+  border-color: t.$accent;
+  background-color: t.$accent-fill-weak;
+}
+
+.art {
+  display: block;
+  width: t.$hat-tile-art;
+  height: auto;
+  aspect-ratio: 44 / 31;
+}
+
+// The "No hat" tile. A dashed ring the size of the art it stands in for, so
+// the row keeps its rhythm and the empty option reads as a choice.
+.bare {
+  display: block;
+  width: t.$hat-tile-art * 0.6;
+  height: t.$hat-tile-art * 0.6;
+  border: 1px dashed t.$line-dashed;
+  border-radius: t.$radius-avatar;
+}
+
+// There is no `chevronDown` glyph — `ChatRail` turns this same one.
+.chevron {
+  display: flex;
+  transform: rotate(90deg);
+  transition: transform 140ms ease;
+}
+
+.up {
+  transform: rotate(-90deg);
+}

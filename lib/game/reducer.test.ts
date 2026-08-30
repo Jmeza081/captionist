@@ -5,6 +5,7 @@ import { MIN_PLAYERS, PLAYER_COLORS, colorFor } from './constants'
 import { createRoom } from './create'
 import { project } from './project'
 import { fixtureFor } from './fixtures'
+import { HAT_IDS } from '@/lib/hats'
 import { reduce } from './reducer'
 import { competitors, scoresFrom, standings, submittedCount, viewKey } from './selectors'
 import type { EntryAnswer, GameState, PlayerId } from './types'
@@ -305,6 +306,58 @@ describe('scoring', () => {
     expect(result?.winnerEntryId).toBe('r1-e1')
     // 3 ranking points plus the sudden-death bonus.
     expect(result?.points.p1).toBe(3 + 1)
+  })
+})
+
+describe('a hat on the wire', () => {
+  it('carries what a player picked', () => {
+    const state = apply(room(2), 'p1', {
+      type: 'player/joined',
+      player: { id: 'p9', name: 'Vic', avatarSeed: 'fern', hat: 'wizard' },
+    })
+    expect(state.players.at(-1)?.hat).toBe('wizard')
+  })
+
+  /**
+   * The one that matters. A hat id arrives from another player's browser and
+   * becomes a URL, so it is narrowed at the door — and the crown is outside
+   * the sixteen precisely so this cannot succeed. Nobody crowns themselves.
+   */
+  it('refuses a crown claimed rather than earned', () => {
+    const state = apply(room(2), 'p1', {
+      type: 'player/joined',
+      player: { id: 'p9', name: 'Vic', avatarSeed: 'fern', hat: 'crown' as never },
+    })
+    expect(state.players.at(-1)?.hat).toBeUndefined()
+  })
+
+  it('refuses anything that is not one of the sixteen', () => {
+    for (const hat of ['../../etc/passwd', '__proto__', '', 7 as never]) {
+      const state = apply(room(2), 'p1', {
+        type: 'player/joined',
+        player: { id: 'p9', name: 'Vic', avatarSeed: 'fern', hat: hat as never },
+      })
+      expect(state.players.at(-1)?.hat, String(hat)).toBeUndefined()
+    }
+  })
+
+  it('leaves a full room’s broadcast inside Ably’s cap', () => {
+    // Invariant 1 in `types.ts`, measured rather than asserted. Twenty seats,
+    // every one of them wearing something.
+    let state = room(2)
+    for (let i = 0; i < 18; i++) {
+      state = apply(state, 'p1', {
+        type: 'player/joined',
+        player: {
+          id: `x${i}`,
+          name: `Extra ${i}`,
+          avatarSeed: `seed-${i}`,
+          hat: HAT_IDS[i % HAT_IDS.length],
+        },
+      })
+    }
+    expect(state.players).toHaveLength(20)
+    expect(JSON.stringify(project(state, 'p0')).length).toBeLessThan(64_000)
   })
 })
 

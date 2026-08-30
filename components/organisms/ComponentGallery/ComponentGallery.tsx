@@ -357,6 +357,19 @@ export function ComponentGallery() {
             <AvatarOverflow count={4} size={56} />
           </Inline>
         </Case>
+        <Case label="Hats — worn from 34px up, and the crown nobody picks">
+          {/* The floor, shown rather than described: the first two go bare. */}
+          <Inline gap={10} data-testid="avatar-sizes">
+            {AVATAR_SIZES.map((size) => (
+              <Avatar key={size} {...PLAYERS.jesse} hat="party" size={size} />
+            ))}
+          </Inline>
+          <Inline gap={10}>
+            <Avatar {...PLAYERS.vic} hat="viking" size={56} />
+            <Avatar {...PLAYERS.jack} hat="sombrero" size={56} />
+            <Avatar {...PLAYERS.jesse} hat="crown" size={56} selected />
+          </Inline>
+        </Case>
         <Case label="Player rows — roster, tracker, standings">
           <Stack gap={8}>
             <PlayerRow player={PLAYERS.jesse} host />

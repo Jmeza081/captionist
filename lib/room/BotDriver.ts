@@ -4,6 +4,7 @@ import { hasSubmitted, hasVoted, isRoleHolder, voteCards } from '@/lib/game/sele
 import type { EntryAnswer, PlayerId, PublicState, RoundSubject } from '@/lib/game/types'
 import { sampleAt } from '@/lib/gifs/samples'
 import { toMediaRef } from '@/lib/gifs/types'
+import { HAT_IDS } from '@/lib/hats'
 
 /**
  * A scripted guest, so one page can play a full room.
@@ -56,7 +57,15 @@ export class BotDriver {
       this.joined = true
       this.options.send({
         type: 'player/joined',
-        player: { id, name: this.options.name, avatarSeed: id },
+        // Deterministic from the seat index, so a `?bots=` run renders the hat
+        // path — most of the room suite — without any test having to dress
+        // anybody. `HAT_IDS` is never empty; the fallback is for `strict`.
+        player: {
+          id,
+          name: this.options.name,
+          avatarSeed: id,
+          hat: HAT_IDS[this.options.index % HAT_IDS.length] ?? 'party',
+        },
       })
       return
     }

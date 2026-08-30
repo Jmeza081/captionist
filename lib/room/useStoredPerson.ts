@@ -19,7 +19,7 @@ import { readIdentity, type Identity } from './identity'
  * a field somebody is already using.
  */
 
-export type StoredPerson = Pick<Identity, 'name' | 'avatarSeed'>
+export type StoredPerson = Pick<Identity, 'name' | 'avatarSeed' | 'hat'>
 
 const SERVER: StoredPerson = { name: '', avatarSeed: AVATAR_SEEDS[0] ?? 'ember' }
 
@@ -31,7 +31,14 @@ let cached: StoredPerson = SERVER
 
 function getSnapshot(): StoredPerson {
   const stored = readIdentity() ?? SERVER
-  if (stored.name !== cached.name || stored.avatarSeed !== cached.avatarSeed) {
+  // Every field, or the snapshot silently goes stale: a hat would be written,
+  // stored and read back correctly while the prefill stayed one behind, with
+  // nothing type-checking it and nothing failing loudly.
+  if (
+    stored.name !== cached.name ||
+    stored.avatarSeed !== cached.avatarSeed ||
+    stored.hat !== cached.hat
+  ) {
     cached = stored
   }
   return cached

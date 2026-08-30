@@ -1,5 +1,6 @@
 import { AVATAR_SEEDS } from '@/lib/avatar'
-import type { PlayerId } from '@/lib/game/types'
+import type { HatId, PlayerId } from '@/lib/game/types'
+import { asHatId } from '@/lib/hats'
 
 /**
  * Who this tab is playing as.
@@ -35,6 +36,15 @@ export interface Identity {
    * does — see the no-data-URI invariant in `lib/game/types.ts`.
    */
   avatarSeed: string
+  /**
+   * The hat, if they picked one.
+   *
+   * Remembered with the face rather than suggested with the name: a hat is a
+   * thing you chose, and the reason a nickname is drawn fresh per tab does not
+   * apply — two tabs wearing the same hat are still told apart by their faces.
+   * Absent *is* the default, which is why this needs no fallback literal.
+   */
+  hat?: HatId
 }
 
 /**
@@ -52,8 +62,8 @@ function freshId(): PlayerId {
   return `u-${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
 }
 
-/** The person: nickname and face, shared by every tab in this browser. */
-export function readIdentity(): Pick<Identity, 'name' | 'avatarSeed'> | undefined {
+/** The person: nickname, face and hat, shared by every tab in this browser. */
+export function readIdentity(): Pick<Identity, 'name' | 'avatarSeed' | 'hat'> | undefined {
   if (typeof window === 'undefined') return undefined
   try {
     const raw = window.localStorage.getItem(PERSON_KEY)
@@ -64,7 +74,14 @@ export function readIdentity(): Pick<Identity, 'name' | 'avatarSeed'> | undefine
     if (typeof candidate.name !== 'string' || typeof candidate.avatarSeed !== 'string') {
       return undefined
     }
-    return { name: candidate.name, avatarSeed: candidate.avatarSeed }
+    // Narrowed, not trusted — `localStorage` is editable, and a hat id becomes
+    // a URL. A bad hat costs the hat and never the face, so this drops the
+    // field rather than rejecting the whole person.
+    return {
+      name: candidate.name,
+      avatarSeed: candidate.avatarSeed,
+      hat: asHatId(candidate.hat),
+    }
   } catch {
     // Private mode, a quota wall, or something else's key under ours. A person
     // we cannot read is the same as one we never had.
@@ -72,7 +89,7 @@ export function readIdentity(): Pick<Identity, 'name' | 'avatarSeed'> | undefine
   }
 }
 
-export function writeIdentity(person: Pick<Identity, 'name' | 'avatarSeed'>): void {
+export function writeIdentity(person: Pick<Identity, 'name' | 'avatarSeed' | 'hat'>): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(PERSON_KEY, JSON.stringify(person))
@@ -131,5 +148,7 @@ export function ensureIdentity(): Identity {
     id: ensureSeatId(),
     name: person?.name ?? '',
     avatarSeed: person?.avatarSeed ?? AVATAR_SEEDS[0] ?? 'ember',
+    // No fallback: bare-headed is the default, so absent is already right.
+    hat: person?.hat,
   }
 }

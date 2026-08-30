@@ -349,7 +349,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
               onOpenChange={setChatOpened}
               present={presentCount(state)}
               unread={unread.count}
-              players={state.players.map(toAvatarProps)}
+              players={state.players.map((p) => toAvatarProps(state, p))}
               toasts={
                 pending.length > 0 ? (
                   <>
@@ -360,7 +360,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
                           key={entry.id}
                           author={
                             author
-                              ? toAvatarProps(author)
+                              ? toAvatarProps(state, author)
                               : {
                                   name: 'Someone who left',
                                   color: '#303031',
@@ -450,7 +450,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
             mode={state.settings.mode}
             headline={opener.headline}
             subline={opener.subline}
-            roleHolder={toAvatarProps(holder)}
+            roleHolder={toAvatarProps(state, holder)}
             // `host/skippedPhase` is host-only, so offering it to a guest would
             // produce a refusal snackbar rather than an action.
             onSkip={isHost ? () => send({ type: 'host/skippedPhase' }) : undefined}
@@ -471,7 +471,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           identity={dropCopy.identity}
           where={dropCopy.where}
           fraction={held ? grace.fraction : undefined}
-          player={me ? toAvatarProps(me) : undefined}
+          player={me ? toAvatarProps(state, me) : undefined}
           // The transport is already retrying; this is the impatient path, and
           // a full reload is the honest one — it re-runs the claim, reclaims
           // the seat from `sessionStorage`, and rebuilds the connection.

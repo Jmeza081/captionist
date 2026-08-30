@@ -12,6 +12,7 @@ import { Stepper } from '@/components/atoms/Stepper'
 import { TextField } from '@/components/atoms/TextField'
 import { Toggle } from '@/components/atoms/Toggle'
 import { AvatarPicker } from '@/components/molecules/AvatarPicker'
+import { HatPicker } from '@/components/molecules/HatPicker'
 import { HelpModal } from '@/components/molecules/HelpModal'
 import { HeroWall } from '@/components/molecules/HeroWall'
 import { ModeCard } from '@/components/molecules/ModeCard'
@@ -25,6 +26,7 @@ import {
   ROUNDS_MIN,
 } from '@/lib/game/constants'
 import { hostSetupCopy, modeChoices, showsCaptionFormat } from '@/lib/game/selectors'
+import type { HatId } from '@/lib/game/types'
 import type { GameMode, RoomSettings } from '@/lib/game/types'
 import type { WallTile } from '@/lib/gifs/wall'
 import { writeIdentity } from '@/lib/room/identity'
@@ -71,11 +73,21 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
   const [pickedSeed, setPickedSeed] = useState<string | undefined>(undefined)
   const name = typedName ?? suggested
   const seed = pickedSeed ?? stored.avatarSeed
+  /**
+   * The hat, and a sentinel that is not `undefined`.
+   *
+   * `undefined` already means "bare-headed", so it cannot also mean "hasn't
+   * touched the picker" — `pickedHat ?? stored.hat` would make "No hat"
+   * unclickable, falling straight back to the stored one. The wrapper object
+   * is what tells the two apart.
+   */
+  const [pickedHat, setPickedHat] = useState<{ hat?: HatId } | undefined>(undefined)
+  const hat = pickedHat ? pickedHat.hat : stored.hat
 
   const patch = (next: Partial<RoomSettings>) => setSettings((s) => ({ ...s, ...next }))
 
   function open() {
-    writeIdentity({ name: name.trim() || 'Host', avatarSeed: seed })
+    writeIdentity({ name: name.trim() || 'Host', avatarSeed: seed, hat })
     writePendingSettings(settings)
     // Nothing asks a server for a code, because under ADR 0003 there is no
     // server to ask: the code only has to be well-formed and unlikely to clash.
@@ -96,7 +108,12 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
             <Stack gap={26}>
               <Stack gap={14}>
                 <h2 className={styles.section}>{copy.hostSection}</h2>
-                <AvatarPicker label="Your face" value={seed} onChange={setPickedSeed} />
+                <AvatarPicker
+                  label="Your face"
+                  value={seed}
+                  onChange={setPickedSeed}
+                  hat={hat}
+                />
                 <TextField
                   label="Nickname"
                   size="caption"
@@ -107,6 +124,16 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
                   onChange={(e) => setTypedName(e.target.value)}
                 />
               </Stack>
+
+              {/* Its own section, the way the design draws it: "Host info" is
+                  who you are, this is what you are wearing. */}
+              <HatPicker
+                heading
+                label={copy.hatLabel}
+                body={copy.hatBody}
+                value={hat}
+                onChange={(next) => setPickedHat({ hat: next })}
+              />
 
               <Stack gap={12}>
                 <Stack gap={5}>

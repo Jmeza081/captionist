@@ -53,6 +53,40 @@ export interface MediaRef {
 
 export type ConnectionState = 'online' | 'reconnecting' | 'gone'
 
+/**
+ * The sixteen hats a player may wear.
+ *
+ * A union of literals rather than a bare `string`, because this is wire
+ * vocabulary and that is what this file is for — and because it lets
+ * `Record<HatId, string>` in `lib/hats.ts` turn "a hat with no art" into a
+ * compile error. The crown is deliberately not among them; see `CROWN` there.
+ */
+export type HatId =
+  | 'party'
+  | 'propeller'
+  | 'viking'
+  | 'cone'
+  | 'tophat'
+  | 'cowboy'
+  | 'dunce'
+  | 'baseball'
+  | 'captain'
+  | 'beanie'
+  | 'chef'
+  | 'wizard'
+  | 'sombrero'
+  | 'hardhat'
+  | 'grad'
+  | 'bucket'
+
+/**
+ * What an avatar is *drawn* wearing — which is not the same thing as what a
+ * player owns. `Player.hat` is the sixteen; this adds the crown, which is the
+ * room's to award and nobody's to claim. `toAvatarProps` is where one becomes
+ * the other.
+ */
+export type FaceHat = HatId | 'crown'
+
 export interface Player {
   id: PlayerId
   /** Drives the initial and the accessible label. */
@@ -63,6 +97,16 @@ export interface Player {
   src?: string
   /** Dicebear input. The seed travels, the rendered SVG does not. */
   avatarSeed: string
+  /**
+   * The hat they picked on the way in, if any. Absent is bare-headed, which is
+   * the default — nobody is put in a costume they did not choose.
+   *
+   * Same contract as `avatarSeed`: a token travels and the art is resolved by
+   * whoever draws it. Unlike a seed, a hat id becomes a *URL*, so `reducer.ts`
+   * narrows it through `asHatId` on the way in and `GameState` can only ever
+   * hold one of the sixteen.
+   */
+  hat?: HatId
   isHost: boolean
   connection: ConnectionState
   joinedAt: number
@@ -84,7 +128,10 @@ export interface Player {
  * may not import from `components/` — the dependency runs the other way, and
  * the atom's props are what have to stay assignable from this.
  */
-export type PlayerFace = Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
+export type PlayerFace = Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'> & {
+  /** Their hat, or the crown while they lead. See `FaceHat`. */
+  hat?: FaceHat
+}
 
 /**
  * What the round is about.

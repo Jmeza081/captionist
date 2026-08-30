@@ -9,6 +9,7 @@ import {
   durationFor,
 } from './constants'
 import { pick, shuffle } from './rng'
+import { asHatId } from '@/lib/hats'
 import { SAMPLE_GIFS, sampleAt } from '@/lib/gifs/samples'
 import { toMediaRef } from '@/lib/gifs/types'
 import type {
@@ -51,6 +52,12 @@ export function reduce(state: GameState, action: GameAction): GameState {
         // and unique-ish across a room, which only the room can decide.
         color: colorFor(state.players.length),
         avatarSeed: action.player.avatarSeed,
+        // **The trust boundary.** A hat arrives from another player's browser
+        // and becomes a URL, where a seed only ever feeds DiceBear — so it is
+        // narrowed here and `GameState` can hold nothing but the sixteen.
+        // `asHatId` rejects `'crown'` too: it is the room's to award, not
+        // anybody's to claim.
+        hat: asHatId(action.player.hat),
         isHost: state.players.length === 0,
         connection: 'online',
         joinedAt: action.at,

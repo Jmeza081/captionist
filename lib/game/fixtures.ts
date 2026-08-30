@@ -4,6 +4,7 @@ import { createRoom } from './create'
 import { reduce } from './reducer'
 import { ballotFrom } from './selectors'
 import { sampleAt } from '@/lib/gifs/samples'
+import { HAT_IDS } from '@/lib/hats'
 import { toMediaRef } from '@/lib/gifs/types'
 import type { EntryAnswer, GameState, RoomPhase, RoomSettings } from './types'
 
@@ -61,7 +62,7 @@ export function lobbyFixture(options: FixtureOptions = {}): GameState {
   tick = 1_700_000_000_000
   let state = createRoom({
     roomCode: 'C-F34213',
-    host: { id: 'p0', name: NAMES[0] ?? 'Jesse', avatarSeed: 'jesse' },
+    host: { id: 'p0', name: NAMES[0] ?? 'Jesse', avatarSeed: 'jesse', hat: 'party' },
     settings: options.settings,
     seed: options.seed ?? 42,
     at: at(),
@@ -69,7 +70,14 @@ export function lobbyFixture(options: FixtureOptions = {}): GameState {
   for (let i = 1; i < count; i++) {
     state = step(state, `p${i}`, {
       type: 'player/joined',
-      player: { id: `p${i}`, name: NAMES[i] ?? `Player ${i}`, avatarSeed: `p${i}` },
+      // Dressed deterministically, so every `?phase=` screen shows the hat path
+      // and `?phase=score` is a crown fixture without a line of setup.
+      player: {
+        id: `p${i}`,
+        name: NAMES[i] ?? `Player ${i}`,
+        avatarSeed: `p${i}`,
+        hat: HAT_IDS[i % HAT_IDS.length],
+      },
     })
   }
   return state

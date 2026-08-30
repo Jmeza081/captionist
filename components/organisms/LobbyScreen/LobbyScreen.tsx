@@ -121,7 +121,7 @@ function GuestLobby({ state, selfId }: { state: GameState; selfId?: PlayerId }) 
                 {state.players.map((player) => (
                   <li key={player.id}>
                     <PlayerRow
-                      player={toAvatarProps(player)}
+                      player={toAvatarProps(state, player)}
                       variant="pill"
                       host={player.isHost}
                       you={player.id === selfId}
@@ -256,7 +256,7 @@ function HostLobby({
             {state.players.map((player) => (
               <li key={player.id}>
                 <PlayerRow
-                  player={toAvatarProps(player)}
+                  player={toAvatarProps(state, player)}
                   variant="roster"
                   host={player.isHost}
                   you={player.id === selfId}

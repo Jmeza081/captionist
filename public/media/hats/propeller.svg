@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 31" width="176" height="124" role="img" aria-label="Propeller beanie">
+  <title>Propeller beanie</title>
+  <path d="M9 26.5 A13 13 0 0 1 35 26.5 Z" fill="#5FA8FF"></path>
+  <path d="M22 13.5 V26.5" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.6" stroke-linejoin="round"></path>
+  <path d="M6.5 26.2 H37.5 V29.8 H6.5 Z" fill="#2E6FC7"></path>
+  <path d="M20.6 6.4 L11 3.6 V9.2 Z" fill="#F6E338"></path>
+  <path d="M23.4 6.4 L33 3.6 V9.2 Z" fill="#FFB84D"></path>
+  <path d="M22 4.3 a2.2 2.2 0 1 0 0.05 0 Z" fill="#fff"></path>
+</svg>

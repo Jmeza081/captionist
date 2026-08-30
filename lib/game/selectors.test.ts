@@ -3,6 +3,8 @@ import { CAPTION_MAX, HOST_FALLBACK_NAME, PROMPT_MAX, SEAT_GRACE_MS } from './co
 import { fixtureFor, lobbyFixture } from './fixtures'
 import { reduce } from './reducer'
 import {
+  leaderIds,
+  toAvatarProps,
   briefCopy,
   lobbyCopy,
   ballotFrom,
@@ -37,7 +39,7 @@ import {
   submittedLine,
   timerSuffix,
 } from './selectors'
-import type { GameMode } from './types'
+import type { GameMode, GameState, PlayerId, RoundResult } from './types'
 
 const brief = (mode: GameMode) => fixtureFor('brief', { players: 5, settings: { mode } })
 const compose = (mode: GameMode) => fixtureFor('compose', { players: 5, settings: { mode } })
@@ -470,5 +472,77 @@ describe('a room that ended with its host', () => {
     const copy = podiumCopy(fixtureFor('podium', { players: 5 }))
     expect(copy.eyebrow).toBe('Captionist of the sprint')
     expect(copy.actionHref).toBeUndefined()
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* The crown                                                           */
+/* ------------------------------------------------------------------ */
+
+/** A room with a scoreboard, without playing five rounds to get one. */
+function scored(points: Record<PlayerId, number>): GameState {
+  const base = lobbyFixture({ players: 4 })
+  const result: RoundResult = {
+    round: 1,
+    winnerEntryId: 'r1-e1',
+    points,
+    ranking: ['r1-e1'],
+    authorOf: { 'r1-e1': 'p1' },
+  }
+  return { ...base, history: [result] }
+}
+
+describe('leaderIds', () => {
+  it('crowns nobody before anybody has scored', () => {
+    // `standings()` sorts by score and then by name, so its first row at 0–0
+    // is whoever is alphabetically first. Crowning them would be the
+    // scoreboard's tiebreak leaking out as a claim about the game.
+    expect(leaderIds(lobbyFixture({ players: 4 })).size).toBe(0)
+  })
+
+  it('crowns nobody when everyone has scored nothing', () => {
+    expect(leaderIds(scored({ p0: 0, p1: 0, p2: 0 })).size).toBe(0)
+  })
+
+  it('crowns the one in front', () => {
+    expect([...leaderIds(scored({ p0: 3, p1: 9, p2: 6 }))]).toEqual(['p1'])
+  })
+
+  it('crowns everyone level at the top', () => {
+    // A crown for the sole leader blinks out on every round that levels two
+    // players, and a crown that vanishes reads as a bug where two read as a tie.
+    expect([...leaderIds(scored({ p0: 9, p1: 9, p2: 6 }))].sort()).toEqual(['p0', 'p1'])
+  })
+})
+
+describe('the crown, on a face', () => {
+  const hatOf = (state: GameState, id: PlayerId) => {
+    const player = state.players.find((p) => p.id === id)!
+    return toAvatarProps(state, player).hat
+  }
+
+  it('beats the hat you picked, for exactly as long as you lead', () => {
+    const ahead = scored({ p1: 9, p2: 3 })
+    expect(hatOf(ahead, 'p1')).toBe('crown')
+    // Everyone else keeps their own.
+    expect(hatOf(ahead, 'p2')).toBe(
+      ahead.players.find((p) => p.id === 'p2')?.hat,
+    )
+  })
+
+  it('gives your own hat back when you are overtaken', () => {
+    // Nothing was stored, so nothing has to be un-stored: `state.players` is
+    // untouched throughout, and the crown is a function of the history alone.
+    const behind = scored({ p1: 3, p2: 9 })
+    const own = behind.players.find((p) => p.id === 'p1')?.hat
+    expect(own).toBeDefined()
+    expect(hatOf(behind, 'p1')).toBe(own)
+    expect(hatOf(behind, 'p2')).toBe('crown')
+  })
+
+  it('carries the five fields a face is, and nothing that could be art', () => {
+    const state = lobbyFixture({ players: 3 })
+    const face = toAvatarProps(state, state.players[0]!)
+    expect(Object.keys(face).sort()).toEqual(['avatarSeed', 'color', 'hat', 'name', 'src'])
   })
 })
