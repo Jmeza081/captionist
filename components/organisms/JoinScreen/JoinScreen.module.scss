@@ -22,7 +22,9 @@
     // from: 40% of 1280 is 512px, so the 600px card rendered at 472 and the
     // avatar picker inside it never had room for one line of ten. A fraction
     // squeezes the one width in this layout that the design actually states.
-    grid-template-columns: calc(#{t.$setup-column-width} + #{t.$space-20} * 2) 1fr;
+    // The gutter is `$screen-pad-h` rather than 20px: at 20 the heading above
+    // the card had nothing between it and the window.
+    grid-template-columns: calc(#{t.$setup-column-width} + #{t.$screen-pad-h} * 2) 1fr;
     // The page itself stops scrolling here and the form column takes over, so
     // the wall stays put while the form is filled in.
     height: 100vh;
@@ -61,6 +63,10 @@
 
   @include t.mq('xl') {
     margin-top: auto;
+    // The screen padding the design states. At 20px the heading above the card
+    // had nothing between it and the window — see `/host`, where a long form
+    // leaves no free space for the auto margin to spend and the rub shows.
+    padding: t.$screen-pad-v-lg t.$screen-pad-h 0;
   }
 }
 

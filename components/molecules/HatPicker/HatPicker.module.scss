@@ -29,11 +29,13 @@
   color: t.$accent;
 }
 
+// The same weight as `/host`'s `.sub` under "Game mode" — this is a line of
+// help under a section heading, and there is already a convention for that.
 .body {
   margin: 0;
   max-width: 52ch;
-  @include t.bodyText;
-  color: t.$text-body;
+  @include t.labelText;
+  color: t.$text-label;
 }
 
 // Three across on a phone, six where the card can hold them — the mockup's

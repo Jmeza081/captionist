@@ -100,12 +100,13 @@ export const HAT_LABELS: Readonly<Record<FaceHat, string>> = {
 /**
  * How many the picker offers before "Show all hats".
  *
- * One row of six at the width both entry screens give it. `AvatarPicker`'s
- * docblock is emphatic that ten faces was already "seven rows of faces above
- * the field somebody came here to fill in"; this is the second picker on that
- * same card, so it arrives folded.
+ * Five, not six, because "No hat" is a tile too: the grid is six across at the
+ * width both entry screens give it, and seven tiles is one orphan on a second
+ * row. `AvatarPicker`'s docblock is emphatic that ten faces was already "seven
+ * rows of faces above the field somebody came here to fill in"; this is the
+ * second picker on that same card, so it arrives folded to exactly one row.
  */
-export const HAT_WINDOW = 6
+export const HAT_WINDOW = 5
 
 /**
  * Below this an avatar wears nothing.

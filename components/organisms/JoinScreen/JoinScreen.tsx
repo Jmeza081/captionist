@@ -122,7 +122,6 @@ export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
                   label={copy.faceLabel}
                   value={seed}
                   onChange={setPickedSeed}
-                  hat={hat}
                 />
 
                 <HatPicker

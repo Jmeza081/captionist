@@ -112,7 +112,6 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
                   label="Your face"
                   value={seed}
                   onChange={setPickedSeed}
-                  hat={hat}
                 />
                 <TextField
                   label="Nickname"

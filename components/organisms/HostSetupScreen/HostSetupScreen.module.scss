@@ -23,7 +23,11 @@
     // from: 40% of 1280 is 512px, so the 600px card rendered at 472 and the
     // avatar picker inside it never had room for one line of ten. A fraction
     // squeezes the one width in this layout that the design actually states.
-    grid-template-columns: calc(#{t.$setup-column-width} + #{t.$space-20} * 2) 1fr;
+    //
+    // The gutter is `$screen-pad-h` rather than 20px: at 20 the heading above
+    // the card had nothing between it and the window, and a page whose first
+    // words rub its own edge reads as a rendering fault.
+    grid-template-columns: calc(#{t.$setup-column-width} + #{t.$screen-pad-h} * 2) 1fr;
     // The page itself stops scrolling here and the form column takes over.
     // The wall is the fixed half of the pair — it is the thing you look at
     // while reading the form, so it must not slide away as you fill it in.
@@ -60,6 +64,13 @@
 
 .form {
   padding: t.$screen-pad-v t.$space-20 0;
+
+  // From `xl` the column is the page's whole left half and the header is the
+  // first thing on it, so it takes the screen padding the design states rather
+  // than the 20px a phone's card needs.
+  @include t.mq('xl') {
+    padding: t.$screen-pad-v-lg t.$screen-pad-h 0;
+  }
 }
 
 /**

@@ -7,7 +7,6 @@ import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { AVATAR_SEEDS, AVATAR_WINDOW, avatarPage, previewColor, seedLabel } from '@/lib/avatar'
-import type { HatId } from '@/lib/game/types'
 import styles from './AvatarPicker.module.scss'
 
 export interface AvatarPickerProps {
@@ -21,14 +20,6 @@ export interface AvatarPickerProps {
    * to the app's seventy.
    */
   seeds?: readonly string[]
-  /**
-   * What the previews are wearing.
-   *
-   * Passed through rather than ignored because the two pickers sit on one
-   * card: bare heads here directly above a chosen hat below would be the same
-   * screen disagreeing with itself about what you look like.
-   */
-  hat?: HatId
 }
 
 /**
@@ -50,13 +41,7 @@ export interface AvatarPickerProps {
  * colour from join order, because a colour has to be unique-ish across a room
  * and only the room can know that. What you pick here is the face.
  */
-export function AvatarPicker({
-  value,
-  onChange,
-  label,
-  seeds = AVATAR_SEEDS,
-  hat,
-}: AvatarPickerProps) {
+export function AvatarPicker({ value, onChange, label, seeds = AVATAR_SEEDS }: AvatarPickerProps) {
   const labelId = useId()
   // `null` until somebody shuffles, so the first render is derived purely from
   // `value` and the server and the browser agree. See `avatarPage`.
@@ -155,11 +140,13 @@ export function AvatarPicker({
               tabIndex={chosen ? 0 : -1}
               onClick={() => onChange(seed)}
             >
+              {/* No hat, deliberately. This row asks one question — which
+                  face — and answering it in a costume puts ten near-identical
+                  hats where ten distinct faces are the whole point. */}
               <Avatar
                 name={seedLabel(seed)}
                 color={previewColor(i)}
                 avatarSeed={seed}
-                hat={hat}
                 size={46}
                 selected={chosen}
                 dimmed={!chosen}

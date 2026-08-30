@@ -32,9 +32,10 @@ test.describe('picking a hat', () => {
     await page.goto('/host')
 
     const grid = page.getByRole('radiogroup', { name: 'Host hat' })
-    // Six offered plus "No hat" — the second picker on this card arrives
-    // folded, because the first one already fills it.
-    await expect(grid.getByRole('radio')).toHaveCount(7)
+    // Five offered plus "No hat" — exactly one row of six, because the second
+    // picker on this card arrives folded and an orphan tile on a second row is
+    // what the fold is avoiding.
+    await expect(grid.getByRole('radio')).toHaveCount(6)
     await expect(grid.getByRole('radio', { name: 'No hat' })).toHaveAttribute(
       'aria-checked',
       'true',
