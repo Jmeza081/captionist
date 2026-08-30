@@ -1,12 +1,13 @@
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import styles from './PromptBanner.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 export interface PromptBannerProps {
   /** The prompt text, without quotes — the component adds curly ones. */
   prompt: string
   /** The Prompter. Omit for the compact variant. */
-  author?: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  author?: PlayerFace
   /** `lg` is the round's hero banner; `sm` sits above a vote grid. */
   size?: 'sm' | 'lg'
   /**

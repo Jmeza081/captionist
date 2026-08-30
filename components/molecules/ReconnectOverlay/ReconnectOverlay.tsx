@@ -1,6 +1,6 @@
 'use client'
 
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Icon } from '@/components/atoms/Icon'
@@ -8,6 +8,7 @@ import { Inline } from '@/components/atoms/Inline'
 import { ProgressRail } from '@/components/atoms/ProgressRail'
 import { Stack } from '@/components/atoms/Stack'
 import styles from './ReconnectOverlay.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 export interface ReconnectOverlayProps {
   headline: string
@@ -26,7 +27,7 @@ export interface ReconnectOverlayProps {
    */
   fraction?: number
   countdownShown?: boolean
-  player?: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  player?: PlayerFace
   onRejoin: () => void
   onLeave: () => void
 }

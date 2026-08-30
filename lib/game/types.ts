@@ -11,10 +11,11 @@
  *    stores a URL. A full-state broadcast has to fit inside Ably's 64KB
  *    message cap, and twenty inlined avatars would exhaust it on their own.
  * 2. **`Player` stays structurally assignable to `AvatarProps`.** Every
- *    player-rendering molecule takes `Pick<AvatarProps, 'name' | 'color' |
- *    'src' | 'avatarSeed'>`, so `<PlayerRow player={player} />` typechecks with
- *    no adapter. Keep it that way. `avatarSeed` is in that shape because the
- *    art is rendered from it at the edge — which is what lets invariant 1 hold.
+ *    player-rendering molecule takes `PlayerFace` below, so
+ *    `<PlayerRow player={player} />` typechecks with no adapter. Keep it that
+ *    way, and widen `PlayerFace` rather than any of its consumers — that is
+ *    the whole reason it has a name. `avatarSeed` is in that shape because the
+ *    art is rendered from it at the edge, which is what lets invariant 1 hold.
  */
 
 export type PlayerId = string
@@ -68,6 +69,22 @@ export interface Player {
   /** Reconnect grace: the seat is held this long after a drop. */
   seatHeldUntil?: number
 }
+
+/**
+ * A player, as something drawable — and nothing a renderer has no business
+ * knowing. No id, no `isHost`, no connection.
+ *
+ * This is invariant 2 above, given a name. Nine components declared these four
+ * fields by hand and `selectors.ts` declared them five more times, which made
+ * adding one field a fourteen-file edit that the compiler only complained
+ * about after thirteen of them. `toAvatarProps` is the only thing that builds
+ * one.
+ *
+ * Declared over `Player` rather than over `AvatarProps` because `lib/game/`
+ * may not import from `components/` — the dependency runs the other way, and
+ * the atom's props are what have to stay assignable from this.
+ */
+export type PlayerFace = Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
 
 /**
  * What the round is about.

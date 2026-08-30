@@ -1,4 +1,4 @@
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Logo } from '@/components/atoms/Logo'
@@ -11,6 +11,7 @@ import { BootChecklist, type BootStepState } from '@/components/molecules/BootCh
 import type { BootProgress } from '@/lib/room/store'
 import { BOOT_FOOTNOTE, BOOT_STEPS, BOOT_TITLE, CODE_LABEL } from './copy'
 import styles from './RoomBootScreen.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 export interface RoomBootScreenProps {
   /**
@@ -27,7 +28,7 @@ export interface RoomBootScreenProps {
    * The player's own face, for the guest's badge. Absent for the host, whose
    * badge is the app's mark: they are opening the room, not entering one.
    */
-  player?: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  player?: PlayerFace
   /** Where Cancel goes — back to whichever front door they came through. */
   cancelHref: string
   /**

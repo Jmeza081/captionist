@@ -1,8 +1,9 @@
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import styles from './ChatToast.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 export interface ChatToastProps {
-  author: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  author: PlayerFace
   body: string
 }
 

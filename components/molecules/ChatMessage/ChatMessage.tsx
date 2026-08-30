@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Icon } from '@/components/atoms/Icon'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import styles from './ChatMessage.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 export interface ChatMessageProps {
-  author: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  author: PlayerFace
   body: string
   /** Already formatted for reading — "2:14", not a timestamp. */
   time: string

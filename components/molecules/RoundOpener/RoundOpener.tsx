@@ -1,6 +1,7 @@
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import styles from './RoundOpener.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 export type GameMode = 'caption' | 'react'
 
@@ -13,7 +14,7 @@ export interface RoundOpenerProps {
   /** The line under it — what everyone else does. */
   subline: string
   /** Whoever holds the role this round. */
-  roleHolder: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  roleHolder: PlayerFace
   onSkip?: () => void
 }
 

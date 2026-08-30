@@ -1,8 +1,9 @@
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import styles from './Podium.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 export interface PodiumPlace {
-  player: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  player: PlayerFace
   score: number
 }
 

@@ -15,6 +15,7 @@ import type {
   GameState,
   MediaRef,
   Player,
+  PlayerFace,
   PlayerId,
   RoundResult,
   RoundSubject,
@@ -60,7 +61,7 @@ export function playerById(state: GameState, id: PlayerId | undefined): Player |
  */
 export function toAvatarProps(
   player: Player,
-): Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'> {
+): PlayerFace {
   return {
     name: player.name,
     color: player.color,
@@ -476,7 +477,7 @@ export function submittedCount(state: GameState): { done: number; total: number 
 }
 
 export interface SubmissionRow {
-  player: Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
+  player: PlayerFace
   status: string
   done: boolean
 }
@@ -572,7 +573,7 @@ export function latestResult(state: GameState): RoundResult | undefined {
 
 export interface RevealEntry {
   entryId: EntryId
-  author?: Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
+  author?: PlayerFace
   points: number
   media?: MediaRef
   lines?: readonly string[]
@@ -632,7 +633,7 @@ export function roundWinsFrom(history: readonly RoundResult[]): Record<PlayerId,
 }
 
 export interface Standing {
-  player: Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
+  player: PlayerFace
   id: PlayerId
   rank: number
   score: number
@@ -668,7 +669,7 @@ export function standings(state: GameState): readonly Standing[] {
 }
 
 export interface PodiumPlace {
-  player: Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
+  player: PlayerFace
   score: number
 }
 
@@ -891,7 +892,7 @@ export function lockGateFrom(state: GameState, viewerId: PlayerId, ranked: numbe
 
 export interface TiebreakCard {
   entryId: EntryId
-  author?: Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'>
+  author?: PlayerFace
   media?: MediaRef
   lines?: readonly string[]
   /** Contenders cannot vote in their own duel. */

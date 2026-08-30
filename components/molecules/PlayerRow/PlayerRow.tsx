@@ -1,6 +1,7 @@
-import { Avatar, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar } from '@/components/atoms/Avatar'
 import { Tag } from '@/components/atoms/Tag'
 import styles from './PlayerRow.module.scss'
+import type { PlayerFace } from '@/lib/game/types'
 
 /**
  * What the row is being used for. The design draws one row, four ways.
@@ -13,7 +14,7 @@ import styles from './PlayerRow.module.scss'
 export type PlayerRowVariant = 'roster' | 'tracker' | 'standing' | 'pill'
 
 export interface PlayerRowProps {
-  player: Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
+  player: PlayerFace
   variant?: PlayerRowVariant
   /** Shows the HOST tag. */
   host?: boolean

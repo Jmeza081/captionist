@@ -1,12 +1,11 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Avatar, AvatarOverflow, type AvatarProps } from '@/components/atoms/Avatar'
+import { Avatar, AvatarOverflow } from '@/components/atoms/Avatar'
 import { Icon } from '@/components/atoms/Icon'
 import { PresencePill } from '@/components/atoms/PresencePill'
+import type { PlayerFace } from '@/lib/game/types'
 import styles from './ChatRail.module.scss'
-
-type RailPlayer = Pick<AvatarProps, 'name' | 'color' | 'src' | 'avatarSeed'>
 
 export interface ChatRailProps {
   open: boolean
@@ -16,7 +15,7 @@ export interface ChatRailProps {
   /** Messages since you last looked. Badges the collapsed strip. */
   unread?: number
   /** Shown in the collapsed strip. The first three, then a +N chip. */
-  players: RailPlayer[]
+  players: PlayerFace[]
   /**
    * Incoming messages, shown beside the collapsed strip.
    *
