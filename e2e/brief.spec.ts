@@ -75,6 +75,47 @@ test.describe('the brief', () => {
     await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'compose')
   })
 
+  test('gives the wait something to look at, without losing the words', async ({
+    page,
+  }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
+    await expect(page.getByText('Jesse is scrolling Giphy.')).toBeVisible()
+
+    const backdrop = page.locator('[data-testid="scene-backdrop"]')
+    // The clip hangs off a `<source>`, which is what lets the element carry a
+    // poster the browser shows without fetching a byte of video.
+    await expect(backdrop.locator('source')).toHaveAttribute('src', /giphy\.mp4$/)
+
+    // Playback starts off and a client island turns it on — ADR 0005. The
+    // suite resolves every host but the dev server to nothing, so the clip
+    // never loads here; what is checkable is the contract around it.
+    await expect(backdrop).not.toHaveAttribute('autoplay', /.*/)
+    await expect(backdrop).toHaveAttribute('poster', /480w_s\.jpg$/)
+
+    // Inert, and behind the words rather than over them: the headline used to
+    // sit *under* the scrim, which is what a positioned child inside the same
+    // stacking context does to an unpositioned sibling.
+    const layers = await page.evaluate(() => {
+      const media = document.querySelector('[data-testid="scene-backdrop"]')!
+      const shell = media.closest('div')!
+      const headline = document.querySelector('h1')!
+      // `compareDocumentPosition` gives paint order for siblings in one context.
+      return {
+        hidden: shell.getAttribute('aria-hidden'),
+        headlineAfter: Boolean(
+          shell.compareDocumentPosition(headline) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      }
+    })
+    expect(layers.hidden).toBe('true')
+    expect(layers.headlineAfter).toBe(true)
+
+    // The clip is somebody's work and says so.
+    await expect(
+      page.getByRole('link', { name: /Backdrop by Young Thug via Giphy/ }),
+    ).toBeVisible()
+  })
+
   test('turns the wait into something to read', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
 

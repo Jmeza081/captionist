@@ -1,6 +1,9 @@
 @use 'theme' as t;
 
 .rail {
+  // With the header, above a screen's backdrop — it is the header's underline.
+  position: relative;
+  z-index: t.$z-chrome;
   width: 100%;
   background-color: t.$line-hairline;
 }

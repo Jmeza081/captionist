@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
+import { SceneBackdrop } from '@/components/atoms/SceneBackdrop'
 import { Button } from '@/components/atoms/Button'
 import { Chip } from '@/components/atoms/Chip'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
@@ -13,6 +14,7 @@ import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { PROMPT_MAX, PROMPT_STARTERS, SEARCH_SUGGESTIONS } from '@/lib/game/constants'
 import { briefCopy, roleHolder, toAvatarProps } from '@/lib/game/selectors'
+import { WAITING_BACKDROP } from '@/lib/gifs/backdrop'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
 import { toMediaRef, type GifResult } from '@/lib/gifs/types'
 import { useRoom } from '@/lib/room/useRoom'
@@ -102,21 +104,45 @@ export function BriefScreen() {
 
   if (copy.view === 'pickwait' || copy.view === 'promptwait') {
     return (
-      <Stack gap={20} align="center" className={styles.waiting}>
-        {holder && (
-          <div className={styles.halo}>
-            <Avatar {...toAvatarProps(holder)} size={88} />
-            <span className={styles.badge}>{copy.eyebrow}</span>
-          </div>
-        )}
-        <Stack gap={8} align="center">
-          <h1 className={styles.waitHeadline}>{copy.headline}</h1>
-          {copy.headlineSecond && (
-            <p className={styles.waitSecond}>{copy.headlineSecond}</p>
+      <>
+        {/* The barest screen in the app — an avatar, a headline and a lot of
+            canvas — so it gets something to look at while somebody else works.
+            Behind the content and inert; the clip is nearly black with one
+            warm ember, which is why a soft scrim is enough.
+
+            A *sibling* of the column, not a child of it: the backdrop is
+            positioned and the headline is not, so inside the same stacking
+            context the backdrop would paint over the words it is supposed to
+            sit behind. Out here it is the column that takes the layer. */}
+        <SceneBackdrop mp4={WAITING_BACKDROP.mp4} still={WAITING_BACKDROP.still} />
+
+        <Stack gap={20} align="center" className={styles.waiting}>
+          {holder && (
+            <div className={styles.halo}>
+              <Avatar {...toAvatarProps(holder)} size={88} />
+              <span className={styles.badge}>{copy.eyebrow}</span>
+            </div>
           )}
+          <Stack gap={8} align="center">
+            <h1 className={styles.waitHeadline}>{copy.headline}</h1>
+            {copy.headlineSecond && (
+              <p className={styles.waitSecond}>{copy.headlineSecond}</p>
+            )}
+          </Stack>
+          {copy.body && <p className={styles.waitBody}>{copy.body}</p>}
+
+          {/* Somebody's work, not our chrome. Small, last, and out of the way —
+              but present, because the alternative is using it uncredited. */}
+          <a
+            className={styles.credit}
+            href={WAITING_BACKDROP.creditHref}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Backdrop by {WAITING_BACKDROP.credit} via Giphy
+          </a>
         </Stack>
-        {copy.body && <p className={styles.waitBody}>{copy.body}</p>}
-      </Stack>
+      </>
     )
   }
 

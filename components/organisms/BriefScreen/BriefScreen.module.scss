@@ -52,6 +52,27 @@
 .waiting {
   padding-top: t.$space-44;
   text-align: center;
+  // Above the fixed backdrop, which sits at `z-index: 0` — see `SceneBackdrop`.
+  position: relative;
+  z-index: 1;
+}
+
+// Attribution, quiet enough to be furniture. It is the only thing on this
+// screen you can click, so it keeps a real focus ring.
+.credit {
+  @include t.focusRing;
+
+  margin-top: t.$space-26;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$text-timestamp;
+  text-decoration: none;
+  border-radius: t.$radius-pill;
+
+  &:hover {
+    color: t.$text-meta;
+  }
 }
 
 .halo {

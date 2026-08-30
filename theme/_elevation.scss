@@ -63,6 +63,18 @@ $focus-ring: inset 0 0 0 2px colors.$accent;
 // The whole ladder in one place, so a new overlay is placed by reading it
 // rather than by guessing a number bigger than the last one.
 
+// A screen's own full-bleed media, under everything. Zero rather than a
+// negative, which is the trap `screenGlow` documents: a negative layer escapes
+// to the root stacking context, where `RoomShell`'s opaque canvas paints over
+// it. See `SceneBackdrop`.
+$z-backdrop: 0;
+// The room's own chrome — the header and the progress rail under it. They were
+// unpositioned, which was fine until something sat behind them: a `fixed`
+// backdrop at `$z-backdrop` paints above *unpositioned* content however low its
+// z-index is, so the two of them washed out behind a waiting screen's media.
+// Named here rather than guessed there, which is what this ladder is for.
+$z-chrome: 10;
+
 $z-rail: 40;
 $z-toolbox: 50;
 $z-toast: 65;

@@ -1,6 +1,10 @@
 @use 'theme' as t;
 
 .header {
+  // Above a screen's backdrop, below everything that floats. See the ladder in
+  // `theme/_elevation.scss`.
+  position: relative;
+  z-index: t.$z-chrome;
   display: flex;
   align-items: center;
   gap: t.$space-12;

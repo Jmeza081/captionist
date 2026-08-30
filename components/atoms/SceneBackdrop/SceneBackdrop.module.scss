@@ -1,0 +1,50 @@
+@use 'theme' as t;
+
+/**
+ * Fixed, not absolute: the column in front of this scrolls, and a backdrop
+ * that went with it would be a band of media rather than a background.
+ *
+ * `$z-backdrop` (0) rather than `-1`, which is the trap `screenGlow` documents
+ * — a negative layer escapes to the root stacking context, where `RoomShell`'s
+ * opaque canvas paints over it. Zero sits above that background; the room's
+ * chrome takes `$z-chrome` to stay above *this*, because a fixed layer at zero
+ * paints over unpositioned content however low its number is.
+ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: t.$z-backdrop;
+  // Its own stacking context, so the scrim and the media can never interleave
+  // with whatever the screen puts in front of them.
+  isolation: isolate;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.media {
+  width: 100%;
+  height: 100%;
+  // The clip is 16:9 and the room is any shape at all, so it fills and crops
+  // rather than letterboxing onto the canvas.
+  object-fit: cover;
+  // Keeps the ember low and central at every aspect, which is the part of the
+  // frame the headline sits against.
+  object-position: center;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+}
+
+// Dark media the text can win against on its own.
+.soft {
+  background-color: t.$scrim-wall-soft;
+  backdrop-filter: blur(t.$wall-scrim-blur-soft);
+}
+
+// The landing hero's weight, for media we do not control.
+.full {
+  background-color: t.$scrim-wall;
+  backdrop-filter: blur(t.$wall-scrim-blur);
+}
