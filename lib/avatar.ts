@@ -21,7 +21,7 @@ import { colorFor } from '@/lib/game/constants'
  */
 
 /**
- * `critters` because sixty-four faces have to stay tellable apart at 26px —
+ * `critters` because seventy faces have to stay tellable apart at 26px —
  * the smallest the app draws one — and this is the style with the range to do
  * it: fourteen bodies, nineteen pairs of eyes, nineteen mouths, fifteen hats,
  * ten patterns and a twelve-colour palette apiece for body and accent. Far
@@ -77,18 +77,24 @@ export function avatarUri(seed: string): string {
 /**
  * The faces a player may pick from.
  *
- * Sixty-four, because the picker shows eight at a time and sixty-four is eight
- * pages of exactly eight — a catalogue that did not divide would leave a
- * ragged last page to special-case in the layout, the shuffle and every test.
+ * Seventy, because the picker shows ten at a time and seventy is seven pages
+ * of exactly ten — a catalogue that did not divide would leave a ragged last
+ * page to special-case in the layout, the shuffle and every test. The window
+ * is the number that gets chosen; the catalogue follows it, which is why this
+ * grew by six when the window went from eight to ten rather than the last page
+ * being allowed to come up short.
  *
- * All sixty-four are different drawings rather than sixty-four names for a
+ * All seventy are different drawings rather than seventy names for a
  * handful: no two share even a body, a pair of eyes and a mouth, which
  * `avatar.test.ts` holds to. A seed is a *name*, not a random string, because
  * it has to survive a reload and still mean the same face.
  *
- * **The original seven keep indices 0–6.** Every seed already sitting in
- * somebody's `localStorage` is one of those, so they all stay on page 0 and
- * nobody's saved face falls out of the window this change introduces. `ember`
+ * **The original seven keep indices 0–6**, and every seed added since keeps
+ * the index it was given. A seed's index decides which page it is on and which
+ * colour it previews against, but never which face it draws — so growing the
+ * catalogue moves faces between pages and orphans nobody, while reordering or
+ * renaming one would silently change somebody's stored face. Additions go on
+ * the end. `ember`
  * stays first because it is the default a browser with no stored identity
  * gets — `lib/room/identity.ts` and `lib/room/useStoredPerson.ts` both name it
  * as the literal fallback.
@@ -162,6 +168,12 @@ export const AVATAR_SEEDS: readonly string[] = [
   'wren',
   'otter',
   'bracken',
+  'sedge',
+  'osprey',
+  'thicket',
+  'inlet',
+  'gorse',
+  'heron',
 ]
 
 /** A seed as a person reads it: `sunfish` is announced as "Sunfish". */
@@ -169,14 +181,14 @@ export function seedLabel(seed: string): string {
   return seed.charAt(0).toUpperCase() + seed.slice(1)
 }
 
-/** How many faces `AvatarPicker` offers at once. Sixty-four is eight of these. */
-export const AVATAR_WINDOW = 8
+/** How many faces `AvatarPicker` offers at once. Seventy is seven of these. */
+export const AVATAR_WINDOW = 10
 
 /**
  * The page of the catalogue a seed sits on.
  *
  * Pure, and that is the point: it is what `AvatarPicker` shows before anybody
- * has shuffled, so the server and the browser derive the same eight faces from
+ * has shuffled, so the server and the browser derive the same ten faces from
  * the same stored seed and hydration has nothing to disagree about. Drawing
  * the opening window at random would be a mismatch on every load.
  *

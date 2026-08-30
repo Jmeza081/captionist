@@ -17,7 +17,7 @@ export interface AvatarPickerProps {
   label: string
   /**
    * The catalogue the window is drawn *from* — not the faces shown. Defaults
-   * to the app's sixty-four.
+   * to the app's seventy.
    */
   seeds?: readonly string[]
 }
@@ -29,11 +29,13 @@ export interface AvatarPickerProps {
  * not the markup: a seed's position decides the colour it previews on, and two
  * hand-rolled copies of that would drift the first time the palette changes.
  *
- * **Eight at a time, out of sixty-four.** Showing all of them would be seven
- * rows of faces above the field somebody came here to fill in. So the picker
- * offers a window and a way to change it, which is also the honest shape of
- * the choice: nobody compares sixty-four procedurally generated creatures, they
- * flick through until one is theirs.
+ * **Ten at a time, out of seventy.** Showing all of them would be seven rows
+ * of faces above the field somebody came here to fill in. So the picker offers
+ * a window and a way to change it, which is also the honest shape of the
+ * choice: nobody compares seventy procedurally generated creatures, they flick
+ * through until one is theirs. Ten rather than eight because eight was one
+ * short of a room — a full lobby is twenty and the offer should not be the
+ * thing that makes two people pick the same face.
  *
  * **The colour is a preview, not a promise.** `player/joined` assigns a seat
  * colour from join order, because a colour has to be unique-ish across a room

@@ -50,8 +50,12 @@ describe('avatarUri', () => {
 })
 
 describe('AVATAR_SEEDS', () => {
-  it('is eight full pages of eight', () => {
-    expect(AVATAR_SEEDS).toHaveLength(64)
+  it('is seven full pages of ten', () => {
+    // The catalogue's size is not free: `avatarPage` slices fixed windows, so
+    // a catalogue that is not a whole number of them ends in a short page —
+    // a picker offering four faces because of arithmetic nobody chose. The
+    // window went 8 → 10, so the catalogue went 64 → 70 with it.
+    expect(AVATAR_SEEDS).toHaveLength(70)
     expect(AVATAR_SEEDS.length % AVATAR_WINDOW).toBe(0)
     expect(new Set(AVATAR_SEEDS).size).toBe(AVATAR_SEEDS.length)
   })
@@ -72,7 +76,7 @@ describe('AVATAR_SEEDS', () => {
     ])
   })
 
-  it('is sixty-four different drawings, not sixty-four names', () => {
+  it('is seventy different drawings, not seventy names', () => {
     const faces = AVATAR_SEEDS.map((seed) => {
       const o = drawnWith(seed)
       return JSON.stringify([
@@ -90,7 +94,7 @@ describe('AVATAR_SEEDS', () => {
   })
 
   it('never repeats a body, a pair of eyes and a mouth within one page', () => {
-    // A page is the only set of eight ever shown together, so this is where a
+    // A page is the only set of ten ever shown together, so this is where a
     // near-duplicate would actually be noticed. Fix a failure by renaming the
     // offending seed — the names are ours, the mapping is not.
     for (let page = 0; page < AVATAR_SEEDS.length / AVATAR_WINDOW; page++) {

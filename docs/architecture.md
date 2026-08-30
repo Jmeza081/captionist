@@ -199,20 +199,26 @@ content column is what scrolls, so the docked rail is the height of the viewport
 and its composer no longer hangs below the fold until the header is scrolled
 away. Below `md` nothing changed — the rail is a sheet and the page scrolls.
 
-**Since then a player picks a face out of sixty-four rather than seven.**
-`AVATAR_SEEDS` grew from seven seeds to sixty-four — eight pages of exactly
-eight — and the style went with it: seven flat `funEmoji` faces do not stay
-tellable apart sixty-four times, so `lib/avatar.ts` draws DiceBear's
+**Since then a player picks a face out of seventy rather than seven.**
+`AVATAR_SEEDS` grew from seven seeds to sixty-four and then to seventy — seven
+pages of exactly ten — and the style went with it: seven flat `funEmoji` faces
+do not stay tellable apart seventy times, so `lib/avatar.ts` draws DiceBear's
 combinatorial `critters` instead. That forced a major version (`critters` exists
 only in DiceBear 10, and `@dicebear/collection` has no 10), which is the one
 consequence [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) had
 called a one-constant edit; the amendment records what it actually cost, in
 bytes that were measured. Nothing about the decision moved: the seed still
 travels and the art is still derived in each browser. `AvatarPicker` shows a
-window of eight with its own `Shuffle faces` button — a real `radiogroup` with
-arrow keys, faces named `Ember` and `Sunfish` rather than `Face 1` — and the
-opening window is `avatarPage(seed)`, a pure function, so the server and the
-browser draw the same eight and hydration has nothing to disagree about.
+window of ten, five and five, with its own `Shuffle faces` button — a real
+`radiogroup` with arrow keys, faces named `Ember` and `Sunfish` rather than
+`Face 1` — and the opening window is `avatarPage(seed)`, a pure function, so the
+server and the browser draw the same ten and hydration has nothing to disagree
+about. **The window is the number that gets chosen and the catalogue follows
+it**: `avatarPage` slices fixed windows, so a catalogue that is not a whole
+number of them ends in a short page. Widening the window from eight to ten grew
+the catalogue from sixty-four to seventy for that reason, by appending — a
+seed's index decides its page and its preview colour but never its face, so
+adding to the end orphans nobody's stored pick.
 
 **The hero wall stopped leaving holes in itself.** Its grid sized tiles —
 `auto-fill` over a 300px minimum — which made the column count a function of the
@@ -364,7 +370,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Realtime | `AblyTransport` over Ably v2 · `BroadcastTransport` over `BroadcastChannel` | All three `RoomTransport` implementations now exist and **no method changed at the swap** — [ADR 0009](./adr/0009-the-room-crosses-the-network.md). Ably is what a real room takes; the tab transport is what the suite runs on. Who hosts is presence on Ably and a claim probe on the tab bus — [ADR 0007](./adr/0007-the-first-tab-to-ask-owns-the-room.md). Both lanes — intents and events — stamp `from` from the identity the transport authenticated, never from the payload |
 | Realtime auth | `/api/ably/seat` + `/api/ably/token`, `lib/ably/` | `ABLY_API_KEY` is server-only. Two routes because an `authUrl` must answer with the bare `TokenRequest`: the seat (signed, and where the stub answer lives) comes from one, the token from the other. `createTokenRequest` signs locally, so neither route makes a call of its own; the capability is the glob `captionist:<code>:*` |
 | Identity | `localStorage` person + `sessionStorage` seat, **server-signed** | `lib/room/identity.ts`. The nickname and face are per browser; the player id is per tab, because two tabs are two players. The seat now rides with an HMAC from `lib/ably/seat.ts`, because Ably's `clientId` guarantee is worthless if a tab can ask for a token bearing someone else's id |
-| Avatars | `@dicebear/core@10` + `@dicebear/styles`, the `critters` style | `lib/avatar.ts` turns a seed into a data URI *at the edge*, and only the seed ever travels in state. **Sixty-four seeds, eight pages of eight**, with `avatarPage(seed)` deriving which page a stored face sits on so the picker's opening window is the same on the server and in the browser. `@dicebear/collection@9` is gone — `critters` exists only in DiceBear 10 and there is no 10 of that package — which made this a major bump rather than a one-constant edit: a style is a JSON definition now, so `createAvatar(funEmoji, …)` is `new Avatar(new Style(definition), …)`, and 10 validates colours as hex, so a transparent background is `'00000000'` rather than `'transparent'`. CC0 1.0, so nothing about where a face appears is constrained by attribution. [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) |
+| Avatars | `@dicebear/core@10` + `@dicebear/styles`, the `critters` style | `lib/avatar.ts` turns a seed into a data URI *at the edge*, and only the seed ever travels in state. **Seventy seeds, seven pages of ten**, with `avatarPage(seed)` deriving which page a stored face sits on so the picker's opening window is the same on the server and in the browser. `@dicebear/collection@9` is gone — `critters` exists only in DiceBear 10 and there is no 10 of that package — which made this a major bump rather than a one-constant edit: a style is a JSON definition now, so `createAvatar(funEmoji, …)` is `new Avatar(new Style(definition), …)`, and 10 validates colours as hex, so a transparent background is `'00000000'` rather than `'transparent'`. CC0 1.0, so nothing about where a face appears is constrained by attribution. [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) |
 | GIF search | Giphy, proxied by `/api/gifs` | `GIPHY_API_KEY` is server-only; `lib/gifs/` holds the fetcher, the offline shelf and the shared types |
 | GIF renditions | `fixed_width` MP4 · WebP · GIF, plus `fixed_width_still` | `GifResult` carries all four, **and now the rendition's own `width`/`height`** — read off the same rendition `src` came from, so the ratio describes the image actually rendered. It is a rendering hint and nothing depends on it: the picker reserves each tile's shape from it before the image lands, `SAMPLE_GIFS` states its artwork's 320×200, and `toMediaRef()` drops it with `id` and `keywords`. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
@@ -853,8 +859,8 @@ Ably's 64KB cap on their own. It is rendered as an `<img src>`, not
 `<img>` is a passive context where an SVG cannot run script.
 
 **The style changed because the catalogue did.** `AVATAR_SEEDS` grew from seven
-to sixty-four, and seven flat emoji faces do not stay tellable apart sixty-four
-times — `critters` is combinatorial (bodies, eyes, mouths, hats, patterns and a
+to sixty-four and later to seventy, and seven flat emoji faces do not stay
+tellable apart seventy times — `critters` is combinatorial (bodies, eyes, mouths, hats, patterns and a
 palette apiece for body and accent), which is what makes a catalogue that size
 readable at 26px, the smallest size the app draws one. The original seven keep
 indices 0–6, so a seed already sitting in somebody's `localStorage` still
@@ -870,12 +876,14 @@ number that would decide a move to committed SVGs; the amendment to
 [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) carries it.
 
 Three exports beside `avatarUri` exist for the picker, and `avatarPage` is the
-one that earns its place. It is **pure**: given a seed it returns the eight-face
+one that earns its place. It is **pure**: given a seed it returns the ten-face
 page that seed sits on, so `AvatarPicker`'s opening window is derived from the
 stored value on the server and in the browser alike and hydration has nothing to
 disagree about. Drawing that first window at random — the obvious way to build a
-shuffling picker — would be a mismatch on every load. `AVATAR_WINDOW` is the 8,
-and sixty-four is eight of it exactly, so no page is ragged. `seedLabel` is how
+shuffling picker — would be a mismatch on every load. `AVATAR_WINDOW` is the 10,
+and seventy is seven of it exactly, so no page is ragged — the catalogue is
+sized to the window rather than the other way round, which is why widening the
+window appended six seeds instead of leaving a short last page. `seedLabel` is how
 a face gets announced: `sunfish` is "Sunfish", which is what replaced "Face 3"
 as the picker's accessible name.
 `lib/ably/` is the fourth, and the only one that never reaches the browser at
@@ -1741,8 +1749,10 @@ once and the two screens cannot drift. The catalogue lives there rather than in
 `lib/room/` precisely so this molecule can read it without a molecule depending
 on room authority.
 
-**Sixty-four faces made it the one molecule that owns a control.** It draws a
-window of eight with a `Shuffle faces` ghost `Button` in its own header, which
+**A catalogue made it the one molecule that owns a control.** It draws a
+window of ten — a fixed five-column grid, because ten needs 550px to hold one
+line and the card is 484px — with a `Shuffle faces` ghost `Button` in its own
+header, which
 is why `Controls → Entry` is a new edge above; the same button used to sit in
 `HostSetupScreen`'s nickname `trailing` slot, shuffling a picker it was not part
 of, and `hostSetupCopy().shuffle` went with it. It is a real `role="radiogroup"`
@@ -2449,7 +2459,7 @@ Phase 4 removed two rows from this table rather than editing them. **Joining a
 room** is built — the routes are in the [route map](#routes), the election that
 decides who hosts is in [who hosts](#who-hosts), and the lobby's guest face is
 `lobbyCopy(state, viewerId)`. **Player avatars** are built — `lib/avatar.ts`,
-described under [room state](#room-state), and now a sixty-four-face catalogue
+described under [room state](#room-state), and now a seventy-face catalogue
 behind a shuffling picker rather than the seven that closed this row. Neither is
 a promise any more.
 
@@ -2585,9 +2595,10 @@ than a hole in the coverage.
 can break silently: that the background stays transparent and that no animation
 comes back, both of which are values in a third party's JSON rather than in this
 repo — the exact failure ADR 0008 warned about and now guards. It also holds the
-catalogue to being sixty-four *distinct drawings* rather than sixty-four names
-for a handful, and pins the original seven to indices 0–6, which is what stops a
-stored seed falling out of the picker's opening page. `e2e/join.spec.ts` gained
+catalogue to being seventy *distinct drawings* rather than seventy names for a
+handful, pins the original seven to indices 0–6, and holds the catalogue to a
+whole number of windows — which is what stops a stored seed falling out of the
+picker's opening page and what stops the last page coming up short. `e2e/join.spec.ts` gained
 the shuffle and the arrow-key walk — the two behaviours that only exist in a
 real browser — and later three more when join took `/host`'s layout: both
 actions in the viewport without scrolling, the wall present at 1440 and absent

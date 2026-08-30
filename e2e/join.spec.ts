@@ -125,13 +125,13 @@ test.describe('joining', () => {
 
     const offered = () => faces.getByRole('radio').evaluateAll((els) => els.map((el) => el.ariaLabel))
     const before = await offered()
-    expect(before).toHaveLength(8)
+    expect(before).toHaveLength(10)
 
     await page.getByRole('button', { name: 'Shuffle faces' }).click()
     const after = await offered()
 
-    // Seven of the eight are redrawn from the other sixty-three; the odds of
-    // reproducing the same seven are about one in half a billion.
+    // Nine of the ten are redrawn from the other sixty-nine; the odds of
+    // reproducing the same nine are not worth writing down.
     expect(after).not.toEqual(before)
     expect(after).toContain('Fern')
     await expect(faces.getByRole('radio', { name: 'Fern' })).toHaveAttribute(

@@ -6,14 +6,22 @@
 }
 
 /**
- * Eight faces. They hold one line from `md` up and wrap to six-and-two on a
- * phone, which is the same wrap seven already had — a 46px tile against the
- * 44px touch floor cannot be shrunk to fit eight across 342px, and the design's
- * tile size wins over the single row.
+ * Ten faces, five and five.
+ *
+ * A fixed five-column grid rather than a wrapping row, because at ten the wrap
+ * is where the window stops reading as a set: 46px tiles and a 10px gap need
+ * 550px to hold one line, and neither the phone's 301px nor the card's 484px
+ * has it — a flex wrap gave a phone five-and-five and a desktop a ragged
+ * eight-and-two. Five columns is the same block at both, and the tile keeps
+ * the design's size against the 44px touch floor either way.
+ *
+ * `justify-content: start` rather than stretched columns: a tile is 46px
+ * because the art is, and a fifth of the container is not.
  */
 .row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  justify-content: start;
   gap: t.$space-10;
 }
 

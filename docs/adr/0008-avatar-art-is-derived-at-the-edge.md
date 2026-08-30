@@ -102,3 +102,35 @@ well, and that number is the reason art is still a data URI rather than a file
 under `public/`. If it ever stops being true, the escape hatch is the one this
 ADR already describes: `Player.src` wins over `avatarSeed`, so committed SVGs
 served same-origin are a change to one function.
+
+## Amendment · 2026-08-30 — the catalogue is sized to the window
+
+The amendment above tied the style to the catalogue: seven flat emoji faces do
+not stay tellable apart sixty-four times, so `critters` replaced `funEmoji`.
+That argument is unchanged. The number moved.
+
+**The picker offers ten faces now, not eight**, because eight is one short of a
+useful set for a game whose lobby holds twenty — the offer should not be the
+thing that makes two people pick the same face.
+
+**So the catalogue is seventy, not sixty-four.** `avatarPage` slices fixed
+windows, so a catalogue that is not a whole number of them ends in a short page
+— a picker offering four faces because of arithmetic nobody chose. The window
+is the number that gets designed; the catalogue follows it. Widening it
+appended six seeds rather than leaving the last page ragged, and
+`lib/avatar.test.ts` holds the pair to `length % AVATAR_WINDOW === 0` so the
+next change to either has to bring the other with it.
+
+**Appended, never reordered or renamed.** A seed's index decides which page it
+falls on and which colour it previews against; it never decides which face it
+draws. So growing the catalogue moves faces between pages and orphans nobody's
+stored pick, while reordering or renaming one would quietly change the face
+somebody chose. The original seven still hold indices 0–6, which is still what
+keeps every pre-catalogue `localStorage` value on page 0.
+
+**One layout consequence.** Ten tiles at the design's 46px with a 10px gap need
+550px to hold one line, and neither the phone's 301px nor the card's 484px has
+it — so the design's single row is gone at every width. `AvatarPicker` draws a
+fixed five-column grid instead of a wrapping row, because the wrap gave a phone
+five-and-five and a desktop a ragged eight-and-two. `docs/design-system.md` §3
+carries that as a stated departure, the way ADR 0016 requires.
