@@ -89,3 +89,52 @@ cheap standing guard against the specific mistake `tapTarget` makes easy.
 ignores a control completely behind painted ground, and why. The two have to
 stay in step: the prose is the rule, the spec is the enforcement, and a reader
 who finds them disagreeing should trust neither until someone reconciles them.
+
+## Amendment · 2026-08-30 — a backdrop is not a control either
+
+The consequence above said adding a second sticky surface was the moment to
+re-read this ADR. What arrived was not a second sticky surface; it was a second
+kind of thing under the first one.
+
+**What changed.** `MediaCard` gained `onActivate`, which lays a transparent
+button over the whole frame so the picture itself ranks the card — the
+affordance the vote grid was missing, since the small button under it was the
+only way in. It is `aria-hidden` and `tabIndex={-1}` on purpose: it is a
+*second* route to an action the foot already carries, not a duplicate control,
+and the keyboard's route is the labelled button that stays.
+
+The overlap sweep saw a card-sized `BUTTON` and reported
+`vote: "BUTTON" over "Pick 3 more"` — the lock dock resting on the card behind
+it, which is a sticky bar over a scrolling grid doing exactly what this ADR
+already blessed. The whole-element filter did not drop it because only part of
+it is covered.
+
+**The decision.** `SHIPPED` excludes `[aria-hidden="true"]:empty` buttons, and
+the reason is what they are rather than where they sit: a pointer affordance
+laid over content, out of the accessibility tree, exactly the size of the thing
+it covers, and never the only way to its action. It is not competing for a
+finger, which is what this file measures.
+
+`:empty` bounds the exclusion to backdrops. Without it the rule would read "any
+hidden button", and the next one — one that actually draws something, which is
+a control with an accessibility problem rather than a backdrop — would leave
+the sweep without anybody noticing.
+
+**The exclusion is paid for.** A new test pins every such backdrop to its own
+frame — within a pixel on both axes — so one cannot quietly grow past its
+picture and take a neighbour's tap, which is the failure the sweep would
+otherwise have caught.
+
+**The gate was re-verified, as this ADR demands.** With both the reservations
+removed by hand, the sweep still fails with the original
+`vote: "Pick 3 more" over "Guest toolbox"`. It takes *both* now, and that is
+itself the finding: `--room-dock-gutter` was corrected from 58px to 64px in the
+same batch — chat's key sits at `right: 14px` but the toolbox key sits at
+`right: 20px`, and the old value reserved only the first, leaving 6px of every
+full-width control under the second. With the column reserving the key's full
+width, **`.lockDock`'s own phone-level `padding-right` is now redundant.** It is
+left in place deliberately — two independent reservations are cheap and the
+motivating bug cost a real vote — but it means removing either one alone no
+longer reproduces the failure, and anyone repeating the check has to remove
+both. That is a weaker test than the one this ADR described, and it is stated
+here rather than discovered later.

@@ -170,6 +170,20 @@ was written for a shape we do not draw:
 | caption overlay 14–32px | `$media-overlay-size: clamp(1.375rem, 8cqw, 2.625rem)` | 14px was the floor of that range and the only value ever used, which on a square card is a label rather than a caption. The unit is `cqw`, not `vw`: a 307px vote tile and a 570px hero card sit at the same viewport, so only a card-relative unit gets both right. `.frame` declares `container-type: inline-size` for it |
 | shadow `0 ±1.5–2px 0 #000` | `$media-overlay-shadow: 2px` | The top of the same range. At 14px 1.5px held the letter off the image; at 42px it is a hairline |
 
+**Amended again:** the size is one of four steps, not one value.
+`$media-overlay-size` is what a caption of a single line gets;
+`$media-overlay-size-2/-3/-4` step it down as the caption grows, each roughly
+the one above divided by its own line count, so the block of text stays about
+the height one line was. Which step a caption gets is read off its *length* —
+see `overlayStep` in `MediaCard.tsx` — because the size is in `cqw` and a card
+therefore holds about 20 characters per line whatever its pixel width — that
+number is `CHARS_PER_LINE` in `MediaCard.tsx` rather than a token, because no
+stylesheet can read it and a token nothing consumes drifts from the one that
+runs. No measuring, so `MediaCard` stays a server component. The overlay also carries `max-height: calc(50% - 10px)` and
+`overflow-wrap: anywhere`: the two overlays share one frame, and before this a
+long caption grew straight out through the bottom edge, where the frame's
+`overflow: hidden` cut it in half without saying so.
+
 Changing the shape back is one line: `$media-ratio: 4 / 3` and every screen
 follows. The decision, and what it cost elsewhere, is
 [ADR 0016](./adr/0016-a-media-card-is-square-and-a-caption-scales-with-it.md) —
@@ -403,7 +417,7 @@ primitives.
 | `JoinPanel` | molecule | A room's code and QR on their own, for a screen shared to a wall. **No caller today** — `/join` is built from `CodeEntry` + `AvatarPicker`, and the lobby's own share block is `RoomShare` |
 | `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line |
 | `PlayerRow` | molecule | One player in a list — `roster`, `tracker`, or `standing` |
-| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Square at every width, with caption overlays sized against the card. Its foot takes `caption`, `reply`, `reaction` and `action` as peers |
+| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Drawn at its image's own ratio, with caption overlays sized against the card and stepped down a size per line they need. Its foot takes `caption`, `reply`, `reaction` and `action` as peers; `onActivate` makes the picture itself a pointer target for whatever `action` does |
 | `ChatMessage` | molecule | One chat message in three bands: a **name row**, a **bubble** carrying body, quote and attachment together, and a **reaction row** under it. The bubble is `fit-content`, so four words read as four words rather than as a plate with 200px of nothing after them, and the avatar drops to the bubble's top edge — the face belongs to what was said, the name is the label on it. `onReact` puts the CTA at the end of the reaction row, **always lit**: under the plate it is out of the reading path, which is what lets it stay visible, and a hover-only affordance is no affordance on a phone. A host announcement is the same component with `announcement` — its own accent plate, taking the avatar gutter too — which **nothing in the room sets**: it used to be `author.isHost`, so every line the host typed was a card signed "HOST · HOST", and since that branch drew only the body a GIF from the host was an empty one. The host is a player, so their chat is chat. An attachment is bounded by 180×120 rather than forced to it, so a Slackmoji posted from the composer stays its own size |
 | `UnreadDivider` | molecule | Where you stopped reading |
 | `ReactionToolbar` | molecule | The searchable reaction picker. Controlled by `open` so it can animate out, dismissed by Escape or a click anywhere outside it, and genie-in/out from the edge its `flipped` anchor sits on. No printed title — the thing you opened it from already said what it is for. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
@@ -590,11 +604,16 @@ Not aspirational — these are merged-or-not conditions.
   control that is **completely behind painted ground**: the vote screen's lock
   dock is `position: sticky` with a real background rather than a fade, so a
   phone voter always has some card's foot row buried under it — and a buried
-  row is not offered to anybody, it appears when you scroll. Two controls the
-  viewer can *see*, one silently taking the other's tap, is the thing that
-  fails. What that costs — content under a sticky surface is out of scope now,
-  permanently — is
-  [ADR 0017](./adr/0017-a-buried-control-is-not-a-stolen-tap.md).
+  row is not offered to anybody, it appears when you scroll. It also ignores an
+  **empty** `aria-hidden` button — those are backdrops rather than controls: a
+  pointer affordance laid over content, out of the accessibility tree, exactly
+  the size of what it covers, and never the only way to its action, which is
+  what `MediaCard`'s `onActivate` makes of a vote card's picture. A separate
+  test pins each of those to its own frame within a pixel, so one cannot grow
+  past its picture and take a neighbour's tap. Two controls the viewer can
+  *see*, one silently taking the other's tap, is the thing that fails. What
+  that costs — content under a sticky surface is out of scope now, permanently
+  — is [ADR 0017](./adr/0017-a-buried-control-is-not-a-stolen-tap.md).
 
 Applied so far to the vote card's foot row (the reply key and the reaction CTA).
 Still below the floor and knowingly so: the composer's six one-tap keys and its

@@ -247,6 +247,10 @@ export function VoteScreen() {
                     <Icon name="chat" size={14} />
                   </button>
                 }
+                // The picture is what people reach for. Same toggle as the
+                // button below it, and never on your own entry — that card has
+                // no action to take.
+                onActivate={card.own || locked ? undefined : () => toggle(card.entryId)}
                 action={
                   card.own ? undefined : (
                     <Button

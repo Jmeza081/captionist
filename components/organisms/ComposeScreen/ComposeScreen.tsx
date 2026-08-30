@@ -114,7 +114,7 @@ export function ComposeScreen() {
           status={gifs.status}
           message={gifs.message}
           query={gifs.query}
-          onQueryChange={() => {}}
+          onQueryChange={gifs.setQuery}
           onSubmit={gifs.search}
           suggestions={SEARCH_SUGGESTIONS}
           selectedId={picked?.id}

@@ -14,8 +14,30 @@ import { expect, test, type Page } from '@playwright/test'
  * here is the overlap one, not the size one.
  */
 
-/** The Next dev-tools badge floats over the page and is not shipped. */
-const SHIPPED = 'button:not([data-nextjs-dev-tools-button]), a[href]'
+/**
+ * Every control a finger can land on, minus two kinds that are not competing
+ * for one.
+ *
+ * The Next dev-tools badge floats over the page and is not shipped.
+ *
+ * **Empty** `aria-hidden` buttons are excluded because of what they are: a
+ * pointer affordance laid over content that already has a labelled control
+ * elsewhere — `MediaCard`'s `onActivate`, which makes the picture a second way
+ * to rank the card. It is out of the tab order and out of the accessibility
+ * tree precisely so it is not a second control, it is exactly the size of the
+ * thing it sits on, and it is what a sticky bar over a scrolling grid is
+ * *supposed* to cover. Counting it here would report the vote screen's lock
+ * dock resting on the card behind it as a stolen tap, which is layering
+ * working. The size of one is pinned separately below, so it cannot quietly
+ * grow past its picture.
+ *
+ * `:empty` is what keeps that exclusion to backdrops. A hidden button that
+ * *draws* something is a control with an accessibility problem, not a
+ * backdrop, and it stays in the sweep where a future one would otherwise drop
+ * out of it in silence.
+ */
+const SHIPPED =
+  'button:not([data-nextjs-dev-tools-button]):not([aria-hidden="true"]:empty), a[href]'
 
 interface Hit {
   x: number
@@ -132,6 +154,30 @@ test.describe('touch targets', () => {
     // The one this caught: the vote screen's full-width lock button ran under
     // the floating chat key, so the right end of "Lock my ranking" opened chat.
     expect(clashes, clashes.join('\n')).toEqual([])
+  })
+
+  test('the picture’s tap target is the picture, and nothing more', async ({ page }) => {
+    await page.goto('/room/C-F34911?seed=42&phase=vote&as=p2&gifs=stub')
+    await expect(page.locator('main[data-phase]')).toBeVisible()
+
+    // It is left out of the overlap sweep above because it is a backdrop
+    // rather than a control, so this is what holds it to that: exactly its
+    // frame, never a pixel outside it, where it could take a neighbour's tap.
+    const boxes = await page.$$eval('button[aria-hidden="true"]:empty', (els) =>
+      els.map((el) => {
+        const hit = el.getBoundingClientRect()
+        const frame = el.parentElement!.getBoundingClientRect()
+        return {
+          dx: Math.abs(hit.x - frame.x) + Math.abs(hit.right - frame.right),
+          dy: Math.abs(hit.y - frame.y) + Math.abs(hit.bottom - frame.bottom),
+        }
+      }),
+    )
+    expect(boxes.length).toBeGreaterThan(0)
+    for (const box of boxes) {
+      expect(box.dx).toBeLessThanOrEqual(1)
+      expect(box.dy).toBeLessThanOrEqual(1)
+    }
   })
 
   test('the vote card’s own keys clear 44px', async ({ page }) => {

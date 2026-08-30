@@ -308,6 +308,43 @@ describe('scoring', () => {
   })
 })
 
+describe('a brief nobody answered', () => {
+  it('still hands the room an image to caption', () => {
+    let state = apply(room(4), 'p0', { type: 'game/started' })
+    state = expire(state) // opener -> brief
+    expectPhase(state, 'brief')
+
+    // Nobody picks. This used to leave everyone captioning an empty frame —
+    // one player's hesitation spoiling the round for the other three.
+    state = expire(state)
+    expectPhase(state, 'compose')
+
+    const subject = state.round?.subject
+    expect(subject?.kind).toBe('media')
+    expect(subject?.kind === 'media' && subject.media.src).toMatch(/^\/media\/stub-/)
+  })
+
+  it('picks the same image for every client, because the room’s seed chose it', () => {
+    const start = () => {
+      let state = apply(room(4), 'p0', { type: 'game/started' })
+      state = expire(state)
+      return expire(state)
+    }
+    const a = start()
+    const b = start()
+    const src = (s: GameState) =>
+      s.round?.subject?.kind === 'media' ? s.round.subject.media.src : undefined
+    expect(src(a)).toBe(src(b))
+  })
+
+  it('falls back to a prompt in the reversed mode, not to an image', () => {
+    let state = apply(room(4, { mode: 'react' }), 'p0', { type: 'game/started' })
+    state = expire(state)
+    state = expire(state)
+    expect(state.round?.subject?.kind).toBe('prompt')
+  })
+})
+
 describe('the clock', () => {
   it('ignores an expiry meant for a phase the room has already left', () => {
     let state = apply(room(4), 'p0', { type: 'game/started' })

@@ -14,6 +14,7 @@ import { JOIN_ERRORS, joinCopy } from '@/lib/game/selectors'
 import type { WallTile } from '@/lib/gifs/wall'
 import { writeIdentity } from '@/lib/room/identity'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
+import { useSuggestedName } from '@/lib/room/useSuggestedName'
 import styles from './JoinScreen.module.scss'
 
 /**
@@ -56,10 +57,15 @@ export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
   // way round rather than seeding state from storage: the stored value arrives
   // at hydration, and seeding would let it land on top of a field somebody had
   // already started filling in.
+  //
+  // The face is remembered; the nickname is suggested fresh per tab. A
+  // remembered name is worse than none when the second tab is the second
+  // player — see `useSuggestedName`.
   const stored = useStoredPerson()
+  const suggested = useSuggestedName()
   const [typedName, setTypedName] = useState<string | undefined>(undefined)
   const [pickedSeed, setPickedSeed] = useState<string | undefined>(undefined)
-  const name = typedName ?? stored.name
+  const name = typedName ?? suggested
   const seed = pickedSeed ?? stored.avatarSeed
 
   const ready = code.length >= LENGTH && name.trim().length > 0

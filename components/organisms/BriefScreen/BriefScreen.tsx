@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
-import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Chip } from '@/components/atoms/Chip'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
@@ -27,6 +26,17 @@ import styles from './BriefScreen.module.scss'
  * which mode the room is in. That is what stops this forking in two.
  */
 
+/**
+ * How long before the brief clock expires the screen picks for you.
+ *
+ * Long enough that the locked subject reaches the host before its own
+ * `clock/expired` does, short enough that it is the deadline rather than a
+ * screen that lost patience. The reducer has its own fallback for a role
+ * holder whose tab is gone; this one exists so the room gets a GIF somebody
+ * was actually looking at rather than one off the offline shelf.
+ */
+const AUTO_PICK_LEAD_MS = 1_200
+
 export function BriefScreen() {
   const { state, selfId, send } = useRoom()
   const { notify } = useRoomShell()
@@ -35,10 +45,58 @@ export function BriefScreen() {
   const [picked, setPicked] = useState<GifResult | undefined>(undefined)
   const [draft, setDraft] = useState('')
 
-  if (!state) return null
+  // Above the early returns, because hooks are. Both tolerate no room.
+  const copy = state ? briefCopy(state, selfId) : undefined
+  const holder = state ? roleHolder(state) : undefined
 
-  const copy = briefCopy(state, selfId)
-  const holder = roleHolder(state)
+  /**
+   * The clock picks for you.
+   *
+   * A timer set against the deadline rather than a subscription to the
+   * countdown: this fires once, and a ticking hook here would be a second
+   * interval on a page that deliberately runs one (see `RoomShell`).
+   *
+   * What it picks is read through a ref at fire time, so browsing the board or
+   * staging a tile does not restart the timer — only a new deadline does. Your
+   * own staged pick wins; failing that, a random tile off the board you were
+   * looking at.
+   */
+  const armed = useRef({ picked, results: gifs.results, send })
+  // Every render, deliberately: the timer must see the board as it is when it
+  // fires, not as it was when it was set. Writing a ref during render is what
+  // `react-hooks/refs` forbids, and it is right to — the compiler may not run
+  // the render that wrote it.
+  useEffect(() => {
+    armed.current = { picked, results: gifs.results, send }
+  })
+  const fired = useRef(false)
+
+  const deadline =
+    copy?.view === 'pick' && state?.clock.status === 'running' && !state.round?.subject
+      ? state.clock.endsAt
+      : undefined
+
+  useEffect(() => {
+    if (deadline === undefined) return
+    fired.current = false
+    const id = setTimeout(
+      () => {
+        if (fired.current) return
+        const { picked, results, send } = armed.current
+        const gif = picked ?? results[Math.floor(Math.random() * results.length)]
+        if (!gif) return
+        fired.current = true
+        send({
+          type: 'round/subjectLocked',
+          subject: { kind: 'media', media: toMediaRef(gif) },
+        })
+      },
+      Math.max(0, deadline - AUTO_PICK_LEAD_MS - Date.now()),
+    )
+    return () => clearTimeout(id)
+  }, [deadline])
+
+  if (!state || !copy) return null
 
   /* ---------------- Waiting on someone else ---------------- */
 
@@ -153,36 +211,29 @@ export function BriefScreen() {
         <span className={styles.note}>Powered by Giphy · SFW filter on</span>
       </Inline>
 
+      {/* Under the headline, where it is read once on the way in, rather than
+          pinned to the bottom beside the button — a note about the clock is
+          context for the whole screen, not a label on the action. */}
+      <p className={styles.note}>{copy.timeoutNote}</p>
+
       <GifPanel
         variant="board"
         results={gifs.results}
         status={gifs.status}
         message={gifs.message}
         query={gifs.query}
-        onQueryChange={() => {}}
+        onQueryChange={gifs.setQuery}
         onSubmit={gifs.search}
         suggestions={SEARCH_SUGGESTIONS}
         selectedId={picked?.id}
         selectionLabel="Selected"
         onPick={setPicked}
+        // Both controls sit with the search field: everything that changes what
+        // the board shows, and then the one thing that ends the phase. It keeps
+        // the action in reach at the top of a board that scrolls a long way,
+        // which is what the foot row underneath it could not do.
         tools={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              void gifs.surprise().then((gif) => {
-                if (gif) setPicked(gif)
-              })
-            }}
-          >
-            Surprise me
-          </Button>
-        }
-      />
-
-      <Box background="none" padding={0}>
-        <Inline gap={14} justify="between">
-          <span className={styles.note}>{copy.timeoutNote}</span>
-          <Inline gap={12}>
+          <>
             <Button
               variant="secondary"
               onClick={() => {
@@ -195,9 +246,9 @@ export function BriefScreen() {
             <Button blocked={!picked} onClick={() => lockIn(picked)}>
               {picked ? copy.action : 'Pick one first'}
             </Button>
-          </Inline>
-        </Inline>
-      </Box>
+          </>
+        }
+      />
     </Stack>
   )
 }

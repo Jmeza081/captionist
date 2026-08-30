@@ -28,6 +28,32 @@ test.describe('voting', () => {
     await expect(page.getByRole('status')).toHaveText('Ranking locked in')
   })
 
+  test('ranks a card by its picture, not just by the button', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=vote&as=p2&gifs=stub')
+
+    await expect(page.getByRole('button', { name: 'Pick 3 more' })).toBeVisible()
+
+    // The picture is the joke, so the picture is the target. The button under
+    // it stays — it is the keyboard's route to the same thing — but a card is
+    // something people reach for whole.
+    const card = page.locator('figure').filter({ hasText: 'Rank this' }).first()
+    // Clicking the picture's own coordinates. `force` because the thing that
+    // actually receives the click is the transparent target lying over the
+    // image — Playwright's actionability check calls that an interception,
+    // which here is the mechanism working rather than a page that moved.
+    await card.locator('img').click({ force: true })
+    await expect(page.getByRole('button', { name: 'Pick 2 more' })).toBeVisible()
+
+    // The ranked one, found by what its foot now says rather than by position:
+    // ranking re-labels the card, so the locator above no longer matches it.
+    const ranked = page.locator('figure').filter({ hasText: 'Clear 1st' })
+    await expect(ranked).toHaveCount(1)
+
+    // Clicking the picture again takes the rank back off, the same as the button.
+    await ranked.locator('img').click({ force: true })
+    await expect(page.getByRole('button', { name: 'Pick 3 more' })).toBeVisible()
+  })
+
   test('fills the rank slots, and clearing one puts the pick back', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=vote&as=p2&gifs=stub')
 

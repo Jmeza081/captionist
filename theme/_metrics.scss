@@ -149,6 +149,28 @@ $media-ratio: 1 / 1;
  * on purpose.
  */
 $media-overlay-size: clamp(1.375rem, 8cqw, 2.625rem);
+/**
+ * …and the same type, stepped down as a caption grows.
+ *
+ * A one-word caption should be huge and a sixty-character one should still be
+ * readable, and at a fixed size the long one either ran off the bottom of the
+ * frame or filled it corner to corner. Because the size is in `cqw`, a card
+ * fits roughly the same *number of characters* per line whatever its pixel
+ * width — so how many lines a caption takes can be read off its length alone,
+ * with no measuring, and `MediaCard` stays a server component.
+ *
+ * Each step is the one above divided by its own line count, so the block of
+ * text stays about the height a single line was: two lines at `-2` occupy what
+ * one line at `-1` did. Four steps covers `CAPTION_MAX` (60).
+ */
+$media-overlay-size-2: clamp(1.125rem, 6cqw, 2rem);
+$media-overlay-size-3: clamp(1rem, 4.8cqw, 1.625rem);
+$media-overlay-size-4: clamp(0.875rem, 4cqw, 1.375rem);
+// How many characters a line of that type holds — and therefore which step a
+// caption gets — is `CHARS_PER_LINE` in `MediaCard.tsx`. It is not a token,
+// because no stylesheet can read it: the step is chosen in TypeScript. It is a
+// property of the sizes above all the same, so changing the font, the weight
+// or the letter-spacing means re-measuring it.
 // The top of the design's `0 ±1.5–2px` range. At 14px 1.5px held the letter
 // off the image; at 42px it is a hairline.
 $media-overlay-shadow: 2px;

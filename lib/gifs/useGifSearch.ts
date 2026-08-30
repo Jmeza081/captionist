@@ -21,6 +21,14 @@ export interface GifSearch {
   /** Set when something needs saying — an error, or "these are samples". */
   message?: string
   query: string
+  /**
+   * Type into the field.
+   *
+   * The field is controlled by `query` so a suggestion chip and a search both
+   * land in it — which meant that without this it could not be typed in at
+   * all: both boards passed a no-op change handler and the box was frozen.
+   */
+  setQuery: (query: string) => void
   search: (query: string) => void
   /** Next page of the same query. */
   shuffle: () => void
@@ -137,6 +145,7 @@ export function useGifSearch(): GifSearch {
     status,
     message,
     query,
+    setQuery,
     search: (next: string) => run(next, 0),
     shuffle: () => run(query, offset.current),
     surprise,

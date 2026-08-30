@@ -42,14 +42,23 @@
 //
 // Four-way black shadow rather than a scrim, so the image stays visible
 // behind the text.
+//
+// The two of them share the frame, so neither may take more than half of it:
+// `max-height` plus `overflow-wrap` is what keeps a long caption inside the
+// image instead of growing out through the bottom edge, where `.frame`'s
+// `overflow: hidden` was quietly cutting it in half. The step classes below
+// mean it should never reach that ceiling — this is the backstop, not the
+// mechanism.
 .overlay {
   position: absolute;
   left: 0;
   right: 0;
+  max-height: calc(50% - #{t.$space-10});
+  overflow: hidden;
   padding: 0 t.$space-10;
   text-align: center;
   font-family: t.$font-sans;
-  font-size: t.$media-overlay-size;
+  font-size: var(--media-overlay-size, #{t.$media-overlay-size});
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.01em;
@@ -59,6 +68,30 @@
     0 (-(t.$media-overlay-shadow)) 0 #000, t.$media-overlay-shadow 0 0 #000,
     (-(t.$media-overlay-shadow)) 0 0 #000;
   text-wrap: balance;
+  // A single word longer than the card — a stack trace, a package name — has
+  // to break rather than run off both sides of it.
+  overflow-wrap: anywhere;
+}
+
+/**
+ * One step down per line the caption needs.
+ *
+ * The class comes from the caption's own length — see `overlayStep` in
+ * `MediaCard.tsx` — because the size is in `cqw` and a card therefore fits
+ * about the same character count per line at every width. A one-line caption
+ * keeps the full poster size; the fourth step still reads at a vote tile's
+ * width.
+ */
+.lines2 {
+  --media-overlay-size: #{t.$media-overlay-size-2};
+}
+
+.lines3 {
+  --media-overlay-size: #{t.$media-overlay-size-3};
+}
+
+.lines4 {
+  --media-overlay-size: #{t.$media-overlay-size-4};
 }
 
 .top {
@@ -154,6 +187,34 @@
   bottom: t.$space-10;
   display: flex;
   gap: t.$space-5;
+}
+
+/**
+ * The image as a target.
+ *
+ * A transparent button over the frame rather than a handler on the frame
+ * itself, so the pointer behaviour — the cursor, the press — comes from a real
+ * control instead of a div pretending. It carries no focus ring because it
+ * carries no focus: it is out of the tab order, and the labelled button in the
+ * foot is the keyboard's route to the same action. See `onActivate`.
+ *
+ * Last in the frame, so it sits over the badge and the tallies. Both are inert
+ * text, and a click anywhere on the picture should mean the same thing.
+ */
+.hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+// The image comes forward under the pointer, the same lift ranking gives it,
+// so the card reads as something you can press.
+.activatable:hover .image {
+  opacity: 1;
 }
 
 .foot {

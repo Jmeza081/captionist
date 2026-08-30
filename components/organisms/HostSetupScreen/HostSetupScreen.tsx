@@ -30,6 +30,7 @@ import type { WallTile } from '@/lib/gifs/wall'
 import { writeIdentity } from '@/lib/room/identity'
 import { writePendingSettings } from '@/lib/room/pendingSettings'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
+import { useSuggestedName } from '@/lib/room/useSuggestedName'
 import styles from './HostSetupScreen.module.scss'
 
 /**
@@ -62,11 +63,13 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
   const [settings, setSettings] = useState<RoomSettings>(DEFAULT_SETTINGS)
   const [helpOpen, setHelpOpen] = useState(false)
 
-  // See `JoinScreen`: stored underneath, typed on top.
+  // See `JoinScreen`: the face is remembered, the nickname is suggested fresh
+  // per tab, and anything typed sits on top of both.
   const stored = useStoredPerson()
+  const suggested = useSuggestedName()
   const [typedName, setTypedName] = useState<string | undefined>(undefined)
   const [pickedSeed, setPickedSeed] = useState<string | undefined>(undefined)
-  const name = typedName ?? stored.name
+  const name = typedName ?? suggested
   const seed = pickedSeed ?? stored.avatarSeed
 
   const patch = (next: Partial<RoomSettings>) => setSettings((s) => ({ ...s, ...next }))

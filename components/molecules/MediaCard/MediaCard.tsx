@@ -63,6 +63,17 @@ export interface MediaCardProps {
   reply?: ReactNode
   /** Caption label under the card. */
   caption?: string
+  /**
+   * Clicking the image does what the foot's `action` does.
+   *
+   * The affordance the vote grid was missing: a card is a picture of a joke,
+   * and the picture is what people reach for — the small button under it was
+   * the only way to rank one. Pointer-only on purpose. It is a *second* route
+   * to an action the foot already carries, so it is `aria-hidden` and out of
+   * the tab order rather than a duplicate control announcing itself twice; the
+   * keyboard route is the labelled button underneath, which stays.
+   */
+  onActivate?: () => void
 }
 
 /**
@@ -88,10 +99,12 @@ export function MediaCard({
   reaction,
   reply,
   caption,
+  onActivate,
 }: MediaCardProps) {
-  // A round whose clock ran out has a subject with no image. Rather than a
-  // broken frame, the alt text becomes the content — it already says what
-  // happened ("No image was picked in time").
+  // A card with no image at all. The round's own timeout no longer produces
+  // one — the reducer picks off the offline shelf now — but an entry can still
+  // arrive without media, and a broken frame is worse than the alt text used
+  // as the content.
   const missing = !hasImage(src)
   const aspect = mediaAspect({ width, height })
 
@@ -102,9 +115,13 @@ export function MediaCard({
     selected ? styles.selected : '',
     winner ? styles.winner : '',
     own ? styles.own : '',
+    onActivate ? styles.activatable : '',
   ]
     .filter(Boolean)
     .join(' ')
+
+  const overlayClasses = (edge: string, text: string): string =>
+    [styles.overlay, edge, overlayStep(text)].filter(Boolean).join(' ')
 
   return (
     <figure className={styles.card}>
@@ -120,9 +137,9 @@ export function MediaCard({
 
         {missing && <span className={styles.fallback}>{alt}</span>}
 
-        {topText && <span className={`${styles.overlay} ${styles.top}`}>{topText}</span>}
+        {topText && <span className={overlayClasses(styles.top, topText)}>{topText}</span>}
         {bottomText && (
-          <span className={`${styles.overlay} ${styles.bottom}`}>{bottomText}</span>
+          <span className={overlayClasses(styles.bottom, bottomText)}>{bottomText}</span>
         )}
 
         {rank && (
@@ -140,6 +157,16 @@ export function MediaCard({
         )}
 
         {tallies && <div className={styles.tallies}>{tallies}</div>}
+
+        {onActivate && (
+          <button
+            type="button"
+            className={styles.hit}
+            onClick={onActivate}
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+        )}
       </div>
 
       {(caption || action || reaction || reply) && (
@@ -152,6 +179,33 @@ export function MediaCard({
       )}
     </figure>
   )
+}
+
+/**
+ * Which type step a caption needs, from its length alone.
+ *
+ * No measuring, and therefore no effect, no ref and no `'use client'`: the
+ * overlay is sized in `cqw`, so a card holds about the same number of
+ * characters per line whatever its pixel width, and the line count falls out of
+ * the character count. Capped at the fourth step, which is where `CAPTION_MAX`
+ * lands.
+ *
+ * Twenty is measured against the 800-weight uppercase sans the overlay is set
+ * in, not guessed: at 8cqw an average glyph advances about 0.55em, so a card
+ * fits `1 / (0.08 * 0.55)` ≈ 22 of them, less the padding either side. It lives
+ * here rather than in `theme/_metrics.scss` because no stylesheet can read it —
+ * a token nothing consumes is a number that drifts from the one that runs. It
+ * is still a property of `$media-overlay-size`, so changing that type means
+ * re-measuring this.
+ */
+const CHARS_PER_LINE = 20
+
+function overlayStep(text: string): string {
+  const lines = Math.ceil(text.trim().length / CHARS_PER_LINE)
+  if (lines <= 1) return ''
+  if (lines === 2) return styles.lines2 ?? ''
+  if (lines === 3) return styles.lines3 ?? ''
+  return styles.lines4 ?? ''
 }
 
 function ordinal(rank: 1 | 2 | 3): string {

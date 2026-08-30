@@ -31,6 +31,47 @@ test.describe('composing', () => {
     await expect(page.getByText('1 of 4 have submitted')).toBeVisible()
   })
 
+  test('shrinks the caption a step per line, and keeps it inside the image', async ({
+    page,
+  }) => {
+    await page.goto('/room/DEV?seed=42&phase=compose&as=p2&gifs=stub')
+
+    const field = page.getByRole('textbox', { name: 'Top text' })
+    const overlay = page.locator('figure span').filter({ hasText: /./ }).first()
+
+    const sizeOf = async (): Promise<number> =>
+      overlay.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+
+    await field.fill('Prod is down')
+    const oneLine = await sizeOf()
+
+    // Each step down is what keeps the block of text about the height one line
+    // was, instead of a long caption filling the card corner to corner.
+    await field.fill('Prod is down and nobody has')
+    const twoLines = await sizeOf()
+    expect(twoLines).toBeLessThan(oneLine)
+
+    await field.fill('Prod is down and nobody has said anything about it yet at all')
+    const fourLines = await sizeOf()
+    expect(fourLines).toBeLessThan(twoLines)
+
+    // And whatever it is set at, it stays inside the picture. The frame clips,
+    // so an overlay that outgrew it used to lose its bottom half silently.
+    const clipped = await overlay.evaluate((el) => {
+      const frame = el.parentElement!
+      const text = el.getBoundingClientRect()
+      const box = frame.getBoundingClientRect()
+      return text.bottom > box.bottom + 1 || text.top < box.top - 1
+    })
+    expect(clipped).toBe(false)
+
+    // A single unbroken word longer than the card breaks rather than running
+    // off both sides of it.
+    await field.fill('supercalifragilisticexpialidocious')
+    const overflowed = await overlay.evaluate((el) => el.scrollWidth > el.clientWidth + 1)
+    expect(overflowed).toBe(false)
+  })
+
   test('replaces an entry rather than adding a second one', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=compose&as=p2&gifs=stub')
 

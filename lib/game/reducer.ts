@@ -9,6 +9,8 @@ import {
   durationFor,
 } from './constants'
 import { pick, shuffle } from './rng'
+import { SAMPLE_GIFS, sampleAt } from '@/lib/gifs/samples'
+import { toMediaRef } from '@/lib/gifs/types'
 import type {
   Clock,
   Entry,
@@ -316,10 +318,24 @@ function fallbackSubject(state: GameState): [RoundSubject, number] {
     const [text, seed] = pick(FALLBACK_PROMPTS, state.seed)
     return [{ kind: 'prompt', text: text ?? FALLBACK_PROMPTS[0] ?? '' }, seed]
   }
-  // Caption mode has no offline GIF to fall back to, so an empty subject with
-  // honest alt text is better than a broken image. The brief screen's own
-  // "Surprise me" is the real answer; this is the clock running out.
-  return [{ kind: 'media', media: { src: '', alt: 'No image was picked in time' } }, state.seed]
+  /**
+   * Caption mode picks *something*, always.
+   *
+   * This used to hand back an empty `src` with honest alt text, which meant a
+   * role holder who ran out of time left the whole room captioning a dashed
+   * grey box — everyone else's round spoiled by one person's hesitation. The
+   * offline shelf is committed art with no key and no network behind it, so
+   * the reducer can reach it and stay pure.
+   *
+   * The room's own seed chooses, so every client lands on the same image from
+   * the same state — a `Math.random` here would give the host one GIF and each
+   * guest another. The brief screen locks a real Giphy result in a beat before
+   * this fires (see `BriefScreen`); this is the net for a role holder whose tab
+   * is gone.
+   */
+  const [gif, seed] = pick(SAMPLE_GIFS, state.seed)
+  const chosen = gif ?? sampleAt(0)
+  return [{ kind: 'media', media: toMediaRef(chosen) }, seed]
 }
 
 /* ------------------------------------------------------------------ */

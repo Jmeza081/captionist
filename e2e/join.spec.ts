@@ -35,6 +35,11 @@ test.describe('joining', () => {
     await expect(cta).not.toBeDisabled()
 
     await page.getByRole('textbox', { name: 'Room code' }).fill('F34213')
+    // The code was the only thing missing: a name is suggested on arrival.
+    await expect(page.getByRole('button', { name: 'Join the room' })).toBeVisible()
+
+    // Clearing it puts the block back, and the label still says what to do.
+    await page.getByRole('textbox', { name: 'Nickname' }).fill('')
     await expect(page.getByRole('button', { name: 'Pick a name first' })).toBeVisible()
 
     await page.getByRole('textbox', { name: 'Nickname' }).fill('Vic')
@@ -53,13 +58,30 @@ test.describe('joining', () => {
     await expect(page).toHaveURL(/\/room\/C-FQJ783$/)
   })
 
-  test('takes the code from the link, so a scanned QR only asks for a name', async ({
+  test('takes the code from the link, and still asks who is arriving', async ({
     page,
   }) => {
     await page.goto('/join/C-F34213')
 
+    // The link carries the code and the screen suggests a name, so the CTA is
+    // ready rather than blocked. It is still the same screen and still the same
+    // button: nobody is seated until they press it.
     await expect(page.getByRole('textbox', { name: 'Room code' })).toHaveValue('F344J3')
-    await expect(page.getByRole('button', { name: 'Pick a name first' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Nickname' })).toHaveValue(
+      /^[A-Z][a-z]+_[A-Z][a-z]+$/,
+    )
+    await expect(page.getByRole('button', { name: 'Join the room' })).toBeVisible()
+    await expect(page).toHaveURL(/\/join\//)
+
+    // The suggestion is a starting point, not a verdict — both halves of who
+    // you are stay yours to change before you ask for a seat.
+    await page.getByRole('textbox', { name: 'Nickname' }).fill('Vic')
+    await page.getByRole('radio', { name: 'Fern' }).click()
+    await expect(page.getByRole('textbox', { name: 'Nickname' })).toHaveValue('Vic')
+    await expect(page.getByRole('radio', { name: 'Fern' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 
   test('offers the way out to whoever arrived before the host', async ({ page }) => {
@@ -69,10 +91,14 @@ test.describe('joining', () => {
     await expect(page).toHaveURL(/\/host$/)
   })
 
-  test('remembers the name and face for the next room', async ({ page }) => {
+  test('remembers the face, and suggests a new name every time', async ({ page }) => {
     await page.goto('/join')
+    // Arriving with one already, so nobody has to think of a nickname to play.
+    const nickname = page.getByRole('textbox', { name: 'Nickname' })
+    await expect(nickname).toHaveValue(/^[A-Z][a-z]+_[A-Z][a-z]+$/)
+
     await page.getByRole('textbox', { name: 'Room code' }).fill('F34213')
-    await page.getByRole('textbox', { name: 'Nickname' }).fill('Roberto')
+    await nickname.fill('Roberto')
     // Named for the seed rather than a position, which is what makes this
     // assertion mean anything: the window the picker offers is a function of
     // the stored seed, so coming back reproduces it.
@@ -81,11 +107,14 @@ test.describe('joining', () => {
     await expect(page).toHaveURL(/\/room\//)
 
     await page.goto('/join')
-    await expect(page.getByRole('textbox', { name: 'Nickname' })).toHaveValue('Roberto')
+    // The face is yours and comes back. The name does not: a remembered one is
+    // worse than useless when the next tab is the next player.
     await expect(page.getByRole('radio', { name: 'Fern' })).toHaveAttribute(
       'aria-checked',
       'true',
     )
+    await expect(nickname).not.toHaveValue('Roberto')
+    await expect(nickname).toHaveValue(/^[A-Z][a-z]+_[A-Z][a-z]+$/)
   })
 
   test('shuffles what is on offer without shuffling away your pick', async ({ page }) => {

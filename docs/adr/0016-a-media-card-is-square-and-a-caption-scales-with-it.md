@@ -70,3 +70,55 @@ ratio makes both redundant, and a vestigial prop is a thing that drifts.
 card throws away half the width of a 2:1 source, so `lib/gifs/notFound.ts`
 carries a 320×320 cut of the meme rather than the 500×251 one. Any hard-coded
 art added later inherits that constraint.
+
+## Amendment · 2026-08-30 — a caption scales with the card *and* with itself
+
+The decision above is unchanged: the overlay is sized in `cqw` against the
+card, not in `vw` against the window. What changed is that one size was not
+enough.
+
+**The problem this missed.** `clamp(1.375rem, 8cqw, 2.625rem)` is the right
+size for a caption of a few words and the wrong size for sixty characters. At
+the ceiling a card fits about twenty characters to a line, so `CAPTION_MAX`
+was four lines of poster type — and the two overlays share one frame, so the
+top one grew down through the bottom edge where `.frame`'s `overflow: hidden`
+cut it in half without saying so. What the player saw while typing was a
+caption losing its own second half.
+
+**The decision.** The size is one of four steps, chosen by the caption's
+**character length** rather than by measuring it: `$media-overlay-size` for one
+line, `$media-overlay-size-2/-3/-4` below it, each roughly the one above
+divided by its own line count so the block of text stays about the height a
+single line was. `overlayStep` in `MediaCard.tsx` does the arithmetic against
+`CHARS_PER_LINE` (20), which lives beside it rather than in `theme/` — no
+stylesheet can read it, and a token nothing consumes drifts from the number that
+actually runs.
+
+**Length, not measurement, and that is the point.** Measuring means a layout
+effect, a ref, and `'use client'` on a component that four screens render and
+none of them need interactive. Character count works *because of the original
+decision*: the type is sized in `cqw`, so a card holds about the same number of
+characters per line whatever its pixel width — a 307px vote tile and a 550px
+compose preview wrap at the same word. The `cqw` unit is what makes the cheap
+answer the correct one. Anyone tempted to "fix" this with `useLayoutEffect` and
+`scrollHeight` should read that sentence again first.
+
+## Consequences
+
+- **`MediaCard` stays a server component.** The whole point of the paragraph
+  above.
+- **The steps are approximate, so the frame still needs a floor.** The overlay
+  carries `max-height: calc(50% - 10px)` and `overflow-wrap: anywhere`: neither
+  overlay may take more than half the frame, and a single unbroken word — a
+  package name, a stack frame — breaks rather than running off both sides. The
+  steps mean that ceiling should never be reached; it is the backstop, not the
+  mechanism.
+- **Twenty characters per line is a measured constant, not a magic number**,
+  and it is wrong the moment the overlay's font, weight, or `letter-spacing`
+  changes. `theme/_metrics.scss` carries a comment beside the sizes saying so
+  and pointing at where the number lives, because the coupling is real even
+  though the value cannot be a token.
+- **`e2e/compose.spec.ts` asserts the ladder rather than the sizes**: that each
+  step is smaller than the last, that the text stays inside the frame's box,
+  and that an unbreakable word does not overflow. Pinning the pixel values
+  would break on every legitimate type change.

@@ -15,6 +15,7 @@
 }
 
 .note {
+  margin: 0;
   @include t.labelText;
   color: t.$text-meta;
 }

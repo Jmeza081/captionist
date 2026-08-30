@@ -32,6 +32,30 @@ test.describe('the brief', () => {
     await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'compose')
   })
 
+  test('lets you type a search, and keeps both controls beside the field', async ({
+    page,
+  }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+
+    // The field was controlled by the hook with a no-op change handler, so it
+    // took a suggestion chip but not a keystroke. Typed, not filled: `fill`
+    // sets the value in one event and would have passed against the bug.
+    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    await search.pressSequentially('rollback')
+    await expect(search).toHaveValue('rollback')
+
+    // Both live with the search now — nothing waits at the bottom of a board
+    // that scrolls a long way.
+    await expect(page.getByRole('button', { name: 'Shuffle results' })).toBeInViewport()
+    await expect(page.getByRole('button', { name: 'Pick one first' })).toBeInViewport()
+    await expect(page.getByRole('button', { name: 'Surprise me' })).toHaveCount(0)
+
+    // And the note about the clock reads with the headline, not with the button.
+    await expect(
+      page.getByText('If the clock runs out we’ll pick for you'),
+    ).toBeInViewport()
+  })
+
   test('writes a prompt in the reversed mode, with a live preview', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=brief&mode=react&gifs=stub')
 
@@ -60,15 +84,19 @@ test.describe('the brief', () => {
     await expect(page.getByRole('timer')).toHaveText(/^\d:\d\d$/)
   })
 
-  test('falls back to an honest empty image when the clock wins', async ({ page }) => {
-    // Nobody picks; the brief clock expires and the reducer supplies a subject
-    // with no image at all.
+  test('still puts an image up when the clock wins', async ({ page }) => {
+    // `?as=p2` watches from another seat, so nothing in this tab can pick and
+    // the brief clock is what ends the phase. It used to hand the room a
+    // subject with no image at all and spoil everyone else's round.
     await page.goto('/room/DEV?seed=42&phase=brief&fast=40&as=p2&gifs=stub')
     await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'compose', {
       timeout: 20_000,
     })
 
-    // An empty `src` would refetch the page; the card states what happened.
-    await expect(page.getByText('No image was picked in time')).toBeVisible()
+    // A real image off the offline shelf, drawn with the room's own seed.
+    const image = page.locator('main[data-phase] figure img').first()
+    await expect(image).toBeVisible()
+    await expect(image).toHaveAttribute('src', /\/media\/stub-/)
+    await expect(page.getByText('No image was picked in time')).toHaveCount(0)
   })
 })

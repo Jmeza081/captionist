@@ -13,17 +13,18 @@
   // there stacks above it rather than fighting it for the same 44px.
   --room-dock-bottom: #{t.$space-20};
 
-  // The horizontal counterpart. The floating keys sit `right: $space-14` and
-  // are a 44px tap target wide, so they own 58px of the right edge — while the
-  // column is padded to `$screen-pad-h` (40px) and therefore runs 18px
-  // *underneath* them. Any control reaching the column's right edge loses that
-  // much of itself to whatever floats there: on the vote screen the right end
-  // of "Rank this" opened chat instead of ranking. Reserved, not hoped for —
-  // the same reason `.hasToolbox .content` reserves the bottom.
-  //
-  // 58px is inside the 40–60px the spec gives for horizontal screen padding,
-  // so this stays a padding choice rather than a new geometry.
-  --room-dock-gutter: calc(#{t.$space-14} + #{t.$tap-target-min});
+  // The horizontal counterpart. Two things float in that corner and they are
+  // not flush with each other: chat's key sits `right: $space-14`, the toolbox
+  // key `right: $space-20`, and both are a 44px tap target wide — so the
+  // column they own together runs 64px in from the edge, not 58. It was 58,
+  // which reserved the chat key exactly and left 6px of every control sitting
+  // under the toolbox. Meanwhile the column is padded to `$screen-pad-h`
+  // (40px) and therefore runs 24px *underneath* them: any control reaching the
+  // column's right edge loses that much of itself to whatever floats there. On
+  // the vote screen the right end of "Rank this" opened chat instead of
+  // ranking. Reserved, not hoped for — the same reason `.hasToolbox .content`
+  // reserves the bottom.
+  --room-dock-gutter: calc(#{t.$space-20} + #{t.$tap-target-min});
 
   display: flex;
   flex-direction: column;

@@ -101,6 +101,63 @@ as "nothing is painted here" when it also means "that is not on the screen", so
 a control straddling the fold — half under the sticky dock, half below the
 viewport — counted as fully visible.
 
+**Since then a nickname is suggested rather than remembered.** `lib/names.ts`
+draws `Adjective_Noun` out of 24 × 24 words from the room's own subject matter
+— every pair inside the field's 20-character cap — and
+`lib/room/useSuggestedName.ts` mints one per *page load* through
+`useSyncExternalStore`, with the empty string as the server snapshot so the
+random half never reaches hydration. `JoinScreen` and `HostSetupScreen` prefill
+from that instead of from storage. **The face is still remembered and the name
+is not**, which is the whole change: two tabs of one browser are the two
+players phase 4 exists to seat, and a remembered nickname put two
+indistinguishable people in the roster. The name is still *written* by
+`writeIdentity` on the way into a room, and the room still reads it — only the
+read-back into an empty entry field is gone.
+
+**A round nobody answered ends with a real picture.** `fallbackSubject` in
+`lib/game/reducer.ts` used to hand caption mode `{ src: '', alt: 'No image was
+picked in time' }`, so one role holder's hesitation left the whole room
+captioning an empty frame with that sentence in it. It picks off the offline
+shelf now — `SAMPLE_GIFS` through `pick()` on the **room's own seed**, so every
+client resolves to the same image and the reducer stays pure. That is the net
+rather than the path:
+`BriefScreen` arms a one-shot `setTimeout` for `AUTO_PICK_LEAD_MS` (1200ms)
+before the brief deadline that locks in the role holder's staged pick, or a
+random tile off the board they were looking at, so the room normally gets a GIF
+somebody was actually browsing. The shelf is for a role holder whose tab is
+gone.
+
+**The pick screen lost its bottom row, and the search field started working.**
+`useGifSearch` exposes `setQuery`; both boards were passing
+`onQueryChange={() => {}}` against a `query`-controlled field, which meant the
+search box could not be typed in at all — every search had to come from a
+suggestion chip. `BriefScreen`'s foot row is gone with it: the timeout note
+moved under the headline, where it is read once on the way in, and "Shuffle
+results" and the primary "Lock it in" moved into `GifPanel`'s `tools` slot
+beside the field, so the action stays in reach at the top of a board that
+scrolls a long way. "Surprise me" left that screen and remains on
+`ComposeScreen`.
+
+**A card's picture is a target, and its caption picks its own size.**
+`MediaCard` gained `onActivate`: a transparent, `aria-hidden`, `tabIndex={-1}`
+button over the frame, so the picture does whatever the foot's `action` does
+without announcing itself twice or duplicating a tab stop. `VoteScreen` passes
+it — never for your own card, never once locked. The overlays now choose one of
+four type steps from the caption's **character count** (`overlayStep`,
+`$media-overlay-size-2/-3/-4`), which works
+because the size is in `cqw` and therefore a card holds about the same number of
+characters per line at any width. No measuring, so `MediaCard` is still a server
+component. `max-height: calc(50% - 10px)` and `overflow-wrap: anywhere` are the
+backstop under it: two overlays share one frame, and a long caption used to grow
+straight out through the bottom edge, where `.frame`'s `overflow: hidden` cut it
+in half silently.
+
+`RoomShell`'s `--room-dock-gutter` went from 58px to 64px in the same pass. Two
+things float in that corner and they are not flush — chat's collapsed key sits
+at `right: $space-14`, the toolbox key at `right: $space-20`, both 44px wide —
+so the column they own together is `$space-20 + $tap-target-min`. Reserving the
+chat key exactly left 6px of every full-width control under the toolbox.
+
 **Five glows, one mixin — and four of them had never painted.** The
 accent circle every big screen carries is a `::before` at `z-index: -1`.
 Without a stacking context on its own element it escapes to the root one, where
@@ -175,8 +232,10 @@ database", a cleanup cron, and a "the image lives only for the game" claim a
 CDN cache makes unkeepable. So the scaffolding went rather than staying as a
 promise: `components/molecules/Dropzone/` is deleted, `GifPanel` renders
 unconditionally on the brief, the `/host` row is **absent rather than
-disabled**, `MediaRef` is `{ src, alt }`, `Icon` is back to the eleven glyphs
-its docblock always claimed, and four `$dropzone-*` metrics left
+disabled**, `MediaRef` lost the `source: 'giphy' | 'upload'` union nothing read
+(it is `{ src, alt }` plus the optional `width`/`height` a card's shape needs),
+`Icon` is back to the eleven glyphs its docblock always claimed, and four
+`$dropzone-*` metrics left
 `theme/_metrics.scss`. Giphy is the only image source, in both modes.
 [ADR 0014](./adr/0014-uploads-are-not-a-feature.md).
 
@@ -648,7 +707,7 @@ to be about markup the owner of room authority instead.
 ```mermaid
 graph LR
   U["components/organisms/ + app/<br/><i>markup only</i>"]
-  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown · bootTimeline</i>"]
+  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown · bootTimeline<br/>useStoredPerson · useSuggestedName</i>"]
   G["lib/game/<br/><i>pure — types · reducer · authorize<br/>selectors · project · rng</i>"]
   F["lib/gifs/<br/><i>types · samples · giphy · wall · useGifSearch<br/>allow — isAllowedImageSrc</i>"]
   AV["lib/avatar.ts<br/><i>seed → data URI, cached · DiceBear 10 critters<br/>64 seeds · avatarPage · seedLabel</i>"]
@@ -894,9 +953,24 @@ survives a reload, which is what makes a seat reclaimable.
 `lib/room/useStoredPerson.ts` reads the person through `useSyncExternalStore`
 rather than an effect — storage is an external system the server cannot see, so
 an effect would be both a cascading render and a hydration mismatch. The entry
-screens layer what has been typed *over* that value rather than seeding state
-from it, so a prefill arriving at hydration cannot clear a field somebody is
-already using.
+screens layer what has been typed *over* whatever they prefill with rather than
+seeding state from it, so a value arriving at hydration cannot clear a field
+somebody is already using.
+
+**Only half of that person is read back, though, and the asymmetry is
+deliberate.** `writeIdentity` still stores both halves and the room still reads
+both, but an entry screen prefills the **face** from storage and the
+**nickname** from a fresh suggestion. The same two-tabs argument that split the
+seat off applies to the name: a remembered nickname made the second tab a second
+player nobody could tell apart in the roster. `lib/names.ts` is the word lists
+and `suggestName()`; `lib/room/useSuggestedName.ts` is the hook, and it is
+`useSyncExternalStore` for the same reason `useStoredPerson` is — a `Math.random`
+called during render is a value the server and the browser disagree about. Its
+server snapshot is `''`, and the name is minted once at module scope, so it is
+one suggestion per page load rather than per render: the field keeps it while
+you browse the face picker, and a client-side hop from `/join` to `/host`
+carries the same one across. `Math.random` rather than the room's seeded PRNG is
+correct here — no room exists yet, so there is nothing for anyone to agree on.
 
 **The seat is signed as well as stored.** Ably makes `Intent.from` trustworthy
 for free — a token minted with a `clientId` binds it, and the server rejects a
@@ -1354,6 +1428,12 @@ a second, not once, because `?fast=80` lands a room-second every 12ms; it
 re-renders only when a displayed second actually changes, and a paused or idle
 clock gets no interval at all.
 
+**One screen reads a deadline without counting it.** `BriefScreen`'s auto-pick
+is a `setTimeout` armed against `clock.endsAt` — one shot, cleared on a new
+deadline, and holding no state — rather than a subscription to the countdown,
+precisely so the page keeps the single interval above. What it locks in is read
+through a ref at fire time, so browsing the board does not restart the timer.
+
 **The held seat is a deadline like any other**, so it gets the same hook: the
 reconnect overlay's grace countdown is `useCountdown` over a `Clock` built from
 `seatHeldUntil` and `SEAT_GRACE_MS`, rather than a second timer of its own. That
@@ -1765,6 +1845,18 @@ atom's — which is what the atom exists to delete. All three go through
 `ReactionGlyph` now, which is also how the animated upgrade reaches the
 picker's tiles without the picker knowing a CDN exists.
 
+`MediaCard` has since grown a fourth thing in that foot's orbit, and it is not
+in the foot: `onActivate` makes the *picture* do whatever `action` does. A card
+is a picture of a joke and the picture is what people reach for, but the small
+button underneath was the only way to rank one. It is a transparent button over
+the frame rather than a handler on the frame, so the cursor and the press come
+from a real control — and it is `aria-hidden` with `tabIndex={-1}`, because it
+is a second pointer route to an action the foot already carries rather than a
+duplicate control announcing itself twice. The keyboard route is the labelled
+button, which stays. `VoteScreen` is the only caller, and it withholds it for
+your own card and for a locked ballot, which are the two cases with no action to
+take.
+
 Everything else phase 7 needed was a prop or a slot, per rule 2. `MediaCard`
 gained a `reply` slot beside `reaction` — **the design draws no reply control**,
 only the message that results from one (Screens 2c), so the affordance is ours
@@ -1882,11 +1974,14 @@ holds its own markup for the reason the landing does — one page, so
 `e2e/not-found.spec.ts` covers it rather than the gallery. The three that
 changed did so **in their stylesheets**, which is the case rule 2 does not
 reach: a variant is a prop, but a component being the wrong *shape* everywhere
-is a fix rather than a variant. `MediaCard`'s frame is square at every width and
-a query container, so the caption sizes against the card; `TallyPill` is
-`ReactionCTA`'s 32px, because a reaction four people left should not read as a
-footnote to the control offering a fifth, and it sizes an image glyph in `em` so
-a Slackmoji and a character land the same size without a call site passing one;
+is a fix rather than a variant. `MediaCard`'s frame is a query container, so the
+caption sizes against the card, and it was square at every width — since
+superseded by `--media-aspect`, the image's own clamped ratio, with
+`$media-ratio` left as the fallback for an image that reports no dimensions;
+`TallyPill` is `ReactionCTA`'s 32px, because a reaction four people left should
+not read as a footnote to the control offering a fifth, and it sizes an image
+glyph in `em` so a Slackmoji and a character land the same size without a call
+site passing one;
 `QuickJoin`'s field takes the slack with `flex: 1 0 auto`, so the key sits on
 the pill's right edge wherever the pill is wider than its contents. None of the
 three needed a caller to know.
@@ -1973,6 +2068,26 @@ ratio is right at all of them, which is why swapping the media card back is one
 line and why `$gif-tile-ratio` can be the fallback for a GIF that reports no
 dimensions of its own.
 
+**Three more names have joined that group since.**
+`$media-overlay-size-2` · `-3` · `-4` are the steps a caption drops through as
+it grows, each roughly the one above divided by its own line count so the block
+of text stays about the height a single line was; the fourth covers
+`CAPTION_MAX`. The module publishes them as `--media-overlay-size` off a
+`.lines2/3/4` class, which is how one rule serves four sizes.
+[ADR 0016](./adr/0016-a-media-card-is-square-and-a-caption-scales-with-it.md)
+carries the argument.
+
+**Which step a caption gets is chosen in TypeScript, and the constant that does
+it is deliberately not a token.** `CHARS_PER_LINE` (20) lives in
+`MediaCard.tsx`, because the size is in `cqw` — a card fits about the same
+character count per line at every width, so the line count falls out of the
+string's length and `MediaCard` never has to become a client component to size
+its own text. No stylesheet can read that number, and a token nothing consumes
+is a number that drifts from the one that runs, so it is not on the bridge and
+there is no Sass copy of it; `theme/_metrics.scss` carries a comment beside the
+sizes pointing at where it lives instead. It is still a property of
+`$media-overlay-size`, and changing that type means re-measuring it.
+
 **`theme/_typography.scss` gained a mixin, and it is not on the token bridge at
 all.** `displaySmallText` is the ramp one step below the hero's — 42→68px, the
 prototype's `42/5.6vw/68` — derived from the same 360→1440 anchors as
@@ -2045,10 +2160,10 @@ has: every piece of it is a Server Component except `Button`, so the only thing
 hydration reaches are two links wearing a button's classes. The entry screens
 qualify because nothing
 they do needs a server *about the room*: the code is validated by `normalizeCode`
-in the browser, the person comes out of `localStorage`, and the room is the next
-page's problem. The wall both entry screens await is the one thing that leaves
-the process, and it is hourly-cached rather than per-request, which is why they
-are still prerendered.
+in the browser, the face comes out of `localStorage` and the nickname out of
+`suggestName()`, and the room is the next page's problem. The wall both entry
+screens await is the one thing that leaves the process, and it is hourly-cached
+rather than per-request, which is why they are still prerendered.
 `/join/[code]` is the same page rendered per request, and only because it awaits
 `params` to prefill one field.
 
@@ -2065,7 +2180,8 @@ sequenceDiagram
   B->>N: GET /join
   N-->>B: prerendered HTML + RSC payload
   B->>B: hydrate (only 'use client' islands)
-  B->>B: useStoredPerson() → localStorage prefill
+  B->>B: useStoredPerson() → the face, from localStorage
+  B->>B: useSuggestedName() → a fresh Adjective_Noun, per page load
   B->>B: submit → writeIdentity() → router.push /room/CODE
 ```
 
@@ -2203,8 +2319,12 @@ sequenceDiagram
 
 There is no debounce anywhere in that path, on purpose: the design's picker says
 "Enter to search", so a request fires on submit and on a suggestion chip, which
-deletes the debounce-and-race question entirely. What is left is the stale
-guard. A picked result becomes a `MediaRef` through `toMediaRef()` and is
+deletes the debounce-and-race question entirely. Typing is therefore not on that
+path at all — the field is controlled by `query` so a chip and a search both
+land in it, and `setQuery` is the keystroke half, which changes the field and
+fetches nothing. It exists because both boards passed a no-op change handler
+against that controlled field and the search box was frozen. What is left is the
+stale guard. A picked result becomes a `MediaRef` through `toMediaRef()` and is
 broadcast to the room — which is why the sample shelf is SVG files under
 `public/media/` rather than data URIs, since a full-state message has to fit
 inside Ably's 64KB cap. `public/media/` holds 28 files at its top level: twelve
@@ -2225,15 +2345,17 @@ that fork are the same URL from the same origin, which is what makes one
 allowlist enough. Nothing in `lib/gifs/` had to change to serve it beyond the
 allowlist itself.
 
-**One field has since been added to what comes back, and it stops at the
-picker.** `toResult()` reads the chosen rendition's `width` and `height` —
-decimal strings on the wire, so a junk one is simply absent rather than `NaN` —
+**Two fields have since been added to what comes back, and they no longer stop
+at the picker.** `toResult()` reads the chosen rendition's `width` and
+`height` — decimal strings on the wire, so a junk one is absent rather than
+`NaN` —
 and `GifPanel` writes them onto each tile as a `--tile-ratio` custom property,
 which is how a masonry column reserves a GIF's real shape *before* the image
-arrives. It is a rendering hint and deliberately nothing more: `toMediaRef()`
-drops it with `id` and `keywords`, so `GameState` and the wire are unchanged,
-and a source that reports no dimensions still renders — at `$gif-tile-ratio`,
-the stylesheet's stated fallback.
+arrives. It began as a rendering hint and is now on the wire: `toMediaRef()`
+carries `width`/`height` into `MediaRef` — the vote card is drawn at the image's
+own ratio too — while still dropping `id` and `keywords`, which stay the
+picker's alone. A source that reports no dimensions renders either way: at
+`$gif-tile-ratio` in the picker, and at the card's clamp on a vote tile.
 
 ### The realtime path
 
@@ -2452,8 +2574,8 @@ caching. The authority decision it extends is
 
 ## What is verified, and what is not
 
-217 unit tests (`lib/**/*.test.ts`, node, over 16 files) and 390 Playwright
-tests across the two viewports — 195 per project, over 27 spec files. 380 of the 390 run; the
+224 unit tests (`lib/**/*.test.ts`, node, over 17 files) and 398 Playwright
+tests across the two viewports — 199 per project, over 27 spec files. 388 of the 398 run; the
 other 10 are viewport-gated (`test.skip` where a docked rail exists only above
 `md`, or a floating dock only below it), which is a branch of the layout rather
 than a hole in the coverage.
@@ -2562,6 +2684,27 @@ because the browser resolves no host but the dev server: a live Giphy URL there
 would be a broken frame nothing caught. The other two are the ways out and the
 tab order.
 
+**This pass's share is 7 unit tests and four specs per project, and two of the
+unit tests exist to hold a number the type system cannot.** `lib/names.test.ts`
+is 4: that a suggestion is an adjective and a noun joined, that both halves come
+from the injected random source rather than from `Math.random` directly, that
+**no pair in the 24 × 24 grid exceeds the nickname field's cap** — the one thing
+a hand-written word list gets wrong later — and that neither list repeats.
+`lib/game/reducer.test.ts` is 3 over the brief nobody answered: that the room
+still gets an image, that **two independent runs of the same room land on the
+same one**, which is the whole reason the seed rather than `Math.random` chooses
+it, and that react mode still falls back to a prompt. The browser half is where
+each fix actually lived. `brief` types with `pressSequentially` rather than
+`fill`, because setting a value in one event would have passed against the
+frozen box, and checks both controls now sit with the field and that "Surprise
+me" is gone from that screen. `compose` reads `getComputedStyle().fontSize` down
+three caption lengths and asserts the overlay never crosses the frame's edge.
+`vote` ranks a card by clicking its image, and `targets` pins the backdrop that
+makes that possible to the image's own box. Two older specs were rewritten
+rather than added to: `brief`'s used to assert the honest empty frame, and
+`join`'s used to assert that the name was remembered, and both now assert the
+opposite.
+
 **`e2e/targets.spec.ts` narrowed what it claims, and that is worth reading as a
 change in coverage rather than a fix.** Its `hits()` helper now drops a control
 whose every sample point resolves to painted ground on top of it. The cause is
@@ -2577,6 +2720,15 @@ under the chat key) has an unoccluded centre. The decision, and the standing
 cost of it — content under a sticky surface is out of scope now, so a *second*
 sticky surface is the moment to re-read rather than assume — is
 [ADR 0017](./adr/0017-a-buried-control-is-not-a-stolen-tap.md).
+
+**It has since narrowed once more, and for a different reason.** `SHIPPED`
+excludes `aria-hidden` buttons, because `MediaCard`'s `onActivate` backdrop is
+one: it is deliberately not a second control, it is exactly the size of the
+picture it sits on, and a sticky bar resting over it is layering working rather
+than a stolen tap. What replaces the coverage is a test that pins the backdrop
+to its own frame within a pixel on every edge, so it cannot quietly grow past
+the picture and start taking a neighbour's tap — the claim the sweep would have
+made, made directly.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a
@@ -2682,7 +2834,10 @@ rather than code:
 11. **A seat is per tab; a person is per browser — and the seat is signed.**
    The player id lives in `sessionStorage` beside the server's HMAC over it, the
    nickname and face in `localStorage`, and the two storages must not be merged:
-   one id shared across tabs seats both of them in the same chair. Anything else
+   one id shared across tabs seats both of them in the same chair. **Only the
+   face is read back into an entry screen**, for the same reason — a remembered
+   nickname makes two tabs two players nobody can tell apart, so the field
+   prefills from `suggestName()` instead. Anything else
    a tab needs to carry into the room goes the same way `pendingSettings` does:
    written on the way out, cleared on use.
 12. **`isHost` is learned, not given.** It is the answer to a presence
