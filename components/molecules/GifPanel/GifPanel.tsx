@@ -51,6 +51,25 @@ export interface GifPanelProps {
   tools?: ReactNode
   /** The badge on the chosen tile: "Selected" when picking, "Your answer" when answering. */
   selectionLabel?: string
+  /**
+   * Searches left this round, from `useGifSearch`.
+   *
+   * Omit it and the panel shows no counter and blocks nothing — which is what
+   * a surface handed a fixed list wants. Supply it and the budget becomes
+   * visible *before* the first tap: the suggestion chips read as free, and
+   * each one spends a search. The board on arrival is not one of them.
+   */
+  searchesLeft?: number
+  /**
+   * Where `results` came from.
+   *
+   * Drives the attribution mark, which is not decoration: Giphy's terms
+   * require it "where the API is utilized", and putting it in the component
+   * that draws their content is what stops the next screen forgetting it. It
+   * must not claim Giphy over the offline shelf, which is why this is not
+   * simply hardcoded.
+   */
+  source?: 'giphy' | 'sample'
 }
 
 export function GifPanel({
@@ -67,10 +86,32 @@ export function GifPanel({
   message,
   tools,
   selectionLabel = 'Selected',
+  searchesLeft,
+  source = 'giphy',
 }: GifPanelProps) {
   const [localQuery, setLocalQuery] = useState('')
   const controlled = query !== undefined
   const value = controlled ? query : localQuery
+
+  // `undefined` means this surface has no budget, which is not the same as a
+  // budget of zero. Only the latter blocks anything.
+  const budgeted = searchesLeft !== undefined
+  const spent = budgeted && searchesLeft <= 0
+
+  /**
+   * What is left, said before it runs out rather than after.
+   *
+   * The chips look free — they are one tap and they are sitting right there —
+   * and each one spends a search. A counter that only appears at zero would
+   * teach that the hard way.
+   */
+  const counter = !budgeted
+    ? undefined
+    : searchesLeft <= 0
+      ? 'No searches left. Pick from what’s on the board.'
+      : searchesLeft === 1
+        ? 'One search left.'
+        : `${searchesLeft} searches left.`
 
   const shown = useMemo(() => {
     // A server-backed search has already narrowed the page; filtering it again
@@ -94,9 +135,12 @@ export function GifPanel({
         else setLocalQuery(e.target.value)
       }}
       onKeyDown={(e) => {
+        // Still focusable, still typeable, still swallows its own Enter — it
+        // just has nothing left to spend. Blocked is not disabled: the
+        // counter below says what is missing.
         if (e.key === 'Enter' && onSubmit) {
           e.preventDefault()
-          onSubmit(value)
+          if (!spent) onSubmit(value)
         }
       }}
       icon={<Icon name="search" size={board ? 18 : 13} />}
@@ -129,8 +173,21 @@ export function GifPanel({
           aria-label={board ? `Pick ${gif.alt}` : `Attach ${gif.alt}`}
           aria-pressed={gif.id === selectedId}
         >
+          {/*
+            `webp` first, and lazily.
+
+            The board asks for fifty tiles now rather than twelve — a board of
+            fifty costs the same one API call, and every tile on it is a search
+            somebody does not have to run. Fifty *animated GIFs* decoding at
+            once on a phone is tens of megabytes, though, so neither half of
+            this is optional: `loading="lazy"` leans on the board already being
+            its own scroller, and the WebP rendition of the same animation is a
+            fraction of the bytes. `src` stays the fallback for a source that
+            reports no WebP — and stays what `toMediaRef` broadcasts, because
+            the room's other screens are not all WebP-safe.
+          */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={gif.src} alt="" />
+          <img src={gif.webp ?? gif.src} alt="" loading="lazy" decoding="async" />
           {board && gif.id === selectedId && (
             <span className={styles.badge}>{selectionLabel}</span>
           )}
@@ -179,11 +236,32 @@ export function GifPanel({
               <Chip
                 key={term}
                 selected={term === value}
-                onClick={() => onSubmit?.(term)}
+                blocked={spent}
+                onClick={() => {
+                  if (!spent) onSubmit?.(term)
+                }}
               >
                 {term}
               </Chip>
             ))}
+          </Inline>
+        )}
+
+        {/*
+          The round's budget and Giphy's mark, on one line.
+
+          The mark is a requirement, not a flourish — Giphy's terms ask for it
+          "where the API is utilized", and it lives here rather than on each
+          screen so the next board to be built cannot ship without it. It says
+          nothing over the offline shelf, which is not theirs to claim; the
+          `message` line below already explains that case.
+        */}
+        {(counter || source === 'giphy') && (
+          <Inline gap={10} justify="between" className={styles.meta}>
+            <span className={styles.note}>{counter}</span>
+            {source === 'giphy' && (
+              <span className={styles.via}>Powered by Giphy · SFW filter on</span>
+            )}
           </Inline>
         )}
 
@@ -198,7 +276,8 @@ export function GifPanel({
     <div className={styles.panel} role="dialog" aria-label="Attach a GIF">
       <div className={styles.head}>
         <span className={styles.title}>Attach a GIF</span>
-        <span className={styles.via}>via Giphy</span>
+        {/* Same rule as the board's mark: never over the offline shelf. */}
+        {source === 'giphy' && <span className={styles.via}>via Giphy</span>}
         {onClose && (
           <button
             type="button"

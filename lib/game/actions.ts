@@ -47,6 +47,14 @@ export type GameAction = ActionMeta &
     | { type: 'host/restarted' }
     | { type: 'host/left' }
     /**
+     * Giphy's hourly allowance is spent, so the room stops.
+     *
+     * Deliberately **not** host-only. Only the client that got the 429 can
+     * observe it, and that is rarely the host — they may be the role holder,
+     * or sitting the round out. Any seated player may report it.
+     */
+    | { type: 'game/gifsExhausted' }
+    /**
      * The only timer event. Carries the phase it was scheduled for, so a
      * late, duplicate or stale fire is a no-op rather than a bug — which is
      * what removes the need for any cancellation bookkeeping.
@@ -99,6 +107,10 @@ export const PHASE_GUARDS: Readonly<Partial<Record<ActionType, readonly RoomPhas
   'round/ballotCast': ['vote'],
   'round/tiebreakVoted': ['tiebreak'],
   'round/advanced': ['reveal', 'score'],
+  // Every phase a round actually runs in. Not `lobby` — nobody has opened a
+  // picker yet — and not `podium`, where the game is already over and a late
+  // report from a straggling client would re-enter the phase it is in.
+  'game/gifsExhausted': ['opener', 'brief', 'compose', 'waiting', 'vote', 'tiebreak', 'reveal', 'score'],
 }
 
 /**

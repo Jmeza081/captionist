@@ -30,3 +30,9 @@
     background-color: t.$accent-fill;
   }
 }
+
+// Dimmed, never inert — the same 0.3 `Button` uses. The chip keeps its focus
+// ring and stays tabbable; what is missing is said in the panel's counter.
+.blocked {
+  opacity: 0.3;
+}

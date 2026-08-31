@@ -8,6 +8,7 @@ import { HostEngine, type TimerHandle } from './HostEngine'
 import { LocalBus, createLocalTransport } from './LocalTransport'
 import { createAutopilot } from './autopilot'
 import type { Intent } from './transport'
+import { DEFAULT_SETTINGS } from '@/lib/game/constants'
 
 /**
  * The phase-1 gate: a full game plays over the transport, driven only by
@@ -109,8 +110,11 @@ describe('the room spine', () => {
     const final = await h.run()
 
     expect(final.phase).toBe('podium')
-    expect(final.roundNumber).toBe(5)
-    expect(final.history).toHaveLength(5)
+    // Off the constant, not a literal: the default round count is derived from
+    // the room's size and the GIF allowance now, so a test that hardcodes it
+    // fails for a reason that has nothing to do with the room spine.
+    expect(final.roundNumber).toBe(DEFAULT_SETTINGS.totalRounds)
+    expect(final.history).toHaveLength(DEFAULT_SETTINGS.totalRounds)
     expect(final.players).toHaveLength(5)
   })
 
@@ -119,7 +123,7 @@ describe('the room spine', () => {
     const final = await h.run()
 
     expect(final.phase).toBe('podium')
-    expect(final.history).toHaveLength(5)
+    expect(final.history).toHaveLength(DEFAULT_SETTINGS.totalRounds)
   })
 
   it('awards points only to players who competed', async () => {

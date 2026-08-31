@@ -2,15 +2,20 @@ import { describe, expect, it } from 'vitest'
 import type { ActionInput, GameAction } from './actions'
 import { authorize } from './authorize'
 import {
+  DEFAULT_SETTINGS,
+  MAX_PLAYERS,
   MIN_PLAYERS,
   PHASE_DURATIONS,
   PLAYER_COLORS,
+  ROUNDS_MAX,
+  ROUNDS_MIN,
   WAITING_ALL_IN_MS,
   colorFor,
+  roundsMaxFor,
 } from './constants'
 import { createRoom } from './create'
 import { project } from './project'
-import { fixtureFor } from './fixtures'
+import { fixtureFor, lobbyFixture } from './fixtures'
 import { HAT_IDS } from '@/lib/hats'
 import { reduce } from './reducer'
 import { competitors, scoresFrom, standings, submittedCount, viewKey } from './selectors'
@@ -382,10 +387,14 @@ describe('a hat on the wire', () => {
   })
 
   it('leaves a full room’s broadcast inside Ably’s cap', () => {
-    // Invariant 1 in `types.ts`, measured rather than asserted. Twenty seats,
-    // every one of them wearing something.
+    // Invariant 1 in `types.ts`, measured rather than asserted. Every seat the
+    // room allows, all of them wearing something.
+    //
+    // Counted off `MAX_PLAYERS` rather than a literal, so this keeps testing a
+    // *full* room after the ceiling moved from twenty to ten — see the
+    // constant for why it did.
     let state = room(2)
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < MAX_PLAYERS - 2; i++) {
       state = apply(state, 'p1', {
         type: 'player/joined',
         player: {
@@ -396,7 +405,7 @@ describe('a hat on the wire', () => {
         },
       })
     }
-    expect(state.players).toHaveLength(20)
+    expect(state.players).toHaveLength(MAX_PLAYERS)
     expect(JSON.stringify(project(state, 'p0')).length).toBeLessThan(64_000)
   })
 })
@@ -531,11 +540,11 @@ describe('anonymity', () => {
   })
 })
 
-describe('a full five-round game', () => {
+describe('a full game, however many rounds that is', () => {
   it('reaches the podium with totals that match the history', () => {
     let state = apply(room(4), 'p0', { type: 'game/started' })
 
-    for (let round = 1; round <= 5; round++) {
+    for (let round = 1; round <= DEFAULT_SETTINGS.totalRounds; round++) {
       expect(state.roundNumber).toBe(round)
       state = playRound(state)
       expectPhase(state, 'reveal')
@@ -545,7 +554,7 @@ describe('a full five-round game', () => {
     }
 
     expectPhase(state, 'podium')
-    expect(state.history).toHaveLength(5)
+    expect(state.history).toHaveLength(DEFAULT_SETTINGS.totalRounds)
 
     const table = standings(state)
     expect(table).toHaveLength(4)
@@ -559,7 +568,7 @@ describe('a full five-round game', () => {
     }
     // Every round produced a winner, so the wins add up to the rounds played.
     const wins = table.reduce((sum, r) => sum + r.roundWins, 0)
-    expect(wins).toBe(5)
+    expect(wins).toBe(DEFAULT_SETTINGS.totalRounds)
   })
 
   it('is reproducible from the seed', () => {
@@ -659,5 +668,124 @@ describe('joining late', () => {
       })
       expect(verdict, phase).toBe(true)
     }
+  })
+})
+
+describe('running out of GIFs', () => {
+  it('ends the game from any phase a round runs in, keeping the scores so far', () => {
+    for (const phase of ['brief', 'compose', 'waiting', 'vote', 'reveal', 'score'] as const) {
+      const state = fixtureFor(phase, { players: 5 })
+      const next = apply(state, 'p1', { type: 'game/gifsExhausted' })
+
+      expect(next.phase, phase).toBe('podium')
+      // The round in progress is abandoned — it never reached `history`, so
+      // there is nothing to unwind.
+      expect(next.round, phase).toBeNull()
+      expect(next.history, phase).toEqual(state.history)
+      // The podium has something to explain, and this is how it knows.
+      expect(next.endedBecause, phase).toBe('gifs')
+    }
+  })
+
+  it('is reportable by any seated player, not just the host', () => {
+    const state = fixtureFor('compose', { players: 5 })
+
+    // Only the client that got the 429 can observe it, and that is rarely the
+    // host — they may be the role holder, or sitting the round out.
+    expect(state.hostId).not.toBe('p3')
+    expect(authorize(state, { type: 'game/gifsExhausted', at: at(), actor: 'p3' })).toBe(true)
+  })
+
+  it('is refused once the game is already over, so a straggler cannot reopen it', () => {
+    const state = fixtureFor('podium', { players: 5 })
+
+    // Two clients hitting the same 429 is the normal case, not the edge one.
+    expect(authorize(state, { type: 'game/gifsExhausted', at: at(), actor: 'p2' })).not.toBe(
+      true,
+    )
+  })
+
+  it('is refused in the lobby, where nobody has opened a picker yet', () => {
+    const state = lobbyFixture({ players: 5 })
+
+    expect(authorize(state, { type: 'game/gifsExhausted', at: at(), actor: 'p2' })).not.toBe(
+      true,
+    )
+  })
+
+  it('stops apologising once the room restarts', () => {
+    const ended = apply(fixtureFor('vote', { players: 5 }), 'p1', {
+      type: 'game/gifsExhausted',
+    })
+    const again = apply(ended, ended.hostId, { type: 'host/restarted' })
+
+    // Or the next podium would still be explaining the last game's rate limit.
+    expect(again.endedBecause).toBeUndefined()
+  })
+})
+
+describe('room size and round count', () => {
+  it('affords fewer rounds the bigger the room gets', () => {
+    // Every competitor opens a picker every round, so seats times rounds is
+    // what the GIF allowance buys. These are the numbers `/host` shows.
+    expect(roundsMaxFor(3)).toBe(5)
+    expect(roundsMaxFor(6)).toBe(5)
+    expect(roundsMaxFor(7)).toBe(5)
+    expect(roundsMaxFor(8)).toBe(4)
+    expect(roundsMaxFor(9)).toBe(4)
+    expect(roundsMaxFor(10)).toBe(3)
+  })
+
+  it('never returns a bound the stepper cannot show', () => {
+    for (let size = MIN_PLAYERS; size <= MAX_PLAYERS; size++) {
+      const max = roundsMaxFor(size)
+      expect(max, `size ${size}`).toBeGreaterThanOrEqual(ROUNDS_MIN)
+      expect(max, `size ${size}`).toBeLessThanOrEqual(ROUNDS_MAX)
+    }
+  })
+
+  it('clamps the round count when the room grows past what it affords', () => {
+    const small = fixtureFor('lobby', { players: 3 })
+    const five = apply(small, small.hostId, {
+      type: 'room/settingsChanged',
+      patch: { maxPlayers: 6, totalRounds: 5 },
+    })
+    expect(five.settings.totalRounds).toBe(5)
+
+    // Widening the room to ten strands five rounds above what ten seats can
+    // pay for, and a host dragging one stepper should not have to notice.
+    const wide = apply(five, five.hostId, {
+      type: 'room/settingsChanged',
+      patch: { maxPlayers: 10 },
+    })
+    expect(wide.settings.maxPlayers).toBe(10)
+    expect(wide.settings.totalRounds).toBe(3)
+  })
+
+  it('leaves a round count the new size can still afford alone', () => {
+    const state = fixtureFor('lobby', { players: 3 })
+    const two = apply(state, state.hostId, {
+      type: 'room/settingsChanged',
+      patch: { maxPlayers: 10, totalRounds: 2 },
+    })
+    // Two fits inside ten seats, so nothing is taken away.
+    expect(two.settings.totalRounds).toBe(2)
+  })
+
+  it('fills against the room’s own size, not the global ceiling', () => {
+    const state = fixtureFor('lobby', { players: 5 })
+    const small = apply(state, state.hostId, {
+      type: 'room/settingsChanged',
+      patch: { maxPlayers: 5 },
+    })
+
+    // Five seats, five taken. The refusal names the host's number, not ten.
+    const verdict = authorize(small, {
+      type: 'player/joined',
+      player: { id: 'late', name: 'Roberto', avatarSeed: 'fern' },
+      at: at(),
+      actor: 'late',
+    })
+    expect(verdict).toBe('This room is full — 5 players is the limit.')
   })
 })

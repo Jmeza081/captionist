@@ -1,16 +1,32 @@
-import { GiphyError, searchGiphy } from './giphy'
 import { SAMPLE_GIFS } from './samples'
+import { WALL_GIFS } from './wall.catalog'
 
 /**
- * The landing page's GIF wall, resolved on the server.
+ * The landing page's GIF wall — real Giphy, hot-linked, never the API.
  *
- * Fetched here rather than in the browser on purpose: the page is a Server
- * Component, so the wall arrives in the first HTML with its sizes already
- * known. A client-side fetch would mean an empty grid on first paint, a
- * waterfall behind hydration, and layout shift when the tiles land.
+ * **This used to search Giphy from the server, and three separate things were
+ * wrong with that.**
  *
- * The result is cached for an hour by the fetch in `searchGiphy`, so the wall
- * costs one upstream call per hour for everybody, not one per visitor.
+ * It was a proxy: "all requests to GIPHY should be made directly from the
+ * client side". It topped a short answer up with samples, blending two
+ * providers in one grid, which the same terms forbid. And it was only
+ * affordable because `searchGiphy` cached for an hour — one upstream call
+ * served everybody. That cache is gone (caching their URLs is also
+ * prohibited), which would have made this one call per visitor, on the four
+ * highest-traffic routes in the app, against an allowance of a hundred an
+ * hour. The landing page would have spent the room's whole budget on people
+ * who never joined a room.
+ *
+ * The fix keeps the GIFs and drops the request. `wall.catalog.ts` holds
+ * hot-linked `media.giphy.com` URLs — the sanctioned way to show their media,
+ * and what `backdrop.ts` and `notFound.ts` already do — resolved here on the
+ * server so the grid arrives in the first HTML with its sizes already known.
+ * No key, no network, no quota, and the wall is the product demo the design
+ * asked for rather than twelve house SVGs on repeat.
+ *
+ * **One shelf or the other, never a mix.** Giphy's terms forbid blending their
+ * grid with another provider's, so a short catalog *cycles* to fill the wall
+ * and an empty one falls through to the offline shelf whole.
  */
 export interface WallTile {
   id: string
@@ -51,29 +67,33 @@ function fromSamples(count: number): WallTile[] {
   })
 }
 
+/** Cycled, because the catalog is allowed to be shorter than the wall. */
+function fromCatalog(count: number): WallTile[] {
+  return Array.from({ length: count }, (_, i) => {
+    const tile = WALL_GIFS[i % WALL_GIFS.length]
+    // Ids have to stay unique or React sees duplicate keys, the same reason
+    // `fromSamples` suffixes its own.
+    return { ...(tile as WallTile), id: `${tile?.id ?? 'wall'}-${i}` }
+  })
+}
+
+/**
+ * Still `async`, and deliberately so.
+ *
+ * Nothing here awaits any more, but all four callers are `async` Server
+ * Components that `await` it, and the day the wall wants a live source again
+ * it should not be a signature change rippling through every front door.
+ */
 export async function wallTiles(count = WALL_SIZE): Promise<WallTile[]> {
-  const apiKey = process.env.GIPHY_API_KEY
-  const stubbed = process.env.GIFS_STUB === '1'
+  // The same switch the picker reads, so one flag keeps every surface off a
+  // third party — a keyless clone, and the Playwright suite, which resolves no
+  // host but the dev server and would otherwise draw twenty broken tiles.
+  const stubbed = process.env.NEXT_PUBLIC_GIFS_STUB === '1'
+  if (stubbed || WALL_GIFS.length === 0) return fromSamples(count)
+  return fromCatalog(count)
+}
 
-  if (!apiKey || stubbed) return fromSamples(count)
-
-  try {
-    const results = await searchGiphy({ q: 'reaction', limit: count, offset: 0 }, apiKey)
-    const tiles = results.map((gif) => ({
-      id: gif.id,
-      poster: gif.still ?? gif.src,
-      mp4: gif.mp4,
-      // Only when there is no video: a wall of twenty GIFs is the thing this
-      // whole design is avoiding.
-      motion: gif.mp4 ? undefined : gif.src,
-      alt: gif.alt,
-    }))
-    // A short answer still fills the wall rather than leaving holes in it.
-    return tiles.length >= count ? tiles : [...tiles, ...fromSamples(count - tiles.length)]
-  } catch (error) {
-    // The landing page is the first thing anyone sees. It renders with the
-    // offline shelf rather than not rendering.
-    if (!(error instanceof GiphyError)) console.error('[wall] giphy failed', error)
-    return fromSamples(count)
-  }
+/** Whether the wall is showing Giphy's art, so the page can credit it. */
+export function wallIsGiphy(): boolean {
+  return process.env.NEXT_PUBLIC_GIFS_STUB !== '1' && WALL_GIFS.length > 0
 }

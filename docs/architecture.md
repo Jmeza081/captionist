@@ -384,7 +384,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Realtime auth | `/api/ably/seat` + `/api/ably/token`, `lib/ably/` | `ABLY_API_KEY` is server-only. Two routes because an `authUrl` must answer with the bare `TokenRequest`: the seat (signed, and where the stub answer lives) comes from one, the token from the other. `createTokenRequest` signs locally, so neither route makes a call of its own; the capability is the glob `captionist:<code>:*` |
 | Identity | `localStorage` person + `sessionStorage` seat, **server-signed** | `lib/room/identity.ts`. The nickname and face are per browser; the player id is per tab, because two tabs are two players. The seat now rides with an HMAC from `lib/ably/seat.ts`, because Ably's `clientId` guarantee is worthless if a tab can ask for a token bearing someone else's id |
 | Avatars | `@dicebear/core@10` + `@dicebear/styles`, the `critters` style | `lib/avatar.ts` turns a seed into a data URI *at the edge*, and only the seed ever travels in state. **Seventy seeds, seven pages of ten**, with `avatarPage(seed)` deriving which page a stored face sits on so the picker's opening window is the same on the server and in the browser. `@dicebear/collection@9` is gone — `critters` exists only in DiceBear 10 and there is no 10 of that package — which made this a major bump rather than a one-constant edit: a style is a JSON definition now, so `createAvatar(funEmoji, …)` is `new Avatar(new Style(definition), …)`, and 10 validates colours as hex, so a transparent background is `'00000000'` rather than `'transparent'`. CC0 1.0, so nothing about where a face appears is constrained by attribution. [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) |
-| GIF search | Giphy, proxied by `/api/gifs` | `GIPHY_API_KEY` is server-only; `lib/gifs/` holds the fetcher, the offline shelf and the shared types |
+| GIF search | Giphy, **called from the browser** | Their terms forbid proxying and caching alike — [ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md). `NEXT_PUBLIC_GIPHY_API_KEY` ships in the bundle by necessity; `lib/gifs/` holds the fetcher, the source resolver, the offline shelf and the shared types |
 | GIF renditions | `fixed_width` MP4 · WebP · GIF, plus `fixed_width_still` | `GifResult` carries all four, **and now the rendition's own `width`/`height`** — read off the same rendition `src` came from, so the ratio describes the image actually rendered. It is a rendering hint and nothing depends on it: the picker reserves each tile's shape from it before the image lands, `SAMPLE_GIFS` states its artwork's 320×200, and `toMediaRef()` drops it with `id` and `keywords`. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
@@ -402,8 +402,8 @@ here now*. Where they overlap, this file links rather than repeats.
 | `npm run docs:pack` | Repomix pack → `docs/repomix-output.xml` (gitignored) |
 
 No key is needed to run any of these, and the E2E suite refuses to use one:
-`playwright.config.ts` sets `ABLY_STUB: '1'` and `GIFS_STUB: '1'` on the dev
-server it spawns, so `/api/ably/seat` answers `stub: true`, `transportKind`
+`playwright.config.ts` sets `ABLY_STUB: '1'` and `NEXT_PUBLIC_GIFS_STUB: '1'` on
+the dev server it spawns, so `/api/ably/seat` answers `stub: true`, `transportKind`
 resolves to `broadcast`, and the picker and the landing wall come off the
 offline shelf. That is stated rather than inherited from the machine, so a key
 in `.env.local` cannot silently move the suite onto a live service — and it is
@@ -421,13 +421,12 @@ nothing but the dev server. Everything is blocked rather than that one host, so
 the claim is enforced by the network layer instead of by remembering to add the
 next hostname.
 
-Without `GIPHY_API_KEY` the GIF route
-serves the offline shelf outside production, so a fresh clone gets a working
-picker rather than an error; `GIFS_STUB=1` forces the same thing with a key
-present. `.env.example` documents both. The landing wall reads the same two
-switches in `lib/gifs/wall.ts` and falls back to the shelf on a thrown request
-as well — the first page anyone sees renders with stand-in art rather than not
-rendering.
+Without `NEXT_PUBLIC_GIPHY_API_KEY` the picker serves the offline shelf outside
+production, so a fresh clone gets a working board rather than an error;
+`NEXT_PUBLIC_GIFS_STUB=1` forces the same thing with a key present.
+`.env.example` documents both, including why that key is public at all. The
+landing wall reads neither switch any more — it is always the offline shelf, so
+the first page anyone sees costs no request and no allowance.
 
 ---
 
@@ -438,36 +437,33 @@ Next's default black page and is now `app/not-found.tsx`:
 
 ```
 Route (app)       Revalidate  Expire
-○ /                      1h      1y
+○ /
 ○ /_not-found
 ƒ /api/ably/seat
 ƒ /api/ably/token
-ƒ /api/gifs
 ○ /components
-○ /host                  1h      1y
-○ /join                  1h      1y
+○ /host
+○ /join
 ƒ /join/[code]
 ƒ /room/[code]
 ```
 
 `/`, `/_not-found`, `/components`, `/host` and `/join` are prerendered at build
-time. `/`, `/host` and
-`/join` are still static even though they await remote data: all three call
-`wallTiles()`, which reaches Giphy through a `fetch` carrying
-`next: { revalidate: 3600 }`, so each page is built once and refreshed hourly
-rather than rendered per request — and because it is the same call with the
-same arguments, the three pages share one upstream request and one set of
-tiles, so a guest arriving from the front door already has every one of them in
-cache.
-The revalidate column only appears in `next build` when a `GIPHY_API_KEY` is
-present — with no key the wall resolves from the offline shelf, nothing is
-fetched, and all three are plain static. `/host` and `/join` still ask no server
+time. `/`, `/host` and `/join` await `wallTiles()` and are nonetheless plain
+static with no revalidate column, because **the wall no longer fetches
+anything**. It used to search Giphy on the server behind an hour-long cache, and
+all three of those things are now prohibited: the call was a proxy, topping a
+short answer up with samples blended two providers in one grid, and the cache
+was what made it affordable at all. Without it the landing page would have cost
+one upstream call per visitor on the app's four highest-traffic routes, against
+an allowance of a hundred an hour. The wall is decoration and is drawn from the
+committed shelf — see [ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md). `/host` and `/join` still ask no server
 about the *room*, because **nothing before the room needs one**: a code is
 generated in the browser, and whether a room already exists is a question only
 the transport can answer, which happens after the push. `/join/[code]` is dynamic solely because it awaits `params` — it awaits the wall too, but so does its static twin;
 `/room/[code]` is dynamic and everything inside it is client-driven.
-`/api/gifs`, `/api/ably/seat` and `/api/ably/token` are route handlers — no
-layout, no React, JSON only.
+`/api/ably/seat` and `/api/ably/token` are the only route handlers left — no
+layout, no React, JSON only. `/api/gifs` was a third until the terms took it.
 
 **`/_not-found` is a root `not-found.tsx`, so it catches both halves of the
 problem**: a URL that matches no route at all, and any `notFound()` a segment
@@ -480,9 +476,10 @@ than in an organism, for the same reason the landing's does — one page, so its
 own spec covers it (see [components/README.md](../components/README.md)). Its
 GIF is a hard-coded Giphy URL in `lib/gifs/notFound.ts` rather than a search: a
 page that exists to say something went wrong should not need an upstream API to
-answer. `GIFS_STUB` swaps in the offline shelf there exactly as it does in
-`wallTiles()`, which is what lets the suite assert the art at all — Playwright
-resolves no host but the dev server. **The page is prerendered and still costs
+answer. `NEXT_PUBLIC_GIFS_STUB` swaps in the offline shelf there, which is what
+lets the suite assert the art at all — Playwright resolves no host but the dev
+server. Hot-linking one CDN URL is the sanctioned way to show Giphy media, so
+unlike the picker this page needed no rework, only the variable's new name. **The page is prerendered and still costs
 no request of ours**: the URL goes into the HTML and the browser fetches it off
 Giphy's CDN like any other image, so unlike `/` this page reaches a third party
 only from the client. One consequence of being prerendered is worth knowing
@@ -499,12 +496,11 @@ graph TD
   J["app/join/page.tsx<br/><i>/join — type a code · static ○</i>"]
   JC["app/join/[code]/page.tsx<br/><i>/join/[code] — the QR target · dynamic ƒ</i>"]
   R["app/room/[code]/page.tsx<br/><i>/room/[code] — dynamic ƒ</i>"]
-  A["app/api/gifs/route.ts<br/><i>/api/gifs — route handler ƒ</i>"]
   SE["app/api/ably/seat/route.ts<br/><i>/api/ably/seat — route handler ƒ<br/>a signed seat · is realtime on</i>"]
   TK["app/api/ably/token/route.ts<br/><i>/api/ably/token — route handler ƒ<br/>bare TokenRequest · no-store</i>"]
   AB["Ably"]
   NF["app/not-found.tsx<br/><i>/_not-found — every URL we don't have · static ○</i>"]
-  W["lib/gifs/wall.ts<br/><i>wallTiles() — server only</i>"]
+  W["lib/gifs/wall.ts<br/><i>wallTiles() — the committed shelf,<br/>no key and no network</i>"]
   GY["Giphy"]
   LA["LandingActions<br/><i>'use client' · a link and a code field</i>"]
   HS["HostSetupScreen<br/><i>generateCode · writePendingSettings</i>"]
@@ -523,9 +519,8 @@ graph TD
   L --> R
   L --> NF
   R -.->|"notFound() — a code that never normalised"| NF
-  NF -.->|"notFoundGif() — one hard-coded CDN URL<br/>in the HTML. No API call, no key.<br/>GIFS_STUB swaps the offline shelf"| GY
+  NF -.->|"notFoundGif() — one hard-coded CDN URL<br/>in the HTML. No API call, no key.<br/>NEXT_PUBLIC_GIFS_STUB swaps the offline shelf"| GY
   P -->|"await wallTiles()"| W
-  W -.->|"searchGiphy · cached 1h"| GY
   P --> LA
   LA -->|"href — 'Start a game'"| H
   LA -->|"router.push → /room/CODE"| R
@@ -546,7 +541,6 @@ graph TD
   SCR -.->|"joinUrlFor() — QR + copy link"| JC
   SCR -.->|"useGifSearch() → fetch"| A
   SH -.->|"ChatPanel's GifPanel — same hook, same route"| A
-  A -.->|"searchGiphy"| GY
 ```
 
 `/` is still the only page that reaches a third party from the server render;
@@ -678,16 +672,26 @@ two phases that are untimed by design, so each of their screens carries the
 host's own advance button — without it a room with no bots in it would stop
 permanently, which `e2e/room.spec.ts` now asserts directly rather than assuming.
 
-`/api/gifs` is the repo's first route handler, and the shape every later server
-route copies: the client asks it, it asks the third party, the credential never
-crosses. `searchGiphy()` in `lib/gifs/giphy.ts` is the only code that reads
-`GIPHY_API_KEY`, it pins `rating=pg-13` unconditionally so the picker's "SFW
-filter on" promise cannot be raised by a caller, and it gives up after 4s
-because the brief clock is 30s and a hung request must not eat it. Three
-different switches land on the same offline shelf — `GIFS_STUB=1`, the
-`?gifs=stub` lever forwarded as `?stub=1`, and a missing key outside production
-— and they are all resolved inside the route, so no screen has to know which
-one is on. `source: 'sample'` comes back in the body and the picker says so.
+**The picker calls Giphy from the browser**, and `/api/gifs` — once this repo's
+first route handler, and the shape the Ably routes copied — is gone. Giphy's
+terms require it: "all requests to GIPHY should be made directly from the client
+side", and caching their URLs is prohibited too, so the hour-long `revalidate`
+went with the route. `NEXT_PUBLIC_GIPHY_API_KEY` therefore ships in the bundle;
+that is Giphy's own model, and
+[ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md) records the exposure
+it accepts.
+
+`searchGiphy()` in `lib/gifs/giphy.ts` still pins `rating=pg-13` unconditionally
+so the picker's "SFW filter on" promise cannot be raised by a caller, still
+gives up after 4s because the brief clock is 30s, and now raises
+`GiphyRateLimitError` on a 429 — the one failure the room treats differently,
+because it ends the game rather than losing a board. The three switches that
+land on the offline shelf are unchanged in behaviour and moved in location:
+`NEXT_PUBLIC_GIFS_STUB=1`, the `?gifs=stub` lever, and a missing key outside
+production are all resolved in `lib/gifs/source.ts`, which plays the part the
+route did — one place that knows which shelf is on, so no screen has to.
+`source: 'sample'` comes back with the board, the picker says so, and the
+"Powered by Giphy" mark stays off it.
 
 **The two Ably routes are that route's siblings, and they are two rather than
 one because Ably says so.** `/api/ably/token` is the SDK's `authUrl`, and an
@@ -738,7 +742,6 @@ graph LR
   AT["components/atoms/Avatar"]
   PK["components/molecules/AvatarPicker"]
   GL["components/atoms/ReactionGlyph"]
-  API["app/api/gifs"]
   TKR["app/api/ably/seat<br/>app/api/ably/token"]
   ABL["lib/ably/<br/><i>token · seat — server only, node:crypto</i>"]
   U -->|"useRoom() · useChat() · publish(event)"| R
@@ -757,7 +760,6 @@ graph LR
   GL -->|"animatedSrcFor(glyph) — this atom, and nothing else"| NO
   NO -.->|"derived per browser, never on the wire<br/>fetched only near the viewport"| GST
   R -.->|"fetch — a signed seat, then a token"| TKR
-  API --> F
   TKR --> ABL
   F -.->|"toMediaRef → MediaRef"| G
 ```
@@ -1088,7 +1090,7 @@ seat any more than it can mint a token, and asking twice would only give the two
 answers a way to disagree. An unreachable route is treated as "no realtime"
 rather than an error page. `transportKind(levers, stubbed)` then picks the road,
 with the URL lever beating the environment — the same relationship `?gifs=stub`
-has with `GIFS_STUB`. That module is the "one line in `RoomProvider`" the
+has with `NEXT_PUBLIC_GIFS_STUB`. That module is the "one line in `RoomProvider`" the
 roadmap promised, made a module so nothing upstream knows which road it got.
 
 **`RoomProvider` branches on that one answer.** A host resolves its seat, builds
@@ -1469,8 +1471,8 @@ Eleven now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?votin
 non-production in `lib/room/levers.ts` — in a production build every lever reads
 as absent whatever the query string says. **`?transport=ably|broadcast` is phase
 5's**, and it stands to `ABLY_STUB` exactly as `?gifs=stub` stands to
-`GIFS_STUB`: the URL wins, so one page load can be moved onto the tab bus
-without restarting the server.
+`NEXT_PUBLIC_GIFS_STUB`: the URL wins, so one page load can be moved onto the
+tab bus without restarting the server.
 
 **`?voting=rank|single` and `?format=tb|one` are phase 7's, and they are
 `?mode=`'s siblings** — the three now go through one helper,
@@ -2285,14 +2287,10 @@ sequenceDiagram
   participant G as Giphy
   participant P as lib/gifs/samples
 
-  Note over N,P: build, then once an hour
+  Note over N,P: build time, once
   N->>W: await wallTiles()
-  alt no key, or GIFS_STUB=1, or the request throws
-    W->>P: SAMPLE_GIFS + their -still companions
-  else
-    W->>G: searchGiphy 'reaction' · limit 20 · revalidate 3600
-    G-->>W: mp4 · webp · gif · fixed_width_still
-  end
+  W->>P: SAMPLE_GIFS + their -still companions
+  Note over W,G: never reached any more — a server-side search<br/>was a proxy, and the cache that made it<br/>affordable is also prohibited
   W-->>N: WallTile[] — poster always set
   N->>N: render HeroWall · LandingNav · LandingActions
 
@@ -2328,25 +2326,27 @@ belongs to the GIF picker rather than to a page.
 
 ```mermaid
 sequenceDiagram
-  participant S as BriefScreen ·<br/>ComposeScreen · ChatPanel
+  participant S as BriefScreen ·<br/>ComposeScreen
   participant U as useGifSearch
-  participant R as /api/gifs
+  participant R as lib/gifs/source
   participant G as Giphy
   participant P as lib/gifs/samples
 
-  S->>U: mount → trending · Enter → search(q)
+  S->>U: mount, only where a board draws → trending<br/>Enter → search(q)
+  Note over U: two boards a round. The one you land<br/>on is the first; a search buys the second
   Note over U: aborts the in-flight request<br/>and takes a monotonic ticket
-  U->>R: GET /api/gifs?q · limit · offset · stub
+  U->>R: fetchBoard(q, offset, 50)
   alt stubbed, or no key outside production
     R->>P: SAMPLE_GIFS filtered on keywords
     P-->>R: source: 'sample'
   else
-    R->>G: search or trending · rating=pg-13 · 4s timeout
+    R->>G: search or trending · rating=pg-13 · limit 50 · 4s timeout
     G-->>R: results
+    Note over G,R: 429 → GiphyRateLimitError → game/gifsExhausted
   end
   R-->>U: GifSearchResponse
   Note over U: a stale ticket is discarded,<br/>so two searches cannot land out of order
-  U-->>S: results · status · message
+  U-->>S: results · status · message · remaining
 ```
 
 There is no debounce anywhere in that path, on purpose: the design's picker says
@@ -2438,8 +2438,10 @@ sequenceDiagram
   Note over H: no authorize, no reduce, no rev —<br/>the host is just another subscriber
 ```
 
-Four things that diagram is saying. **The key never leaves the server**, the
-same way `GIPHY_API_KEY` never does — the browser presents a signed token
+Four things that diagram is saying. **The key never leaves the server** — which
+is now the *opposite* of the Giphy key, whose terms force it into the browser
+([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)). Ably has no such
+rule, so this one stays put: the browser presents a signed token
 request and talks to Ably directly, so neither route is in the room's hot path.
 **Control is one channel and state is many**: intents, events and refusals share
 `captionist:<code>:control`, while each recipient has its own
@@ -2772,7 +2774,7 @@ outright, and a `?phase=` fixture asked the server for a seat it would never
 use. Both are fixed; neither was reachable from any test.
 
 **But no test touches Ably.** `playwright.config.ts` sets `ABLY_STUB: '1'` and
-`GIFS_STUB: '1'` on the dev server it spawns, so `/api/ably/seat` answers
+`NEXT_PUBLIC_GIFS_STUB: '1'` on the dev server it spawns, so `/api/ably/seat` answers
 `stub: true`, `transportKind` resolves to `broadcast`, and every spec in the
 repo — `twotabs`, `reconnect`, `chat`, all of it — exercises the tab transport.
 That switch is stated rather than inherited from whether this machine has a key,
@@ -2816,9 +2818,12 @@ rather than code:
    suite is scoped to `lib/**/*.test.ts` on purpose — components are verified
    against the real browser this app ships to, not a simulated DOM. Screen copy
    counts as pure logic: it lives in selectors, so `lib/game/selectors.test.ts`
-   asserts the words and the specs assert the wiring. `/api/gifs` is tested
-   through Playwright's `request` fixture rather than a browser, against the
-   stub — a spec that depends on a live third party is not a test.
+   asserts the words and the specs assert the wiring. The picker used to be
+   tested through Playwright's `request` fixture against `/api/gifs`; with that
+   route gone `e2e/gifs.spec.ts` drives the browser, and intercepts
+   `api.giphy.com` to count what a full game spends — the test that holds
+   [ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md) up. A spec that
+   depends on a live third party is still not a test.
 6. **Room state or routing makes an organism.** That is the whole test — not
    size, not how much markup it holds. A component that calls `useRoom()` or
    pushes a route belongs in `components/organisms/`; one that only needs props

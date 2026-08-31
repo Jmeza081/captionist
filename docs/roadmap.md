@@ -142,15 +142,24 @@ the boot branch returned before rendering, leaving the spinner turning forever.
 
 Not a phase — a gate. Do these when the room stops being a dev toy.
 
-- [ ] **Swap the keys.** `GIPHY_API_KEY` and `ABLY_API_KEY` in `.env.local` are
-      personal development credentials: the Giphy key spends a personal rate
-      limit and the Ably key bills a personal account. Issue project-owned keys
-      and set them as deployment environment variables, not a file in the repo.
+- [ ] **Swap the keys.** `NEXT_PUBLIC_GIPHY_API_KEY` and `ABLY_API_KEY` in
+      `.env.local` are personal development credentials: the Giphy key spends a
+      personal rate limit and the Ably key bills a personal account. Issue
+      project-owned keys and set them as deployment environment variables, not a
+      file in the repo. The Giphy one ships to the browser by necessity
+      ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)) — issue a
+      web-only key for it, and be ready to rotate.
 - [ ] **Check `NEXT_PUBLIC_APP_URL`.** Unset is right in development; in
       production it must be the real origin, or the lobby's QR code encodes a
       link no phone can reach.
-- [ ] **Clear `ABLY_STUB` and `GIFS_STUB`** in the deployed environment. The URL
-      levers are already gated to non-production; these are not.
+- [ ] **Clear `ABLY_STUB` and `NEXT_PUBLIC_GIFS_STUB`** in the deployed
+      environment. The URL levers are already gated to non-production; these are
+      not.
+- [ ] **Decide about a production Giphy key.** The room fits inside the free
+      100/hour for one game at a time
+      ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)); a second
+      game in the same hour does not. Giphy quotes production pricing privately
+      and only after an application.
 - [ ] **Widen `allowedDevOrigins`** only for LAN testing, never for the deployed
       build.
 
@@ -159,10 +168,10 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
 | | Decision |
 | --- | --- |
 | Authority | The host browser is the server. Ably is pub/sub + presence. No database. |
-| Role holder | **Does not compete.** Sets the round up, sits it out, then votes. |
+| Role holder | **Does not compete.** Sets the round up, sits it out, then votes. This is also the cost model: a room of N fields N−1 pickers per round, which is what `roundsMaxFor()` prices. |
 | Uploads | **Not a feature.** Priced the storage target and removed the scaffolding — [ADR 0014](./adr/0014-uploads-are-not-a-feature.md). Giphy covers both modes. |
-| GIFs | Real Giphy, proxied through a route handler so the key stays server-side. |
-| Chat | Deferred to phase 6; it is a `RoomEvent`, never game state. |
+| GIFs | Real Giphy, called from the browser with a public key — proxying and caching are both against their terms ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)). The room's size and round caps are set by the resulting rate limit ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)). |
+| Chat | Deferred to phase 6; it is a `RoomEvent`, never game state. **No GIF picker** — mounting one cost every player an API call on joining ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)). Emoji, Slackmoji and text only. |
 | `format:'one'`, `voting:'single'` | Implemented in phase 7. Both were live controls in `/host` that no screen read — a single-vote room paid 3/2/1, and "One line" changed nothing but a summary label. |
 | Help modal | Never pauses the room. Only the host's explicit pause stops the clock. |
 
@@ -201,7 +210,7 @@ can leak into a screen.
 | `?voting=single`, `?format=one` | Boots that fixture under the other voting rule or caption format, for the same reason as `?mode=`. Without them the only road to a single-vote room is `/host` → `sessionStorage` → a room, which drags a route boundary into a screen spec. |
 | `?as=p2` | Takes a different seat. Round one's role holder is always `p0`, and the role holder sits the round out — so the caption and answer faces cannot be reached as the host. It exercised the guest path a phase before real joining depended on it. |
 | `?transport=broadcast` | Runs the room over `BroadcastChannel` instead of Ably — one browser, many tabs, no network and no key. What the whole test suite runs on; `ABLY_STUB=1` does the same thing stickily. |
-| `?gifs=stub` | Serves offline sample art instead of calling Giphy. `GIFS_STUB=1` does the same thing permanently; a missing `GIPHY_API_KEY` falls back to it outside production. |
+| `?gifs=stub` | Serves offline sample art instead of calling Giphy. `NEXT_PUBLIC_GIFS_STUB=1` does the same thing permanently; a missing `NEXT_PUBLIC_GIPHY_API_KEY` falls back to it outside production. |
 
 `?as=` needs `?phase=`: it takes a seat that already exists, and in a fresh room
 the other seats are empty until somebody joins. Real joining is built now, so

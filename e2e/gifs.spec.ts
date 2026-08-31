@@ -1,53 +1,197 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 /**
- * The Giphy proxy, tested through `request` rather than a browser — there is
- * no UI involved, and a spec that depends on a live third party is not a test.
+ * The picker, from the browser — which is now the only place it runs.
  *
- * `stub=1` is the same switch the `?gifs=stub` lever throws, so CI never needs
- * a key and never burns rate limit.
+ * This spec used to drive `/api/gifs` through `request`, because the app
+ * proxied Giphy through a route handler. It does not any more: proxying and
+ * caching are both against Giphy's terms, so the route is gone and every board
+ * is a live call from the page. See ADR-0020.
+ *
+ * `the allowance` is the group that holds ADR-0021 up. The room's cost is
+ * bounded by a per-round search budget, and these assert that budget exactly
+ * rather than counting a whole game and hoping: a page only ever sees its
+ * *own* seat's calls, so a full-game total from one browser would be a number
+ * that looks like proof and is not.
+ *
+ * `?gifs=stub` is the same switch `NEXT_PUBLIC_GIFS_STUB` throws, so CI never
+ * needs a key and never burns rate limit. `?gifs=live` opts one page load back
+ * onto the real path, which is what makes the interception below count
+ * something.
  */
-test.describe('the GIF search route', () => {
-  test('returns usable results without a Giphy key', async ({ request }) => {
-    const response = await request.get('/api/gifs?stub=1')
-    expect(response.status()).toBe(200)
 
-    const body = await response.json()
-    expect(body.source).toBe('sample')
-    expect(body.results.length).toBeGreaterThan(0)
+const GIPHY = '**api.giphy.com/**'
 
-    for (const gif of body.results) {
-      // `alt` becomes the accessible name here and `MediaRef.alt` in game
-      // state for the rest of the round, so an empty one is never acceptable.
-      expect(gif.alt.length).toBeGreaterThan(0)
-      expect(gif.src.length).toBeGreaterThan(0)
-      expect(gif.id.length).toBeGreaterThan(0)
+/** A GIF tile is the only button on the screen wrapping an image. */
+function tiles(page: Page) {
+  return page.locator('button:has(img)')
+}
+
+/** Answers every Giphy call with an empty board, and counts them. */
+async function countCalls(page: Page): Promise<() => number> {
+  let calls = 0
+  await page.route(GIPHY, async (route) => {
+    calls += 1
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: [] }),
+    })
+  })
+  return () => calls
+}
+
+test.describe('the picker, without a key', () => {
+  test('draws the offline shelf rather than an error', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+
+    await expect(tiles(page).first()).toBeVisible()
+
+    // Every tile is named: `alt` becomes the accessible name here and
+    // `MediaRef.alt` in game state for the rest of the round, so an empty one
+    // is never acceptable.
+    const names = await tiles(page).evaluateAll((nodes) =>
+      nodes.map((n) => n.getAttribute('aria-label') ?? ''),
+    )
+    expect(names.length).toBeGreaterThan(0)
+    for (const name of names) expect(name.trim().length).toBeGreaterThan('Pick '.length)
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  test('claims Giphy only when the board is actually Giphy', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+    await expect(tiles(page).first()).toBeVisible()
+
+    // The attribution mark is required where the API is used — and a false
+    // claim everywhere else. This board is the offline shelf.
+    await expect(page.getByText('Powered by Giphy')).toHaveCount(0)
+    await expect(page.getByText(/no Giphy key configured/i)).toBeVisible()
+  })
+
+  test('never lets a board go blank', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+    await expect(tiles(page).first()).toBeVisible()
+
+    // A search that matches nothing falls back to the whole shelf: a blank
+    // grid reads as broken.
+    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    await search.fill('zzzzzzz')
+    await search.press('Enter')
+    await expect(tiles(page).first()).toBeVisible()
+  })
+})
+
+test.describe('the budget', () => {
+  test('gives the arrival board away, then counts down the three', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+    await expect(tiles(page).first()).toBeVisible()
+
+    // Three a round, and the board you arrive on is not one of them. Said
+    // before the chips are tapped, not after: they read as free, and each one
+    // costs a search.
+    await expect(page.getByText('3 searches left.')).toBeVisible()
+
+    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    for (const [term, left] of [
+      ['prod', '2 searches left.'],
+      ['merge', 'One search left.'],
+    ] as const) {
+      await search.fill(term)
+      await search.press('Enter')
+      await expect(page.getByText(left)).toBeVisible()
     }
 
-    const ids = body.results.map((g: { id: string }) => g.id)
-    expect(new Set(ids).size).toBe(ids.length)
+    await search.fill('rollback')
+    await search.press('Enter')
+    await expect(page.getByText(/No searches left/)).toBeVisible()
   })
 
-  test('narrows on a query and still answers when nothing matches', async ({ request }) => {
-    const hit = await (await request.get('/api/gifs?stub=1&q=deploy')).json()
-    expect(hit.query).toBe('deploy')
-    expect(hit.results.some((g: { id: string }) => g.id.includes('deploy'))).toBe(true)
+  test('blocks the chips without disabling them', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+    await expect(tiles(page).first()).toBeVisible()
 
-    // A blank grid reads as broken, so an unmatched search falls back to the shelf.
-    const miss = await (await request.get('/api/gifs?stub=1&q=zzzzzzz')).json()
-    expect(miss.results.length).toBeGreaterThan(0)
+    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    for (const term of ['prod', 'merge', 'rollback']) {
+      await search.fill(term)
+      await search.press('Enter')
+    }
+    await expect(page.getByText(/No searches left/)).toBeVisible()
+
+    // Non-negotiable #10. A spent chip stays live and focusable and the
+    // counter says why; a greyed-out inert one is what this forbids.
+    const chip = page.getByRole('button', { name: 'deploy on friday' }).first()
+    await expect(chip).toBeEnabled()
+    await chip.focus()
+    await expect(chip).toBeFocused()
+  })
+})
+
+test.describe('the allowance', () => {
+  test('spends one call arriving, one per search, then stops at three', async ({
+    page,
+  }) => {
+    const calls = await countCalls(page)
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=live')
+
+    // Measured as a delta rather than an absolute, because `reactStrictMode`
+    // makes the arrival *fetch* twice in development — mount, tear down,
+    // mount. Production runs the effect once. Arriving costs no budget either
+    // way; what is asserted is that a search costs exactly one call and that
+    // the fourth one costs nothing at all.
+    await expect(page.getByText('3 searches left.')).toBeVisible()
+    const afterArriving = calls()
+    expect(afterArriving).toBeGreaterThan(0)
+
+    // A search is exactly one call. No debounce means no burst of them.
+    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    await search.fill('prod')
+    await search.press('Enter')
+    await expect(page.getByText('2 searches left.')).toBeVisible()
+    expect(calls()).toBe(afterArriving + 1)
+
+    // And the cap holds against someone who keeps trying — through the field
+    // and through a chip, which are the two ways to spend one. Three a round
+    // is what the room's cost model rests on; see ADR-0021 for what that
+    // buys and what it costs.
+    for (const term of ['merge', 'rollback', 'oncall', 'retro']) {
+      await search.fill(term)
+      await search.press('Enter')
+    }
+    await page.getByRole('button', { name: 'deploy on friday' }).first().click()
+    await expect(page.getByText(/No searches left/)).toBeVisible()
+    expect(calls()).toBe(afterArriving + 3)
   })
 
-  test('clamps a limit nobody should be asking for', async ({ request }) => {
-    const body = await (await request.get('/api/gifs?stub=1&limit=999')).json()
-    expect(body.results.length).toBeLessThanOrEqual(24)
+  test('costs nothing on a screen with no picker', async ({ page }) => {
+    const calls = await countCalls(page)
+
+    // `promptwait` — watching the Prompter type. This is the regression that
+    // mattered most: the hook sat above the early returns, so every player in
+    // the room paid for a board nobody was ever shown.
+    await page.goto('/room/DEV?seed=42&phase=brief&mode=react&as=p2&gifs=live')
+    await expect(page.getByText(/is typing a prompt/)).toBeVisible()
+
+    expect(calls()).toBe(0)
   })
 
-  test('serves the sample art it points at', async ({ request }) => {
-    const body = await (await request.get('/api/gifs?stub=1')).json()
-    const first = body.results[0]
-    const image = await request.get(first.src)
-    expect(image.status()).toBe(200)
-    expect(image.headers()['content-type']).toContain('svg')
+  test('ends the game when the allowance is gone, and says why', async ({ page }) => {
+    await page.route(GIPHY, (route) =>
+      route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Too Many Requests' }),
+      }),
+    )
+
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=live')
+
+    // Not an error in the picker — the room stops. Scores stand from whatever
+    // completed, which is what `round: null` plus the podium path gives.
+    await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'podium')
+    await expect(page.getByText('Nobody paid the GIF bill')).toBeVisible()
+
+    // A modal nobody asked for must not be a trap.
+    await page.getByRole('button', { name: 'Got it' }).click()
+    await expect(page.getByText('Nobody paid the GIF bill')).toBeHidden()
   })
 })

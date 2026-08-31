@@ -1,5 +1,5 @@
 import { HOST_ONLY, PHASE_GUARDS, type GameAction } from './actions'
-import { MAX_PLAYERS, MIN_PLAYERS } from './constants'
+import { MIN_PLAYERS } from './constants'
 import type { GameState } from './types'
 
 /**
@@ -33,8 +33,9 @@ export function authorize(state: GameState, action: GameAction): true | string {
 
   switch (action.type) {
     case 'player/joined': {
-      if (state.players.length >= MAX_PLAYERS) {
-        return `This room is full — ${MAX_PLAYERS} players is the limit.`
+      // The room's own size, which the host chose, not the global ceiling.
+      if (state.players.length >= state.settings.maxPlayers) {
+        return `This room is full — ${state.settings.maxPlayers} players is the limit.`
       }
       if (
         state.settings.uniqueNicknames &&

@@ -96,7 +96,7 @@ test.describe('the lobby', () => {
     await page.goto('/room/DEV?seed=42&phase=lobby&as=p2')
 
     // The card names itself for what a waiting player is looking at, and the
-    // roster carries the count rather than the host's "5 of 20" capacity.
+    // roster carries the count rather than the host's "5 of 10" capacity.
     await expect(page.getByRole('heading', { name: /You’re in, / })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'In the room' })).toBeVisible()
     await expect(page.getByText('5 players')).toBeVisible()

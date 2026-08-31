@@ -109,3 +109,16 @@
 .srOnly {
   @include t.srOnly;
 }
+
+// Beside the playback control, on the same baseline: both are chrome about the
+// wall rather than part of it, and neither belongs in the reading path.
+.credit {
+  position: absolute;
+  left: t.$space-20;
+  bottom: t.$space-20;
+  z-index: 2;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 600;
+  color: t.$text-timestamp;
+}

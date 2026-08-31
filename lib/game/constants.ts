@@ -49,7 +49,21 @@ export const TIEBREAK_BONUS = 1
  * between. The role holder sets the round up and sits it out.
  */
 export const MIN_PLAYERS = 3
-export const MAX_PLAYERS = 20
+
+/**
+ * The ceiling on a room, whatever a host asks for.
+ *
+ * Ten, and the reason is Giphy rather than the game.
+ *
+ * The design draws a twenty-player room and nothing about the round engine
+ * minds one. What minds is `react` mode, where every competitor opens their
+ * own picker every round and — with the proxy's cache gone, see
+ * `lib/gifs/giphy.ts` — every one of those is a live API call against an
+ * allowance of 100 an hour. Ten and five is where the room is held while it is
+ * in beta — a full room hunting hard still outruns the free tier partway
+ * through, which is a priced trade rather than an accident. See ADR-0021.
+ */
+export const MAX_PLAYERS = 10
 
 /**
  * What a host is called when they never gave a name.
@@ -72,7 +86,12 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   format: 'tb',
   voting: 'rank',
   capSeconds: 90,
-  totalRounds: 5,
+  // The biggest room by default, so a host who touches nothing gets the least
+  // surprising one — and three rounds, which is what that size affords. A host
+  // who wants five lowers the room size and watches the bound move, which is
+  // the clearest way to teach that the two are connected.
+  maxPlayers: MAX_PLAYERS,
+  totalRounds: 3,
   giphyEnabled: true,
   uniqueNicknames: true,
 }
@@ -82,11 +101,51 @@ export const CAP_SECONDS_MIN = 30
 export const CAP_SECONDS_MAX = 180
 export const CAP_SECONDS_STEP = 15
 export const ROUNDS_MIN = 1
-export const ROUNDS_MAX = 10
+/** Five for the same reason the room holds ten — see `MAX_PLAYERS`. */
+export const ROUNDS_MAX = 5
 
 /**
- * Avatar fills from the design. Seven colours for a twenty-player ceiling, so
- * the palette cycles — `colorFor` below owns that.
+ * Giphy's free allowance, and what a round is assumed to spend of it.
+ *
+ * `SEARCHES_PER_ROUND` is 3, so a competitor's *ceiling* is four calls a round
+ * — one to arrive plus three searches. Sizing against that ceiling would allow
+ * a ten-player room two rounds, which is barely a game, and it would be sizing
+ * against a room where every single person exhausts every single search every
+ * single round. So the model assumes two of the three get used: **three calls
+ * per competitor per round**.
+ *
+ * A room that beats the assumption is not broken. It ends early, on the podium,
+ * saying why — `game/gifsExhausted` is the backstop this leans on, and it is
+ * why the number can be an estimate rather than a guarantee. See ADR-0021.
+ */
+const HOURLY_ALLOWANCE = 100
+const ASSUMED_CALLS_PER_COMPETITOR_ROUND = 3
+
+/**
+ * The most rounds a room of this size can afford.
+ *
+ * The role holder sits every round out, so a room of `size` fields `size - 1`
+ * competitors and each of them opens a picker every round. That product is the
+ * whole cost model:
+ *
+ *     3–7 players → 5 rounds · 8–9 → 4 · 10 → 3
+ *
+ * Exposed rather than inlined in `/host` because three places need the same
+ * answer: the stepper's bound, the clamp when a room's size drops under a
+ * round count it can no longer afford, and the line under the control that
+ * says why the bound is where it is.
+ */
+export function roundsMaxFor(maxPlayers: number): number {
+  const competitors = Math.max(1, maxPlayers - 1)
+  const affordable = Math.floor(
+    HOURLY_ALLOWANCE / (competitors * ASSUMED_CALLS_PER_COMPETITOR_ROUND),
+  )
+  return Math.min(ROUNDS_MAX, Math.max(ROUNDS_MIN, affordable))
+}
+
+/**
+ * Avatar fills from the design. Seven colours for a ten-player ceiling, so the
+ * palette cycles — `colorFor` below owns that.
  */
 export const PLAYER_COLORS: readonly string[] = [
   '#FF787D', // red
@@ -99,7 +158,7 @@ export const PLAYER_COLORS: readonly string[] = [
 ]
 
 /**
- * The seat colour for the nth player to join. Seven colours, twenty seats.
+ * The seat colour for the nth player to join. Seven colours, ten seats.
  *
  * Lives here rather than in `selectors.ts` because the *reducer* assigns it at
  * join time — a colour is a property of the seat, not a view of it, and the

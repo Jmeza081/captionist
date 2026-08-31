@@ -38,8 +38,9 @@ const TRAVOLTA: GifResult = {
 /**
  * The offline stand-in, matched by subject rather than by index.
  *
- * `GIFS_STUB=1` is how the Playwright suite and a keyless checkout keep every
- * surface off a third party — and here it is load-bearing twice over, because
+ * `NEXT_PUBLIC_GIFS_STUB=1` is how the Playwright suite and a keyless checkout
+ * keep every surface off a third party — and here it is load-bearing twice
+ * over, because
  * `playwright.config.ts` also resolves every host but the dev server to
  * nothing. Without this the 404 spec would assert a broken image.
  */
@@ -49,16 +50,21 @@ const OFFLINE = SAMPLE_GIFS.find((gif) => gif.id === 'sample-prod')
  * Which GIF the 404 page shows.
  *
  * A function rather than a constant, so the stub switch is read when the page
- * renders rather than when the module is first evaluated — the way
- * `wallTiles()` reads it.
+ * renders rather than when the module is first evaluated.
+ *
+ * This one is not an API call and never was — it is a single hard-coded CDN
+ * URL in the HTML, which is the sanctioned way to show Giphy media. What
+ * changed is only the switch's name: the picker calls Giphy from the browser
+ * now, so the variable had to become `NEXT_PUBLIC_`, and a server-only read of
+ * the old name would silently stop stubbing.
  *
  * Be honest about how far that goes: `/_not-found` is prerendered (`○` in
  * `next build`), so a production build resolves this once and bakes the answer
  * in either way. Where it earns its keep is `next dev`, which renders per
- * request — and that is where the Playwright suite runs, with `GIFS_STUB=1`
- * set by `playwright.config.ts`.
+ * request — and that is where the Playwright suite runs, with
+ * `NEXT_PUBLIC_GIFS_STUB=1` set by `playwright.config.ts`.
  */
 export function notFoundGif(): GifResult {
-  if (process.env.GIFS_STUB === '1') return OFFLINE ?? TRAVOLTA
+  if (process.env.NEXT_PUBLIC_GIFS_STUB === '1') return OFFLINE ?? TRAVOLTA
   return TRAVOLTA
 }

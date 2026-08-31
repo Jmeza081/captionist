@@ -234,21 +234,29 @@ test.describe('reaction tallies', () => {
 })
 
 /**
- * A GIF in a message.
+ * An attachment in a message.
  *
  * The composer has declared every attachment prop since phase 2 and `ChatPanel`
  * passed none of them, so this whole surface existed only in the gallery. The
  * wire is what was missing: the `chat` event carried a bare string.
+ *
+ * It used to be fed by a Giphy picker in the rail. That picker is gone —
+ * mounting it spent an API call for every player the moment they joined the
+ * room, against an allowance of a hundred an hour (ADR-0021). The remaining
+ * producer is an image reaction, which posts immediately with its attachment
+ * inline rather than staging one for the send key.
  */
 const ATTACH = 'C-F34796'
-const GIFONLY = 'C-F34797'
-const ONESURFACE = 'C-F34798'
+const EMPTYSEND = 'C-F34797'
+const NOGIFKEY = 'C-F34798'
 
-/** The offline sample art the `?gifs=stub` lane serves. Avatars are `<img>` too. */
-const ATTACHED = 'img[src^="/media/stub-"]'
+/** The committed Slackmoji art an image reaction posts. Avatars are `<img>` too. */
+const ATTACHED = 'img[src^="/media/slackmoji-"]'
 
-test.describe('attaching a GIF', () => {
-  test('sends a GIF alongside words', async ({ context }) => {
+test.describe('attaching an image', () => {
+  test('posts an image reaction as an attachment, and it crosses the wire', async ({
+    context,
+  }) => {
     const host = await context.newPage()
     await host.goto(`/room/${ATTACH}?gifs=stub`)
     await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
@@ -256,79 +264,52 @@ test.describe('attaching a GIF', () => {
     const guest = await join(context, ATTACH, 'Vic')
     await openChat(guest)
 
-    await guest.getByRole('button', { name: 'Attach a GIF' }).click()
-    // Scoped to the panel: the composer's own key is "Attach a GIF" too, and an
-    // unscoped match can land on it and toggle the panel shut instead.
+    await guest.getByRole('button', { name: 'Add a reaction' }).click()
     await guest
-      .getByRole('dialog', { name: 'Attach a GIF' })
-      .getByRole('button', { name: /^Attach / })
-      .first()
+      .getByRole('dialog', { name: 'Send an emoji' })
+      .getByRole('button', { name: 'Shipit squirrel' })
       .click()
 
-    // Picking stages, never sends — the message still goes on the send key.
-    await expect(guest.getByText('GIF attached')).toBeVisible()
-    await say(guest, 'exhibit A')
-
-    await expect(guest.getByRole('log', { name: 'Room chat' })).toContainText('exhibit A')
-    // By source, not by `img`: avatar art is an `<img>` in every row too.
-    await expect(guest.getByRole('log', { name: 'Room chat' }).locator(ATTACHED)).toBeVisible()
+    // **A picture is an attachment, not a sentence.** Posting the glyph as
+    // words would render `/media/slackmoji-shipit.svg` in 14px type, which is
+    // exactly the bug this path exists to avoid.
+    const guestLog = guest.getByRole('log', { name: 'Room chat' })
+    await expect(guestLog.locator(ATTACHED)).toBeVisible()
+    await expect(guestLog).not.toContainText('slackmoji')
 
     // And it crosses the wire, which is the half that did not exist. Settle on
-    // the words first: under a loaded suite the second tab can still be
-    // catching up, and "the image is missing" is a worse failure to read than
-    // "the message never arrived".
+    // the image rather than words: this message has none.
     await openChat(host)
-    const hostLog = host.getByRole('log', { name: 'Room chat' })
-    await expect(hostLog).toContainText('exhibit A')
-    await expect(hostLog.locator(ATTACHED)).toBeVisible()
+    await expect(host.getByRole('log', { name: 'Room chat' }).locator(ATTACHED)).toBeVisible()
   })
 
-  test('sends a GIF with no words at all', async ({ context }) => {
+  test('will not send an empty message', async ({ context }) => {
     const host = await context.newPage()
-    await host.goto(`/room/${GIFONLY}?gifs=stub`)
+    await host.goto(`/room/${EMPTYSEND}?gifs=stub`)
     await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
 
-    const guest = await join(context, GIFONLY, 'Vic')
+    const guest = await join(context, EMPTYSEND, 'Vic')
     await openChat(guest)
 
-    // Send is blocked on an empty composer…
+    // Nothing stages into the composer any more, so an empty draft is simply
+    // an empty message — there is no second way to make one sendable.
     await expect(guest.getByRole('button', { name: 'Send message' })).toBeDisabled()
-
-    await guest.getByRole('button', { name: 'Attach a GIF' }).click()
-    // Scoped to the panel: the composer's own key is "Attach a GIF" too, and an
-    // unscoped match can land on it and toggle the panel shut instead.
-    await guest
-      .getByRole('dialog', { name: 'Attach a GIF' })
-      .getByRole('button', { name: /^Attach / })
-      .first()
-      .click()
-
-    // …and a GIF alone is a complete message, so it unblocks with no text.
+    await guest.getByRole('textbox', { name: /message/i }).fill('exhibit A')
     await expect(guest.getByRole('button', { name: 'Send message' })).toBeEnabled()
-    await guest.getByRole('button', { name: 'Send message' }).click()
-
-    await expect(guest.getByRole('log', { name: 'Room chat' }).locator(ATTACHED)).toBeVisible()
-    await expect(guest.getByText('GIF attached')).toBeHidden()
   })
 
-  test('opens one surface at a time, never two', async ({ context }) => {
-    // DESIGNSYSTEM rule 3. The panel and the picker overlap the same slot, so
-    // the state is a union rather than two booleans.
+  test('offers no GIF key in the composer', async ({ context }) => {
     const host = await context.newPage()
-    await host.goto(`/room/${ONESURFACE}?gifs=stub`)
+    await host.goto(`/room/${NOGIFKEY}?gifs=stub`)
     await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
 
-    const guest = await join(context, ONESURFACE, 'Vic')
+    const guest = await join(context, NOGIFKEY, 'Vic')
     await openChat(guest)
-    await say(guest, 'something to react to')
 
-    await guest.getByRole('button', { name: 'Add a reaction' }).click()
-    await expect(guest.getByRole('dialog', { name: 'Send an emoji' })).toBeVisible()
-
-    await guest.getByRole('button', { name: 'Attach a GIF' }).click()
-    await expect(guest.getByRole('dialog', { name: 'Attach a GIF' })).toBeVisible()
-    // And the picker's own click-outside dismissal must not fight this: it
-    // closes only the surface it was showing, never one just opened over it.
-    await expect(guest.getByRole('dialog', { name: 'Send an emoji' })).toBeHidden()
+    // A regression guard on a budget decision, not on a layout. `Composer`
+    // still *has* the prop — the gallery renders it — so the only thing
+    // stopping this coming back by accident is a test that says it is gone.
+    await expect(guest.getByRole('button', { name: 'Add a reaction' })).toBeVisible()
+    await expect(guest.getByRole('button', { name: 'Attach a GIF' })).toHaveCount(0)
   })
 })

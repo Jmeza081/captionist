@@ -85,11 +85,15 @@ recalled APIs.
 
 ## Architecture
 
-Seven routes: `/`, `/components`, `/join` and `/host` are static, `/join/[code]`
-and `/room/[code]` are dynamic, and `/api/gifs` proxies Giphy so the key stays
-server-side. `/host` and `/join` are the front door — a room's rules are set
-before it exists, and a guest picks a name and a face before asking for a seat.
-The
+Six routes: `/`, `/components`, `/join` and `/host` are static, `/join/[code]`
+and `/room/[code]` are dynamic. **Giphy is called from the browser** — their
+terms forbid proxying it, so the route that used to is gone and the key is
+public ([ADR 0020](docs/adr/0020-giphy-is-called-from-the-browser.md)). The free
+allowance is what caps the room at ten players and five rounds
+([ADR 0021](docs/adr/0021-the-rooms-limits-are-a-rate-limit.md)) — treat both
+numbers as load-bearing, not as taste. `/host` and `/join` are the front door —
+a room's rules are set before it exists, and a guest picks a name and a face
+before asking for a seat. The
 round flow's engine is built (`lib/game` pure core, `lib/room` host engine) and
 all ten of its phases have screens. `app/layout.tsx` owns fonts, global CSS and
 `app/tokens.scss` (which publishes the token custom properties). Components are

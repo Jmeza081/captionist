@@ -45,7 +45,23 @@ import styles from './ComposeScreen.module.scss'
 export function ComposeScreen() {
   const { state, selfId, send } = useRoom()
   const { notify } = useRoomShell()
-  const gifs = useGifSearch()
+
+  /**
+   * Only `submit` draws a board.
+   *
+   * `caption` writes text over the role holder's GIF, `watch` is the role
+   * holder sitting the round out, and `submitted` hands off to
+   * `WaitingScreen` — none of them show a picker, and this hook used to fetch
+   * for all four. In a `caption` room that was an API call per competitor per
+   * round for a board nobody was ever shown. See ADR-0021.
+   *
+   * Read through `viewKey` rather than `composeCopy` because it has to happen
+   * up here with the other hooks, above the early returns that need `state`.
+   */
+  const gifs = useGifSearch({
+    enabled: state ? viewKey(state, selfId) === 'submit' : false,
+    onExhausted: () => send({ type: 'game/gifsExhausted' }),
+  })
 
   /**
    * One draft string per field the room's format asks for.
@@ -157,14 +173,17 @@ export function ComposeScreen() {
           suggestions={SEARCH_SUGGESTIONS}
           selectedId={picked?.id}
           selectionLabel="Your answer"
+          searchesLeft={gifs.remaining}
+          source={gifs.source}
           onPick={setPicked}
           tools={
+            // Instant now, and free: it reads off the fifty tiles already on
+            // the board instead of fetching a random page of its own.
             <Button
               variant="secondary"
               onClick={() => {
-                void gifs.surprise().then((gif) => {
-                  if (gif) setPicked(gif)
-                })
+                const gif = gifs.surprise()
+                if (gif) setPicked(gif)
               }}
             >
               Surprise me

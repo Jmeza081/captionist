@@ -12,7 +12,6 @@ import { WaitingDots } from '@/components/atoms/WaitingDots'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { RoomShare } from '@/components/molecules/RoomShare'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
-import { MAX_PLAYERS } from '@/lib/game/constants'
 import {
   WAITING_LINE,
   canStart,
@@ -248,7 +247,7 @@ function HostLobby({
           <Inline justify="between" align="baseline">
             <h2 className={styles.rosterTitle}>Player list</h2>
             <span className={styles.count}>
-              {state.players.length} of {MAX_PLAYERS}
+              {state.players.length} of {state.settings.maxPlayers}
             </span>
           </Inline>
 

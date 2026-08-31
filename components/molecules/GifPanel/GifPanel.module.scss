@@ -154,6 +154,12 @@
   color: t.$text-meta;
 }
 
+// The budget counter and Giphy's mark share a line. `justify: between` on the
+// Inline puts the mark at the end even when there is no counter beside it.
+.meta {
+  width: 100%;
+}
+
 // A column *width* rather than a count, for the same reason the grid used
 // `auto-fill`: the board has to survive a 360px phone and a 1440px
 // screen-share without a breakpoint for each. The browser fits as many

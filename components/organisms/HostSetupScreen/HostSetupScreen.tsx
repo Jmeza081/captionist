@@ -22,10 +22,12 @@ import {
   CAP_SECONDS_MIN,
   CAP_SECONDS_STEP,
   DEFAULT_SETTINGS,
-  ROUNDS_MAX,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
   ROUNDS_MIN,
+  roundsMaxFor,
 } from '@/lib/game/constants'
-import { hostSetupCopy, modeChoices, showsCaptionFormat } from '@/lib/game/selectors'
+import { hostSetupCopy, modeChoices, roundsHint, showsCaptionFormat } from '@/lib/game/selectors'
 import type { HatId } from '@/lib/game/types'
 import type { GameMode, RoomSettings } from '@/lib/game/types'
 import type { WallTile } from '@/lib/gifs/wall'
@@ -218,14 +220,44 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
                   onChange={(capSeconds) => patch({ capSeconds })}
                 />
 
+                {/*
+                  Room size sits *above* rounds, because it bounds it.
+
+                  Every competitor opens a GIF picker every round, so seats
+                  times rounds is what the free Giphy allowance actually buys
+                  — `roundsMaxFor` owns that relationship and this is the one
+                  screen where a host can see it move. Lowering the size never
+                  strands the round count: the reducer clamps the pair, and
+                  this clamps alongside it so the stepper never shows a value
+                  the room will not keep.
+                */}
                 <Stepper
-                  label={copy.roundsLabel}
-                  value={settings.totalRounds}
-                  format={(n) => String(n)}
-                  min={ROUNDS_MIN}
-                  max={ROUNDS_MAX}
-                  onChange={(totalRounds) => patch({ totalRounds })}
+                  label={copy.roomSizeLabel}
+                  value={settings.maxPlayers}
+                  format={(n) => `${n} players`}
+                  min={MIN_PLAYERS}
+                  max={MAX_PLAYERS}
+                  onChange={(maxPlayers) =>
+                    patch({
+                      maxPlayers,
+                      totalRounds: Math.min(settings.totalRounds, roundsMaxFor(maxPlayers)),
+                    })
+                  }
                 />
+
+                <Stack gap={5}>
+                  <Stepper
+                    label={copy.roundsLabel}
+                    value={settings.totalRounds}
+                    format={(n) => String(n)}
+                    min={ROUNDS_MIN}
+                    max={roundsMaxFor(settings.maxPlayers)}
+                    onChange={(totalRounds) => patch({ totalRounds })}
+                  />
+                  <p className={styles.hint}>
+                    {roundsHint(settings.maxPlayers, settings.totalRounds)}
+                  </p>
+                </Stack>
               </Stack>
             </Stack>
           </Box>

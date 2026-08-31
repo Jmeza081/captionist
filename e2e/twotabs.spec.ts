@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
+import { MAX_PLAYERS } from '@/lib/game/constants'
 
 /**
  * The phase-4 gate, as the roadmap words it:
@@ -38,7 +39,7 @@ test.describe('the phase 4 gate', () => {
     const guest = await join(context, code, 'Vic')
 
     // One room, two views of it.
-    await expect(host.getByText('2 of 20')).toBeVisible()
+    await expect(host.getByText(`2 of ${MAX_PLAYERS}`)).toBeVisible()
     await expect(host.getByRole('listitem').filter({ hasText: 'Vic' })).toBeVisible()
     await expect(guest.getByRole('listitem').filter({ hasText: 'Jesse' })).toBeVisible()
   })
@@ -77,7 +78,7 @@ test.describe('the phase 4 gate', () => {
     // Three is the floor for voting to mean anything.
     const one = await join(context, CODE, 'Vic')
     const two = await join(context, CODE, 'Roberto')
-    await expect(host.getByText('3 of 20')).toBeVisible()
+    await expect(host.getByText(`3 of ${MAX_PLAYERS}`)).toBeVisible()
 
     await host.getByRole('button', { name: /Start game/ }).click()
 

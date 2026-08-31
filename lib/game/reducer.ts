@@ -1,13 +1,14 @@
 import type { GameAction } from './actions'
 import {
   FALLBACK_PROMPTS,
-  colorFor,
   MIN_PLAYERS,
   RANK_POINTS,
   SEAT_GRACE_MS,
   TIEBREAK_BONUS,
   WAITING_ALL_IN_MS,
+  colorFor,
   durationFor,
+  roundsMaxFor,
 } from './constants'
 import { pick, shuffle } from './rng'
 import { asHatId } from '@/lib/hats'
@@ -42,8 +43,25 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'room/created':
       return state
 
-    case 'room/settingsChanged':
-      return bump({ ...state, settings: { ...state.settings, ...action.patch } })
+    /**
+     * Settings change together, because two of them constrain each other.
+     *
+     * Lowering the room size can strand `totalRounds` above what that size
+     * affords, and a host dragging one stepper should not have to know it
+     * silently invalidated another. Clamped here rather than in `/host` so
+     * every road in — the setup screen, a URL lever, a fixture — lands on a
+     * legal pair.
+     */
+    case 'room/settingsChanged': {
+      const settings = { ...state.settings, ...action.patch }
+      return bump({
+        ...state,
+        settings: {
+          ...settings,
+          totalRounds: Math.min(settings.totalRounds, roundsMaxFor(settings.maxPlayers)),
+        },
+      })
+    }
 
     case 'player/joined': {
       const player: Player = {
@@ -227,6 +245,20 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'host/jumpedToPodium':
       return bump(enterPhase({ ...state, round: null }, 'podium', action.at))
 
+    /**
+     * The GIF budget ran out, so that is the game.
+     *
+     * The same landing as the host jumping to the podium — the round in
+     * progress is dropped and scores stand from the rounds that completed —
+     * plus a reason, because the podium has something to explain. Idempotent
+     * by the phase guard: a second client reporting the same 429 is refused
+     * in `podium` rather than re-entering it.
+     */
+    case 'game/gifsExhausted':
+      return bump(
+        enterPhase({ ...state, round: null, endedBecause: 'gifs' }, 'podium', action.at),
+      )
+
     case 'host/restarted':
       return bump({
         ...state,
@@ -236,6 +268,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
         roleHolderIndex: 0,
         round: null,
         history: [],
+        // Cleared, or the next podium would still be apologising for the
+        // last game's rate limit.
+        endedBecause: undefined,
       })
 
     case 'clock/expired': {

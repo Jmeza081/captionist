@@ -81,12 +81,35 @@ export default defineConfig({
      * than inherited from an absence:
      *
      * - `ABLY_STUB` keeps every room on the tab transport.
-     * - `GIFS_STUB` keeps the picker *and the landing wall* on the offline
-     *   shelf. Not every room spec passes `?gifs=stub`, and `room.spec.ts`
-     *   walks a full game through the picker — so without this, a key turns a
-     *   full-suite run into a few hundred live Giphy calls and breaks
-     *   `landing.spec.ts`, which asserts the wall's stub art in the SSR HTML.
+     * - `NEXT_PUBLIC_GIFS_STUB` keeps the picker *and the landing wall* on the
+     *   offline shelf. Not every room spec passes `?gifs=stub`, and
+     *   `room.spec.ts` walks a full game through the picker — so without this,
+     *   a key turns a full-suite run into a few hundred live Giphy calls and
+     *   breaks `landing.spec.ts`, which asserts the wall's stub art in the SSR
+     *   HTML.
+     *
+     *   `NEXT_PUBLIC_`, because the picker calls Giphy from the browser now —
+     *   proxying it was against their terms, so there is no server left to
+     *   read a server-only switch. The old name would be read by nothing and
+     *   fail open, which is the worst way for this to break.
      */
-    env: { ABLY_STUB: '1', GIFS_STUB: '1' },
+    env: {
+      ABLY_STUB: '1',
+      NEXT_PUBLIC_GIFS_STUB: '1',
+      /**
+       * A key that is not a key.
+       *
+       * `?gifs=live` opts one page load back onto the real Giphy path so
+       * `e2e/gifs.spec.ts` can intercept it and count calls — and without
+       * *some* key set, that path falls through to the offline shelf and the
+       * counting tests would assert nothing while looking like they passed.
+       *
+       * Nothing reaches Giphy with it: those specs fulfil the route
+       * themselves, and `--host-resolver-rules` above resolves every host but
+       * the dev server to nothing, so an uncaught call fails rather than
+       * leaking.
+       */
+      NEXT_PUBLIC_GIPHY_API_KEY: 'e2e-not-a-real-key',
+    },
   },
 })

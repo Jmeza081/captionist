@@ -249,6 +249,15 @@ export interface RoomSettings {
   voting: 'rank' | 'single'
   /** The compose clock, in seconds. 30–180 in steps of 15. */
   capSeconds: number
+  /**
+   * How many seats this room offers, 3 to `MAX_PLAYERS`.
+   *
+   * A room setting rather than the global constant because it bounds
+   * `totalRounds`: every competitor opens a picker every round, so seats times
+   * rounds is what the GIF allowance actually buys. `roundsMaxFor()` owns that
+   * relationship.
+   */
+  maxPlayers: number
   totalRounds: number
   giphyEnabled: boolean
   uniqueNicknames: boolean
@@ -276,6 +285,14 @@ export interface GameState {
   seed: number
   /** Monotonic. The transport's ordering token; guests drop anything older. */
   rev: number
+  /**
+   * Why the game stopped early, when it did.
+   *
+   * Absent on a room that reached its last round the ordinary way, which is
+   * why the podium can treat it as "there is something to explain". Only one
+   * reason so far: Giphy's hourly allowance ran out mid-round.
+   */
+  endedBecause?: 'gifs'
 }
 
 /**

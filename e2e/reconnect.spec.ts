@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
+import { MAX_PLAYERS } from '@/lib/game/constants'
 
 /**
  * Dropping out, and coming back.
@@ -46,7 +47,7 @@ test.describe('dropping out', () => {
     // The seat stays — a drop mid-round must not destroy a submission or
     // renumber the role rotation — so the roster still reads two.
     await expect(host.getByText('1 here')).toBeVisible({ timeout: 20_000 })
-    await expect(host.getByText('2 of 20')).toBeVisible()
+    await expect(host.getByText(`2 of ${MAX_PLAYERS}`)).toBeVisible()
   })
 
   test('tells the player their room is gone, over the room they were in', async ({

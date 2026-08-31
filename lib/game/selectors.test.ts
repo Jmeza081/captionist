@@ -1,43 +1,50 @@
 import { describe, expect, it } from 'vitest'
-import { CAPTION_MAX, HOST_FALLBACK_NAME, PROMPT_MAX, SEAT_GRACE_MS } from './constants'
+import {
+  CAPTION_MAX,
+  DEFAULT_SETTINGS,
+  HOST_FALLBACK_NAME,
+  PROMPT_MAX,
+  SEAT_GRACE_MS,
+} from './constants'
 import { fixtureFor, lobbyFixture } from './fixtures'
 import { reduce } from './reducer'
 import {
-  leaderIds,
-  toAvatarProps,
-  briefCopy,
-  lobbyCopy,
   ballotFrom,
+  briefCopy,
   captionFields,
+  captionRemaining,
   clearLabel,
+  composeCopy,
+  leaderIds,
+  lobbyCopy,
   lockGateFrom,
   modeChoices,
-  settingsSummary,
-  showsCaptionFormat,
   myRoundPlacement,
   ordinal,
+  phaseLabel,
   podiumCopy,
   presentCount,
-  seatSecondsLeft,
-  seatState,
+  promptRemaining,
   rankSlotCount,
   revealCopy,
+  roundsHint,
   scoreCopy,
+  seatSecondsLeft,
+  seatState,
+  settingsSummary,
+  showsCaptionFormat,
+  showsProgressRail,
   showsRoundProgress,
   standings,
+  startLabel,
+  submittedLine,
   tiebreakCards,
   tiebreakCopy,
+  timerSuffix,
+  toAvatarProps,
   voteCards,
   voteCopy,
   waitingCopy,
-  captionRemaining,
-  composeCopy,
-  phaseLabel,
-  promptRemaining,
-  showsProgressRail,
-  startLabel,
-  submittedLine,
-  timerSuffix,
 } from './selectors'
 import type { GameMode, GameState, PlayerId, RoundResult } from './types'
 
@@ -55,17 +62,17 @@ const RIVAL = 'p1'
 
 describe('the header', () => {
   it('names the step you are on, not the phase the room is in', () => {
-    expect(phaseLabel(brief('caption'), HOLDER)).toBe('Round 1 of 5')
-    expect(phaseLabel(brief('react'), HOLDER)).toBe('Round 1 of 5 · Write the prompt')
-    expect(phaseLabel(compose('caption'), RIVAL)).toBe('Round 1 of 5 · Caption this')
-    expect(phaseLabel(compose('react'), RIVAL)).toBe('Round 1 of 5 · Answer the prompt')
+    expect(phaseLabel(brief('caption'), HOLDER)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds}`)
+    expect(phaseLabel(brief('react'), HOLDER)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Write the prompt`)
+    expect(phaseLabel(compose('caption'), RIVAL)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Caption this`)
+    expect(phaseLabel(compose('react'), RIVAL)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Answer the prompt`)
   })
 
   it('gives one phase two headers, depending on who is looking', () => {
     const state = compose('caption')
     // The same room, the same instant: one player writes, the other watches.
-    expect(phaseLabel(state, RIVAL)).toBe('Round 1 of 5 · Caption this')
-    expect(phaseLabel(state, HOLDER)).toBe('Round 1 of 5')
+    expect(phaseLabel(state, RIVAL)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Caption this`)
+    expect(phaseLabel(state, HOLDER)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds}`)
   })
 
   it('has no phase label in the lobby, where the settings line goes instead', () => {
@@ -366,7 +373,7 @@ describe('the podium', () => {
     const state = at('podium', 'caption')
     const copy = podiumCopy(state)
     expect(copy.headline).toMatch(/ takes the crown\.$/)
-    expect(copy.gameOverLabel).toBe('Game over · 5 rounds')
+    expect(copy.gameOverLabel).toBe(`Game over · ${DEFAULT_SETTINGS.totalRounds} rounds`)
     expect(copy.body).toMatch(/^\d+ points?, \d+ rounds? won, and zero remorse\.$/)
   })
 
@@ -402,7 +409,12 @@ describe('the guest lobby', () => {
   it('shows the rules a guest cannot change', () => {
     const rows = settingsSummary(fixtureFor('lobby', { players: 5 }))
     expect(rows.map((r) => r.label)).toEqual(['Rounds', 'Caption time', 'Format', 'Voting'])
-    expect(rows.map((r) => r.value)).toEqual(['5', '90 sec', 'Top + bottom', 'Rank your top 3'])
+    expect(rows.map((r) => r.value)).toEqual([
+      String(DEFAULT_SETTINGS.totalRounds),
+      '90 sec',
+      'Top + bottom',
+      'Rank your top 3',
+    ])
   })
 })
 
@@ -416,6 +428,20 @@ describe('the setup screen', () => {
     const [classic, reversed] = modeChoices('react')
     expect(classic?.tag).toBe('Classic')
     expect(reversed?.tag).toBe('Selected')
+  })
+
+  it('says why the rounds stepper stops where it does', () => {
+    // Room to grow: name the ceiling so nobody has to find it by pushing.
+    expect(roundsHint(10, 2)).toBe('Up to 3 at this room size.')
+
+    // At the ceiling, and the ceiling is the game's own — not Giphy's.
+    expect(roundsHint(6, 5)).toBe('The most the room plays.')
+
+    // At a ceiling the allowance imposed. This is the one that has to explain
+    // itself, because it is the only bound that is not about the game.
+    expect(roundsHint(10, 3)).toBe(
+      'The most 10 players fit in the free GIF allowance.',
+    )
   })
 })
 
@@ -483,7 +509,7 @@ describe('a room that ended with its host', () => {
     expect(ended.phase).toBe('podium')
     const copy = podiumCopy(ended)
     expect(copy.eyebrow).toBe('The host left')
-    expect(copy.gameOverLabel).toMatch(/^Ended early · round 1 of 5$/)
+    expect(copy.gameOverLabel).toMatch(new RegExp(`^Ended early · round 1 of ${DEFAULT_SETTINGS.totalRounds}$`))
     // No host means nothing to restart, so the way on is a new room.
     expect(copy.actionHref).toBe('/host')
   })

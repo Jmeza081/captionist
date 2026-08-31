@@ -1,11 +1,25 @@
 import type { GifResult } from './types'
 
 /**
- * The only place the Giphy key is read.
+ * Giphy, called from the browser.
  *
- * Server-side by construction: the key is a full-capability credential, so it
- * never reaches the browser — the client talks to `/api/gifs`, which talks to
- * Giphy. Same shape the Ably token route will take in phase 5.
+ * **This used to be a server module behind `/api/gifs`, and the terms forbid
+ * that.** Giphy's API requirements are explicit on both counts:
+ *
+ *   > Do not proxy requests to GIPHY, either API calls or media URL loads.
+ *   > All requests to GIPHY should be made directly from the client side.
+ *
+ *   > Do not cache media URLs or copies of GIPHY media assets unless your
+ *   > integration has been explicitly approved.
+ *
+ * So the proxy is gone and so is the hour-long `next: { revalidate }` on the
+ * fetch below. The key travels to the browser as
+ * `NEXT_PUBLIC_GIPHY_API_KEY`, which is Giphy's own model — they tell you to
+ * issue a separate key per platform precisely because it ships to clients. It
+ * is rate-limited, not secret. See ADR-0020.
+ *
+ * The cost of losing the cache is the whole reason the room is capped at ten
+ * players and a competitor gets two boards a round — see ADR-0021.
  */
 
 const ENDPOINT = 'https://api.giphy.com/v1/gifs'
@@ -20,6 +34,16 @@ export interface GiphyQuery {
 }
 
 export class GiphyError extends Error {}
+
+/**
+ * The hourly allowance is gone.
+ *
+ * Its own type because the room does something different with it: every other
+ * failure is one board that did not arrive, and this one ends the game (see
+ * `game/gifsExhausted`). A caller that cannot tell them apart would either
+ * shrug off a dead quota or end the game over a flaky connection.
+ */
+export class GiphyRateLimitError extends GiphyError {}
 
 interface GiphyImage {
   url?: string
@@ -110,18 +134,29 @@ export async function searchGiphy(query: GiphyQuery, apiKey: string): Promise<Gi
 
   const url = `${ENDPOINT}/${term ? 'search' : 'trending'}?${params.toString()}`
 
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    // Everyone in the room searches the same handful of terms, and the
-    // suggestion chips are the hot path.
-    next: { revalidate: 3_600 },
-  })
+  // No `next: { revalidate }`, and nothing else that would retain a copy: the
+  // terms allow neither. Every board is a live request.
+  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+
+  if (response.status === 429) {
+    throw new GiphyRateLimitError('Giphy’s hourly limit is spent')
+  }
 
   if (!response.ok) {
     throw new GiphyError(`Giphy answered ${response.status}`)
   }
 
   const body = (await response.json()) as { data?: GiphyItem[] }
+  /**
+   * Giphy's order, kept.
+   *
+   * The terms say not to "reorder, insert, remove, suppress, replace, or
+   * filter" what search and trending return, so this maps in place and the
+   * only thing it drops is an item with no `id` or no usable image URL —
+   * which is not a filter on content but a tile that cannot be drawn. Nothing
+   * downstream re-sorts: `GifPanel` renders `results` in the order it gets
+   * them, and its local narrowing is off whenever `onSubmit` is supplied.
+   */
   return (body.data ?? []).flatMap((item) => {
     const result = toResult(item, term)
     return result ? [result] : []

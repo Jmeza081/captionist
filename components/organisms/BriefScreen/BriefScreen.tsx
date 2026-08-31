@@ -42,14 +42,28 @@ const AUTO_PICK_LEAD_MS = 1_200
 export function BriefScreen() {
   const { state, selfId, send } = useRoom()
   const { notify } = useRoomShell()
-  const gifs = useGifSearch()
+
+  // Above the early returns, because hooks are. Both tolerate no room — and
+  // `copy` has to be resolved before `useGifSearch`, because it decides
+  // whether this screen fetches at all.
+  const copy = state ? briefCopy(state, selfId) : undefined
+  const holder = state ? roleHolder(state) : undefined
+
+  /**
+   * Only `pick` draws a board.
+   *
+   * The other three faces of this screen — `prompt`, and the two waits — have
+   * no picker on them, and this hook used to fetch for all four. In `react`
+   * mode that meant every player in the room spent an API call each round
+   * watching somebody else type. See ADR-0021.
+   */
+  const gifs = useGifSearch({
+    enabled: copy?.view === 'pick',
+    onExhausted: () => send({ type: 'game/gifsExhausted' }),
+  })
 
   const [picked, setPicked] = useState<GifResult | undefined>(undefined)
   const [draft, setDraft] = useState('')
-
-  // Above the early returns, because hooks are. Both tolerate no room.
-  const copy = state ? briefCopy(state, selfId) : undefined
-  const holder = state ? roleHolder(state) : undefined
 
   /**
    * The clock picks for you.
@@ -236,10 +250,7 @@ export function BriefScreen() {
         <Eyebrow>{copy.eyebrow}</Eyebrow>
       </Inline>
 
-      <Inline gap={14} justify="between">
-        <h1 className={styles.headline}>{copy.headline}</h1>
-        <span className={styles.note}>Powered by Giphy · SFW filter on</span>
-      </Inline>
+      <h1 className={styles.headline}>{copy.headline}</h1>
 
       {/* Under the headline, where it is read once on the way in, rather than
           pinned to the bottom beside the button — a note about the clock is
@@ -257,6 +268,8 @@ export function BriefScreen() {
         suggestions={SEARCH_SUGGESTIONS}
         selectedId={picked?.id}
         selectionLabel="Selected"
+        searchesLeft={gifs.remaining}
+        source={gifs.source}
         onPick={setPicked}
         // Both controls sit with the search field: everything that changes what
         // the board shows, and then the one thing that ends the phase. It keeps
@@ -264,11 +277,20 @@ export function BriefScreen() {
         // which is what the foot row underneath it could not do.
         tools={
           <>
+            {/*
+              Free, and instant. This used to fetch the next page of results,
+              which was a whole API call to show you something the board in
+              front of you could already answer — it holds fifty tiles now,
+              not twelve. `surprise` reads from those.
+            */}
             <Button
               variant="secondary"
               onClick={() => {
-                gifs.shuffle()
-                notify('Fresh batch — same taste')
+                const gif = gifs.surprise()
+                if (gif) {
+                  setPicked(gif)
+                  notify('Picked one for you — our taste is questionable')
+                }
               }}
             >
               {copy.secondary}

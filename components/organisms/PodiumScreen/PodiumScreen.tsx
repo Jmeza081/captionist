@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/atoms/Button'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
+import { Modal } from '@/components/molecules/Modal'
 import { Podium } from '@/components/molecules/Podium'
 import { podiumCopy, podiumPlaces } from '@/lib/game/selectors'
 import { useRoom } from '@/lib/room/useRoom'
@@ -24,6 +26,16 @@ import styles from './PodiumScreen.module.scss'
  */
 export function PodiumScreen() {
   const { state, isHost, send } = useRoom()
+
+  /**
+   * The excuse, shown once.
+   *
+   * Local rather than room state: dismissing it is a per-viewer act, and
+   * routing it through the reducer would mean the first player to close it
+   * closed it for everyone.
+   */
+  const [excuseSeen, setExcuseSeen] = useState(false)
+
   if (!state) return null
 
   const copy = podiumCopy(state)
@@ -62,6 +74,30 @@ export function PodiumScreen() {
           {copy.secondary}
         </Button>
       </Inline>
+
+      {/*
+        Why the game stopped short.
+
+        A podium that arrives in round two with no explanation reads as a bug,
+        and this one has a cause worth naming: the room ran through Giphy's
+        hourly allowance. Scores stand — `history` is the durable record and
+        the abandoned round never reached it.
+      */}
+      <Modal
+        open={state.endedBecause === 'gifs' && !excuseSeen}
+        onClose={() => setExcuseSeen(true)}
+        label="Why the game ended"
+        tone="error"
+        stepIndex={0}
+        onStepChange={() => {}}
+        steps={[
+          {
+            eyebrow: 'Out of GIFs',
+            heading: 'Nobody paid the GIF bill',
+            body: 'We hit Giphy’s hourly limit, so that’s the game. Scores stand. Try again at the top of the hour.',
+          },
+        ]}
+      />
     </Stack>
   )
 }

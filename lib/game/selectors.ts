@@ -4,8 +4,10 @@ import {
   HOST_FALLBACK_NAME,
   MIN_PLAYERS,
   PROMPT_MAX,
-  SEAT_GRACE_MS,
   RANK_POINTS,
+  ROUNDS_MAX,
+  SEAT_GRACE_MS,
+  roundsMaxFor,
 } from './constants'
 import type {
   Ballot,
@@ -252,7 +254,7 @@ export function settingsLine(state: GameState): string {
   const s = state.settings
   return [
     modeName(s.mode),
-    `${s.totalRounds} rounds`,
+    `${s.totalRounds} ${s.totalRounds === 1 ? 'round' : 'rounds'}`,
     `${s.capSeconds}s`,
     s.voting === 'rank' ? 'rank top 3' : 'single vote',
   ].join(' · ')
@@ -306,7 +308,7 @@ export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       eyebrow: `You’re up, ${name}`,
       headline: 'Pick the GIF everyone has to suffer through.',
       action: 'Lock it in',
-      secondary: 'Shuffle results',
+      secondary: 'Surprise me',
       timeoutNote: 'If the clock runs out we’ll pick for you — and our taste is questionable.',
     }
   }
@@ -1284,8 +1286,24 @@ export interface HostSetupCopy {
   formatLabel: string
   votingLabel: string
   capLabel: string
+  roomSizeLabel: string
   roundsLabel: string
   action: string
+}
+
+/**
+ * Why the rounds stepper stops where it does.
+ *
+ * Said under the control rather than discovered by pushing against it: the
+ * bound moves with the room size, and a stepper that silently refuses is a
+ * stepper people assume is broken. Rule 10's reasoning applied to a bound
+ * instead of a button.
+ */
+export function roundsHint(maxPlayers: number, totalRounds: number): string {
+  const max = roundsMaxFor(maxPlayers)
+  if (totalRounds < max) return `Up to ${max} at this room size.`
+  if (max === ROUNDS_MAX) return 'The most the room plays.'
+  return `The most ${maxPlayers} players fit in the free GIF allowance.`
 }
 
 export function hostSetupCopy(): HostSetupCopy {
@@ -1308,6 +1326,7 @@ export function hostSetupCopy(): HostSetupCopy {
     formatLabel: 'Caption format',
     votingLabel: 'Voting',
     capLabel: 'Submission time limit',
+    roomSizeLabel: 'Room size',
     roundsLabel: 'Number of rounds',
     action: 'Open the room',
   }

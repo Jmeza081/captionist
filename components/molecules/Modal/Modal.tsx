@@ -110,8 +110,10 @@ export function Modal({
       >
         <div className={styles.copy}>
           <div className={styles.head}>
+            {/* A one-step modal is an announcement, not a walkthrough, and
+                "Step 1 of 1" reads as a counter that forgot to count. */}
             <span className={styles.stepCount}>
-              Step {stepIndex + 1} of {steps.length}
+              {steps.length > 1 ? `Step ${stepIndex + 1} of ${steps.length}` : ''}
             </span>
             {headerControl && <div className={styles.control}>{headerControl}</div>}
             <button

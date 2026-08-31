@@ -5,11 +5,9 @@ import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import { TallyPill } from '@/components/atoms/TallyPill'
 import { ChatMessage } from '@/components/molecules/ChatMessage'
 import { Composer } from '@/components/molecules/Composer'
-import { GifPanel } from '@/components/molecules/GifPanel'
 import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
 import { playerById, toAvatarProps } from '@/lib/game/selectors'
-import { useGifSearch } from '@/lib/gifs/useGifSearch'
 import {
   isImageGlyph,
   labelFor,
@@ -19,7 +17,6 @@ import {
 } from '@/lib/reactions'
 import type { EventSnapshot, Tally } from '@/lib/room/events'
 import { tallyKey } from '@/lib/room/events'
-import type { ChatAttachment } from '@/lib/room/transport'
 import { ROOM_TARGET } from '@/lib/room/transport'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { useChat, useChatLog, useEventSelector, useRoom, useUnread } from '@/lib/room/useRoom'
@@ -60,15 +57,19 @@ const selectTallies = (snapshot: EventSnapshot) => snapshot.tallies
  * are open, so nobody has to remember to call the other setter. `RoomShell`
  * models its own overlays the same way.
  *
- * A staged attachment is deliberately *not* a member: it is a pending payload,
- * not a surface, and it has to survive the panel that produced it closing.
+ * There used to be a staged attachment held alongside this — a GIF picked
+ * from the panel, waiting on the send key. The panel is gone (mounting it
+ * cost every player an API call on join, see ADR-0021) and nothing else
+ * stages: an image reaction posts immediately, carrying its attachment inline.
+ * So the staging state went with it rather than lingering as a `useState` that
+ * could only ever hold `undefined`.
  *
  * The reaction surface carries *what it is aimed at* rather than being a bare
  * flag: a message you picked, or — when `messageId` is null — the composer,
  * which posts. Holding the target in the surface is what stops the picker
  * quietly landing on whatever arrived last.
  */
-type Surface = { kind: 'reactions'; messageId: string | null } | { kind: 'gifs' } | null
+type Surface = { kind: 'reactions'; messageId: string | null } | null
 
 export function ChatPanel() {
   const { state } = useRoom()
@@ -80,9 +81,7 @@ export function ChatPanel() {
 
   const [draft, setDraft] = useState('')
   const [surface, setSurface] = useState<Surface>(null)
-  const [attachment, setAttachment] = useState<ChatAttachment | undefined>(undefined)
   const listRef = useRef<HTMLDivElement>(null)
-  const gifs = useGifSearch()
 
   // Pinned to the bottom, the way a live room wants. Keyed on the count rather
   // than the array so opening the picker does not yank the view.
@@ -153,9 +152,8 @@ export function ChatPanel() {
             Only closes the picker it was opened for.
 
             The outside-click listener fires after React's own handler for the
-            same click, so a tap on the GIF key — or on another message's CTA —
-            would otherwise open that surface and then immediately have this
-            close it. Comparing against the target this picker was showing
+            same click, so a tap on another message's CTA would otherwise open
+            that surface and then immediately have this close it. Comparing against the target this picker was showing
             leaves a surface somebody else has just opened alone.
           */
           onDismiss={() =>
@@ -170,11 +168,8 @@ export function ChatPanel() {
         value={draft}
         onChange={setDraft}
         onSend={() => {
-          // A GIF alone is a message, so this fires on either. `say` and
-          // `receiveChat` agree on that rule; the button already did.
-          say(draft, { attachment, replyTo })
+          say(draft, { replyTo })
           setDraft('')
-          setAttachment(undefined)
           clearReply()
           setSurface(null)
         }}
@@ -194,33 +189,8 @@ export function ChatPanel() {
             open?.kind === 'reactions' ? null : { kind: 'reactions', messageId: null },
           )
         }
-        onAttachGif={() =>
-          setSurface((open) => (open?.kind === 'gifs' ? null : { kind: 'gifs' }))
-        }
-        attachment={attachment}
-        onClearAttachment={() => setAttachment(undefined)}
         replyTo={replyTo}
         onClearReply={clearReply}
-        panel={
-          surface?.kind === 'gifs' ? (
-            <GifPanel
-              variant="popover"
-              results={gifs.results}
-              status={gifs.status}
-              message={gifs.message}
-              query={gifs.query}
-              onQueryChange={() => {}}
-              onSubmit={gifs.search}
-              onPick={(gif) => {
-                // Picking stages, never sends — the message goes on the send
-                // key like any other, so a GIF can still carry words.
-                setAttachment({ src: gif.src, alt: gif.alt })
-                setSurface(null)
-              }}
-              onClose={() => setSurface(null)}
-            />
-          ) : null
-        }
       />
     </div>
   )

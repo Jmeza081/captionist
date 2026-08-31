@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import type { WallTile } from '@/lib/gifs/wall'
+import { wallIsGiphy, type WallTile } from '@/lib/gifs/wall'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import styles from './HeroWall.module.scss'
 
@@ -123,6 +123,16 @@ export function HeroWall({
           <span className={styles.srOnly}>. Shows {label}.</span>
         </button>
       )}
+
+      {/*
+        Somebody else's art, credited.
+
+        Read here rather than passed in, for the same reason `GifPanel` carries
+        its own mark: the wall renders on four routes, and a prop threaded
+        through four pages is a prop three of them can forget. It says nothing
+        over the offline shelf, which is not Giphy's to be credited for.
+      */}
+      {wallIsGiphy() && <span className={styles.credit}>GIFs via Giphy</span>}
     </>
   )
 }
