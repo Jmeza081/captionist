@@ -14,7 +14,10 @@ import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { PROMPT_MAX, PROMPT_STARTERS, SEARCH_SUGGESTIONS } from '@/lib/game/constants'
 import { briefCopy, roleHolder, toAvatarProps } from '@/lib/game/selectors'
-import { WAITING_BACKDROP } from '@/lib/gifs/backdrop'
+import { BACKDROP_SLUG } from '@/lib/gifs/art'
+import { toBackdrop } from '@/lib/gifs/backdrop'
+import { intendedProvider } from '@/lib/gifs/registry'
+import { useResolvedOne } from '@/lib/gifs/useArt'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
 import { toMediaRef, type GifResult } from '@/lib/gifs/types'
 import { useRoom } from '@/lib/room/useRoom'
@@ -77,6 +80,9 @@ export function BriefScreen() {
    * own staged pick wins; failing that, a random tile off the board you were
    * looking at.
    */
+  // Resolved in the browser; `undefined` until it lands, and if it never does.
+  const backdrop = toBackdrop(useResolvedOne(BACKDROP_SLUG) ?? { src: '', alt: '' })
+
   const armed = useRef({ picked, results: gifs.results, send, chose: gifs.chose })
   // Every render, deliberately: the timer must see the board as it is when it
   // fires, not as it was when it was set. Writing a ref during render is what
@@ -131,11 +137,11 @@ export function BriefScreen() {
             positioned and the headline is not, so inside the same stacking
             context the backdrop would paint over the words it is supposed to
             sit behind. Out here it is the column that takes the layer. */}
-        <SceneBackdrop
-          mp4={WAITING_BACKDROP.mp4}
-          still={WAITING_BACKDROP.still}
-          scrim="full"
-        />
+        {/* Resolved in the browser, and absent until it lands — a decoration
+            that has not arrived is simply a decoration that has not arrived. */}
+        {backdrop && (
+          <SceneBackdrop mp4={backdrop.mp4} still={backdrop.still} scrim="full" />
+        )}
 
         <Stack gap={20} align="center" className={styles.waiting}>
           {holder && (
@@ -153,15 +159,13 @@ export function BriefScreen() {
           {copy.body && <p className={styles.waitBody}>{copy.body}</p>}
 
           {/* Somebody's work, not our chrome. Small, last, and out of the way —
-              but present, because the alternative is using it uncredited. */}
-          <a
-            className={styles.credit}
-            href={WAITING_BACKDROP.creditHref}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Backdrop by {WAITING_BACKDROP.credit} via Giphy
-          </a>
+              but present, because the alternative is using it uncredited. No
+              link: the provider publishes a title, not an uploader page. */}
+          {backdrop && (
+            <span className={styles.credit}>
+              Backdrop “{backdrop.credit}” via {intendedProvider().descriptor.name}
+            </span>
+          )}
         </Stack>
       </>
     )

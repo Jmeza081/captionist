@@ -54,7 +54,15 @@ async function countCalls(page: Page): Promise<() => number> {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
         return
       }
-      calls += 1
+      /**
+       * Boards only.
+       *
+       * `gifs/items` is the landing wall, the backdrop and the 404 resolving
+       * their slugs — a real call, counted in the ledger, and not part of the
+       * per-round search budget these tests exist to hold. Lumping them in
+       * would make the ADR-0021 guard drift every time a decoration moved.
+       */
+      if (!url.includes('/gifs/items')) calls += 1
       await route.fulfill({ status: 200, contentType: 'application/json', body: emptyBoard(url) })
     })
   }

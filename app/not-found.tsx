@@ -5,9 +5,9 @@ import { Grid } from '@/components/atoms/Grid'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { TallyPill } from '@/components/atoms/TallyPill'
-import { MediaCard } from '@/components/molecules/MediaCard'
 import { Wordmark } from '@/components/molecules/Wordmark'
 import { notFoundGif } from '@/lib/gifs/notFound'
+import { ResolvedNotFoundMedia } from '@/components/molecules/MediaCard/ResolvedMedia'
 import { labelFor } from '@/lib/reactions'
 import styles from './not-found.module.scss'
 
@@ -80,9 +80,8 @@ export default function NotFound() {
         </Stack>
 
         <div className={styles.entry}>
-          <MediaCard
-            src={gif.src}
-            alt={gif.alt}
+          <ResolvedNotFoundMedia
+            fallback={gif}
             topText="The page you asked for"
             tallies={TALLIES.map((tally) => (
               <TallyPill

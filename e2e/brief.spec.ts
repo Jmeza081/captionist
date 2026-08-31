@@ -83,19 +83,59 @@ test.describe('the brief', () => {
   test('gives the wait something to look at, without losing the words', async ({
     page,
   }) => {
-    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
+    /**
+     * The backdrop is resolved in the browser now, from a slug.
+     *
+     * A server may not fetch it and its URL may not be committed, so there is
+     * nothing on screen until a client has asked — and this suite resolves every
+     * host but the dev server to nothing. Routing the lookup is what keeps the
+     * layering contract below checkable at all.
+     */
+    await page.route('**api.klipy.com/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          result: true,
+          data: {
+            data: [
+              {
+                slug: 'celebrate-165',
+                title: 'Colorful Fireworks Celebrate Night Sky',
+                type: 'gif',
+                tags: [],
+                file: {
+                  md: {
+                    gif: { url: 'https://static.klipy.com/b.gif', width: 640, height: 360 },
+                    mp4: { url: 'https://static.klipy.com/b.mp4', width: 640, height: 360 },
+                  },
+                  xs: { jpg: { url: 'https://static.klipy.com/b.jpg', width: 160, height: 90 } },
+                },
+              },
+            ],
+            current_page: 1,
+            per_page: 50,
+            has_next: false,
+          },
+        }),
+      }),
+    )
+
+    // `?gifs=klipy`, not `stub`: the shelf switch now keeps every surface off a
+    // provider, backdrop included, which is what the sibling test below checks.
+    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=klipy')
     await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
 
     const backdrop = page.locator('[data-testid="scene-backdrop"]')
     // The clip hangs off a `<source>`, which is what lets the element carry a
     // poster the browser shows without fetching a byte of video.
-    await expect(backdrop.locator('source')).toHaveAttribute('src', /giphy\.mp4$/)
+    await expect(backdrop.locator('source')).toHaveAttribute('src', /\.mp4$/)
 
     // Playback starts off and a client island turns it on — ADR 0005. The
     // suite resolves every host but the dev server to nothing, so the clip
     // never loads here; what is checkable is the contract around it.
     await expect(backdrop).not.toHaveAttribute('autoplay', /.*/)
-    await expect(backdrop).toHaveAttribute('poster', /480w_s\.jpg$/)
+    await expect(backdrop).toHaveAttribute('poster', /\.jpg$/)
 
     // Inert, and behind the words rather than over them: the headline used to
     // sit *under* the scrim, which is what a positioned child inside the same
@@ -115,10 +155,22 @@ test.describe('the brief', () => {
     expect(layers.hidden).toBe('true')
     expect(layers.headlineAfter).toBe(true)
 
-    // The clip is somebody's work and says so.
-    await expect(
-      page.getByRole('link', { name: /Backdrop by Young Thug via Giphy/ }),
-    ).toBeVisible()
+    // The clip is somebody's work and says so. No link any more — the provider
+    // publishes a title, not an uploader page.
+    await expect(page.getByText(/Backdrop .* via KLIPY/)).toBeVisible()
+  })
+
+  test('waits without a backdrop rather than breaking when none resolves', async ({
+    page,
+  }) => {
+    // The ordinary offline case, and the one the rest of this suite runs in: no
+    // key, no network, no lookup. A decoration that has not arrived is simply a
+    // decoration that has not arrived, and the wait still reads without it.
+    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
+
+    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
+    await expect(page.locator('[data-testid="scene-backdrop"]')).toHaveCount(0)
+    await expect(page.getByText(/Backdrop/)).toHaveCount(0)
   })
 
   test('turns the wait into something to read', async ({ page }) => {

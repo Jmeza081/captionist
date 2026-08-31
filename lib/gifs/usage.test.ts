@@ -65,7 +65,7 @@ describe('what gets counted', () => {
 
     const [klipy] = usageReport().development
 
-    expect(klipy?.byKind).toEqual({ trending: 1, search: 2, share: 1 })
+    expect(klipy?.byKind).toEqual({ trending: 1, search: 2, share: 1, items: 0 })
   })
 
   it('keeps providers apart, so a migration can be read off it', () => {

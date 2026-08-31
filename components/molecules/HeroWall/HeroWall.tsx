@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { wallIsGiphy, type WallTile } from '@/lib/gifs/wall'
+import { WALL_SLUGS } from '@/lib/gifs/art'
+import { intendedProvider } from '@/lib/gifs/registry'
+import { useResolvedArt } from '@/lib/gifs/useArt'
+import { cycleTiles, toWallTile, type WallTile } from '@/lib/gifs/wall'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import styles from './HeroWall.module.scss'
 
@@ -48,10 +51,21 @@ export interface HeroWallProps {
 }
 
 export function HeroWall({
-  tiles,
+  tiles: fallback,
   label = 'a wall of looping reaction GIFs',
   scrim = 'full',
 }: HeroWallProps) {
+  /**
+   * The app's own art first, the provider's when it lands.
+   *
+   * A server may not fetch this — the request has to come from a browser and
+   * the URL must not be retained — so the wall arrives complete and correctly
+   * sized in the first HTML, and improves. See `art.ts`.
+   */
+  const resolved = useResolvedArt(WALL_SLUGS)
+  const tiles = resolved
+    ? cycleTiles(resolved.map(toWallTile), fallback.length)
+    : fallback
   const videos = useRef<HTMLVideoElement[]>([])
   // `useReducedMotion` reports stillness until it knows otherwise, so this
   // starts paused and nothing plays before we know whether it should.
@@ -129,10 +143,15 @@ export function HeroWall({
 
         Read here rather than passed in, for the same reason `GifPanel` carries
         its own mark: the wall renders on four routes, and a prop threaded
-        through four pages is a prop three of them can forget. It says nothing
-        over the offline shelf, which is not Giphy's to be credited for.
+        through four pages is a prop three of them can forget. It appears only
+        once real art has resolved — the offline shelf is ours and is nobody
+        else's to be credited for, and until then that is what is on screen.
       */}
-      {wallIsGiphy() && <span className={styles.credit}>GIFs via Giphy</span>}
+      {resolved && (
+        <span className={styles.credit}>
+          GIFs via {intendedProvider().descriptor.name}
+        </span>
+      )}
     </>
   )
 }

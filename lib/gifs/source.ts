@@ -64,7 +64,7 @@ function lever(): 'stub' | 'live' | GifProviderId | undefined {
  * Naming a provider means the same thing as `live` — you cannot pin the shelf
  * to a provider, because the shelf is nobody's.
  */
-function stubbed(): boolean {
+export function stubbed(): boolean {
   const value = lever()
   if (value) return value === 'stub'
   return process.env.NEXT_PUBLIC_GIFS_STUB === '1'

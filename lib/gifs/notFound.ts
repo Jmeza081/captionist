@@ -27,13 +27,7 @@ import type { GifResult } from './types'
  * some rendition paths, which is a funnier 404 than the one we wrote and not
  * the one we chose.
  */
-const TRAVOLTA: GifResult = {
-  id: 'giphy-26tPcU5DDLaXPrPGg',
-  src: 'https://media.giphy.com/media/26tPcU5DDLaXPrPGg/giphy.webp',
-  still: 'https://media.giphy.com/media/26tPcU5DDLaXPrPGg/480w_s.jpg',
-  alt: 'John Travolta looking around an empty office for something that is not there',
-  keywords: ['404', 'confused', 'lost', 'travolta'],
-}
+
 
 /**
  * The offline stand-in, matched by subject rather than by index.
@@ -65,6 +59,16 @@ const OFFLINE = SAMPLE_GIFS.find((gif) => gif.id === 'sample-prod')
  * `NEXT_PUBLIC_GIFS_STUB=1` set by `playwright.config.ts`.
  */
 export function notFoundGif(): GifResult {
-  if (process.env.NEXT_PUBLIC_GIFS_STUB === '1') return OFFLINE ?? TRAVOLTA
-  return TRAVOLTA
+  /**
+   * Always the app's own art from the server.
+   *
+   * The real one is resolved in the browser from `NOT_FOUND_SLUG` — a server
+   * may not fetch it, and its URL may not be committed. This is what a visitor
+   * sees first, what the Playwright suite sees, and what a keyless checkout
+   * keeps.
+   *
+   * `/_not-found` is prerendered, so a production build bakes this answer in;
+   * the upgrade happening in the browser is what makes that fine.
+   */
+  return OFFLINE ?? SAMPLE_GIFS[0]!
 }

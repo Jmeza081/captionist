@@ -24,8 +24,15 @@ import type { BoardSource, GifProviderId } from './provider'
  * number you should quote.
  */
 
-/** What a call was for. `share` is Klipy's click trigger, which is also a call. */
-export type CallKind = 'trending' | 'search' | 'share'
+/**
+ * What a call was for.
+ *
+ * `share` is the click trigger, which is also a call. `items` is the landing
+ * wall, the backdrop and the 404 resolving their slugs — the surfaces a visitor
+ * hits before any room exists, and the ones most likely to dominate a quiet
+ * hour, so they are counted apart from anything a player did.
+ */
+export type CallKind = 'trending' | 'search' | 'share' | 'items'
 
 /** How a call ended. A call that failed still cost the allowance. */
 export type CallOutcome = 'ok' | 'failed' | 'quota'
@@ -173,7 +180,7 @@ function summarise(rows: Row[]): ProviderUsage[] {
     const entry = byProvider.get(id) ?? {
       provider: id,
       calls: 0,
-      byKind: { trending: 0, search: 0, share: 0 },
+      byKind: { trending: 0, search: 0, share: 0, items: 0 },
       failed: 0,
       quota: 0,
       peakHour: 0,

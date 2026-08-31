@@ -37,14 +37,34 @@ export interface Backdrop {
   mp4: string
   /** The frame a still visitor sees, and the poster behind the video. */
   still: string
-  /** For the credit line — this is somebody's work, not our chrome. */
+  /**
+   * For the credit line — this is somebody's work, not our chrome.
+   *
+   * The provider's own title for it. Klipy publishes no uploader, so there is
+   * nobody more specific to name than the work and the provider.
+   */
   credit: string
-  creditHref: string
 }
 
-export const WAITING_BACKDROP: Backdrop = {
-  mp4: 'https://media.giphy.com/media/VIPfTy8y1Lc5iREYDS/giphy.mp4',
-  still: 'https://media.giphy.com/media/VIPfTy8y1Lc5iREYDS/480w_s.jpg',
-  credit: 'Young Thug',
-  creditHref: 'https://giphy.com/gifs/youngthug-VIPfTy8y1Lc5iREYDS',
+/**
+ * The backdrop, resolved in the browser from `BACKDROP_SLUG`.
+ *
+ * There is no committed URL any more: the request has to come from a client and
+ * the media URL must not be retained. `useWaitingBackdrop` does the resolving
+ * and returns `undefined` until it lands — and forever, if there is no key.
+ *
+ * An absent backdrop is an absent decoration. That was already true when the
+ * Playwright suite resolved every host but the dev server to nothing, which is
+ * why the specs check the element and its source rather than a pixel.
+ */
+export function toBackdrop(gif: {
+  mp4?: string
+  still?: string
+  src: string
+  alt: string
+}): Backdrop | undefined {
+  // Without the video there is no backdrop — a still image behind the headline
+  // is a different design, not a degraded one.
+  if (!gif.mp4) return undefined
+  return { mp4: gif.mp4, still: gif.still ?? gif.src, credit: gif.alt }
 }

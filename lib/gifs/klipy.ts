@@ -284,4 +284,53 @@ function share(id: string, apiKey: string, query?: string): void {
   }).catch(() => undefined)
 }
 
-export const klipyProvider: GifProvider = { descriptor: KLIPY, search, share }
+/**
+ * Look up known GIFs by slug.
+ *
+ * Fifty at a time is Klipy's documented ceiling; the wall asks for twenty. No
+ * ad parameters here on purpose — this is the app's own chosen art, not a
+ * browsable board, and an ad has nowhere to go on a landing page.
+ */
+async function items(slugs: readonly string[], apiKey: string): Promise<GifBoard> {
+  if (slugs.length === 0) return { items: [], ads: [] }
+
+  const url =
+    `${ENDPOINT}/${apiKey}/gifs/items?slugs=${encodeURIComponent(slugs.slice(0, 50).join(','))}`
+
+  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+
+  if (response.status === 429) {
+    throw new GifQuotaError('Klipy\u2019s hourly limit is spent', 'klipy')
+  }
+  if (!response.ok) {
+    throw new GifProviderError(`Klipy answered ${response.status}`, 'klipy')
+  }
+
+  const body = (await response.json()) as KlipyBody
+  if (body.result !== true) {
+    const detail = body.errors?.message?.[0] ?? 'an unreadable answer'
+    throw new GifProviderError(`Klipy returned ${detail}`, 'klipy')
+  }
+
+  const found = (body.data?.data ?? []).flatMap((item) => {
+    const result = toResult(item, undefined)
+    return result ? [result] : []
+  })
+
+  /**
+   * Back into the order that was asked for.
+   *
+   * Not a reordering of *results* — this is a lookup of named items, and the
+   * order is the caller's own, chosen when the slugs were curated. A wall that
+   * reshuffled itself on every load would be a different wall each time.
+   */
+  const bySlug = new Map(found.map((gif) => [gif.id, gif]))
+  const ordered = slugs.flatMap((slug) => {
+    const gif = bySlug.get(slug)
+    return gif ? [gif] : []
+  })
+
+  return { items: ordered, ads: [] }
+}
+
+export const klipyProvider: GifProvider = { descriptor: KLIPY, search, share, items }

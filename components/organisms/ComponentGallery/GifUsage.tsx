@@ -28,6 +28,7 @@ function Figures({ usage }: { usage: ProviderUsage }) {
       <td className={styles.n}>{usage.byKind.trending}</td>
       <td className={styles.n}>{usage.byKind.search}</td>
       <td className={styles.n}>{usage.byKind.share}</td>
+      <td className={styles.n}>{usage.byKind.items}</td>
       <td className={styles.n}>{usage.failed}</td>
       <td className={styles.n}>{usage.quota}</td>
       <td className={styles.n}>
@@ -54,6 +55,7 @@ function Table({ title, rows }: { title: string; rows: readonly ProviderUsage[] 
               <th>Trending</th>
               <th>Search</th>
               <th>Share</th>
+              <th>Items</th>
               <th>Failed</th>
               <th>Quota</th>
               <th>Peak/hr</th>

@@ -1,32 +1,23 @@
 import { SAMPLE_GIFS } from './samples'
-import { WALL_GIFS } from './wall.catalog'
 
 /**
- * The landing page's GIF wall — real Giphy, hot-linked, never the API.
+ * The landing page's GIF wall, as the server can draw it.
  *
- * **This used to search Giphy from the server, and three separate things were
- * wrong with that.**
+ * **What the server sends is the app's own art**, every time. The real GIFs
+ * arrive afterwards: `HeroWall` resolves `WALL_SLUGS` in the browser and swaps
+ * them in.
  *
- * It was a proxy: "all requests to GIPHY should be made directly from the
- * client side". It topped a short answer up with samples, blending two
- * providers in one grid, which the same terms forbid. And it was only
- * affordable because `searchGiphy` cached for an hour — one upstream call
- * served everybody. That cache is gone (caching their URLs is also
- * prohibited), which would have made this one call per visitor, on the four
- * highest-traffic routes in the app, against an allowance of a hundred an
- * hour. The landing page would have spent the room's whole budget on people
- * who never joined a room.
+ * It has been three things. It searched Giphy from the server, which was a
+ * proxy and blended two providers in one grid. Then it drew twenty committed
+ * `media.giphy.com` URLs, which was neither — but Klipy's terms rule that out
+ * too: the API request must come from a browser, and a media URL must not be
+ * retained. A committed URL also keeps serving content the provider has since
+ * pulled, which is the moderation risk the whole no-cache rule exists for.
  *
- * The fix keeps the GIFs and drops the request. `wall.catalog.ts` holds
- * hot-linked `media.giphy.com` URLs — the sanctioned way to show their media,
- * and what `backdrop.ts` and `notFound.ts` already do — resolved here on the
- * server so the grid arrives in the first HTML with its sizes already known.
- * No key, no network, no quota, and the wall is the product demo the design
- * asked for rather than twelve house SVGs on repeat.
+ * So the catalog is gone and only the slugs are kept. See `art.ts` and ADR-0025.
  *
- * **One shelf or the other, never a mix.** Giphy's terms forbid blending their
- * grid with another provider's, so a short catalog *cycles* to fill the wall
- * and an empty one falls through to the offline shelf whole.
+ * **One shelf or the other, never a mix.** Both providers forbid blending their
+ * grid with another's, so the wall is wholly resolved art or wholly ours.
  */
 export interface WallTile {
   id: string
@@ -67,13 +58,20 @@ function fromSamples(count: number): WallTile[] {
   })
 }
 
-/** Cycled, because the catalog is allowed to be shorter than the wall. */
-function fromCatalog(count: number): WallTile[] {
+/**
+ * Fill the wall from however many tiles there are, repeating if short.
+ *
+ * Twenty slugs against a wall that wants more, and a resolve that may return
+ * fewer than it asked for — a pulled GIF simply is not in the answer. Cycling
+ * keeps the wall full either way.
+ */
+export function cycleTiles(tiles: readonly WallTile[], count: number): WallTile[] {
+  if (tiles.length === 0) return []
   return Array.from({ length: count }, (_, i) => {
-    const tile = WALL_GIFS[i % WALL_GIFS.length]
+    const tile = tiles[i % tiles.length] as WallTile
     // Ids have to stay unique or React sees duplicate keys, the same reason
     // `fromSamples` suffixes its own.
-    return { ...(tile as WallTile), id: `${tile?.id ?? 'wall'}-${i}` }
+    return { ...tile, id: `${tile.id}-${i}` }
   })
 }
 
@@ -85,15 +83,24 @@ function fromCatalog(count: number): WallTile[] {
  * it should not be a signature change rippling through every front door.
  */
 export async function wallTiles(count = WALL_SIZE): Promise<WallTile[]> {
-  // The same switch the picker reads, so one flag keeps every surface off a
-  // third party — a keyless clone, and the Playwright suite, which resolves no
-  // host but the dev server and would otherwise draw twenty broken tiles.
-  const stubbed = process.env.NEXT_PUBLIC_GIFS_STUB === '1'
-  if (stubbed || WALL_GIFS.length === 0) return fromSamples(count)
-  return fromCatalog(count)
+  // Always the app's own art. Nothing a server renders may come from a
+  // provider any more, and this is what a visitor sees before — or instead of —
+  // the real thing.
+  return fromSamples(count)
 }
 
-/** Whether the wall is showing Giphy's art, so the page can credit it. */
-export function wallIsGiphy(): boolean {
-  return process.env.NEXT_PUBLIC_GIFS_STUB !== '1' && WALL_GIFS.length > 0
+/**
+ * A resolved GIF, in the shape the wall draws.
+ *
+ * `poster` is required and `still` is not, so a source without one falls back
+ * to its own animation rather than leaving the tile unsized in the first paint.
+ */
+export function toWallTile(gif: {
+  id: string
+  src: string
+  alt: string
+  mp4?: string
+  still?: string
+}): WallTile {
+  return { id: gif.id, poster: gif.still ?? gif.src, mp4: gif.mp4, alt: gif.alt }
 }

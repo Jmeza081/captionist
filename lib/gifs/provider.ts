@@ -173,4 +173,18 @@ export interface GifProvider {
    * it or handle its errors.
    */
   share?(id: string, apiKey: string, query?: string): void
+  /**
+   * Resolve known content identifiers into current media.
+   *
+   * This is what lets the app remember *which* GIFs it wants — the landing
+   * wall, the waiting backdrop, the 404 — without keeping their media URLs.
+   * A slug is a name; a URL is delivery data with tracking in it, and Klipy's
+   * terms say not to retain the second. Asking again on every page load also
+   * means content they have pulled stops appearing, which a committed URL
+   * could never manage.
+   *
+   * Optional, because a provider without one simply cannot furnish those
+   * surfaces and they fall back to the app's own art.
+   */
+  items?(slugs: readonly string[], apiKey: string): Promise<GifBoard>
 }
