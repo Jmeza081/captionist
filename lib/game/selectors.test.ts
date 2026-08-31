@@ -170,6 +170,26 @@ describe('the waiting screen', () => {
       expect(waitingCopy(at('waiting', mode)).body).not.toMatch(/edit|swap/i)
     }
   })
+
+  it('stops calling it a wait once there is nobody left to wait for', () => {
+    const copy = waitingCopy(at('waiting', 'caption'))
+    expect(copy.headline).toBe('That’s everyone in.')
+    expect(copy.headline).not.toMatch(/wait/i)
+    // Nothing to decide, so no button: the room advances on its own.
+    expect(copy.action).toBeUndefined()
+  })
+
+  it('names who the host would be leaving behind, rather than claiming nobody', () => {
+    // The label was the fixed string "Everyone's in — start voting", and
+    // `waiting` is reachable with stragglers — the compose clock expiring sends
+    // the room here whoever is still typing.
+    const one = fixtureFor('waiting', { players: 5, out: 1 })
+    expect(waitingCopy(one).headline).toBe('Nice one. Now we wait.')
+    expect(waitingCopy(one).action).toBe('Start voting without Jack')
+
+    const two = fixtureFor('waiting', { players: 5, out: 2 })
+    expect(waitingCopy(two).action).toBe('Start voting without 2 players')
+  })
 })
 
 describe('the vote screen', () => {

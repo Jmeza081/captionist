@@ -54,6 +54,16 @@ export interface FixtureOptions {
   players?: number
   settings?: Partial<RoomSettings>
   seed?: number
+  /**
+   * How many competitors to hold back at `waiting`.
+   *
+   * `waiting` is normally entered by the last entry landing, which means the
+   * tracker always reads N of N and the straggler face — the only one that
+   * still offers the host a button — is unreachable from a `?phase=` jump. The
+   * room really gets there by the *compose* clock expiring on someone, so that
+   * is what this reproduces.
+   */
+  out?: number
 }
 
 /** A lobby with `players` people in it, coloured and named like the design's. */
@@ -120,11 +130,15 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
   if (phase === 'compose') return state
 
   const competitors = state.players.filter((p) => p.id !== state.round?.roleHolderId)
-  // Leave the last competitor out for `compose`-adjacent states so the tracker
-  // has something to show; everyone submits from `waiting` onward.
-  competitors.forEach((p, i) => {
+  // The last `out` competitors never submit — see `FixtureOptions.out`. With
+  // none held back the final entry flips `compose` to `waiting` on its own;
+  // with some, the phase has to be timed out from under them, which is exactly
+  // how a real room reaches a wait it still has someone to wait for.
+  const held = Math.min(Math.max(options.out ?? 0, 0), competitors.length)
+  competitors.slice(0, competitors.length - held).forEach((p, i) => {
     state = step(state, p.id, { type: 'round/entrySubmitted', answer: answerFor(state, i) })
   })
+  if (state.phase === 'compose') state = expire(state) // compose -> waiting
   if (phase === 'waiting') return state
 
   state = expire(state) // waiting -> vote

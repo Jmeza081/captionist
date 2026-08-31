@@ -8,7 +8,7 @@ describe('url levers', () => {
   it('reads every lever', () => {
     expect(
       parse(
-        'seed=42&bots=4&fast=10&phase=vote&mode=react&voting=single&format=one&as=p2&gifs=stub&transport=broadcast',
+        'seed=42&bots=4&fast=10&phase=vote&mode=react&voting=single&format=one&out=1&as=p2&gifs=stub&transport=broadcast',
       ),
     ).toEqual({
       seed: 42,
@@ -18,6 +18,7 @@ describe('url levers', () => {
       mode: 'react',
       voting: 'single',
       format: 'one',
+      out: 1,
       as: 'p2',
       gifs: 'stub',
       transport: 'broadcast',
@@ -44,6 +45,15 @@ describe('url levers', () => {
 
   it('ignores a phase that has no fixture', () => {
     expect(parse('phase=nonsense').phase).toBeUndefined()
+  })
+
+  it('takes a straggler count only as a positive whole number', () => {
+    // It holds competitors back from a fixture, so a fraction or a negative
+    // would silently produce a room shape the reducer cannot reach.
+    expect(parse('out=2').out).toBe(2)
+    expect(parse('out=0').out).toBeUndefined()
+    expect(parse('out=1.5').out).toBeUndefined()
+    expect(parse('out=all').out).toBeUndefined()
   })
 
   it('caps bots at the room ceiling', () => {

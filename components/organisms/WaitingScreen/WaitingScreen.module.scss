@@ -54,3 +54,40 @@
   left: t.$space-14;
   bottom: t.$space-14;
 }
+
+/* ---------------- No entry of your own ---------------- */
+
+/**
+ * The role holder's face: a centred interstitial under the room's glow.
+ *
+ * Without a card of your own there is no subject, so the two-column split has
+ * nothing to hold — it left a headline and a tracker running the full width of
+ * a 27" window, a name at one edge and its status at the other. This is the
+ * same shape `ComposeScreen`'s watch face takes one phase earlier, because it
+ * is the same situation.
+ */
+.solo {
+  @include t.screenGlow;
+
+  // The circle rides up past this box's top edge and `AppHeader` paints over
+  // the cut; horizontally it is wider than a phone, so clip, or the page itself
+  // widens. Same split the guest lobby makes, for the same reasons.
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+// A waiting column starts below the header rather than tight under it, which
+// is what puts the dots inside the glow's bright half. `$screen-pad-v` is
+// already on `.content`, so this is the remainder.
+.soloColumn {
+  padding-top: t.$space-52;
+  text-align: center;
+}
+
+// The tracker and the host's button share the measure the round opener already
+// centres on, so the dots sit over something their own size.
+.soloBlock {
+  width: 100%;
+  max-width: t.$interstitial-width;
+  text-align: start;
+}

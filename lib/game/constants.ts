@@ -20,6 +20,18 @@ export const PHASE_DURATIONS: Readonly<Record<RoomPhase, number | null>> = {
   podium: null,
 }
 
+/**
+ * How long the room sits on `waiting` when every competitor is already in.
+ *
+ * `waiting` is entered two ways and only one of them still has anyone to wait
+ * for. The last entry landing flips the phase immediately (see the reducer), so
+ * holding the room for the full 12s there is twelve seconds of a tracker that
+ * already reads N of N — and a host button offering to end a wait that is not
+ * happening. This is the beat that lets the last submitter read their own
+ * confirmation, and no longer.
+ */
+export const WAITING_ALL_IN_MS = 3_000
+
 /** Resolves the one phase whose length is a room setting. */
 export function durationFor(phase: RoomPhase, settings: RoomSettings): number | null {
   if (phase === 'compose') return settings.capSeconds * 1_000

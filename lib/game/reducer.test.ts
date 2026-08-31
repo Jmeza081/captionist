@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { ActionInput, GameAction } from './actions'
 import { authorize } from './authorize'
-import { MIN_PLAYERS, PLAYER_COLORS, colorFor } from './constants'
+import {
+  MIN_PLAYERS,
+  PHASE_DURATIONS,
+  PLAYER_COLORS,
+  WAITING_ALL_IN_MS,
+  colorFor,
+} from './constants'
 import { createRoom } from './create'
 import { project } from './project'
 import { fixtureFor } from './fixtures'
@@ -167,6 +173,40 @@ describe('the role holder sets up and sits out', () => {
     state = submitAll(state)
     expect(state.round?.entries).toHaveLength(3)
     expectPhase(state, 'waiting')
+  })
+
+  it('shortens the wait to a beat when the last entry is what ended it', () => {
+    // `waiting` is entered two ways and they are not the same wait. Everyone
+    // in: nothing to wait for, so the room reads its confirmation and moves.
+    let state = apply(room(4), 'p0', { type: 'game/started' })
+    state = expire(state)
+    state = apply(state, 'p0', {
+      type: 'round/subjectLocked',
+      subject: { kind: 'prompt', text: 'Prod is fine.' },
+    })
+    state = submitAll(state)
+    expectPhase(state, 'waiting')
+    expect(state.clock.status === 'running' && state.clock.totalMs).toBe(WAITING_ALL_IN_MS)
+  })
+
+  it('keeps the full wait when the compose clock left somebody behind', () => {
+    let state = apply(room(4), 'p0', { type: 'game/started' })
+    state = expire(state)
+    state = apply(state, 'p0', {
+      type: 'round/subjectLocked',
+      subject: { kind: 'prompt', text: 'Prod is fine.' },
+    })
+    state = apply(state, 'p1', {
+      type: 'round/entrySubmitted',
+      answer: { kind: 'caption', lines: ['Only one of us is on call.'] },
+    })
+    expectPhase(state, 'compose')
+    state = expire(state) // compose -> waiting, two still out
+    expectPhase(state, 'waiting')
+    expect(submittedCount(state)).toEqual({ done: 1, total: 3 })
+    expect(state.clock.status === 'running' && state.clock.totalMs).toBe(
+      PHASE_DURATIONS.waiting,
+    )
   })
 
   it('rotates each round', () => {

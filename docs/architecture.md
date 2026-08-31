@@ -1463,9 +1463,9 @@ now)` is a pure function, and the `now` it reads comes from the room clock.
 
 ### Dev levers
 
-Ten now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
-`?format=` · `?as=` · `?gifs=` · `?transport=`, read once in `RoomProvider` and
-gated to
+Eleven now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
+`?format=` · `?out=` · `?as=` · `?gifs=` · `?transport=`, read once in
+`RoomProvider` and gated to
 non-production in `lib/room/levers.ts` — in a production build every lever reads
 as absent whatever the query string says. **`?transport=ably|broadcast` is phase
 5's**, and it stands to `ABLY_STUB` exactly as `?gifs=stub` stands to
@@ -1489,6 +1489,15 @@ authorisation and ordering are exercised rather than bypassed; `?fast=` scales
 the host's clock rather than the page's, because `page.clock` is per-page and
 would desynchronise a room split across tabs. What each one is for is in
 [the roadmap](./roadmap.md#the-url-levers).
+
+**`?out=n` holds `n` competitors back at `waiting`, and it exists for the same
+reason `?mode=` does.** Every fixture submits everybody, and the last entry
+landing is *what flips `compose` to `waiting`* — so a `?phase=waiting` jump can
+only ever produce a tracker reading N of N. The other half of that screen, the
+one that still has someone to wait for and still offers the host a button, is
+reached only by the *compose* clock expiring on a straggler, which is what
+`out` reproduces: it submits all but the last `n`, then times the phase out from
+under them.
 
 **Both of those levers now reach the boot screen, and neither gained a
 branch.** `?fast=` divides the interstitial's two pacing floors exactly as it
@@ -2530,6 +2539,7 @@ The four omissions in the round-flow screens, in phase order:
 | Screen | Left out | Why |
 | --- | --- | --- |
 | `waiting` | "Edit my caption" | Phase is room-wide and authoritative, so a guest cannot rewind the room to `compose`, and an inline editor would be a second composer to keep in step with the real one. `waitingCopy` was rewritten to match — it says what happens next rather than promising an edit that isn't offered |
+| `waiting` | *"Everyone's in — start voting"*, always | The button was never a gate — `waiting` is timed, and `host/skippedPhase` runs the same `advance()` the clock does — so once the last entry landed the room said "now we wait" over a tracker reading N of N, under a 12s clock, beside a button offering to start a vote that was starting anyway. `waitingCopy` now reads the tracker: everyone in gets *"That's everyone in."*, `WAITING_ALL_IN_MS` instead of the full `PHASE_DURATIONS.waiting`, and no button; a straggler gets *"Now we wait."*, the full 12s, and a label that names who is being left behind |
 | `vote` | The Caption \| Vote segmented control | Two views of one grid, and the vote is the one the phase is for |
 | `reveal` | `auto-advancing in 6s` | `reveal` is untimed by design. The label would be counting a clock that does not exist; the host's advance button is the real mechanism, and `?bots=` supplies the [autopilot dwell](#dev-levers) instead |
 | `podium` | The awards row, the highlight reel and the Slack buttons | Awards need a stat layer nothing computes yet; the reel and the share need a destination outside the browser |

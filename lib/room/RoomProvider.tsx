@@ -309,6 +309,7 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
                 players: levers.bots !== undefined ? levers.bots + 1 : 5,
                 seed: levers.seed,
                 settings: leverSettings(levers),
+                out: levers.out,
               }),
               Date.now(),
             )

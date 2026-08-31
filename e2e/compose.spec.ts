@@ -128,6 +128,13 @@ test.describe('composing', () => {
 
     await expect(page.getByText('They’re captioning your pick.')).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Top text' })).toHaveCount(0)
+
+    // The tracker used to run the page's full width, which on a desktop put a
+    // name at one edge and its status at the other. It is an interstitial now,
+    // centred on the same measure the round opener takes.
+    const card = page.getByText('still thinking').first().locator('xpath=../../..')
+    const box = await card.boundingBox()
+    expect(box?.width ?? 0).toBeLessThanOrEqual(561)
   })
 })
 

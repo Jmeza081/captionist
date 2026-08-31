@@ -70,3 +70,53 @@
   flex: 1;
   min-width: 0;
 }
+
+/* ---------------- The role holder sits it out ---------------- */
+
+/**
+ * The watch screen, centred under the same glow the guest lobby carries.
+ *
+ * You set the round up and now have nothing to do, which makes this an
+ * interstitial rather than a working screen — so it gets the room's waiting
+ * furniture: the dots, a centred measure, and the accent bloom.
+ */
+.watch {
+  @include t.screenGlow;
+
+  // The circle rides up past this box's top edge and `AppHeader` paints over
+  // the cut; horizontally it is wider than a phone, so clip, or the page itself
+  // widens. Same split the guest lobby makes, for the same reasons.
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+// A waiting column starts below the header rather than tight under it, which
+// is what puts the dots inside the glow's bright half. `$screen-pad-v` is
+// already on `.content`, so this is the remainder.
+.watchColumn {
+  padding-top: t.$space-52;
+}
+
+// The tracker ran the full width of the page, which put a name on the left of
+// a 27" screen and its status on the right. `$interstitial-width` is the
+// measure the round opener already centres on — this is the same kind of
+// screen, so it takes the same one, and the copy above shares it so the dots
+// sit over something their own size.
+.watchCard {
+  width: 100%;
+  max-width: t.$interstitial-width;
+}
+
+.watchHeadline {
+  margin: 0;
+  text-align: center;
+  @include t.screenTitleText;
+}
+
+.watchBody {
+  margin: 0;
+  max-width: 46ch;
+  text-align: center;
+  @include t.bodyText;
+  color: t.$text-body;
+}

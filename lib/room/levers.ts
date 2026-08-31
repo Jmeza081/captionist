@@ -2,7 +2,7 @@ import { FIXTURE_PHASES } from '@/lib/game/fixtures'
 import type { GameMode, PlayerId, RoomPhase, RoomSettings } from '@/lib/game/types'
 
 /**
- * The ten URL levers, read once in `RoomProvider`.
+ * The eleven URL levers, read once in `RoomProvider`.
  *
  * Gated to non-production so no test branch can leak into a screen: in a
  * production build every lever reads as absent, whatever the query string says.
@@ -39,6 +39,14 @@ export interface Levers {
    * has to depend on it.
    */
   as?: PlayerId
+  /**
+   * How many competitors a `?phase=waiting` fixture leaves outstanding.
+   *
+   * Every fixture submits everybody, so the tracker always reads N of N and
+   * the face that still offers the host a button — a wait with someone left in
+   * it — is otherwise unreachable. See `FixtureOptions.out`.
+   */
+  out?: number
   /**
    * Serve offline placeholder art instead of calling Giphy. Keeps a long
    * afternoon of layout work off the rate limit.
@@ -92,6 +100,9 @@ export function readLevers(
   // parser's, and a fixture with fewer players should fall back rather than throw.
   const as = search.get('as')
   if (as && /^p\d+$/.test(as)) levers.as = as
+
+  const out = Number(search.get('out'))
+  if (Number.isInteger(out) && out > 0) levers.out = out
 
   const gifs = search.get('gifs')
   if (gifs === 'stub' || gifs === 'live') levers.gifs = gifs

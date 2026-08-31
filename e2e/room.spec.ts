@@ -62,12 +62,21 @@ test.describe('the room', () => {
   /**
    * Every phase, not just one.
    *
-   * Reveal, tiebreak and podium each draw a decorative radial glow far wider
-   * than a phone. Sized in viewport units it does not merely overflow — it
-   * widens the page, and the whole room scrolls sideways. That shipped once and
-   * only showed up in a full-page screenshot, so it is asserted per phase now.
+   * Reveal, tiebreak, podium — and now the role holder's compose screen — each
+   * draw a decorative radial glow far wider than a phone. Sized in viewport
+   * units it does not merely overflow — it widens the page, and the whole room
+   * scrolls sideways. That shipped once and only showed up in a full-page
+   * screenshot, so it is asserted per phase now.
    */
-  for (const phase of ['waiting', 'vote', 'tiebreak', 'reveal', 'score', 'podium'] as const) {
+  for (const phase of [
+    'compose',
+    'waiting',
+    'vote',
+    'tiebreak',
+    'reveal',
+    'score',
+    'podium',
+  ] as const) {
     test(`does not scroll horizontally at ${phase}`, async ({ page }) => {
       await page.goto(`/room/DEV?seed=42&phase=${phase}&gifs=stub`)
       await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', phase)

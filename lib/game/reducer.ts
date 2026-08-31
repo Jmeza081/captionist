@@ -6,6 +6,7 @@ import {
   RANK_POINTS,
   SEAT_GRACE_MS,
   TIEBREAK_BONUS,
+  WAITING_ALL_IN_MS,
   durationFor,
 } from './constants'
 import { pick, shuffle } from './rng'
@@ -288,10 +289,28 @@ function advance(state: GameState, at: number): GameState {
 }
 
 function enterPhase(state: GameState, phase: RoomPhase, at: number): GameState {
-  const totalMs = durationFor(phase, state.settings)
+  const totalMs = phaseLength(state, phase)
   const clock: Clock =
     totalMs === null ? { status: 'idle' } : { status: 'running', endsAt: at + totalMs, totalMs }
   return { ...state, phase, clock }
+}
+
+/**
+ * How long `phase` runs from here.
+ *
+ * Every phase but `waiting` takes its length off the table. `waiting` reads the
+ * tracker instead, because it is entered two ways and they are not the same
+ * wait: the last entry landing leaves nobody to wait for, and the compose clock
+ * expiring leaves stragglers. The first gets a beat long enough to read the
+ * confirmation on; the second gets the full 12s, and a host who may cut it
+ * short.
+ */
+function phaseLength(state: GameState, phase: RoomPhase): number | null {
+  if (phase !== 'waiting') return durationFor(phase, state.settings)
+  const submitted = state.round?.entries.length ?? 0
+  return submitted >= competitorCount(state)
+    ? WAITING_ALL_IN_MS
+    : durationFor(phase, state.settings)
 }
 
 function beginRound(state: GameState, at: number): GameState {

@@ -795,8 +795,11 @@ export interface WaitingCopy {
   /** The pill over your own card. */
   locked: string
   trackerLabel: string
-  /** Host-only: ending the wait early is the same code path as the clock. */
-  action: string
+  /**
+   * Host-only, and only while somebody is still out: ending the wait early is
+   * the same code path as the clock. Absent once everyone is in — see below.
+   */
+  action?: string
 }
 
 /**
@@ -809,6 +812,29 @@ export interface WaitingCopy {
  */
 export function waitingCopy(state: GameState): WaitingCopy {
   const react = state.settings.mode === 'react'
+  const out = competitors(state).filter((p) => !hasSubmitted(state, p.id))
+
+  /**
+   * Everyone is in, so there is no wait and no decision.
+   *
+   * The screen used to say "now we wait" over a tracker reading N of N, under
+   * a twelve-second clock, beside a host button offering to start voting —
+   * four ways of announcing the same finished fact. The reducer shortens the
+   * clock to `WAITING_ALL_IN_MS` here, so this is a beat you read rather than
+   * a wait you sit out, and the button is gone with the wait it was ending.
+   */
+  if (out.length === 0) {
+    return {
+      eyebrow: react ? 'Answer locked' : 'Submitted',
+      headline: 'That’s everyone in.',
+      body: react
+        ? 'Voting opens in a second. Every answer goes up anonymously.'
+        : 'Voting opens in a second. Every caption goes up anonymously, and the roasting begins.',
+      locked: 'Locked in',
+      trackerLabel: 'Submissions',
+    }
+  }
+
   return {
     eyebrow: react ? 'Answer locked' : 'Submitted',
     headline: react ? 'Bold choice. Now we wait.' : 'Nice one. Now we wait.',
@@ -817,7 +843,18 @@ export function waitingCopy(state: GameState): WaitingCopy {
       : 'It goes up anonymously when the clock hits zero, and the roasting begins.',
     locked: 'Locked in',
     trackerLabel: 'Submissions',
-    action: 'Everyone’s in — start voting',
+    /**
+     * What the button actually does, which is leave people behind.
+     *
+     * It read "Everyone's in — start voting" unconditionally, and `waiting` is
+     * reachable with stragglers — the compose clock expiring sends the room
+     * here whoever is still typing. So the host was told everyone was in by a
+     * button sitting directly under a tracker saying they were not.
+     */
+    action:
+      out.length === 1
+        ? `Start voting without ${out[0]?.name ?? 'them'}`
+        : `Start voting without ${out.length} players`,
   }
 }
 

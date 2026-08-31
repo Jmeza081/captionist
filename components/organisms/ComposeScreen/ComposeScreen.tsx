@@ -7,6 +7,7 @@ import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { TextField } from '@/components/atoms/TextField'
+import { WaitingDots } from '@/components/atoms/WaitingDots'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
@@ -92,25 +93,41 @@ export function ComposeScreen() {
 
   if (copy.view === 'watch') {
     return (
-      <Stack gap={20}>
-        <Eyebrow>{copy.eyebrow}</Eyebrow>
-        <h1 className={styles.headline}>{copy.headline}</h1>
-        {copy.body && <p className={styles.body}>{copy.body}</p>}
-
-        <Box background="card" radius="card" padding={20}>
-          <Stack gap={10}>
-            {submissionRows(state).map((row) => (
-              <PlayerRow
-                key={row.player.name}
-                player={row.player}
-                variant="tracker"
-                status={row.status}
-                done={row.done}
-              />
-            ))}
+      <div className={styles.watch}>
+        <Stack gap={34} align="center" className={styles.watchColumn}>
+          <Stack gap={20} align="center">
+            {/* Decorative: the headline under it already says what the wait is,
+                and announcing it twice is once too many. The same dots the
+                guest lobby waits under — this is the same kind of wait, on the
+                other side of the round. */}
+            <WaitingDots />
+            <Stack gap={10} align="center">
+              <Eyebrow>{copy.eyebrow}</Eyebrow>
+              <h1 className={styles.watchHeadline}>{copy.headline}</h1>
+              {copy.body && <p className={styles.watchBody}>{copy.body}</p>}
+            </Stack>
           </Stack>
-        </Box>
-      </Stack>
+
+          <Box
+            background="card"
+            radius="card"
+            padding={20}
+            className={styles.watchCard}
+          >
+            <Stack gap={10}>
+              {submissionRows(state).map((row) => (
+                <PlayerRow
+                  key={row.player.name}
+                  player={row.player}
+                  variant="tracker"
+                  status={row.status}
+                  done={row.done}
+                />
+              ))}
+            </Stack>
+          </Box>
+        </Stack>
+      </div>
     )
   }
 
