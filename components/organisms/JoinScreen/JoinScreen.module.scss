@@ -61,12 +61,22 @@
 .form {
   padding: t.$front-door-pad-v t.$space-20;
 
+  // The vertical step belongs at `md`, where every other screen in the app
+  // takes its own (`$screen-pad-v` → `$screen-pad-v-lg` on `RoomShell`'s
+  // column). Only the *two-column split* is an `xl` decision; how much room
+  // sits above the heading is not, and bundling the two left every window from
+  // 768 to 1279 on a phone's padding with the page's first words rubbing its
+  // top edge — the same rub the `xl` gutter comment below records fixing once.
+  @include t.mq('md') {
+    padding-block: t.$front-door-pad-v-lg;
+  }
+
   @include t.mq('xl') {
     margin-top: auto;
     // The screen padding the design states. At 20px the heading above the card
     // had nothing between it and the window — see `/host`, where a long form
     // leaves no free space for the auto margin to spend and the rub shows.
-    padding: t.$front-door-pad-v-lg t.$screen-pad-h;
+    padding-inline: t.$screen-pad-h;
   }
 }
 
