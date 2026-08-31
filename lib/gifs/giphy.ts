@@ -154,7 +154,8 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
     return result ? [result] : []
   })
 
-  return { items }
+  // Giphy is not asked for ads and has no `adSizes`, so there are never any.
+  return { items, ads: [] }
 }
 
 export const giphyProvider: GifProvider = { descriptor: GIPHY, search }

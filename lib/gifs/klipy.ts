@@ -1,6 +1,7 @@
 import { GifProviderError, GifQuotaError } from './errors'
+import { adSessionId } from './customer'
 import { KLIPY } from './descriptors'
-import type { GifBoard, GifProvider, GifQuery } from './provider'
+import type { GifAd, GifBoard, GifProvider, GifQuery } from './provider'
 import type { GifResult } from './types'
 
 /**
@@ -65,13 +66,33 @@ interface KlipyItem {
   >>>>
 }
 
+/**
+ * An ad, which shares the item array and nothing else.
+ *
+ * No slug, no `file`, no title. `content` is a whole HTML document.
+ */
+interface KlipyAd {
+  type?: string
+  width?: number
+  height?: number
+  content?: string
+}
+
 interface KlipyBody {
   result?: boolean
   data?: {
-    data?: KlipyItem[]
+    data?: (KlipyItem & KlipyAd)[]
     has_next?: boolean
   }
   errors?: { message?: string[] }
+}
+
+/** An ad is only usable if it has a document and a size to draw it at. */
+function toAd(item: KlipyAd): GifAd | undefined {
+  if (item.type !== 'ad') return undefined
+  const { content, width, height } = item
+  if (!content || !size(width) || !size(height)) return undefined
+  return { content, width: width as number, height: height as number }
 }
 
 /** Klipy sends real numbers, not Giphy's decimal strings. Junk is simply absent. */
@@ -142,6 +163,24 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
   if (term) params.set('q', term)
 
   /**
+   * Ask for ads, or do not — and the difference is the whole compliance story.
+   *
+   * All five of these are required for delivery. Send none and only GIFs come
+   * back, so the board is unfiltered by construction. Send them and ads arrive
+   * inline, at which point they *must* be rendered: dropping them would be the
+   * client-side filter requirement 4 forbids. Asking and rendering are one
+   * decision, expressed here as one `if`.
+   */
+  const { adSizes } = KLIPY
+  if (adSizes) {
+    params.set('customer_id', adSessionId())
+    params.set('ad-min-width', String(adSizes.minWidth))
+    params.set('ad-max-width', String(adSizes.maxWidth))
+    params.set('ad-min-height', String(adSizes.minHeight))
+    params.set('ad-max-height', String(adSizes.maxHeight))
+  }
+
+  /**
    * No `format_filter`, deliberately.
    *
    * It reads like the obvious way to say "we want GIFs", and it is a trap: it
@@ -203,12 +242,27 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
    * The day this app asks for ads is the day it has to render them; those two
    * cannot land apart without reintroducing the filter. See ADR-0022.
    */
-  const items = (body.data?.data ?? []).flatMap((item) => {
+  const returned = body.data?.data ?? []
+
+  const items = returned.flatMap((item) => {
     const result = toResult(item, term)
     return result ? [result] : []
   })
 
-  return { items }
+  /**
+   * Ads, carried on their own channel rather than dropped.
+   *
+   * They cannot join `items` — an ad has no slug and no rendition, and letting
+   * one near `GifResult` would put an advertiser's HTML one `toMediaRef` away
+   * from game state. Splitting them is not filtering: everything Klipy returned
+   * is still rendered, in the order given, on the surface each shape suits.
+   */
+  const ads = returned.flatMap((item) => {
+    const ad = toAd(item)
+    return ad ? [ad] : []
+  })
+
+  return { items, ads }
 }
 
 /**

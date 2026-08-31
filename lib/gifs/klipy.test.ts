@@ -188,7 +188,7 @@ describe('the double-nested envelope', () => {
   it('yields an empty board rather than throwing when a level is missing', async () => {
     mockFetch(() => answer(200, { result: true, data: {} }))
 
-    await expect(search()).resolves.toEqual({ items: [] })
+    await expect(search()).resolves.toEqual({ items: [], ads: [] })
   })
 
   it('carries the slug as the id, not the numeric id', async () => {
@@ -237,18 +237,33 @@ describe('the double-nested envelope', () => {
 })
 
 describe('what comes back, and what cannot be drawn', () => {
-  it('never asks for ads, which is why the board is GIFs', async () => {
+  it('asks for ads at a size that fits the narrowest column', async () => {
     const fetchMock = mockFetch(() => ok())
 
     await search()
 
-    // Ads are delivered only to a request that asks: `customer_id` plus the
-    // four ad size parameters. Sending none is what makes the board GIFs by
-    // construction rather than by filtering — which requirement 4 forbids.
+    // All five are required for delivery. The sizes come from the descriptor
+    // because they are a layout fact: an iframe clips rather than scales, and
+    // Klipy caps rescaling at ten percent, so the ad has to arrive already
+    // fitting.
     const url = new URL(String(fetchMock.mock.calls[0]?.[0]))
-    expect(url.search).not.toContain('customer_id')
-    expect(url.search).not.toContain('ad-min-width')
-    expect(url.search).not.toContain('ad-max-height')
+    expect(url.searchParams.get('customer_id')).toBeTruthy()
+    expect(url.searchParams.get('ad-min-width')).toBe('250')
+    expect(url.searchParams.get('ad-max-width')).toBe('280')
+    expect(url.searchParams.get('ad-min-height')).toBe('50')
+    expect(url.searchParams.get('ad-max-height')).toBe('100')
+  })
+
+  it('never sends a player’s identity as the ad customer id', async () => {
+    const fetchMock = mockFetch(() => ok())
+
+    await search()
+
+    // A room is a work chat with real names in it. The id is a per-tab random
+    // that dies with the session — never a nickname, a seat id, or anything
+    // anybody typed. See `customer.ts`.
+    const id = new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get('customer_id') ?? ''
+    expect(id).toMatch(/^[0-9a-f-]{36}$|^s-[a-z0-9]+$/)
   })
 
   it('does not filter on type, because that is their call and not ours', async () => {
@@ -268,18 +283,55 @@ describe('what comes back, and what cannot be drawn', () => {
   })
 
   it('drops only an item that cannot be rendered at all', async () => {
+    mockFetch(() => ok([item({ slug: 'a' }), item({ slug: 'broken', file: {} })]))
+
+    const board = await search()
+
+    expect(board.items.map((gif) => gif.id)).toEqual(['a'])
+  })
+
+  it('carries an ad on its own channel rather than dropping it', async () => {
     mockFetch(() =>
       ok([
         item({ slug: 'a' }),
-        item({ slug: 'broken', file: {} }),
-        // The shape a real ad arrives in: no slug, no file.
-        { type: 'ad', width: 250, height: 250, content: '<html>…</html>' },
+        { type: 'ad', width: 250, height: 100, content: '<html>ad</html>' },
+        item({ slug: 'c' }),
       ]),
     )
 
     const board = await search()
 
-    expect(board.items.map((gif) => gif.id)).toEqual(['a'])
+    // Everything returned is still rendered — the ad on the surface its shape
+    // suits. Splitting is not filtering; dropping would have been.
+    expect(board.items.map((gif) => gif.id)).toEqual(['a', 'c'])
+    expect(board.ads).toEqual([{ content: '<html>ad</html>', width: 250, height: 100 }])
+  })
+
+  it('keeps an ad structurally incapable of becoming a tile', async () => {
+    mockFetch(() =>
+      ok([{ type: 'ad', width: 250, height: 100, content: '<html>ad</html>' }]),
+    )
+
+    const board = await search()
+
+    // Nothing that reads `items` can reach an ad, so no pick, no auto-pick and
+    // no "surprise me" can put an advertiser's HTML into game state.
+    expect(board.items).toEqual([])
+    expect(board.ads).toHaveLength(1)
+  })
+
+  it('ignores an ad with no document or no size to draw it at', async () => {
+    mockFetch(() =>
+      ok([
+        { type: 'ad', width: 250, height: 100 },
+        { type: 'ad', content: '<html>ad</html>' },
+        { type: 'ad', width: 0, height: 100, content: '<html>ad</html>' },
+      ]),
+    )
+
+    const board = await search()
+
+    expect(board.ads).toEqual([])
   })
 })
 

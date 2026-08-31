@@ -5,7 +5,8 @@ import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { TextField } from '@/components/atoms/TextField'
-import type { GifProviderDescriptor } from '@/lib/gifs/provider'
+import type { GifAd, GifProviderDescriptor } from '@/lib/gifs/provider'
+import { AdSlot } from './AdSlot'
 import type { GifResult } from '@/lib/gifs/types'
 import styles from './GifPanel.module.scss'
 
@@ -73,6 +74,13 @@ export interface GifPanelProps {
    * comparison had to be remembered, and was already wrong in the gallery.
    */
   provider?: GifProviderDescriptor
+  /**
+   * Ads that came with `results`, rendered in a slot above the board.
+   *
+   * Never mixed into the grid — `AdSlot` carries the reasoning. Omit them and
+   * the panel simply has none, which is the ordinary case.
+   */
+  ads?: readonly GifAd[]
 }
 
 export function GifPanel({
@@ -91,6 +99,7 @@ export function GifPanel({
   selectionLabel = 'Selected',
   searchesLeft,
   provider,
+  ads,
 }: GifPanelProps) {
   const [localQuery, setLocalQuery] = useState('')
   const controlled = query !== undefined
@@ -137,7 +146,7 @@ export function GifPanel({
     const q = localQuery.trim().toLowerCase()
     if (!q) return results
     return results.filter((r) => r.keywords.some((k) => k.toLowerCase().includes(q)))
-  }, [localQuery, results, onSubmit])
+  }, [localQuery, results, onSubmit, provider])
 
   const board = variant === 'board'
 
@@ -301,6 +310,10 @@ export function GifPanel({
         )}
 
         {message && shown.length > 0 && <p className={styles.note}>{message}</p>}
+
+        {/* Above the board, so it is seen — and outside the grid, so it is
+            never mistaken for something pickable. Absent when no ad came. */}
+        {ads && <AdSlot ads={ads} />}
 
         {grid}
       </div>

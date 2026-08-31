@@ -5,7 +5,7 @@ import { GifQuotaError } from './errors'
 import { descriptorFor } from './descriptors'
 import { intendedProvider } from './registry'
 import { fetchBoard, reportPick } from './source'
-import type { GifCursor, GifProviderDescriptor } from './provider'
+import type { GifAd, GifCursor, GifProviderDescriptor } from './provider'
 import type { GifResult, GifSearchResponse } from './types'
 
 /**
@@ -55,6 +55,13 @@ export interface GifSearchOptions {
 
 export interface GifSearch {
   results: readonly GifResult[]
+  /**
+   * Ads that came with the current board. Usually none.
+   *
+   * Separate from `results` so nothing that picks a GIF can reach one. The
+   * screens hand these to `GifPanel` and otherwise ignore them.
+   */
+  ads: readonly GifAd[]
   status: GifStatus
   /** Set when something needs saying — an error, or "these are samples". */
   message?: string
@@ -128,6 +135,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   const onExhausted = options?.onExhausted
 
   const [results, setResults] = useState<readonly GifResult[]>([])
+  const [ads, setAds] = useState<readonly GifAd[]>([])
   // A disabled hook is not loading anything, and claiming otherwise would
   // render "Looking…" forever on a screen that never draws a picker.
   const [status, setStatus] = useState<GifStatus>(enabled ? 'loading' : 'ready')
@@ -168,6 +176,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     sourceRef.current = body.source
     queryRef.current = body.query
     setResults(body.results)
+    setAds(body.ads)
     setQuery(body.query)
     setSource(body.source)
     /**
@@ -267,6 +276,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
 
   return {
     results,
+    ads,
     status,
     message,
     query,

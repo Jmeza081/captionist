@@ -58,9 +58,38 @@ export interface GifQuery {
   readonly cursor: GifCursor
 }
 
+/**
+ * An advertisement, which is not a GIF and is not shaped like one.
+ *
+ * Klipy returns ads inline in the same array as the tiles, and they carry
+ * neither a slug nor a `file` — just a size and `content`, which is a complete
+ * HTML document with its own stylesheet, click-through and script.
+ *
+ * It rides a separate field rather than joining `items` for one reason that is
+ * worth more than tidiness: an ad must be structurally incapable of becoming a
+ * `MediaRef`. Nothing that reads `items` can reach this, so no pick, no
+ * auto-pick and no "surprise me" can ever put an advertiser's HTML into game
+ * state. That is a guarantee the compiler makes rather than a rule anyone has
+ * to remember.
+ */
+export interface GifAd {
+  /** A whole HTML document. Rendered in a sandboxed iframe, never inlined. */
+  readonly content: string
+  readonly width: number
+  readonly height: number
+}
+
 export interface GifBoard {
   /** In the provider's own order, with nothing reordered or removed. */
   readonly items: readonly GifResult[]
+  /**
+   * Whatever ads came back, in the order they came.
+   *
+   * Empty is the ordinary case and the one the app is designed around: ads are
+   * only delivered to a request that asks, delivery is never guaranteed even
+   * then, and no money here depends on one arriving.
+   */
+  readonly ads: readonly GifAd[]
 }
 
 /**
@@ -98,6 +127,26 @@ export interface GifProviderDescriptor {
   readonly maxLimit: number
   /** Hosts this provider's media may come from. Unioned by `allow.ts`. */
   readonly mediaHosts: readonly MediaHost[]
+  /**
+   * The ad shape this provider should be asked for, if it serves ads at all.
+   *
+   * Absent means never ask — and never asking is what keeps a provider's
+   * results unfiltered without a client-side filter, because nothing but GIFs
+   * is returned in the first place.
+   *
+   * The numbers are a layout fact: the picker's narrowest column is
+   * `$gif-board-min` on a phone, so an ad is requested small enough to sit
+   * there at its natural size. Klipy caps rescaling at ten percent
+   * (`meta.ad_max_resize_percent`), and an iframe's fixed content clips rather
+   * than scales, so asking for something that already fits is the only way to
+   * render one honestly.
+   */
+  readonly adSizes?: {
+    readonly minWidth: number
+    readonly maxWidth: number
+    readonly minHeight: number
+    readonly maxHeight: number
+  }
   /** Said when the offline shelf stands in because this provider has no key. */
   readonly sampleFallbackMessage: string
   /** Said in production when this provider is selected and has no key. */

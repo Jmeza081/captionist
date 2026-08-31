@@ -1,0 +1,26 @@
+@use 'theme' as t;
+
+/**
+ * A band above the board, separated from it by the same hairline the meta row
+ * uses. Centred because an ad's width is fixed and the column's is not.
+ */
+.slot {
+  padding-bottom: t.$space-12;
+  border-bottom: 1px solid t.$line-hairline-strong;
+}
+
+.label {
+  @include t.eyebrowText;
+
+  color: t.$text-timestamp;
+  letter-spacing: 0.07em;
+}
+
+.frame {
+  display: block;
+  border: 0;
+  border-radius: t.$radius-media;
+  // Never wider than the panel. The ad is requested at a size that already
+  // fits, so this is a guard rather than a scaler — an iframe clips.
+  max-width: 100%;
+}

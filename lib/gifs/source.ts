@@ -41,7 +41,8 @@ function sampleResponse(
   // A search that matches nothing still returns the shelf rather than an empty
   // grid: there are only twelve of these, and a blank picker reads as broken.
   const results = matched.length > 0 ? matched : SAMPLE_GIFS
-  return { results: [...results], cursor, query, source: 'sample' }
+  // The offline shelf is ours and carries no advertising.
+  return { results: [...results], ads: [], cursor, query, source: 'sample' }
 }
 
 /** What the URL asked for, if anything. Non-production only, via `readLevers`. */
@@ -125,6 +126,7 @@ export async function fetchBoard(
 
     return {
       results: [...board.items],
+      ads: board.ads,
       cursor: { provider: descriptor.id, page: from.page + 1 },
       query,
       source: descriptor.id,

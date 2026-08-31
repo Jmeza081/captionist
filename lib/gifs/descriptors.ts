@@ -89,6 +89,15 @@ export const KLIPY: GifProviderDescriptor = {
     { host: 'static1.klipy.com', exact: true },
     { host: 'static2.klipy.com', exact: true },
   ],
+  /**
+   * A banner that fits the narrowest column without being resized.
+   *
+   * `$gif-board-min` is 240px and a phone's panel lands near 286px, so the ask
+   * is capped at 280 — an iframe's fixed content clips rather than scales, and
+   * Klipy caps rescaling at ten percent anyway, so the only honest ad is one
+   * that already fits. Asking for 250–280 × 50–100 returns 250×100.
+   */
+  adSizes: { minWidth: 250, maxWidth: 280, minHeight: 50, maxHeight: 100 },
   sampleFallbackMessage: 'Showing samples — no KLIPY key configured.',
   missingKeyMessage:
     'GIF search isn’t configured. Set NEXT_PUBLIC_KLIPY_API_KEY and rebuild.',

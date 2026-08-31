@@ -396,3 +396,104 @@ test.describe('counting what the room costs', () => {
     expect(ledger === null || ledger === '[]').toBe(true)
   })
 })
+
+/**
+ * The ad slot, whose ordinary state is absent.
+ *
+ * Ads are never guaranteed even when asked for, and no money here depends on
+ * one arriving — so "no ad" is the case the layout is designed around and the
+ * one worth guarding hardest.
+ */
+test.describe('advertising', () => {
+  const board = (ads: unknown[]) =>
+    JSON.stringify({
+      result: true,
+      data: {
+        data: [
+          {
+            slug: 'a-gif--tok',
+            title: 'A tile',
+            type: 'gif',
+            tags: [],
+            file: {
+              md: {
+                gif: { url: 'https://static.klipy.com/a.gif', width: 220, height: 220 },
+                webp: { url: 'https://static.klipy.com/a.webp', width: 220, height: 220 },
+              },
+            },
+          },
+          ...ads,
+        ],
+        current_page: 1,
+        per_page: 50,
+        has_next: false,
+      },
+    })
+
+  async function serve(page: Page, ads: unknown[]) {
+    await page.route(KLIPY, (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: board(ads) }),
+    )
+  }
+
+  test('shows nothing at all when no ad came back', async ({ page }) => {
+    await serve(page, [])
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=klipy')
+    await expect(tiles(page).first()).toBeVisible()
+
+    // Not an empty box, not a "Sponsored" heading over nothing — absent.
+    await expect(page.locator('iframe[title="Advertisement"]')).toHaveCount(0)
+    await expect(page.getByText('Sponsored')).toHaveCount(0)
+  })
+
+  test('renders an ad above the board, in a sandbox that cannot reach us', async ({ page }) => {
+    await serve(page, [
+      { type: 'ad', width: 250, height: 100, content: '<html><body>ad one</body></html>' },
+    ])
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=klipy')
+
+    const ad = page.locator('iframe[title="Advertisement"]')
+    await expect(ad).toHaveCount(1)
+
+    // `allow-same-origin` alongside `allow-scripts` would hand a third party
+    // this app's origin — its storage, its cookies, its DOM. The sandbox is
+    // the whole reason an ad may be rendered at all.
+    const sandbox = await ad.getAttribute('sandbox')
+    expect(sandbox).not.toContain('allow-same-origin')
+    expect(sandbox).toContain('allow-scripts')
+
+    // Above the board: an ad below fifty tiles is one nobody scrolls to.
+    const adY = await ad.evaluate((e) => e.getBoundingClientRect().top + window.scrollY)
+    const tileY = await tiles(page)
+      .first()
+      .evaluate((e) => e.getBoundingClientRect().top + window.scrollY)
+    expect(adY).toBeLessThan(tileY)
+  })
+
+  test('renders every ad it was given, and none of them as a tile', async ({ page }) => {
+    await serve(page, [
+      { type: 'ad', width: 250, height: 100, content: '<html><body>one</body></html>' },
+      { type: 'ad', width: 250, height: 100, content: '<html><body>two</body></html>' },
+    ])
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=klipy')
+
+    // Showing fewer than were returned would be suppressing them; showing one
+    // as a tile would make an advertiser's HTML pickable.
+    await expect(page.locator('iframe[title="Advertisement"]')).toHaveCount(2)
+    await expect(tiles(page)).toHaveCount(1)
+  })
+
+  test('never lets an ad become the round’s subject', async ({ page }) => {
+    await serve(page, [
+      { type: 'ad', width: 250, height: 100, content: '<html><body>ad</body></html>' },
+    ])
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=klipy')
+    await expect(tiles(page).first()).toBeVisible()
+
+    // "Surprise me" draws from the board. It must never reach the ad channel —
+    // the types make that impossible, and this is the behavioural proof.
+    await page.getByRole('button', { name: /Surprise/ }).click()
+    await expect(page.locator('[class*="badge"]')).toHaveText('Selected')
+    await expect(tiles(page)).toHaveCount(1)
+  })
+})

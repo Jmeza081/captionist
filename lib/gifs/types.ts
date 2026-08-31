@@ -1,5 +1,5 @@
 import type { MediaRef } from '@/lib/game/types'
-import type { BoardSource, GifCursor } from './provider'
+import type { BoardSource, GifAd, GifCursor } from './provider'
 
 /**
  * A search result, on its way to becoming a `MediaRef`.
@@ -49,6 +49,12 @@ export interface GifResult {
 
 export interface GifSearchResponse {
   results: GifResult[]
+  /**
+   * Ads that came with this board, kept apart from `results`.
+   *
+   * Empty is the normal case. Nothing downstream may treat one as a tile.
+   */
+  ads: readonly GifAd[]
   /**
    * Where the next page would start.
    *
