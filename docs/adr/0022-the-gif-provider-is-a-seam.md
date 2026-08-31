@@ -15,12 +15,20 @@ What it also said, in one sentence of Context, was:
 > that are near-identical to Giphy's on all four points above, so switching
 > would not buy back the architecture.
 
-**That sentence is wrong, and it is wrong in the direction that matters.** Klipy
-issues two kinds of key. A *test* key allows roughly 100 calls an hour — the
-same shape as Giphy's beta allowance, and the number
+**Half of that sentence is right, and it is the half that does not matter.**
+Read against Klipy's published integration requirements, the comparison holds
+exactly: they also forbid proxying the API, caching or re-hosting the media,
+reordering or filtering results, and blending their content with another
+provider's in one grid — each without prior written approval. Switching buys
+back none of the architecture ADR-0020 gave up.
+
+**What it buys is the allowance, and that is the part that was missed.** Klipy
+issues two kinds of key. A *test* key allows 100 calls an hour — the same shape
+as Giphy's beta allowance, and the number
 [ADR 0021](./0021-the-rooms-limits-are-a-rate-limit.md) sized the entire room
-against. A *production* key is free and advertised as unmetered, funded by ads
-served inline in the results stream rather than by a licence fee.
+against. A *production* key is free and unmetered, funded by ads served inline
+in the results rather than by a licence fee. So the conclusion — "switching
+would not buy back the architecture" — is true and was the wrong test.
 
 So the constraint that produced `MAX_PLAYERS = 10`, `ROUNDS_MAX = 5`,
 `SEARCHES_PER_ROUND = 3` and a chat with no GIF replies is not a fact about
@@ -108,6 +116,13 @@ without a `source` prop, so it took the `'giphy'` default and printed "via
 Giphy" over local placeholder art. Defaulting to `undefined` fixes it, and the
 new shape makes that class of mistake unavailable rather than merely fixed.
 
+**Attribution is complete, and smaller than assumed.** Klipy's guidelines make
+exactly one item required — `Search KLIPY` as the search field's placeholder —
+and mark both the watermark on shared content and the "Powered by KLIPY" mark
+optional. A third-party library's README describes the watermark as strongly
+recommended; Klipy does not. So the required item ships, one of the two optional
+ones ships as well, and `MediaCard` needs nothing.
+
 **Attribution moved one step further out than ADR 0020 put it.** That ADR moved
 the mark into `GifPanel` so each screen could not forget it. The strings now
 live on the descriptor, so the *component* cannot claim the wrong provider
@@ -125,14 +140,27 @@ ahead of the production key deliberately: `usage.ts` exists to produce evidence
 for a Klipy application, and while Giphy answered the boards it was diligently
 measuring the wrong provider.
 
-**Ads are in the contract and not yet modelled.** Every sampled item came back
-`type: "gif"`; no key here has been served an ad, while the response's own
-`meta.ad_max_resize_percent: 10` proves they exist. Anything that is not a GIF
-is dropped — the same rule Giphy's client follows for an undrawable tile. That
-number is also a design constraint worth knowing before the work starts: an ad
-may be resized by at most 10%, so it cannot flex into a masonry column the way a
-GIF can. Turning ads on in the Partner Panel is the prerequisite for building
-this, not the other way round.
+**Ads are not modelled, and the adapter currently drops them — which their
+terms do not allow.** Requirement 4 is "do not independently reorder, insert,
+remove, suppress, replace, or filter returned results", and any approved
+filtering "must be configured through the KLIPY Partner Panel". Dropping
+`type !== 'gif'` is a client-side filter. It is inert today for a reason worth
+writing down rather than relying on: **ads are only delivered if you ask for
+them.** They require `customer_id` and the four `ad-min/max-width/height`
+parameters, and this adapter sends none, so no ad has ever reached the filter.
+Sending those parameters and rendering what comes back has to land together.
+
+**An ad is not an image.** Asked for properly, the test key returns objects with
+no `slug` and no `file` — `{ type, width, height, content }`, where `content` is
+a complete HTML document carrying its own stylesheet, its own click-through
+`<a target="_blank">`, its own "AD" badge and a script. Klipy's guidance is to
+render it in a WebView on mobile; on the web the equivalent is a sandboxed
+iframe with `srcdoc`, because injecting a third party's document into our own
+origin would hand it our DOM and storage, and its `html.klipy-ad body` rules
+would escape into the page. Observed sizes were 250×250 and 300×100 against a
+`$gif-board-min` column of 240px, and `meta.ad_max_resize_percent: 10` caps
+rescaling at ten percent — so an ad cannot be made to fit a masonry column the
+way a GIF can, and needs its own placement rather than a tile variant.
 
 **The "let the picked player search" toggle is gone, and the design has it.**
 `design/Captionist Screens.dc.html` draws it on the host setup screen, so this

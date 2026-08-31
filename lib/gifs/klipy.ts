@@ -6,11 +6,21 @@ import type { GifResult } from './types'
 /**
  * Klipy, called from the browser.
  *
- * Same shape as `giphy.ts` and for a different reason. Giphy is called from the
- * client because their terms *require* it. Klipy is called from the client
- * because there is no longer anything to gain by not: a production key is free
- * and unmetered, so there is no allowance for a proxy to conserve. See
- * ADR-0022.
+ * Same shape as `giphy.ts` and for the same reason. Klipy's integration
+ * requirements are near-identical to Giphy's on every point that shaped
+ * ADR-0020:
+ *
+ *   > API requests and media loads must originate from the user's mobile app,
+ *   > desktop app, or web browser. Do not route requests through
+ *   > partner-operated servers, proxies, CDNs, or other intermediaries without
+ *   > prior written approval from KLIPY.
+ *
+ *   > Do not store, mirror, re-host, rewrite, or retain copies of KLIPY media
+ *   > unless KLIPY has approved a different delivery method in writing.
+ *
+ * So no proxy and no cache here either. What switching buys is not the
+ * architecture — it is the allowance: a Klipy production key is free and
+ * unmetered where Giphy's beta key is 100 an hour. See ADR-0022.
  *
  * Everything below was verified against live responses on 2026-08-31, not
  * reconstructed from documentation. The surprises are recorded where they bite.
