@@ -1,4 +1,5 @@
 import type { MediaRef } from '@/lib/game/types'
+import type { BoardSource, GifCursor } from './provider'
 
 /**
  * A search result, on its way to becoming a `MediaRef`.
@@ -48,11 +49,23 @@ export interface GifResult {
 
 export interface GifSearchResponse {
   results: GifResult[]
-  /** Echoed back so "Shuffle results" can ask for the next page. */
-  offset: number
+  /**
+   * Where the next page would start.
+   *
+   * Opaque, and provider-minted: Giphy counts items and Klipy counts pages, and
+   * a caller that knew which would break on the swap. Nothing asks for a second
+   * page today — ADR-0021 deleted "Shuffle results" — but the position is still
+   * threaded through, and this is the shape it will want back.
+   */
+  cursor: GifCursor
   query: string
-  /** `sample` means offline art, not Giphy. The picker says so. */
-  source: 'giphy' | 'sample'
+  /**
+   * Who supplied these tiles.
+   *
+   * `sample` means offline art and is not a provider: the picker must never
+   * credit anyone over the shelf. That is why this is wider than a provider id.
+   */
+  source: BoardSource
 }
 
 /**

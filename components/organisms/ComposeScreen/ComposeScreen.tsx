@@ -174,7 +174,7 @@ export function ComposeScreen() {
           selectedId={picked?.id}
           selectionLabel="Your answer"
           searchesLeft={gifs.remaining}
-          source={gifs.source}
+          provider={gifs.descriptor}
           onPick={setPicked}
           tools={
             // Instant now, and free: it reads off the fifty tiles already on

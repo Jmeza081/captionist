@@ -1,3 +1,6 @@
+import { GifProviderError, GifQuotaError } from './errors'
+import { GIPHY } from './descriptors'
+import type { GifBoard, GifProvider, GifQuery } from './provider'
 import type { GifResult } from './types'
 
 /**
@@ -20,30 +23,17 @@ import type { GifResult } from './types'
  *
  * The cost of losing the cache is the whole reason the room is capped at ten
  * players and a competitor gets two boards a round — see ADR-0021.
+ *
+ * This is now one `GifProvider` among others rather than *the* client. Nothing
+ * about how Giphy is called changed — the terms above did not — but the module
+ * no longer names itself in the app's error types or its attribution strings.
+ * Those moved to `errors.ts` and `descriptors.ts`. See ADR-0022.
  */
 
 const ENDPOINT = 'https://api.giphy.com/v1/gifs'
 
 /** The brief clock is 30s. A hung request must not eat it. */
 const TIMEOUT_MS = 4_000
-
-export interface GiphyQuery {
-  q?: string
-  limit: number
-  offset: number
-}
-
-export class GiphyError extends Error {}
-
-/**
- * The hourly allowance is gone.
- *
- * Its own type because the room does something different with it: every other
- * failure is one board that did not arrive, and this one ends the game (see
- * `game/gifsExhausted`). A caller that cannot tell them apart would either
- * shrug off a dead quota or end the game over a flaky connection.
- */
-export class GiphyRateLimitError extends GiphyError {}
 
 interface GiphyImage {
   url?: string
@@ -118,12 +108,14 @@ function toResult(item: GiphyItem, query: string | undefined): GifResult | undef
   }
 }
 
-export async function searchGiphy(query: GiphyQuery, apiKey: string): Promise<GifResult[]> {
-  const term = query.q?.trim()
+async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
+  const term = query.q.trim()
   const params = new URLSearchParams({
     api_key: apiKey,
     limit: String(query.limit),
-    offset: String(query.offset),
+    // Giphy counts items, not pages. The cursor counts pages, so the
+    // arithmetic happens here — that is the whole point of keeping it opaque.
+    offset: String(query.cursor.page * query.limit),
     // Unconditional, never a setting: the picker promises "SFW filter on", and
     // that promise is only honest if nothing can raise it.
     rating: 'pg-13',
@@ -139,11 +131,11 @@ export async function searchGiphy(query: GiphyQuery, apiKey: string): Promise<Gi
   const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
 
   if (response.status === 429) {
-    throw new GiphyRateLimitError('Giphy’s hourly limit is spent')
+    throw new GifQuotaError('Giphy\u2019s hourly limit is spent', 'giphy')
   }
 
   if (!response.ok) {
-    throw new GiphyError(`Giphy answered ${response.status}`)
+    throw new GifProviderError(`Giphy answered ${response.status}`, 'giphy')
   }
 
   const body = (await response.json()) as { data?: GiphyItem[] }
@@ -157,8 +149,12 @@ export async function searchGiphy(query: GiphyQuery, apiKey: string): Promise<Gi
    * downstream re-sorts: `GifPanel` renders `results` in the order it gets
    * them, and its local narrowing is off whenever `onSubmit` is supplied.
    */
-  return (body.data ?? []).flatMap((item) => {
+  const items = (body.data ?? []).flatMap((item) => {
     const result = toResult(item, term)
     return result ? [result] : []
   })
+
+  return { items }
 }
+
+export const giphyProvider: GifProvider = { descriptor: GIPHY, search }

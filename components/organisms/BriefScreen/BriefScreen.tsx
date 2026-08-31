@@ -269,7 +269,7 @@ export function BriefScreen() {
         selectedId={picked?.id}
         selectionLabel="Selected"
         searchesLeft={gifs.remaining}
-        source={gifs.source}
+        provider={gifs.descriptor}
         onPick={setPicked}
         // Both controls sit with the search field: everything that changes what
         // the board shows, and then the one thing that ends the phase. It keeps

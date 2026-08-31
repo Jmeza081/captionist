@@ -1,6 +1,6 @@
 # 0020 — Giphy is called from the browser, and the key is public
 
-**Status:** accepted · 2026-08-31
+**Status:** accepted · 2026-08-31 · one Context paragraph corrected, see below
 
 ## Context
 
@@ -35,6 +35,15 @@ stopped accepting new API clients in January 2026 and shut the API down on
 30 June 2026. Klipy, where most of that traffic went, publishes integration
 requirements that are near-identical to Giphy's on all four points above, so
 switching would not buy back the architecture.
+
+> **Correction, 2026-08-31.** The sentence above is wrong on the point that
+> matters. Klipy issues two kinds of key: a *test* key allowing roughly 100
+> calls an hour, which is what that comparison was measuring, and a *production*
+> key that is free and advertised as unmetered, funded by ads served inline in
+> the results rather than by a licence fee. Switching does not buy back the
+> proxy or the cache — that part holds — but it does buy back the allowance,
+> which is the premise every limit in [ADR 0021](./0021-the-rooms-limits-are-a-rate-limit.md)
+> rests on. See [ADR 0022](./0022-the-gif-provider-is-a-seam.md).
 
 The rule is not arbitrary. Giphy revokes URLs for content moderation, and a
 cache without their revalidation pattern keeps serving media they have pulled.

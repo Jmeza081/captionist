@@ -1,6 +1,7 @@
-import { searchGiphy } from './giphy'
 import { SAMPLE_GIFS } from './samples'
 import { readLevers } from '@/lib/room/levers'
+import { firstPage, type GifCursor, type GifProviderId } from './provider'
+import { intendedProvider, keyFor, selectProvider } from './registry'
 import type { GifSearchResponse } from './types'
 
 /**
@@ -19,12 +20,18 @@ import type { GifSearchResponse } from './types'
  * **The two shelves never mix.** Giphy's terms forbid blending their grid with
  * another provider's, so samples *replace* a board rather than topping one up.
  * That is why this returns a whole response and not a list to merge.
+ *
+ * It also now decides *whose* board it is. `?gifs=giphy` / `?gifs=klipy` pin a
+ * provider; otherwise the registry picks. See ADR-0022.
  */
 
-/** Giphy's documented ceiling, and Klipy's. Asking for more is an error there. */
+/** The largest board any provider here will serve. Each one clamps its own. */
 export const MAX_LIMIT = 50
 
-function sampleResponse(query: string, offset: number): GifSearchResponse {
+function sampleResponse(
+  query: string,
+  cursor: GifCursor,
+): GifSearchResponse {
   const q = query.trim().toLowerCase()
   const matched = q
     ? SAMPLE_GIFS.filter((gif) => gif.keywords.some((word) => word.includes(q)))
@@ -32,7 +39,13 @@ function sampleResponse(query: string, offset: number): GifSearchResponse {
   // A search that matches nothing still returns the shelf rather than an empty
   // grid: there are only twelve of these, and a blank picker reads as broken.
   const results = matched.length > 0 ? matched : SAMPLE_GIFS
-  return { results: [...results], offset: offset + results.length, query, source: 'sample' }
+  return { results: [...results], cursor, query, source: 'sample' }
+}
+
+/** What the URL asked for, if anything. Non-production only, via `readLevers`. */
+function lever(): 'stub' | 'live' | GifProviderId | undefined {
+  if (typeof window === 'undefined') return undefined
+  return readLevers(new URLSearchParams(window.location.search)).gifs
 }
 
 /**
@@ -44,42 +57,62 @@ function sampleResponse(query: string, offset: number): GifSearchResponse {
  * whoever set `GIFS_STUB=1` won unconditionally, so `?gifs=live` was a lever
  * that read as understood and did nothing. `readLevers` is already gated to
  * non-production, so neither direction exists in a deployed build.
+ *
+ * Naming a provider means the same thing as `live` — you cannot pin the shelf
+ * to a provider, because the shelf is nobody's.
  */
 function stubbed(): boolean {
-  if (typeof window !== 'undefined') {
-    const lever = readLevers(new URLSearchParams(window.location.search)).gifs
-    if (lever) return lever === 'stub'
-  }
+  const value = lever()
+  if (value) return value === 'stub'
   return process.env.NEXT_PUBLIC_GIFS_STUB === '1'
+}
+
+function pinned(): GifProviderId | undefined {
+  const value = lever()
+  return value === 'giphy' || value === 'klipy' ? value : undefined
 }
 
 /**
  * One board.
  *
- * Throws whatever `searchGiphy` throws — including `GiphyRateLimitError`,
- * which the caller has to tell apart from an ordinary failure.
+ * Throws whatever the provider throws — including `GifQuotaError`, which the
+ * caller has to tell apart from an ordinary failure.
  */
 export async function fetchBoard(
   query: string,
-  offset: number,
+  cursor: GifCursor | undefined,
   limit: number,
 ): Promise<GifSearchResponse> {
-  // Referenced as a full literal, not destructured: `NEXT_PUBLIC_*` is inlined
-  // at build time by name, and a dynamic read would come back undefined.
-  const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY
+  const pin = pinned()
+  const provider = selectProvider(pin)
   const production = process.env.NODE_ENV === 'production'
 
-  if (stubbed() || (!apiKey && !production)) {
-    return sampleResponse(query, offset)
+  if (stubbed() || (!provider && !production)) {
+    return sampleResponse(query, cursor ?? firstPage(pin ?? 'giphy'))
   }
 
-  if (!apiKey) {
-    throw new Error('GIF search isn’t configured. Set NEXT_PUBLIC_GIPHY_API_KEY and rebuild.')
+  if (!provider) {
+    throw new Error(intendedProvider(pin).descriptor.missingKeyMessage)
   }
 
-  const results = await searchGiphy(
-    { q: query, limit: Math.min(limit, MAX_LIMIT), offset },
+  const { descriptor } = provider
+  // A cursor minted against one provider is meaningless to another, so a pinned
+  // switch mid-session starts over rather than asking for page N of a stranger.
+  const from =
+    cursor && cursor.provider === descriptor.id ? cursor : firstPage(descriptor.id)
+
+  const apiKey = keyFor(descriptor.id)
+  if (!apiKey) throw new Error(descriptor.missingKeyMessage)
+
+  const board = await provider.search(
+    { q: query, limit: Math.min(limit, descriptor.maxLimit), cursor: from },
     apiKey,
   )
-  return { results, offset: offset + results.length, query, source: 'giphy' }
+
+  return {
+    results: [...board.items],
+    cursor: { provider: descriptor.id, page: from.page + 1 },
+    query,
+    source: descriptor.id,
+  }
 }

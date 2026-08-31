@@ -48,10 +48,14 @@ export interface Levers {
    */
   out?: number
   /**
-   * Serve offline placeholder art instead of calling Giphy. Keeps a long
-   * afternoon of layout work off the rate limit.
+   * Which shelf a board comes from, and whose.
+   *
+   * `stub` serves offline placeholder art instead of calling anyone, which
+   * keeps a long afternoon of layout work off the rate limit; `live` turns that
+   * back off. Naming a provider pins the board to it *and* implies `live`, so
+   * both adapters can be exercised in one browser without a rebuild.
    */
-  gifs?: 'stub' | 'live'
+  gifs?: 'stub' | 'live' | 'giphy' | 'klipy'
   /**
    * Which transport the room runs on.
    *
@@ -105,7 +109,9 @@ export function readLevers(
   if (Number.isInteger(out) && out > 0) levers.out = out
 
   const gifs = search.get('gifs')
-  if (gifs === 'stub' || gifs === 'live') levers.gifs = gifs
+  if (gifs === 'stub' || gifs === 'live' || gifs === 'giphy' || gifs === 'klipy') {
+    levers.gifs = gifs
+  }
 
   const transport = search.get('transport')
   if (transport === 'ably' || transport === 'broadcast') levers.transport = transport

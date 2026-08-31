@@ -5,6 +5,7 @@ import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { TextField } from '@/components/atoms/TextField'
+import type { GifProviderDescriptor } from '@/lib/gifs/provider'
 import type { GifResult } from '@/lib/gifs/types'
 import styles from './GifPanel.module.scss'
 
@@ -61,15 +62,17 @@ export interface GifPanelProps {
    */
   searchesLeft?: number
   /**
-   * Where `results` came from.
+   * Who supplied `results`, or `undefined` for the offline shelf.
    *
-   * Drives the attribution mark, which is not decoration: Giphy's terms
-   * require it "where the API is utilized", and putting it in the component
-   * that draws their content is what stops the next screen forgetting it. It
-   * must not claim Giphy over the offline shelf, which is why this is not
-   * simply hardcoded.
+   * Drives the attribution mark, which is not decoration: every provider's
+   * terms require it "where the API is utilized", and putting it in the
+   * component that draws their content is what stops the next board forgetting
+   * it. Carrying the descriptor rather than a provider name makes "never credit
+   * anyone over the offline shelf" structural — there is nothing to render
+   * because there is nobody to credit — where a `source === 'giphy'` string
+   * comparison had to be remembered, and was already wrong in the gallery.
    */
-  source?: 'giphy' | 'sample'
+  provider?: GifProviderDescriptor
 }
 
 export function GifPanel({
@@ -87,7 +90,7 @@ export function GifPanel({
   tools,
   selectionLabel = 'Selected',
   searchesLeft,
-  source = 'giphy',
+  provider,
 }: GifPanelProps) {
   const [localQuery, setLocalQuery] = useState('')
   const controlled = query !== undefined
@@ -128,7 +131,7 @@ export function GifPanel({
     <TextField
       size={board ? 'search' : 'popover'}
       primary={board}
-      placeholder={board ? 'deploy on friday' : 'Search Giphy…'}
+      placeholder={board ? 'deploy on friday' : (provider?.searchPlaceholder ?? 'Search GIFs…')}
       value={value}
       onChange={(e) => {
         if (controlled) onQueryChange?.(e.target.value)
@@ -248,20 +251,18 @@ export function GifPanel({
         )}
 
         {/*
-          The round's budget and Giphy's mark, on one line.
+          The round's budget and the provider's mark, on one line.
 
-          The mark is a requirement, not a flourish — Giphy's terms ask for it
-          "where the API is utilized", and it lives here rather than on each
-          screen so the next board to be built cannot ship without it. It says
-          nothing over the offline shelf, which is not theirs to claim; the
+          The mark is a requirement, not a flourish — every provider's terms ask
+          for it "where the API is utilized", and it lives here rather than on
+          each screen so the next board to be built cannot ship without it. It
+          says nothing over the offline shelf, which is nobody's to claim; the
           `message` line below already explains that case.
         */}
-        {(counter || source === 'giphy') && (
+        {(counter || provider) && (
           <Inline gap={10} justify="between" className={styles.meta}>
             <span className={styles.note}>{counter}</span>
-            {source === 'giphy' && (
-              <span className={styles.via}>Powered by Giphy · SFW filter on</span>
-            )}
+            {provider && <span className={styles.via}>{provider.attribution}</span>}
           </Inline>
         )}
 
@@ -277,7 +278,7 @@ export function GifPanel({
       <div className={styles.head}>
         <span className={styles.title}>Attach a GIF</span>
         {/* Same rule as the board's mark: never over the offline shelf. */}
-        {source === 'giphy' && <span className={styles.via}>via Giphy</span>}
+        {provider && <span className={styles.via}>{provider.attributionCompact}</span>}
         {onClose && (
           <button
             type="button"

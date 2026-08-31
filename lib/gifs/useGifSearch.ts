@@ -1,15 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { GiphyRateLimitError } from './giphy'
+import { GifQuotaError } from './errors'
+import { intendedProvider } from './registry'
 import { fetchBoard } from './source'
+import type { GifCursor, GifProviderDescriptor } from './provider'
 import type { GifResult, GifSearchResponse } from './types'
 
 /**
- * Giphy search for a screen.
+ * GIF search for a screen.
  *
- * Calls Giphy directly — there is no `/api/gifs` any more, and there is no
- * cache behind it either. Both were prohibited; `giphy.ts` carries the terms.
+ * Calls the provider directly — there is no `/api/gifs` any more, and there is
+ * no cache behind it either. Both were prohibited by Giphy; `giphy.ts` carries
+ * the terms. Which provider answers is `source.ts`'s business, not this hook's:
+ * all it needs is a board, a budget, and a way to tell a spent allowance from a
+ * failed request.
  *
  * What that costs is a budget. Every board is a live API call against an
  * allowance of 100 an hour for the whole room, so a competitor gets
@@ -53,8 +58,16 @@ export interface GifSearch {
   /** Set when something needs saying — an error, or "these are samples". */
   message?: string
   query: string
-  /** Where the current board came from. The attribution mark reads this. */
+  /** Where the current board came from. `sample` is the offline shelf. */
   source: GifSearchResponse['source']
+  /**
+   * Who supplied the current board, or `undefined` over the offline shelf.
+   *
+   * The picker's attribution mark renders from this, so "never credit anyone
+   * over the shelf" is a fact about the value rather than a comparison somebody
+   * has to remember to write.
+   */
+  descriptor: GifProviderDescriptor | undefined
   /**
    * Type into the field.
    *
@@ -80,6 +93,9 @@ export interface GifSearch {
  * Giphy's `limit` ceiling, and Klipy's `per_page`. Worth taking all of it: a
  * board of fifty costs exactly one call, the same as a board of twelve, and
  * every tile it adds is a search somebody now does not need to run.
+ *
+ * `fetchBoard` clamps this to whatever the selected provider actually allows,
+ * so asking for the ceiling here is a request, not an assumption.
  */
 const LIMIT = 50
 
@@ -107,10 +123,15 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   const [status, setStatus] = useState<GifStatus>(enabled ? 'loading' : 'ready')
   const [message, setMessage] = useState<string | undefined>(undefined)
   const [query, setQuery] = useState('')
-  const [source, setSource] = useState<GifSearchResponse['source']>('giphy')
+  const [source, setSource] = useState<GifSearchResponse['source']>(
+    () => intendedProvider().descriptor.id,
+  )
+  const [descriptor, setDescriptor] = useState<GifProviderDescriptor | undefined>(
+    () => intendedProvider().descriptor,
+  )
   const [spent, setSpent] = useState(0)
 
-  const offset = useRef(0)
+  const cursor = useRef<GifCursor | undefined>(undefined)
   const inFlight = useRef<AbortController | undefined>(undefined)
   // Monotonic: a response from an abandoned search must not overwrite a newer one.
   const latest = useRef(0)
@@ -129,13 +150,18 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
 
   const apply = useCallback((body: GifSearchResponse, ticket: number) => {
     if (ticket !== latest.current) return
-    offset.current = body.offset
+    cursor.current = body.cursor
     setResults(body.results)
     setQuery(body.query)
     setSource(body.source)
+    // Nobody's brand over the offline shelf. The message below says whose key
+    // is missing; the mark says nothing at all.
+    setDescriptor(body.source === 'sample' ? undefined : intendedProvider().descriptor)
     setStatus('ready')
     setMessage(
-      body.source === 'sample' ? 'Showing samples — no Giphy key configured.' : undefined,
+      body.source === 'sample'
+        ? intendedProvider().descriptor.sampleFallbackMessage
+        : undefined,
     )
   }, [])
 
@@ -158,7 +184,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     if (signal.aborted || ticket !== latest.current) return
     // A spent quota is not a failed search — it ends the game, and the screen
     // that owns the room says so.
-    if (error instanceof GiphyRateLimitError) {
+    if (error instanceof GifQuotaError) {
       onExhaustedRef.current?.()
       return
     }
@@ -167,7 +193,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   }, [])
 
   const run = useCallback(
-    (next: string, nextOffset: number) => {
+    (next: string, from: GifCursor | undefined) => {
       if (!spend()) return
 
       inFlight.current?.abort()
@@ -178,7 +204,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
       setStatus('loading')
       setQuery(next)
 
-      void fetchBoard(next, nextOffset, LIMIT)
+      void fetchBoard(next, from, LIMIT)
         .then((body) => apply(body, ticket))
         .catch((error: unknown) => fail(error, ticket, controller.signal))
     },
@@ -196,7 +222,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     inFlight.current = controller
     const ticket = ++latest.current
 
-    void fetchBoard('', 0, LIMIT)
+    void fetchBoard('', undefined, LIMIT)
       .then((body) => apply(body, ticket))
       .catch((error: unknown) => fail(error, ticket, controller.signal))
 
@@ -216,8 +242,9 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     message,
     query,
     source,
+    descriptor,
     setQuery,
-    search: (next: string) => run(next, 0),
+    search: (next: string) => run(next, undefined),
     remaining: Math.max(0, SEARCHES_PER_ROUND - spent),
     surprise,
   }

@@ -99,6 +99,17 @@ and the room is in beta. A production key is the answer if the game earns one.
 
 ## Consequences
 
+> **Note, 2026-08-31.** Every number below is arithmetic on Giphy's 100 calls an
+> hour. A Klipy production key is free and unmetered, which removes that premise
+> entirely — see [ADR 0022](./0022-the-gif-provider-is-a-seam.md) and the
+> correction on [ADR 0020](./0020-giphy-is-called-from-the-browser.md).
+>
+> **None of these numbers have moved, and this ADR is not superseded.** Removing
+> a premise is not the same as taking a decision: the caps are still enforced,
+> so they are still documented here. They should change deliberately, against
+> measured usage rather than a model, and under their own ADR — and at that
+> point they are game design rather than a rate limit.
+
 **A full `react` room does not finish on the free tier.** Ten players, five
 rounds, everyone hunting: the allowance goes around round three. `caption` mode
 and small `react` rooms are unaffected. This is the accepted cost of a search
