@@ -1,3 +1,6 @@
+import { ALL_DESCRIPTORS } from './descriptors'
+import type { BoardSource } from './provider'
+
 /**
  * Where this app's images are allowed to come from.
  *
@@ -29,14 +32,31 @@
 const SAME_ORIGIN = /^\/media\/(?:emoji\/)?[a-z0-9-]+\.svg$/
 
 /**
- * Giphy's CDN.
+ * Every provider's CDN, unioned — not just the one this build talks to.
+ *
+ * That is the load-bearing word. A `MediaRef` is persisted game state, so a
+ * room resumed across a provider change, or a tab still running an older
+ * bundle, can carry the previous provider's URL into this one. Gating this on
+ * the *selected* provider would turn that into a broken image nobody could
+ * reproduce, on a screen the whole round is about.
+ *
+ * Read from the descriptors so there is one list. `descriptors.ts` is data
+ * only, with no HTTP client behind it, because this function runs on the event
+ * lane for every inbound message.
  *
  * Parsed with `URL` rather than matched as a string, so
  * `https://giphy.com.example.invalid/x.gif` fails on hostname rather than
- * passing on a prefix.
+ * passing on a prefix — and `exact` hosts do not even accept a subdomain,
+ * because `endsWith('klipy.com')` would have admitted `evilklipy.com`.
  */
-function isGiphyHost(hostname: string): boolean {
-  return hostname === 'giphy.com' || hostname.endsWith('.giphy.com')
+function providerForHost(hostname: string): BoardSource | undefined {
+  for (const descriptor of ALL_DESCRIPTORS) {
+    for (const { host, exact } of descriptor.mediaHosts) {
+      if (hostname === host) return descriptor.id
+      if (!exact && hostname.endsWith(`.${host}`)) return descriptor.id
+    }
+  }
+  return undefined
 }
 
 /**
@@ -57,5 +77,28 @@ export function isAllowedImageSrc(src: string): boolean {
   } catch {
     return false
   }
-  return url.protocol === 'https:' && isGiphyHost(url.hostname)
+  return url.protocol === 'https:' && providerForHost(url.hostname) !== undefined
+}
+
+/**
+ * Which provider served an image, judged from its URL alone.
+ *
+ * `MediaRef` records `{ src, alt, width?, height? }` and deliberately not a
+ * provider — that field existed once and was removed. Attribution on a shared
+ * card still has to name somebody, so it is derived here rather than restored
+ * there: no state change, no protocol change, no migration, and it stays
+ * correct for GIFs picked before a provider swap, which a stored flag would
+ * not.
+ *
+ * `undefined` for the app's own art, which belongs to nobody and is credited
+ * to nobody.
+ */
+export function providerOf(src: string): BoardSource | undefined {
+  if (!isAllowedImageSrc(src)) return undefined
+  if (src.startsWith('/')) return undefined
+  try {
+    return providerForHost(new URL(src).hostname)
+  } catch {
+    return undefined
+  }
 }

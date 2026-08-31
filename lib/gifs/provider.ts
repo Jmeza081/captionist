@@ -114,4 +114,14 @@ export interface GifProvider {
    * tell a short page from a spent one.
    */
   search(query: GifQuery, apiKey: string): Promise<GifBoard>
+  /**
+   * Tell the provider one of its GIFs was chosen.
+   *
+   * Optional, because only some providers want to hear about it — Giphy's terms
+   * ask for no such signal and Klipy's attribution depends on one. Returns
+   * nothing and is never awaited: a picker that failed because an analytics
+   * ping did would be the wrong trade, so a caller cannot accidentally block on
+   * it or handle its errors.
+   */
+  share?(id: string, apiKey: string, query?: string): void
 }

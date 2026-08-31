@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isAllowedImageSrc } from './allow'
+import { isAllowedImageSrc, providerOf } from './allow'
 import { SAMPLE_GIFS } from './samples'
 
 describe('what a player may point the room at', () => {
@@ -66,5 +66,73 @@ describe('what a player may point the room at', () => {
     expect(isAllowedImageSrc('')).toBe(false)
     expect(isAllowedImageSrc('not a url')).toBe(false)
     expect(isAllowedImageSrc('x'.repeat(5000))).toBe(false)
+  })
+})
+
+/**
+ * Klipy's CDN, and the trap next door.
+ *
+ * The hosts come from `descriptors.ts` now, so these also assert that the
+ * allowlist unions every provider rather than only the selected one.
+ */
+describe('Klipy’s media hosts', () => {
+  it('accepts all three, because Klipy load-balances across them', () => {
+    // Only `static` appeared across 2,144 sampled URLs, but their published
+    // requirements list all three and a third-party post-mortem exists of
+    // someone allowing just the first and losing most of their results.
+    expect(isAllowedImageSrc('https://static.klipy.com/ii/a/25/99/h9f7okKK.gif')).toBe(true)
+    expect(isAllowedImageSrc('https://static1.klipy.com/ii/a/25/99/h9f7okKK.gif')).toBe(true)
+    expect(isAllowedImageSrc('https://static2.klipy.com/ii/a/25/99/h9f7okKK.gif')).toBe(true)
+  })
+
+  it('rejects a lookalike that a suffix match would have admitted', () => {
+    // `hostname.endsWith('klipy.com')` — the obvious way to write this — says
+    // yes to the first of these. The leading dot, or an exact match, is the
+    // whole defence.
+    expect(isAllowedImageSrc('https://evilklipy.com/x.gif')).toBe(false)
+    expect(isAllowedImageSrc('https://klipy.com.example.invalid/x.gif')).toBe(false)
+    expect(isAllowedImageSrc('https://static.klipy.com.evil.tld/x.gif')).toBe(false)
+  })
+
+  it('rejects a host Klipy has not published, even under their own domain', () => {
+    // Pinned exactly rather than loosely: a subdomain match would admit
+    // whatever they put on that domain next, sight unseen.
+    expect(isAllowedImageSrc('https://static3.klipy.com/x.gif')).toBe(false)
+    expect(isAllowedImageSrc('https://klipy.com/x.gif')).toBe(false)
+  })
+
+  it('still refuses plain http on an allowed host', () => {
+    expect(isAllowedImageSrc('http://static.klipy.com/x.gif')).toBe(false)
+  })
+
+  it('rejects the blur_preview data URI Klipy ships on every item', () => {
+    // Real, and exactly what the no-data-URI rule exists for: it would ride the
+    // event lane into a full-state message sized for a sentence.
+    expect(isAllowedImageSrc('data:image/jpeg;base64,/9j//gAQTGF2YzU5L')).toBe(false)
+  })
+})
+
+describe('naming who served an image', () => {
+  it('reads the provider off the URL, so a MediaRef needs no extra field', () => {
+    expect(providerOf('https://static.klipy.com/x.gif')).toBe('klipy')
+    expect(providerOf('https://media3.giphy.com/media/x/200w.gif')).toBe('giphy')
+  })
+
+  it('credits nobody for the app’s own art', () => {
+    expect(providerOf('/media/stub-deploy.svg')).toBeUndefined()
+  })
+
+  it('credits nobody for something the allowlist would refuse', () => {
+    // Never a fallback to a provider name for a host we do not trust — that
+    // would put a brand on content it did not serve.
+    expect(providerOf('https://evilklipy.com/x.gif')).toBeUndefined()
+    expect(providerOf('not a url')).toBeUndefined()
+  })
+
+  it('still names Giphy for a GIF picked before the swap', () => {
+    // The reason this is derived rather than stored: a room resumed across a
+    // provider change carries the old provider's URLs, and they must still be
+    // drawn and still be credited correctly.
+    expect(providerOf('https://media0.giphy.com/media/abc/200w.gif')).toBe('giphy')
   })
 })

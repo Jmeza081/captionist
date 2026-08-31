@@ -1,4 +1,5 @@
 import { giphyProvider } from './giphy'
+import { klipyProvider } from './klipy'
 import type { GifProvider, GifProviderId } from './provider'
 
 /**
@@ -25,6 +26,7 @@ import type { GifProvider, GifProviderId } from './provider'
 function keys(): Readonly<Partial<Record<GifProviderId, string | undefined>>> {
   return {
     giphy: process.env.NEXT_PUBLIC_GIPHY_API_KEY,
+    klipy: process.env.NEXT_PUBLIC_KLIPY_API_KEY,
   }
 }
 
@@ -37,16 +39,17 @@ function keys(): Readonly<Partial<Record<GifProviderId, string | undefined>>> {
  */
 const PROVIDERS: Readonly<Partial<Record<GifProviderId, GifProvider>>> = {
   giphy: giphyProvider,
+  klipy: klipyProvider,
 }
 
 /**
  * Preference order when nothing has been asked for by name.
  *
- * Giphy is still first because it is still the only adapter. When Klipy's
- * lands it goes to the front — a production key there is free and unmetered,
- * which is the entire reason for the seam. See ADR-0022.
+ * Giphy is still first, deliberately: the adapter below it is new and the flip
+ * is its own commit, with its own e2e evidence. Reordering this line is that
+ * commit. See ADR-0022.
  */
-const PREFERENCE: readonly GifProviderId[] = ['giphy']
+const PREFERENCE: readonly GifProviderId[] = ['giphy', 'klipy']
 
 /** A deployment-level override, read as a literal for the same reason as the keys. */
 function configured(): string | undefined {
