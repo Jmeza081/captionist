@@ -59,14 +59,14 @@
  * no free space to split, so the rule costs nothing.
  */
 .form {
-  padding: t.$screen-pad-v t.$space-20 0;
+  padding: t.$front-door-pad-v t.$space-20 0;
 
   @include t.mq('xl') {
     margin-top: auto;
     // The screen padding the design states. At 20px the heading above the card
     // had nothing between it and the window — see `/host`, where a long form
     // leaves no free space for the auto margin to spend and the rub shows.
-    padding: t.$screen-pad-v-lg t.$screen-pad-h 0;
+    padding: t.$front-door-pad-v-lg t.$screen-pad-h 0;
   }
 }
 

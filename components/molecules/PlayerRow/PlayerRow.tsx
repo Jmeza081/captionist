@@ -74,7 +74,12 @@ export function PlayerRow({
 
       <Avatar
         {...player}
-        size={variant === 'roster' || variant === 'standing' ? 40 : variant === 'pill' ? 30 : 34}
+        // `pill` was the design's 30 and is 34 now, which collapsed it into the
+        // tracker's size: 30 is under `HAT_MIN_SIZE`, and the guest lobby is
+        // the one screen whose whole job is "who else is here" — the question
+        // a hat answers. Four pixels is a cheaper price than either a bare
+        // roster or a hat in every 30px chat row.
+        size={variant === 'roster' || variant === 'standing' ? 40 : 34}
         dimmed={pending}
       />
 

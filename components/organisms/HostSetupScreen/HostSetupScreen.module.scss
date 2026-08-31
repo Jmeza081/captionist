@@ -63,13 +63,13 @@
 }
 
 .form {
-  padding: t.$screen-pad-v t.$space-20 0;
+  padding: t.$front-door-pad-v t.$space-20 0;
 
   // From `xl` the column is the page's whole left half and the header is the
   // first thing on it, so it takes the screen padding the design states rather
   // than the 20px a phone's card needs.
   @include t.mq('xl') {
-    padding: t.$screen-pad-v-lg t.$screen-pad-h 0;
+    padding: t.$front-door-pad-v-lg t.$screen-pad-h 0;
   }
 }
 
