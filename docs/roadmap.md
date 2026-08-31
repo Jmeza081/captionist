@@ -27,7 +27,7 @@ not.** So the state machine went first.
 | --- | --- | --- | --- |
 | **0** | `lib/game/*` — types, rng, actions, reducer, authorize, selectors, project, fixtures. Vitest folded into `verify`. | A scripted 5-round game reaches `podium` with expected scores; a tie resolves to the seeded winner; a stale `clock/expired` is a no-op. | ✅ done |
 | **1** | `lib/room/*` — `LocalTransport` (async), `HostEngine`, `GuestClient`, `BotDriver`, store, `RoomProvider`, `useRoom`. Host-death mitigations. | `/room/DEV?seed=42&bots=4` walks the whole flow as raw state JSON — no UI. | ✅ done |
-| **2** | `RoomShell` chrome, `LobbyScreen`, `BriefScreen`, `ComposeScreen`, `/api/gifs` + Giphy search. | Play to `waiting` on a phone viewport; timer, rail offset and toolbox all real. | ✅ done |
+| **2** | `RoomShell` chrome, `LobbyScreen`, `BriefScreen`, `ComposeScreen`, GIF search. (Built as `/api/gifs` + Giphy; the route is gone and the provider is a seam — ADR 0020, ADR 0022.) | Play to `waiting` on a phone viewport; timer, rail offset and toolbox all real. | ✅ done |
 | **3** | `WaitingScreen`, `VoteScreen`, `TiebreakScreen`, `RevealScreen`, `ScoreScreen`, `PodiumScreen`. | **A complete 5-round game, solo, vs 4 bots, both modes.** The milestone that matters. | ✅ done |
 | **4** | ~~Landing~~, `/join`, `/join/[code]`, `/host`, real room codes, join + nickname + avatar, `BroadcastTransport`. | Two tabs, one host one guest, a real game with no network. | ✅ done |
 | **5** | `AblyTransport`, `/api/ably/token`, presence, reconnect overlay. Plus the ADR and the client↔API-route↔Ably diagram. | Two devices on the same wifi. | ✅ built, gate unverified — see below |
@@ -142,13 +142,25 @@ the boot branch returned before rendering, leaving the spinner turning forever.
 
 Not a phase — a gate. Do these when the room stops being a dev toy.
 
-- [ ] **Swap the keys.** `NEXT_PUBLIC_GIPHY_API_KEY` and `ABLY_API_KEY` in
-      `.env.local` are personal development credentials: the Giphy key spends a
-      personal rate limit and the Ably key bills a personal account. Issue
-      project-owned keys and set them as deployment environment variables, not a
-      file in the repo. The Giphy one ships to the browser by necessity
-      ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)) — issue a
-      web-only key for it, and be ready to rotate.
+- [ ] **Apply for a Klipy production key.** The test key in `.env.local` is 100
+      calls an hour — the same ceiling as the Giphy beta key it replaced, and the
+      one every cap in [ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)
+      is arithmetic on. A production key is free and unmetered, and is what makes
+      those caps a design choice rather than a bill. Take the measured numbers
+      from the GIF allowance panel on `/components`, not the model.
+- [ ] **Turn ads on in the Klipy Partner Panel.** The free production tier is
+      ad-funded and ad objects arrive inline in the results. Nothing renders them
+      yet: no key here has ever been served one, so the shape is unverified and
+      anything not `type: "gif"` is currently dropped. Enabling them is the
+      prerequisite for building that, not the other way round.
+- [ ] **Swap the keys.** `NEXT_PUBLIC_KLIPY_API_KEY`, `NEXT_PUBLIC_GIPHY_API_KEY`
+      and `ABLY_API_KEY` in `.env.local` are personal development credentials:
+      the GIF keys spend a personal rate limit and the Ably key bills a personal
+      account. Issue project-owned keys and set them as deployment environment
+      variables, not a file in the repo. Both GIF keys ship to the browser by
+      necessity ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md),
+      [ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)) — issue web-only keys,
+      and be ready to rotate.
 - [ ] **Check `NEXT_PUBLIC_APP_URL`.** Unset is right in development; in
       production it must be the real origin, or the lobby's QR code encodes a
       link no phone can reach.
@@ -170,7 +182,7 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
 | Authority | The host browser is the server. Ably is pub/sub + presence. No database. |
 | Role holder | **Does not compete.** Sets the round up, sits it out, then votes. This is also the cost model: a room of N fields N−1 pickers per round, which is what `roundsMaxFor()` prices. |
 | Uploads | **Not a feature.** Priced the storage target and removed the scaffolding — [ADR 0014](./adr/0014-uploads-are-not-a-feature.md). Giphy covers both modes. |
-| GIFs | Real Giphy, called from the browser with a public key — proxying and caching are both against their terms ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)). The room's size and round caps are set by the resulting rate limit ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)). |
+| GIFs | **Klipy by default, Giphy as a second adapter**, both called from the browser with a public key ([ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). Giphy's terms forbid proxying and caching ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)); Klipy's production key is free and unmetered, which is why it is the default. The room's caps still come from Giphy's 100/hour ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)) and have **not** moved — `lib/gifs/usage.ts` is now measuring what that ADR only modelled. The waiting backdrop, the 404 and the landing wall stay Giphy art: they are hot-linked URLs, not API calls. |
 | Chat | Deferred to phase 6; it is a `RoomEvent`, never game state. **No GIF picker** — mounting one cost every player an API call on joining ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)). Emoji, Slackmoji and text only. |
 | `format:'one'`, `voting:'single'` | Implemented in phase 7. Both were live controls in `/host` that no screen read — a single-vote room paid 3/2/1, and "One line" changed nothing but a summary label. |
 | Help modal | Never pauses the room. Only the host's explicit pause stops the clock. |

@@ -117,8 +117,26 @@ teaches what to type in a way "Search X" does not, and it is deliberately not on
 the descriptor yet. A provider that mandates its own placeholder wording would
 take that away — a design question, not something to settle by widening a type.
 
-**Klipy is a declared `GifProviderId` with no descriptor and no adapter.**
-`DESCRIPTORS` is `Partial`, so naming Klipy today selects nothing. A descriptor
-built from guessed media hosts would let the registry pick a provider that
-cannot work, and do it silently; absent is the honest state until a real
-response has confirmed the hosts and the mandated wording.
+**Klipy is the default, on a test key.** Their test key allows 100 calls an
+hour — exactly the allowance the Giphy beta key it replaces gives — so the flip
+costs nothing to try and is one line in `PREFERENCE` to undo. It was sequenced
+ahead of the production key deliberately: `usage.ts` exists to produce evidence
+for a Klipy application, and while Giphy answered the boards it was diligently
+measuring the wrong provider.
+
+**Ads are in the contract and not yet modelled.** Every sampled item came back
+`type: "gif"`; no key here has been served an ad, while the response's own
+`meta.ad_max_resize_percent: 10` proves they exist. Anything that is not a GIF
+is dropped — the same rule Giphy's client follows for an undrawable tile. That
+number is also a design constraint worth knowing before the work starts: an ad
+may be resized by at most 10%, so it cannot flex into a masonry column the way a
+GIF can. Turning ads on in the Partner Panel is the prerequisite for building
+this, not the other way round.
+
+**The app still credits Giphy in three places, on purpose.** The waiting
+backdrop, the 404 GIF and the landing wall are hot-linked `media.giphy.com`
+URLs, not API calls: they cost no allowance and break no terms while their
+credits stay where they render. Giphy's "do not blend our media with another
+provider" is about a *grid* — the wall is all Giphy, the picker is all Klipy,
+and they are different surfaces. Re-curating them is taste work, not
+engineering, and would be its own change.

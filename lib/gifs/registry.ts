@@ -45,11 +45,16 @@ const PROVIDERS: Readonly<Partial<Record<GifProviderId, GifProvider>>> = {
 /**
  * Preference order when nothing has been asked for by name.
  *
- * Giphy is still first, deliberately: the adapter below it is new and the flip
- * is its own commit, with its own e2e evidence. Reordering this line is that
- * commit. See ADR-0022.
+ * **Klipy first.** Their production key is free and unmetered, which is the
+ * whole reason the seam exists — and until one is issued, their test key is 100
+ * calls an hour, exactly the allowance the Giphy beta key it replaces gives. So
+ * this costs nothing to try and is one line to undo.
+ *
+ * It also puts the usage ledger on the right provider. A production-key
+ * application wants this app's Klipy traffic; while Giphy answered the boards,
+ * `usage.ts` was diligently measuring the wrong thing. See ADR-0022.
  */
-const PREFERENCE: readonly GifProviderId[] = ['giphy', 'klipy']
+const PREFERENCE: readonly GifProviderId[] = ['klipy', 'giphy']
 
 /** A deployment-level override, read as a literal for the same reason as the keys. */
 function configured(): string | undefined {

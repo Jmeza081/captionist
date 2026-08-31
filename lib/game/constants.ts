@@ -92,7 +92,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   // the clearest way to teach that the two are connected.
   maxPlayers: MAX_PLAYERS,
   totalRounds: 3,
-  giphyEnabled: true,
+  gifSearchEnabled: true,
   uniqueNicknames: true,
 }
 

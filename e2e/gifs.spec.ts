@@ -28,17 +28,36 @@ function tiles(page: Page) {
   return page.locator('button:has(img)')
 }
 
-/** Answers every Giphy call with an empty board, and counts them. */
+/** An empty board, in whichever provider's shape was asked for. */
+function emptyBoard(url: string): string {
+  // Klipy's envelope is double-nested and Giphy's is flat. `{ data: [] }` would
+  // satisfy both by accident, which would let this pass against a fiction.
+  return url.includes('klipy')
+    ? JSON.stringify({ result: true, data: { data: [], current_page: 1, per_page: 50, has_next: false } })
+    : JSON.stringify({ data: [] })
+}
+
+/**
+ * Answers every provider's call with an empty board, and counts them.
+ *
+ * Both are routed rather than whichever happens to be default, so the budget
+ * these tests guard — the thing ADR-0021 rests on — keeps being measured
+ * through a provider swap instead of silently measuring nothing.
+ */
 async function countCalls(page: Page): Promise<() => number> {
   let calls = 0
-  await page.route(GIPHY, async (route) => {
-    calls += 1
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ data: [] }),
+  for (const glob of [GIPHY, KLIPY]) {
+    await page.route(glob, async (route) => {
+      const url = route.request().url()
+      // The share trigger is a pick being reported, not a board being fetched.
+      if (url.includes('/gifs/share/')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+        return
+      }
+      calls += 1
+      await route.fulfill({ status: 200, contentType: 'application/json', body: emptyBoard(url) })
     })
-  })
+  }
   return () => calls
 }
 
@@ -68,7 +87,10 @@ test.describe('the picker, without a key', () => {
     // may be named, not merely the one that happens to be configured.
     await expect(page.getByText('Powered by Giphy')).toHaveCount(0)
     await expect(page.getByText('Powered by KLIPY')).toHaveCount(0)
-    await expect(page.getByText(/no Giphy key configured/i)).toBeVisible()
+    // Names whoever *would* have answered, so a fresh clone is told which key
+    // to go and get. That is the default provider, not the board's — there
+    // isn't one.
+    await expect(page.getByText(/no KLIPY key configured/i)).toBeVisible()
   })
 
   test('never lets a board go blank', async ({ page }) => {
@@ -178,13 +200,17 @@ test.describe('the allowance', () => {
   })
 
   test('ends the game when the allowance is gone, and says why', async ({ page }) => {
-    await page.route(GIPHY, (route) =>
-      route.fulfill({
-        status: 429,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Too Many Requests' }),
-      }),
-    )
+    // Whoever is answering: a spent allowance ends the room the same way, and
+    // 429 is the one signal both providers agree on.
+    for (const glob of [GIPHY, KLIPY]) {
+      await page.route(glob, (route) =>
+        route.fulfill({
+          status: 429,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Too Many Requests' }),
+        }),
+      )
+    }
 
     await page.goto('/room/DEV?seed=42&phase=brief&gifs=live')
 

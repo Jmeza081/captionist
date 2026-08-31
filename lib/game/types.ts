@@ -259,7 +259,7 @@ export interface RoomSettings {
    */
   maxPlayers: number
   totalRounds: number
-  giphyEnabled: boolean
+  gifSearchEnabled: boolean
   uniqueNicknames: boolean
 }
 
