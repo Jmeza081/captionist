@@ -236,26 +236,46 @@ describe('the double-nested envelope', () => {
   })
 })
 
-describe('what is not a GIF', () => {
-  it('drops anything whose type is not gif, keeping the rest in order', async () => {
+describe('what comes back, and what cannot be drawn', () => {
+  it('never asks for ads, which is why the board is GIFs', async () => {
+    const fetchMock = mockFetch(() => ok())
+
+    await search()
+
+    // Ads are delivered only to a request that asks: `customer_id` plus the
+    // four ad size parameters. Sending none is what makes the board GIFs by
+    // construction rather than by filtering — which requirement 4 forbids.
+    const url = new URL(String(fetchMock.mock.calls[0]?.[0]))
+    expect(url.search).not.toContain('customer_id')
+    expect(url.search).not.toContain('ad-min-width')
+    expect(url.search).not.toContain('ad-max-height')
+  })
+
+  it('does not filter on type, because that is their call and not ours', async () => {
+    // A real ad object carries no `slug` and no `file` — it is
+    // `{ type, width, height, content }` — so it is dropped by the rule below
+    // for being undrawable, not by a judgement about what it is. The adapter no
+    // longer inspects `type` at all.
     mockFetch(() =>
-      ok([
-        item({ slug: 'a' }),
-        // Ads arrive inline in this same array under another type. Until a real
-        // one has been seen, an item we cannot classify is not drawn — the same
-        // rule as an item with no usable URL.
-        item({ slug: 'an-ad', type: 'ad' }),
-        item({ slug: 'c' }),
-      ]),
+      ok([item({ slug: 'a' }), item({ slug: 'b', type: 'something-new' }), item({ slug: 'c' })]),
     )
 
     const board = await search()
 
-    expect(board.items.map((gif) => gif.id)).toEqual(['a', 'c'])
+    // Order and composition preserved: an unfamiliar `type` that is still
+    // drawable is still shown.
+    expect(board.items.map((gif) => gif.id)).toEqual(['a', 'b', 'c'])
   })
 
-  it('drops an item with no drawable rendition', async () => {
-    mockFetch(() => ok([item({ slug: 'a' }), item({ slug: 'broken', file: {} })]))
+  it('drops only an item that cannot be rendered at all', async () => {
+    mockFetch(() =>
+      ok([
+        item({ slug: 'a' }),
+        item({ slug: 'broken', file: {} }),
+        // The shape a real ad arrives in: no slug, no file.
+        { type: 'ad', width: 250, height: 250, content: '<html>…</html>' },
+      ]),
+    )
 
     const board = await search()
 

@@ -117,9 +117,23 @@ export function GifPanel({
         : `${searchesLeft} searches left.`
 
   const shown = useMemo(() => {
-    // A server-backed search has already narrowed the page; filtering it again
-    // locally would hide results that matched for reasons the title doesn't say.
-    if (onSubmit) return results
+    /**
+     * A provider's results are rendered exactly as they arrived.
+     *
+     * Two reasons, and the second is not optional. Filtering a server-backed
+     * search again locally would hide results that matched for reasons the
+     * title does not say — and both providers forbid it outright: "do not
+     * independently reorder, insert, remove, suppress, replace, or filter
+     * returned results".
+     *
+     * Keyed on `provider` as well as `onSubmit`, because `onSubmit` describes
+     * how this surface searches and `provider` describes whose content it is
+     * holding. The popover has no `onSubmit` and filters the fixed list it was
+     * handed, which is fine while that list is ours — and would quietly become
+     * a violation the first time one is fed from a provider, which is exactly
+     * what returning GIF replies to chat would do.
+     */
+    if (onSubmit || provider) return results
     const q = localQuery.trim().toLowerCase()
     if (!q) return results
     return results.filter((r) => r.keywords.some((k) => k.toLowerCase().includes(q)))

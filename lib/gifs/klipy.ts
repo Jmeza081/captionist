@@ -183,17 +183,27 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
   }
 
   /**
-   * Klipy's order, kept — and everything that is not a GIF dropped.
+   * Klipy's order and composition, kept.
    *
-   * Ads arrive inline in this same array under a different `type`. They are not
-   * modelled yet: this key has never been served one (a hundred sampled items
-   * were all `type: "gif"`), and the response's own `meta.ad_max_resize_percent`
-   * proves they are part of the contract. Dropping what we cannot draw is the
-   * same rule Giphy's client follows, and it is the honest behaviour until a
-   * real ad object has been seen. See ADR-0023.
+   * Requirement 4 is explicit — "do not independently reorder, insert, remove,
+   * suppress, replace, or filter returned results", and any approved filtering
+   * "must be configured through the KLIPY Partner Panel". This used to drop
+   * `type !== 'gif'`, which is exactly that: a client-side content filter.
+   *
+   * **The board is GIFs by construction, not by filtering.** Ads are only
+   * delivered to a request that asks for them — they require `customer_id` and
+   * the four `ad-min/max-width/height` parameters, and `search` above sends
+   * none. So nothing but GIFs is returned in the first place.
+   *
+   * What is left drops only an item with no slug and no drawable rendition —
+   * a tile that cannot be rendered at all, which is the same rule the Giphy
+   * adapter follows and is a fact about our renderer rather than a judgement
+   * about their content.
+   *
+   * The day this app asks for ads is the day it has to render them; those two
+   * cannot land apart without reintroducing the filter. See ADR-0022.
    */
   const items = (body.data?.data ?? []).flatMap((item) => {
-    if (item.type !== 'gif') return []
     const result = toResult(item, term)
     return result ? [result] : []
   })
