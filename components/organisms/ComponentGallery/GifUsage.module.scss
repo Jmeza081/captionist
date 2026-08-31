@@ -1,0 +1,69 @@
+@use 'theme' as t;
+
+.note {
+  margin: 0;
+  @include t.bodyText;
+  color: t.$text-caption;
+}
+
+.window {
+  @include t.labelText;
+  color: t.$text-meta;
+}
+
+.tableTitle {
+  @include t.eyebrowText;
+  color: t.$text-meta;
+  letter-spacing: 0.07em;
+}
+
+// Eight columns do not fit a phone, and rule 6 says the page itself must never
+// scroll sideways — so the table carries its own scroller.
+.scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  white-space: nowrap;
+
+  th {
+    padding: t.$space-6 t.$space-10;
+    border-bottom: 1px solid t.$line-hairline-strong;
+    color: t.$text-timestamp;
+    font-weight: 600;
+    text-align: right;
+
+    &:first-child {
+      text-align: left;
+    }
+  }
+
+  td {
+    padding: t.$space-6 t.$space-10;
+    border-bottom: 1px solid t.$line-hairline-strong;
+    color: t.$text-caption;
+  }
+}
+
+.provider {
+  color: t.$text-primary;
+  font-weight: 700;
+}
+
+.n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+// The hour a peak happened, tucked under the count it explains.
+.at {
+  display: block;
+  color: t.$text-timestamp;
+  font-size: 10px;
+  font-weight: 500;
+}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { GifQuotaError } from './errors'
 import { descriptorFor } from './descriptors'
 import { intendedProvider } from './registry'
-import { fetchBoard } from './source'
+import { fetchBoard, reportPick } from './source'
 import type { GifCursor, GifProviderDescriptor } from './provider'
 import type { GifResult, GifSearchResponse } from './types'
 
@@ -81,6 +81,15 @@ export interface GifSearch {
   /** Searches left this round. Zero means the controls say so and stop firing. */
   remaining: number
   /**
+   * Say that this GIF was the one.
+   *
+   * Klipy's attribution depends on hearing about a pick, and this is the only
+   * moment it can be said: `toMediaRef` drops the id immediately afterwards,
+   * and the id is what the trigger takes. Fire-and-forget by design — a pick
+   * must never fail because an analytics ping did.
+   */
+  chose: (gif: GifResult) => void
+  /**
    * One arbitrary GIF off the board you already have.
    *
    * Free, and synchronous. It used to fetch a random page, which was a whole
@@ -133,6 +142,10 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   const [spent, setSpent] = useState(0)
 
   const cursor = useRef<GifCursor | undefined>(undefined)
+  // Read by `chose`, which must keep a stable identity: the screens hand it to
+  // click handlers, and an unstable one would churn them every render.
+  const sourceRef = useRef<GifSearchResponse['source']>('sample')
+  const queryRef = useRef('')
   const inFlight = useRef<AbortController | undefined>(undefined)
   // Monotonic: a response from an abandoned search must not overwrite a newer one.
   const latest = useRef(0)
@@ -152,6 +165,8 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   const apply = useCallback((body: GifSearchResponse, ticket: number) => {
     if (ticket !== latest.current) return
     cursor.current = body.cursor
+    sourceRef.current = body.source
+    queryRef.current = body.query
     setResults(body.results)
     setQuery(body.query)
     setSource(body.source)
@@ -236,6 +251,13 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     return () => controller.abort()
   }, [enabled, apply, fail])
 
+  const chose = useCallback(
+    (gif: GifResult) => {
+      reportPick(sourceRef.current, gif.id, queryRef.current)
+    },
+    [],
+  )
+
   const surprise = useCallback((): GifResult | undefined => {
     if (results.length === 0) return undefined
     // Local, not a fetch. `state.seed` only advances inside the reducer and
@@ -251,6 +273,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     source,
     descriptor,
     setQuery,
+    chose,
     search: (next: string) => run(next, undefined),
     remaining: Math.max(0, SEARCHES_PER_ROUND - spent),
     surprise,

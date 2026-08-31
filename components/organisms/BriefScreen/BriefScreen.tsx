@@ -77,13 +77,13 @@ export function BriefScreen() {
    * own staged pick wins; failing that, a random tile off the board you were
    * looking at.
    */
-  const armed = useRef({ picked, results: gifs.results, send })
+  const armed = useRef({ picked, results: gifs.results, send, chose: gifs.chose })
   // Every render, deliberately: the timer must see the board as it is when it
   // fires, not as it was when it was set. Writing a ref during render is what
   // `react-hooks/refs` forbids, and it is right to — the compiler may not run
   // the render that wrote it.
   useEffect(() => {
-    armed.current = { picked, results: gifs.results, send }
+    armed.current = { picked, results: gifs.results, send, chose: gifs.chose }
   })
   const fired = useRef(false)
 
@@ -98,10 +98,13 @@ export function BriefScreen() {
     const id = setTimeout(
       () => {
         if (fired.current) return
-        const { picked, results, send } = armed.current
+        const { picked, results, send, chose } = armed.current
         const gif = picked ?? results[Math.floor(Math.random() * results.length)]
         if (!gif) return
         fired.current = true
+        // A GIF the clock chose still ends up in front of the room, so the
+        // provider hears about it on the same terms as one somebody picked.
+        chose(gif)
         send({
           type: 'round/subjectLocked',
           subject: { kind: 'media', media: toMediaRef(gif) },
@@ -240,6 +243,8 @@ export function BriefScreen() {
 
   const lockIn = (gif: GifResult | undefined) => {
     if (!gif) return
+    // Before `toMediaRef`, which drops the id the trigger needs.
+    gifs.chose(gif)
     send({ type: 'round/subjectLocked', subject: { kind: 'media', media: toMediaRef(gif) } })
   }
 

@@ -2,6 +2,8 @@ import { SAMPLE_GIFS } from './samples'
 import { readLevers } from '@/lib/room/levers'
 import { firstPage, type GifCursor, type GifProviderId } from './provider'
 import { intendedProvider, keyFor, selectProvider } from './registry'
+import { GifQuotaError } from './errors'
+import { recordCall } from './usage'
 import type { GifSearchResponse } from './types'
 
 /**
@@ -104,15 +106,49 @@ export async function fetchBoard(
   const apiKey = keyFor(descriptor.id)
   if (!apiKey) throw new Error(descriptor.missingKeyMessage)
 
-  const board = await provider.search(
-    { q: query, limit: Math.min(limit, descriptor.maxLimit), cursor: from },
-    apiKey,
-  )
+  /**
+   * The one place a board is counted.
+   *
+   * Every adapter comes through here, and the count happens around the call
+   * rather than inside any of them — so a provider added later is measured
+   * without having to remember to be. A call that threw is still counted,
+   * because a 429 spends the allowance exactly as much as a board that arrived;
+   * that is the whole reason the ledger exists. See `usage.ts`.
+   */
+  const kind = query.trim() ? 'search' : 'trending'
+  try {
+    const board = await provider.search(
+      { q: query, limit: Math.min(limit, descriptor.maxLimit), cursor: from },
+      apiKey,
+    )
+    recordCall(descriptor.id, kind, 'ok')
 
-  return {
-    results: [...board.items],
-    cursor: { provider: descriptor.id, page: from.page + 1 },
-    query,
-    source: descriptor.id,
+    return {
+      results: [...board.items],
+      cursor: { provider: descriptor.id, page: from.page + 1 },
+      query,
+      source: descriptor.id,
+    }
+  } catch (error) {
+    recordCall(descriptor.id, kind, error instanceof GifQuotaError ? 'quota' : 'failed')
+    throw error
   }
+}
+
+/**
+ * Tell the provider a GIF was chosen, if it wants to know.
+ *
+ * Klipy's attribution depends on this signal and Giphy asks for none, so it is
+ * optional on the contract and a no-op for a provider without one. It has to
+ * fire at pick time: `toMediaRef` drops the id a moment later, and the id is
+ * what the trigger takes.
+ */
+export function reportPick(source: GifSearchResponse['source'], id: string, query: string): void {
+  if (source === 'sample') return
+  const provider = selectProvider(pinned())
+  if (!provider || provider.descriptor.id !== source || !provider.share) return
+  const apiKey = keyFor(source)
+  if (!apiKey) return
+  provider.share(id, apiKey, query || undefined)
+  recordCall(source, 'share', 'ok')
 }

@@ -289,3 +289,84 @@ test.describe('choosing a provider', () => {
     await expect(page.getByRole('textbox', { name: 'Search GIFs' })).toBeVisible()
   })
 })
+
+/**
+ * The ledger, which exists to turn ADR-0021's arithmetic into a measurement.
+ *
+ * A counter that quietly stopped counting would be worse than none: the number
+ * it produces is going into a production-key application, and nothing on screen
+ * would look wrong. So the guard is that a board and a pick both leave a trace.
+ */
+test.describe('counting what the room costs', () => {
+  test('records a call per board, and the pick that followed', async ({ page }) => {
+    await page.route(KLIPY, async (route) => {
+      const url = route.request().url()
+      // The share trigger is a POST to /gifs/share/<slug> and answers a bare ok.
+      if (url.includes('/gifs/share/')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ result: true, data: [] }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          result: true,
+          data: {
+            data: [
+              {
+                slug: 'a-gif--tok',
+                title: 'A tile',
+                type: 'gif',
+                tags: [],
+                file: {
+                  md: {
+                    gif: { url: 'https://static.klipy.com/a.gif', width: 220, height: 220 },
+                    webp: { url: 'https://static.klipy.com/a.webp', width: 220, height: 220 },
+                  },
+                },
+              },
+            ],
+            current_page: 1,
+            per_page: 50,
+            has_next: false,
+          },
+        }),
+      })
+    })
+
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=klipy')
+    await expect(tiles(page).first()).toBeVisible()
+
+    const read = async () =>
+      JSON.parse(
+        (await page.evaluate(() => localStorage.getItem('captionist:gif-usage:v1'))) ?? '[]',
+      ) as { provider: string; kind: string; n: number }[]
+
+    const arriving = await read()
+    expect(arriving.some((row) => row.provider === 'klipy' && row.kind === 'trending')).toBe(true)
+    // Never the offline shelf: counting free boards would inflate the one
+    // number this exists to get right.
+    expect(arriving.some((row) => row.provider === 'sample')).toBe(false)
+
+    await tiles(page).first().click()
+
+    // Klipy's attribution depends on hearing about a pick, and the id it takes
+    // is dropped by `toMediaRef` a moment later — so if this is ever not
+    // recorded, the trigger has stopped firing at the only moment it can.
+    await expect(async () => {
+      expect((await read()).some((row) => row.kind === 'share')).toBe(true)
+    }).toPass()
+  })
+
+  test('counts nothing at all over the offline shelf', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+    await expect(tiles(page).first()).toBeVisible()
+
+    const ledger = await page.evaluate(() => localStorage.getItem('captionist:gif-usage:v1'))
+    expect(ledger === null || ledger === '[]').toBe(true)
+  })
+})

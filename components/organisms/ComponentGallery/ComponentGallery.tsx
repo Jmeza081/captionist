@@ -32,6 +32,7 @@ import { ChatRail } from '@/components/molecules/ChatRail'
 import { CodeEntry } from '@/components/molecules/CodeEntry'
 import { Composer } from '@/components/molecules/Composer'
 import { GifPanel, type GifResult } from '@/components/molecules/GifPanel'
+import { GifUsage } from './GifUsage'
 import { RoomToolbox } from '@/components/molecules/RoomToolbox'
 import { JoinPanel } from '@/components/molecules/JoinPanel'
 import { QuickJoin } from '@/components/molecules/QuickJoin'
@@ -660,6 +661,14 @@ export function ComponentGallery() {
             />
           </Case>
         </Grid>
+      </Section>
+
+      <Section
+        id="gif-usage"
+        title="GIF allowance"
+        spec="counted locally · for the production-key application"
+      >
+        <GifUsage />
       </Section>
 
       <Section id="reveal" title="Reveal reaction bar" spec="5 one-tap · then the toolbar">

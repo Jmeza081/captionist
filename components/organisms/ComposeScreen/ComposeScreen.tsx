@@ -197,6 +197,8 @@ export function ComposeScreen() {
             blocked={!picked}
             onClick={() => {
               if (!picked) return
+              // Before `toMediaRef`, which drops the id the trigger needs.
+              gifs.chose(picked)
               send({
                 type: 'round/entrySubmitted',
                 answer: { kind: 'media', media: toMediaRef(picked) },
