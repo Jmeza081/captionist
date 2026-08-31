@@ -99,3 +99,27 @@ describe('choosing a transport', () => {
     ).rejects.toThrow(/ABLY_API_KEY/)
   })
 })
+
+describe('development guests', () => {
+  it('opens none unless a count is asked for', () => {
+    // `Number(null)` is 0, so a careless guard would set this lever on every
+    // URL in the app that never mentioned it.
+    expect(readLevers(new URLSearchParams(''))).toEqual({})
+    expect(readLevers(new URLSearchParams('guests=0'))).toEqual({})
+  })
+
+  it('takes a count from the host URL', () => {
+    expect(readLevers(new URLSearchParams('guests=3')).guests).toBe(3)
+  })
+
+  it('keeps the first guest in the queue distinguishable from no guest', () => {
+    // Zero is a real position here — the first tab to let itself in — so
+    // absence has to be tested against the parameter, not the number.
+    expect(readLevers(new URLSearchParams('auto=0')).auto).toBe(0)
+    expect(readLevers(new URLSearchParams('')).auto).toBeUndefined()
+  })
+
+  it('is absent in a production build, whatever the URL says', () => {
+    expect(readLevers(new URLSearchParams('guests=3&auto=0'), false)).toEqual({})
+  })
+})

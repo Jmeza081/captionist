@@ -65,6 +65,26 @@ export interface Levers {
    * one-browser transport instead. `ABLY_STUB=1` does the same thing stickily.
    */
   transport?: 'ably' | 'broadcast'
+  /**
+   * This tab is a development guest, letting itself into the room.
+   *
+   * The number is its position in the queue, which decides how long it waits
+   * before joining — see `devGuestDelay`. Carried through `readLevers` so it
+   * inherits the same production gate as everything else here: in a deployed
+   * build a hand-typed `?auto=` reads as absent.
+   */
+  auto?: number
+  /**
+   * How many development guests to open with this room. `/host?guests=3`.
+   *
+   * The same thing `NEXT_PUBLIC_DEV_GUESTS` does, asked for one room at a time.
+   * Worth having both: the environment variable is set-and-forget, and this
+   * needs no `.env` edit and no restart — which matters because Turbopack
+   * inlines `NEXT_PUBLIC_*` from `.env` files rather than from whatever the
+   * shell happened to export, so a variable passed on the command line reaches
+   * the server and never the browser.
+   */
+  guests?: number
 }
 
 const MAX_BOTS = 19
@@ -112,6 +132,18 @@ export function readLevers(
   if (gifs === 'stub' || gifs === 'live' || gifs === 'giphy' || gifs === 'klipy') {
     levers.gifs = gifs
   }
+
+  // `> 0` rather than `>= 0`: zero guests and no guests are the same room, and
+  // `Number(null)` is 0 — so a bare `>= 0` would set the lever on every URL
+  // that never mentioned it.
+  const guests = Number(search.get('guests'))
+  if (Number.isInteger(guests) && guests > 0) levers.guests = guests
+
+  // Zero *is* meaningful here — it is the first guest in the queue — so absence
+  // has to be tested against the raw parameter rather than the number.
+  const rawAuto = search.get('auto')
+  const auto = Number(rawAuto)
+  if (rawAuto !== null && Number.isInteger(auto) && auto >= 0) levers.auto = auto
 
   const transport = search.get('transport')
   if (transport === 'ably' || transport === 'broadcast') levers.transport = transport

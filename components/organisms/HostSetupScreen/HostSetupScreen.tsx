@@ -16,6 +16,8 @@ import { HatPicker } from '@/components/molecules/HatPicker'
 import { HelpModal } from '@/components/molecules/HelpModal'
 import { HeroWall } from '@/components/molecules/HeroWall'
 import { ModeCard } from '@/components/molecules/ModeCard'
+import { devGuestCount } from '@/lib/room/devGuests'
+import { readLevers } from '@/lib/room/levers'
 import { generateCode } from '@/lib/game/codes'
 import {
   CAP_SECONDS_MAX,
@@ -94,6 +96,26 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
     // Nothing asks a server for a code, because under ADR 0003 there is no
     // server to ask: the code only has to be well-formed and unlikely to clash.
     const [code] = generateCode(Date.now())
+
+    /**
+     * Development guests, opened from inside the click.
+     *
+     * Deliberately here and not in an effect on the room screen: a browser
+     * allows `window.open` while it is still handling a user gesture and blocks
+     * it a moment later, so a tab opened from a mount effect would be
+     * suppressed. Each guest waits its turn once it has loaded — see
+     * `devGuestDelay` — rather than being opened late.
+     *
+     * `devGuestCount` is zero in production and zero by default, so this is a
+     * loop that runs no times unless somebody asked for it.
+     */
+    // Read at click time, not module scope: the query string is the browser's
+    // and `readLevers` is already gated to non-production.
+    const asked = readLevers(new URLSearchParams(window.location.search)).guests
+    for (let i = 0; i < devGuestCount(asked); i += 1) {
+      window.open(`/join/${code}?auto=${i}`, '_blank', 'noopener')
+    }
+
     router.push(`/room/${code}`)
   }
 

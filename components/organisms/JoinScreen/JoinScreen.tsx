@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Stack } from '@/components/atoms/Stack'
@@ -14,6 +14,7 @@ import { normalizeCode } from '@/lib/game/codes'
 import { JOIN_ERRORS, joinCopy } from '@/lib/game/selectors'
 import type { HatId } from '@/lib/game/types'
 import type { WallTile } from '@/lib/gifs/wall'
+import { devGuestDelay } from '@/lib/room/devGuests'
 import { writeIdentity } from '@/lib/room/identity'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
 import { useSuggestedName } from '@/lib/room/useSuggestedName'
@@ -46,9 +47,19 @@ export interface JoinScreenProps {
   initialCode?: string
   /** The wall beside the form, resolved on the server. See `app/join/page.tsx`. */
   tiles: readonly WallTile[]
+  /**
+   * This tab is a development guest, and its position in the queue.
+   *
+   * Set only by `/join/[code]?auto=N` in a non-production build — the page
+   * refuses to pass it otherwise — and it makes the screen fill itself in and
+   * let itself into the room. The name it uses is the one this tab was already
+   * suggesting, which `useSuggestedName` mints fresh per page load, so a row of
+   * guest tabs arrives with a row of different names.
+   */
+  autoJoin?: number
 }
 
-export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
+export function JoinScreen({ initialCode = '', tiles, autoJoin }: JoinScreenProps) {
   const router = useRouter()
   const copy = joinCopy()
 
@@ -93,6 +104,32 @@ export function JoinScreen({ initialCode = '', tiles }: JoinScreenProps) {
     writeIdentity({ name: name.trim(), avatarSeed: seed, hat })
     router.push(`/room/${normalized}`)
   }
+
+  /**
+   * A development guest, letting itself in.
+   *
+   * Waits its turn rather than joining on load: the person — nickname and face
+   * — is one `localStorage` record shared by every tab, so three tabs writing
+   * at once would leave all three reading back whichever wrote last, and the
+   * roster would show one name three times. See `devGuestDelay`.
+   *
+   * `joinRef` keeps the effect off `join`'s identity, which changes every
+   * render; `fired` makes it once per tab even under a double-invoked effect.
+   */
+  const joinRef = useRef(join)
+  useEffect(() => {
+    joinRef.current = join
+  })
+  const fired = useRef(false)
+  useEffect(() => {
+    if (autoJoin === undefined || !ready || fired.current) return
+    const id = setTimeout(() => {
+      if (fired.current) return
+      fired.current = true
+      joinRef.current()
+    }, devGuestDelay(autoJoin))
+    return () => clearTimeout(id)
+  }, [autoJoin, ready])
 
   return (
     <div className={styles.screen}>

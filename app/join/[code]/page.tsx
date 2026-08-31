@@ -21,13 +21,29 @@ export const metadata: Metadata = {
  */
 export default async function JoinCodePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { code } = await params
   const normalized = normalizeCode(code)
   const body = normalized ? normalized.slice(CODE_PREFIX.length) : ''
   const tiles = await wallTiles()
 
-  return <JoinScreen initialCode={body} tiles={tiles} />
+  /**
+   * Read here rather than with `useSearchParams` in the screen.
+   *
+   * `/join` — the codeless door — is a static route, and a client hook reading
+   * search params would drag it into dynamic rendering for a flag it never
+   * uses. This route is already dynamic, so the cost lands where the feature is.
+   */
+  const { auto } = await searchParams
+  const queued = Number(Array.isArray(auto) ? auto[0] : auto)
+  const autoJoin =
+    process.env.NODE_ENV !== 'production' && Number.isInteger(queued) && queued >= 0
+      ? queued
+      : undefined
+
+  return <JoinScreen initialCode={body} tiles={tiles} autoJoin={autoJoin} />
 }
