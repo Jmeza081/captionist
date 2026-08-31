@@ -8,12 +8,12 @@
  *
  * **Why this one.** The waiting faces are the barest screens in the app — an
  * avatar, a headline, a line of body, and a lot of canvas — and the thing that
- * makes a backdrop work there is that it has to lose to the text. This clip is
- * almost entirely black with one warm ember low in the frame: at 480×270 the
- * mean luminance is low enough that the headline reads over it under
- * `$scrim-wall-soft` rather than needing the full weight the landing hero
- * takes. A brighter GIF would have needed a scrim heavy enough to make having
- * one pointless.
+ * makes a backdrop work there is that it has to lose to the text. This clip
+ * opens almost entirely black with one warm ember low in the frame, then
+ * brightens into a lit close-up, so it is drawn under the landing hero's own
+ * `full` scrim: at `soft` the bright half of the clip competed with the
+ * headline it sits behind. What survives the veil is the warmth, which is all
+ * a backdrop on a waiting screen is for.
  *
  * **The renditions are chosen, not guessed.** `giphy.mp4` is 360KB against
  * `giphy.gif`'s 2.4MB, and decodes on the video path rather than the main

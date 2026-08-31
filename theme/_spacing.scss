@@ -33,12 +33,18 @@ $screen-pad-h: 40px; //      screen padding, horizontal — narrow end
 $screen-pad-h-lg: 60px; //   wide end
 $screen-pad-v: 24px; //      screen padding, vertical — narrow end
 $screen-pad-v-lg: 56px; //   wide end
-// The front doors, above the fold, take twenty more.
+// The front doors take twenty more, top and bottom.
 //
 // `$screen-pad-v` is the right figure above a form, and the wrong one above a
 // 45px display heading that is the first thing on the page — `/host` and
 // `/join` both open on one, and at 24px it rubs the window rather than sitting
 // on it. Shared by both so the two doors cannot drift apart.
+//
+// It is *padding* rather than an auto margin on purpose. `/join` used to get
+// its breathing room from `margin-top: auto` splitting the column's free
+// space, which meant the spacing existed only while the form was short — add
+// one more section and it silently vanished. This is there whatever the form
+// grows to.
 $front-door-pad-v: $screen-pad-v + 20px;
 $front-door-pad-v-lg: $screen-pad-v-lg + 20px;
 

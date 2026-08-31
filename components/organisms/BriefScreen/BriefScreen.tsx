@@ -114,7 +114,11 @@ export function BriefScreen() {
             positioned and the headline is not, so inside the same stacking
             context the backdrop would paint over the words it is supposed to
             sit behind. Out here it is the column that takes the layer. */}
-        <SceneBackdrop mp4={WAITING_BACKDROP.mp4} still={WAITING_BACKDROP.still} />
+        <SceneBackdrop
+          mp4={WAITING_BACKDROP.mp4}
+          still={WAITING_BACKDROP.still}
+          scrim="full"
+        />
 
         <Stack gap={20} align="center" className={styles.waiting}>
           {holder && (
