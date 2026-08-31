@@ -31,25 +31,33 @@
   }
 }
 
+/**
+ * The winning card and the attribution beside it.
+ *
+ * Measured on this row rather than on the window: at a 1024px window with chat
+ * docked, `md` said "side by side" and the winner card — the whole point of the
+ * screen — was squeezed to 50px beside a 440px column that would not give any
+ * of it back. Both children are full-width lines until `$reveal-columns` says
+ * there is room for the two of them.
+ */
 .payload {
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: t.$space-26;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: t.$space-26 t.$space-52;
   width: 100%;
   text-align: left;
-
-  @include t.mq('md') {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    gap: t.$space-52;
-  }
 }
 
 .winnerCard {
+  flex: 1 1 100%;
   width: 100%;
   max-width: t.$reveal-winner-width;
+  // Centred while it is a line of its own — `justify-content` cannot reach it
+  // once it is the only thing on the line and narrower than the row.
+  margin-inline: auto;
   animation: pop 0.5s ease;
 
   @media (prefers-reduced-motion: reduce) {
@@ -58,11 +66,20 @@
 }
 
 .column {
+  flex: 1 1 100%;
   width: 100%;
+}
 
-  @include t.mq('md') {
-    width: t.$reveal-column-width;
+@container (min-width: #{t.$reveal-columns}) {
+  .winnerCard {
     flex: none;
+    width: t.$reveal-winner-width;
+    margin-inline: 0;
+  }
+
+  .column {
+    flex: none;
+    width: t.$reveal-column-width;
   }
 }
 
@@ -91,8 +108,9 @@
   color: t.$winner;
 }
 
-// The phone's own result line. The runners-up list is desktop-only, so without
-// this a losing player would leave the reveal knowing nothing about their round.
+// The narrow layout's own result line. The runners-up list only appears in the
+// two-column one, so without this a losing player would leave the reveal
+// knowing nothing about their round.
 .placement {
   display: flex;
   justify-content: space-between;
@@ -101,18 +119,20 @@
   background-color: t.$fill-subtle;
   @include t.labelText;
   color: t.$text-body;
-
-  @include t.mq('md') {
-    display: none;
-  }
 }
 
-// Two rows of context that a phone has no room for, and that the winner card
+// Two rows of context a narrow reveal has no room for, and that the winner card
 // above already summarises.
 .runners {
   display: none;
+}
 
-  @include t.mq('md') {
+@container (min-width: #{t.$reveal-columns}) {
+  .placement {
+    display: none;
+  }
+
+  .runners {
     display: flex;
   }
 }
@@ -155,12 +175,14 @@
   color: t.$text-body;
 }
 
-// Reactions are local-only until the event lane lands, and the row is a
-// desktop affordance in the design — the phone reveal is the card and the CTA.
+// The reaction row is the wide layout's affordance in the design — a narrow
+// reveal is the card and the CTA.
 .reactions {
   display: none;
+}
 
-  @include t.mq('md') {
+@container (min-width: #{t.$reveal-columns}) {
+  .reactions {
     display: block;
   }
 }

@@ -7,6 +7,20 @@ export interface GridProps extends HTMLAttributes<HTMLElement> {
   columns?: number
   /** Columns from the `md` breakpoint up. Omit to keep the mobile count. */
   mdColumns?: number
+  /**
+   * Drops the `md` breakpoint and lets the column count fall out of the width
+   * this grid actually has, capped at `mdColumns`.
+   *
+   * **Use it for anything inside the room's content column**, which is the
+   * window minus the docked chat rail — a viewport query cannot see that 360px
+   * and put three vote cards into 288px of space.
+   *
+   * The cell minimum comes from `--grid-min`, which the caller sets from a
+   * token in its own stylesheet — the number is a measure, and measures live in
+   * `theme/`. Without one the grid stays a single column, which is wrong in a
+   * way you can see rather than wrong by a hundred pixels.
+   */
+  fluid?: boolean
   gap?: SpaceToken
   padding?: SpaceToken
   as?: ElementType
@@ -17,12 +31,14 @@ export interface GridProps extends HTMLAttributes<HTMLElement> {
  * Two-dimensional layout, for when `Stack` and `Inline` aren't enough — a set
  * of cards, a caption transcript with timestamps.
  *
- * Starts at one column and reflows at `md` rather than stretching, per
- * docs/design-system.md §2.7.
+ * Starts at one column and reflows rather than stretching, per
+ * docs/design-system.md §2.7 — at `md` by default, or on its own width with
+ * `fluid`.
  */
 export function Grid({
   columns = 1,
   mdColumns,
+  fluid = false,
   gap,
   padding,
   as,
@@ -33,11 +49,14 @@ export function Grid({
 }: GridProps) {
   const Component = (as ?? 'div') as ElementType
 
-  const classes = [styles.grid, className ?? ''].filter(Boolean).join(' ')
+  const classes = [styles.grid, fluid ? styles.fluid : '', className ?? '']
+    .filter(Boolean)
+    .join(' ')
 
   const vars = {
     '--grid-columns': String(columns),
     '--grid-columns-md': String(mdColumns ?? columns),
+    ...(fluid ? { '--grid-cap': String(mdColumns ?? columns) } : {}),
     '--grid-gap': optionalSpace(gap),
     '--grid-padding': optionalSpace(padding),
     ...style,

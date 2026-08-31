@@ -485,3 +485,54 @@ $boot-card-width: 560px;
 /// The step rows' leading indicator column, so a check, a ring and a dot all
 /// land on the same vertical line whatever the row's state.
 $boot-step-marker: 20px;
+
+// --- Column measures ------------------------------------------------------
+//
+// **Where a room screen earns its second column.** Every number below is
+// measured against the *content column*, never the window — the docked chat
+// rail takes 360px of it and `t.mq()` cannot see that, so a viewport query put
+// a two-column layout into a 288px space and the columns collapsed into each
+// other. `$lobby-columns` above was the first of these and states the reasoning
+// in full; these are the rest of the room, reached the same way: the widths the
+// two columns actually hold, plus the gap between them.
+//
+// Each is the threshold for a `@container` query, so the screen reflows when
+// *it* runs out of room — whether that is a narrow window or a wide one with
+// chat open.
+
+/// Compose and waiting: a 520px preview, the 44px gap, and a form column that
+/// still holds "Make it hurt. Make it funny." on two lines rather than six.
+$compose-columns: 880px;
+
+/// The prompt writer: a 340px form, the 52px gap, and the 420px banner
+/// preview beside it.
+$brief-columns: 820px;
+
+/// The vote screen's heading band — the subject, its heading and the three
+/// rank slots on one line. Under this the slots sit over the cards they fill
+/// from, which is where a phone puts them anyway.
+$vote-bar-columns: 620px;
+
+/// The narrowest a vote card may get before the grid drops a column. A caption
+/// is drawn over the picture, so a cell that shrinks past this stops being
+/// readable rather than just small.
+$vote-card-min: 260px;
+
+/// The standings row's two optional columns. The bar is decorative and goes
+/// first; the note repeats what the scoreboard says elsewhere and goes at the
+/// same point a phone drops it. Measured on the row, which is its own query
+/// container — the row is the only thing that knows how much room it has.
+$standing-bar-min: 440px;
+$standing-note-min: 560px;
+
+/// Standings head: the title and the "next captionist" advance on one baseline.
+$score-columns: 580px;
+
+/// The reveal's payload: the 400px winner card, the 52px gap, and the 440px
+/// attribution column.
+$reveal-columns: 900px;
+
+/// The duel: two 392px contenders with the 34px gaps and the VS rule between
+/// them. Under this they stack, because two cards shrunk to fit are two
+/// captions nobody can read.
+$duel-columns: 860px;

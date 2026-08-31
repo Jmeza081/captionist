@@ -14,7 +14,18 @@
   border-radius: t.$radius-toolbox;
 }
 
+/**
+ * The standings row, and its own query container.
+ *
+ * The bar and the note below appear when there is room for them, and the row
+ * is the only thing that knows whether there is: it used to ask the window,
+ * which said yes at 768px while the row itself had 288px, and the score ended
+ * up outside the card with the note clipped under the chat rail. Containment
+ * is safe here because this variant is always a full-width block — `.pill`,
+ * which hugs its content, must never get it.
+ */
 .standing {
+  container-type: inline-size;
   gap: t.$space-14;
   padding: t.$space-14 t.$space-20;
   border-radius: t.$radius-card;
@@ -88,7 +99,7 @@
   overflow: hidden;
 }
 
-@include t.mq('md') {
+@container (min-width: #{t.$standing-bar-min}) {
   .bar {
     display: block;
   }
@@ -115,9 +126,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-// The standings' note column. Suppressed below `md`: on a phone the row is
-// already carrying a rank, an avatar, a name, a bar and a score, and this is
-// the one of the six that repeats information the scoreboard shows elsewhere.
+// The standings' note column. Suppressed in a narrow row: it is already
+// carrying a rank, an avatar, a name, a bar and a score, and this is the one of
+// the six that repeats information the scoreboard shows elsewhere.
 .note {
   display: none;
   flex: none;
@@ -127,8 +138,10 @@
   color: t.$text-label;
   text-align: right;
   white-space: nowrap;
+}
 
-  @include t.mq('md') {
+@container (min-width: #{t.$standing-note-min}) {
+  .note {
     display: block;
   }
 }

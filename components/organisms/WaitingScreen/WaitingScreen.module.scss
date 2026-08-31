@@ -17,32 +17,41 @@
   color: t.$text-primary;
 }
 
-// Your card first on a phone: it is the confirmation, and the tracker below it
-// is the part you scroll to.
+/**
+ * Your card first on a phone: it is the confirmation, and the tracker below it
+ * is the part you scroll to.
+ *
+ * Keyed off this column's own width rather than the window's, for the reason
+ * `ComposeScreen` sets out at length — the docked chat rail takes 360px that a
+ * `t.mq()` cannot see, and this is the same two columns one phase later.
+ */
 .split {
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  gap: t.$space-26;
-
-  @include t.mq('md') {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: t.$space-44;
-  }
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: t.$space-26 t.$space-44;
 }
 
 .previewColumn {
   flex: none;
-
-  @include t.mq('md') {
-    width: t.$compose-preview-width;
-    max-width: 100%;
-  }
+  width: 100%;
 }
 
 .column {
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
+}
+
+@container (min-width: #{t.$compose-columns}) {
+  .previewColumn {
+    width: t.$compose-preview-width;
+    max-width: 100%;
+  }
+
+  .column {
+    flex: 1 1 0;
+  }
 }
 
 .card {

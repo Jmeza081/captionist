@@ -12,27 +12,41 @@
   color: t.$text-body;
 }
 
-// The title and the advance sit on one baseline on desktop, and stack on a
-// phone so the button lands under the sentence that explains it.
+/**
+ * The title and the advance sit on one baseline where the band can hold both,
+ * and stack where it cannot, so the button lands under the sentence that
+ * explains it.
+ *
+ * On this band's width, not the window's — with chat docked, "Standings" and
+ * its subhead had 107px and the advance sat over them. `$score-columns`.
+ */
 .head {
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  gap: t.$space-20;
-
-  @include t.mq('md') {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: t.$space-26;
-  }
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: t.$space-20 t.$space-26;
 }
 
 .title {
+  flex: 1 1 100%;
   min-width: 0;
 }
 
 .advance {
-  flex: none;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+@container (min-width: #{t.$score-columns}) {
+  .title {
+    flex: 0 1 auto;
+  }
+
+  .advance {
+    flex: none;
+  }
 }
 
 .next {

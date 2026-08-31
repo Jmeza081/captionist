@@ -27,17 +27,30 @@
   color: t.$text-body;
 }
 
-// Preview first on a phone, so it stays above the keyboard while you type —
-// the design's whole reason for stacking this layout rather than shrinking it.
+/**
+ * Preview first on a phone, so it stays above the keyboard while you type —
+ * the design's whole reason for stacking this layout rather than shrinking it.
+ *
+ * **A container, not a breakpoint.** This used to go side by side at `md`, and
+ * `md` is the window: with chat docked open the column is 360px narrower than
+ * that, so a 768px window put a 520px preview and the whole caption form into
+ * 288px and the form was left with nothing — the fields rendered underneath
+ * the rail. The split now reflows on the width it actually has, which is the
+ * same answer with chat shut and a different one with it open. Same reasoning
+ * as `LobbyScreen`, and the measure is `$compose-columns`.
+ *
+ * The wrap is what carries the reflow, because a container cannot query
+ * itself: the two children are full-width lines by default and become a row
+ * when the query gives them their real widths back.
+ */
 .split {
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  gap: t.$space-26;
-
-  @include t.mq('md') {
-    flex-direction: row;
-    gap: t.$space-44;
-  }
+  flex-wrap: wrap;
+  // Row gap between the stacked lines, column gap between the two columns —
+  // the two values the breakpoint used to switch between, now both live at
+  // once and only one of them ever applies.
+  gap: t.$space-26 t.$space-44;
 }
 
 /**
@@ -56,19 +69,28 @@
  */
 .previewColumn {
   flex: none;
+  width: 100%;
+}
 
-  @include t.mq('md') {
+.column {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+@container (min-width: #{t.$compose-columns}) {
+  .previewColumn {
     width: min(
       #{t.$compose-preview-width},
       calc(#{t.$compose-preview-width} * var(--media-aspect, 1))
     );
     max-width: 100%;
   }
-}
 
-.column {
-  flex: 1;
-  min-width: 0;
+  // Back to a share of the line rather than the whole of it, which is what
+  // puts the form beside the preview instead of under it.
+  .column {
+    flex: 1 1 0;
+  }
 }
 
 /* ---------------- The role holder sits it out ---------------- */

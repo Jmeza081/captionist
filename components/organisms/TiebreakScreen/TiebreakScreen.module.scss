@@ -45,26 +45,25 @@
   color: t.$text-body;
 }
 
-// The duel stacks on a phone: two 392px cards side by side is a desktop shape,
-// and shrinking them to fit would make the captions unreadable.
+// The duel stacks where it is narrow: two 392px cards side by side needs
+// `$duel-columns` of room, and shrinking them to fit would make the captions
+// unreadable. On this row's width, not the window's — with chat docked the two
+// differ by the whole 360px of the rail.
 .duel {
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: t.$space-26;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: t.$space-26 t.$space-34;
   width: 100%;
-
-  @include t.mq('md') {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    gap: t.$space-34;
-  }
 }
 
 .lane {
+  flex: 1 1 100%;
   display: flex;
   align-items: flex-start;
+  justify-content: center;
   gap: t.$space-34;
   min-width: 0;
 }
@@ -74,6 +73,12 @@
   max-width: t.$duel-card-width;
 }
 
+@container (min-width: #{t.$duel-columns}) {
+  .lane {
+    flex: 0 1 auto;
+  }
+}
+
 .name {
   @include t.cardTitleText;
 }
@@ -81,13 +86,15 @@
 // The divider only makes sense once the lanes are side by side.
 .versus {
   display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-6;
+  padding-top: t.$space-52;
+}
 
-  @include t.mq('md') {
+@container (min-width: #{t.$duel-columns}) {
+  .versus {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: t.$space-6;
-    padding-top: t.$space-52;
   }
 }
 

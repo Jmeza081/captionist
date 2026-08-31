@@ -166,7 +166,11 @@ export function VoteScreen() {
       <Stack gap={12}>
         <span className={styles.meta}>{copy.meta}</span>
 
-        <Grid columns={1} mdColumns={3} gap={20}>
+        {/* `min` rather than a breakpoint: the grid sits in the room's
+            content column, which is the window minus a docked 360px rail — a
+            viewport query put three cards into 288px of space. Three is still
+            the ceiling; how many of them fit is the grid's own business. */}
+        <Grid columns={1} mdColumns={3} fluid className={styles.cards} gap={20}>
           {cards.map((card, i) => {
             const counts: readonly Tally[] = tallies[tallyKey('entry', card.entryId)] ?? []
 

@@ -52,16 +52,41 @@ a tap from the composer's emoji, which are a different thing. `ChatRail` lost
 surface at a time" now holds with one fewer thing to remember. Nothing on the
 wire moved: a room reaction is the same event it was.
 
-**The rail now greets you open where it can dock.** `RoomShell` derives its
-initial state from `useWideViewport()` rather than storing `false` — chat is
-open from `md` up, closed below it, and your own toggle overrides the viewport
-from the moment you touch it. A phone keeps its closed rail on purpose: there
-the rail is a full-screen sheet, and arriving inside it would take the room
-away from somebody who just got there. That change is also why `LobbyScreen`
-became a **container** rather than a set of viewport breakpoints — with 360px
-of rail docked, the window no longer describes the column the lobby is laid out
-in, and the room code, the player names and the empty seat were all wrapping or
+**The rail now greets you open where there is room for it and the round.**
+`RoomShell` derives its initial state from `useWideViewport()` rather than
+storing `false`, and your own toggle overrides the viewport from the moment you
+touch it. A phone keeps its closed rail on purpose: there the rail is a
+full-screen sheet, and arriving inside it would take the room away from somebody
+who just got there. That change is also why `LobbyScreen` became a
+**container** rather than a set of viewport breakpoints — with 360px of rail
+docked, the window no longer describes the column the lobby is laid out in, and
+the room code, the player names and the empty seat were all wrapping or
 truncating against a measure that had silently shrunk.
+
+**Since then the rest of the room caught up with the lobby, and the rail
+learned to wait.** Every other screen still reflowed at `md`, which is the
+window — and the column they reflow *in* is the window minus that same 360px.
+At 768px the arithmetic came out at 288px of room, so the caption form rendered
+underneath the rail, the reveal's winning card was squeezed to 50px beside a
+440px attribution column, and the standings rows put their own scores outside
+the card. Nine measures in `theme/_metrics.scss` (`$compose-columns`,
+`$reveal-columns`, `$duel-columns`, `$vote-bar-columns`, `$vote-card-min`,
+`$brief-columns`, `$score-columns`, `$standing-bar-min`, `$standing-note-min`)
+are now thresholds for `@container` queries against the box each screen
+actually occupies, joining `$lobby-columns`, which was the first of them. The
+mechanism is a wrapping flex row whose children go from full-width lines to
+real widths inside the query, because a container cannot query itself.
+`PlayerRow`'s `standing` variant is its own container — the row is the only
+thing that knows whether it can afford a bar and a note — and `Grid` gained a
+`fluid` mode that derives its column count from its own width, capped at
+`mdColumns`, so the vote grid never has to be told the rail is open.
+
+The rail's own two questions came apart in the process. **Docking is not
+arriving open**: `ChatRail` still switches from sheet to docked column at `md`,
+but `useWideViewport()` asks `lg` now, so between the two the rail docks
+*collapsed* — chat one key away, the round keeping the column. `e2e/responsive.spec.ts`
+sweeps ten screens at six widths and asserts no sideways scroll, a floor under
+every column of running text, and a floor under every vote card.
 
 **The lobby is two layouts, because the design draws two artboards.** A host's
 lobby is a work surface — a QR to share, a mode to set, a button to press — and

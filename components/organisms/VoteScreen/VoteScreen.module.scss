@@ -16,27 +16,50 @@
   color: t.$text-meta;
 }
 
-// The heading, the subject and the rank slots share a band. It stacks on a
-// phone so the slots sit directly above the cards they fill from.
+/**
+ * The heading, the subject and the rank slots share a band. It stacks where
+ * the band is narrow, so the slots sit directly above the cards they fill from.
+ *
+ * On its own width, not the window's: at a 768px window with chat docked this
+ * band has 288px, and as a row that ran "Rank your top three." straight through
+ * the slots. The measure is `$vote-bar-columns`.
+ */
 .bar {
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  gap: t.$space-20;
-
-  @include t.mq('md') {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: t.$space-26;
-  }
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: t.$space-20 t.$space-26;
 }
 
 .intro {
+  flex: 1 1 100%;
   min-width: 0;
 }
 
+// Full-width lines until the band can hold both. `flex: none` alone would let
+// the slots keep their natural width — three filled slots are 568px of row —
+// and push the page sideways rather than wrapping.
 .picks {
-  flex: none;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+@container (min-width: #{t.$vote-bar-columns}) {
+  .intro {
+    flex: 0 1 auto;
+  }
+
+  .picks {
+    flex: none;
+  }
+}
+
+// The narrowest a card may get before the grid drops a column. `Grid` reads it
+// from here rather than taking a number, so the measure stays in `theme/`.
+.cards {
+  --grid-min: #{t.$vote-card-min};
 }
 
 // The round's shared image, small enough to be a reminder rather than a card.

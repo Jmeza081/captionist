@@ -20,28 +20,39 @@
   color: t.$text-meta;
 }
 
-// Two columns above `md`, stacked below. The preview column is what the room
-// will see, so on a phone it follows the field rather than competing with it.
+/**
+ * Two columns where this column is wide enough to hold both, stacked below.
+ * The preview column is what the room will see, so when they stack it follows
+ * the field rather than competing with it.
+ *
+ * A container query, not `t.mq('md')`: the window is not the measure here,
+ * because the docked chat rail takes 360px out of it. See `ComposeScreen` for
+ * the full account — this is the same mistake, on the mode that writes a
+ * prompt instead of picking a GIF.
+ */
 .split {
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  gap: t.$space-26;
-
-  @include t.mq('md') {
-    flex-direction: row;
-    gap: t.$space-52;
-  }
+  flex-wrap: wrap;
+  gap: t.$space-26 t.$space-52;
 }
 
 .column {
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
 }
 
 .preview {
   flex: none;
+  width: 100%;
+}
 
-  @include t.mq('md') {
+@container (min-width: #{t.$brief-columns}) {
+  .column {
+    flex: 1 1 0;
+  }
+
+  .preview {
     width: t.$interstitial-width * 0.75;
     max-width: 100%;
   }

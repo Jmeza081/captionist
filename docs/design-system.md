@@ -354,6 +354,14 @@ primitives.
 7. **Full-height layouts** use `min-height: 100dvh` with a `100vh` line above it
    as fallback.
 8. **Desktop is not just "wider".** Above `md`, reflow — don't stretch.
+9. **Inside the room, the window is the wrong measure.** `t.mq()` asks the
+   viewport, and the room's content column is the viewport minus a docked
+   360px chat rail — so a `md` query put two-column layouts into 288px of
+   space. Anything that reflows inside that column asks its own width instead:
+   a `@container` query against a `container-type: inline-size` wrapper, with
+   the threshold named in `theme/_metrics.scss` (see **Column measures**).
+   `t.mq()` is still right for the chrome the window genuinely describes — the
+   header, the rail's own dock, the front doors.
 
 ---
 
@@ -379,7 +387,7 @@ primitives.
 | `Stack` | atom | Vertical layout. The default way to space a column — `gap`, `padding`, `align`, `justify`, `as` |
 | `Inline` | atom | Horizontal layout. Wraps by default; same props as `Stack` plus `wrap` |
 | `Box` | atom | A surface — `padding`, `radius`, and a named `background` from the palette |
-| `Grid` | atom | Two-dimensional layout. `columns` / `mdColumns` reflow at `md` |
+| `Grid` | atom | Two-dimensional layout. `columns` / `mdColumns` reflow at `md`; `fluid` reflows on the grid's own width, capped at `mdColumns`, with the cell minimum from `--grid-min` |
 
 **Atoms**
 
