@@ -33,7 +33,8 @@ and a persisted room setting — which is where it had got to:
 - `GifPanel` hardcoded `'Search Giphy…'`, `'Powered by Giphy · SFW filter on'`
   and `'via Giphy'`, each gated on a `source === 'giphy'` string comparison.
 - `allow.ts` hardcoded `isGiphyHost`.
-- `RoomSettings.giphyEnabled` put a vendor's name in the domain model.
+- `RoomSettings.giphyEnabled` put a vendor's name in the domain model — and
+  turned out to be a control that nothing read.
 - `GifSearchResponse.source` was the literal union `'giphy' | 'sample'`.
 
 ## Decision
@@ -132,6 +133,25 @@ number is also a design constraint worth knowing before the work starts: an ad
 may be resized by at most 10%, so it cannot flex into a masonry column the way a
 GIF can. Turning ads on in the Partner Panel is the prerequisite for building
 this, not the other way round.
+
+**The "let the picked player search" toggle is gone, and the design has it.**
+`design/Captionist Screens.dc.html` draws it on the host setup screen, so this
+is a deliberate divergence from the source of truth rather than an oversight —
+recorded here because `CLAUDE.md` says that when code and design disagree, the
+code is the bug, and this is the exception that proves it was considered.
+
+Two reasons. It was **inert**: `RoomSettings.giphyEnabled` was written by that
+`Toggle` and read by no selector, reducer or screen. And it is a control for a
+state the game cannot be played in — every round of `caption` needs a GIF to
+caption and every round of `react` needs a GIF as an answer, so a room with GIF
+search off is not a degraded room, it is not a room. Shipping a switch that
+promises to turn off the thing the game is made of would be a worse lie than
+omitting it.
+
+What it was reaching for is real and is answered elsewhere: a host who wants to
+keep a session off the allowance has `NEXT_PUBLIC_GIFS_STUB` and `?gifs=stub`,
+which serve the offline shelf — a board that still works rather than a picker
+that is switched off.
 
 **The app still credits Giphy in three places, on purpose.** The waiting
 backdrop, the 404 GIF and the landing wall are hot-linked `media.giphy.com`

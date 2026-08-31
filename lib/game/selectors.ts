@@ -1281,7 +1281,6 @@ export interface HostSetupCopy {
   modeBody: string
   modeHelp: string
   settingsSection: string
-  gifSearchLabel: string
   uniqueLabel: string
   formatLabel: string
   votingLabel: string
@@ -1321,7 +1320,6 @@ export function hostSetupCopy(): HostSetupCopy {
     modeBody: 'Who supplies the image, and who supplies the words.',
     modeHelp: 'How this mode works',
     settingsSection: 'Room settings',
-    gifSearchLabel: 'Let the picked player search for a GIF',
     uniqueLabel: 'Enforce unique nicknames',
     formatLabel: 'Caption format',
     votingLabel: 'Voting',

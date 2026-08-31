@@ -167,11 +167,6 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
                 <h2 className={styles.section}>{copy.settingsSection}</h2>
 
                 <Toggle
-                  label={copy.gifSearchLabel}
-                  checked={settings.gifSearchEnabled}
-                  onChange={(gifSearchEnabled) => patch({ gifSearchEnabled })}
-                />
-                <Toggle
                   label={copy.uniqueLabel}
                   checked={settings.uniqueNicknames}
                   onChange={(uniqueNicknames) => patch({ uniqueNicknames })}
