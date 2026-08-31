@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { GifQuotaError } from './errors'
+import { descriptorFor } from './descriptors'
 import { intendedProvider } from './registry'
 import { fetchBoard } from './source'
 import type { GifCursor, GifProviderDescriptor } from './provider'
@@ -126,9 +127,9 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   const [source, setSource] = useState<GifSearchResponse['source']>(
     () => intendedProvider().descriptor.id,
   )
-  const [descriptor, setDescriptor] = useState<GifProviderDescriptor | undefined>(
-    () => intendedProvider().descriptor,
-  )
+  // Before the first board lands there is nothing to credit, and claiming a
+  // provider that has not answered yet is the same mistake in miniature.
+  const [descriptor, setDescriptor] = useState<GifProviderDescriptor | undefined>(undefined)
   const [spent, setSpent] = useState(0)
 
   const cursor = useRef<GifCursor | undefined>(undefined)
@@ -154,9 +155,15 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     setResults(body.results)
     setQuery(body.query)
     setSource(body.source)
-    // Nobody's brand over the offline shelf. The message below says whose key
-    // is missing; the mark says nothing at all.
-    setDescriptor(body.source === 'sample' ? undefined : intendedProvider().descriptor)
+    /**
+     * Whoever actually answered — read off the response, never off the config.
+     *
+     * The two look interchangeable and are not: `?gifs=klipy` pins a provider
+     * for one page load without changing the environment, so asking the
+     * environment put Giphy's mark under a board of Klipy's GIFs. Nobody's
+     * brand over the offline shelf, which `descriptorFor` returns nothing for.
+     */
+    setDescriptor(descriptorFor(body.source))
     setStatus('ready')
     setMessage(
       body.source === 'sample'

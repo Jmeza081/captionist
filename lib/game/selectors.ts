@@ -337,7 +337,7 @@ export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
   return {
     view,
     eyebrow: 'Picking',
-    headline: `${name} is scrolling Giphy.`,
+    headline: `${name} is scrolling for a GIF.`,
     headlineSecond: 'Or rummaging through their screenshots.',
     body: 'Brace yourself. Last time they picked a 4-second clip of a burning server rack.',
   }

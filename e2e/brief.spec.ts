@@ -17,8 +17,8 @@ test.describe('the brief', () => {
     const lock = page.getByRole('button', { name: 'Pick one first' })
     await expect(lock).toBeVisible()
 
-    await page.getByRole('textbox', { name: 'Search Giphy' }).fill('prod')
-    await page.getByRole('textbox', { name: 'Search Giphy' }).press('Enter')
+    await page.getByRole('textbox', { name: 'Search GIFs' }).fill('prod')
+    await page.getByRole('textbox', { name: 'Search GIFs' }).press('Enter')
     // A GIF tile is the only button on the screen wrapping an image: matching
     // the label would also catch the blocked "Pick one first" CTA, and
     // `aria-pressed` would catch the suggestion chips.
@@ -40,7 +40,7 @@ test.describe('the brief', () => {
     // The field was controlled by the hook with a no-op change handler, so it
     // took a suggestion chip but not a keystroke. Typed, not filled: `fill`
     // sets the value in one event and would have passed against the bug.
-    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    const search = page.getByRole('textbox', { name: 'Search GIFs' })
     await search.pressSequentially('rollback')
     await expect(search).toHaveValue('rollback')
 
@@ -84,7 +84,7 @@ test.describe('the brief', () => {
     page,
   }) => {
     await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
-    await expect(page.getByText('Jesse is scrolling Giphy.')).toBeVisible()
+    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
 
     const backdrop = page.locator('[data-testid="scene-backdrop"]')
     // The clip hangs off a `<source>`, which is what lets the element carry a
@@ -124,7 +124,7 @@ test.describe('the brief', () => {
   test('turns the wait into something to read', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
 
-    await expect(page.getByText('Jesse is scrolling Giphy.')).toBeVisible()
+    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
     await expect(page.getByText('Picking')).toBeVisible()
     // Not your deadline, so the clock drops its suffix.
     await expect(page.getByRole('timer')).toHaveText(/^\d:\d\d$/)

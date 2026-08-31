@@ -110,6 +110,10 @@ export default defineConfig({
        * leaking.
        */
       NEXT_PUBLIC_GIPHY_API_KEY: 'e2e-not-a-real-key',
+      // Both keys, for the same reason the Giphy one is here: a live path with
+      // no key falls through to the offline shelf, so a call-counting test
+      // would assert nothing at all while looking green.
+      NEXT_PUBLIC_KLIPY_API_KEY: 'e2e-not-a-real-key',
     },
   },
 })

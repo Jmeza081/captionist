@@ -211,11 +211,11 @@ export function ComponentGallery() {
           <Stack gap={12}>
             <TextField
               size="search"
-              placeholder="Search Giphy"
+              placeholder="Search GIFs"
               icon={<Icon name="search" size={19} />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search Giphy"
+              aria-label="Search GIFs"
             />
             <TextField
               size="composer"

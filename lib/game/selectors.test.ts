@@ -108,7 +108,7 @@ describe('the lobby CTA', () => {
 describe('screen copy', () => {
   it('addresses the role holder by name and everyone else about them', () => {
     expect(briefCopy(brief('caption'), HOLDER).eyebrow).toBe('You’re up, Jesse')
-    expect(briefCopy(brief('caption'), RIVAL).headline).toBe('Jesse is scrolling Giphy.')
+    expect(briefCopy(brief('caption'), RIVAL).headline).toBe('Jesse is scrolling for a GIF.')
     expect(briefCopy(brief('react'), RIVAL).headline).toBe('Jesse is typing a prompt.')
   })
 

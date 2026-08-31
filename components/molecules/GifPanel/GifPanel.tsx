@@ -131,7 +131,17 @@ export function GifPanel({
     <TextField
       size={board ? 'search' : 'popover'}
       primary={board}
-      placeholder={board ? 'deploy on friday' : (provider?.searchPlaceholder ?? 'Search GIFs…')}
+      /**
+       * The provider's wording wins, and on the board it costs something.
+       *
+       * The board used to read `deploy on friday` — an example query, which
+       * teaches what to type in a way "Search X" does not. KLIPY's attribution
+       * terms fix the placeholder as exactly `Search KLIPY`, and a required
+       * mark outranks a nicety. The example survives as the first suggestion
+       * chip directly underneath. Over the offline shelf there is no provider
+       * to obey, so the example stays.
+       */
+      placeholder={provider?.searchPlaceholder ?? (board ? 'deploy on friday' : 'Search GIFs…')}
       value={value}
       onChange={(e) => {
         if (controlled) onQueryChange?.(e.target.value)
@@ -147,7 +157,17 @@ export function GifPanel({
         }
       }}
       icon={<Icon name="search" size={board ? 18 : 13} />}
-      aria-label="Search Giphy"
+      /**
+       * Generic, and deliberately not the provider's name.
+       *
+       * The placeholder above carries the brand, which is what the terms
+       * actually require. An accessible name that changed with a build-time
+       * env var would be untestable — the same spec would need a different
+       * locator per provider — and it would churn again on the next one. A
+       * placeholder is a hint rather than a visible label, so nothing here
+       * disagrees with what a sighted user reads.
+       */
+      aria-label="Search GIFs"
     />
   )
 

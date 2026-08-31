@@ -21,6 +21,7 @@ import { expect, test, type Page } from '@playwright/test'
  */
 
 const GIPHY = '**api.giphy.com/**'
+const KLIPY = '**api.klipy.com/**'
 
 /** A GIF tile is the only button on the screen wrapping an image. */
 function tiles(page: Page) {
@@ -58,13 +59,15 @@ test.describe('the picker, without a key', () => {
     expect(new Set(names).size).toBe(names.length)
   })
 
-  test('claims Giphy only when the board is actually Giphy', async ({ page }) => {
+  test('credits nobody when the board is the offline shelf', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
     await expect(tiles(page).first()).toBeVisible()
 
     // The attribution mark is required where the API is used — and a false
-    // claim everywhere else. This board is the offline shelf.
+    // claim everywhere else. This board is the offline shelf, so *no* provider
+    // may be named, not merely the one that happens to be configured.
     await expect(page.getByText('Powered by Giphy')).toHaveCount(0)
+    await expect(page.getByText('Powered by KLIPY')).toHaveCount(0)
     await expect(page.getByText(/no Giphy key configured/i)).toBeVisible()
   })
 
@@ -74,7 +77,7 @@ test.describe('the picker, without a key', () => {
 
     // A search that matches nothing falls back to the whole shelf: a blank
     // grid reads as broken.
-    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    const search = page.getByRole('textbox', { name: 'Search GIFs' })
     await search.fill('zzzzzzz')
     await search.press('Enter')
     await expect(tiles(page).first()).toBeVisible()
@@ -91,7 +94,7 @@ test.describe('the budget', () => {
     // costs a search.
     await expect(page.getByText('3 searches left.')).toBeVisible()
 
-    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    const search = page.getByRole('textbox', { name: 'Search GIFs' })
     for (const [term, left] of [
       ['prod', '2 searches left.'],
       ['merge', 'One search left.'],
@@ -110,7 +113,7 @@ test.describe('the budget', () => {
     await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
     await expect(tiles(page).first()).toBeVisible()
 
-    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    const search = page.getByRole('textbox', { name: 'Search GIFs' })
     for (const term of ['prod', 'merge', 'rollback']) {
       await search.fill(term)
       await search.press('Enter')
@@ -143,7 +146,7 @@ test.describe('the allowance', () => {
     expect(afterArriving).toBeGreaterThan(0)
 
     // A search is exactly one call. No debounce means no burst of them.
-    const search = page.getByRole('textbox', { name: 'Search Giphy' })
+    const search = page.getByRole('textbox', { name: 'Search GIFs' })
     await search.fill('prod')
     await search.press('Enter')
     await expect(page.getByText('2 searches left.')).toBeVisible()
@@ -193,5 +196,96 @@ test.describe('the allowance', () => {
     // A modal nobody asked for must not be a trap.
     await page.getByRole('button', { name: 'Got it' }).click()
     await expect(page.getByText('Nobody paid the GIF bill')).toBeHidden()
+  })
+})
+
+/**
+ * Which provider answered, and whether the page says so truthfully.
+ *
+ * This group exists because of a real bug. `useGifSearch` first derived the
+ * attribution mark from the *configured* provider rather than from the board
+ * that came back — which looks equivalent and is not, because `?gifs=` pins a
+ * provider for one page load without touching the environment. A board of
+ * KLIPY's GIFs rendered "Powered by Giphy" under it: a false attribution, and
+ * exactly the failure the descriptor was introduced to make impossible.
+ *
+ * Both providers are exercised through a real browser, because the seam is only
+ * as good as its second implementation.
+ */
+test.describe('choosing a provider', () => {
+  /** Answers one provider with a board of nothing, in that provider's own shape. */
+  async function stub(page: Page, glob: string, body: unknown) {
+    await page.route(glob, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      })
+    })
+  }
+
+  test('sends the board to Klipy, and credits Klipy for it', async ({ page }) => {
+    const called: string[] = []
+    await page.route(KLIPY, async (route) => {
+      called.push(route.request().url())
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        // Klipy's envelope is double-nested. `{ data: [] }` would coincidentally
+        // yield an empty board too, which would make this pass against a fiction.
+        body: JSON.stringify({
+          result: true,
+          data: { data: [], current_page: 1, per_page: 50, has_next: false },
+        }),
+      })
+    })
+
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=klipy')
+    await expect(page.getByText('Powered by KLIPY · SFW filter on')).toBeVisible()
+
+    // Not an absolute count: `reactStrictMode` makes the arrival fetch twice in
+    // development, which `the allowance` above documents and measures around.
+    // What matters here is *who* was called and how the request was shaped.
+    expect(called.length).toBeGreaterThan(0)
+    const url = new URL(called[0]!)
+    expect(url.pathname).toContain('/gifs/trending')
+    // The app key is a path segment, and must never reach the query string —
+    // the trap a client ported carelessly from the Giphy one falls into.
+    expect(url.pathname).toContain('e2e-not-a-real-key')
+    expect(url.search).not.toContain('e2e-not-a-real-key')
+    // Klipy fails open: without this parameter it returns exactly what `off`
+    // returns, under a picker that promises "SFW filter on".
+    expect(url.search).toContain('content_filter=high')
+    // And never `format_filter`, which would strip the WebP the board renders.
+    expect(url.search).not.toContain('format_filter')
+    // The mandated placeholder, which is the one attribution that is required
+    // rather than recommended.
+    await expect(page.getByRole('textbox', { name: 'Search GIFs' })).toHaveAttribute(
+      'placeholder',
+      'Search KLIPY',
+    )
+    await expect(page.getByText('Powered by Giphy')).toHaveCount(0)
+  })
+
+  test('sends the board to Giphy, and credits Giphy for it', async ({ page }) => {
+    await stub(page, GIPHY, { data: [] })
+
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=giphy')
+    await expect(page.getByText('Powered by Giphy · SFW filter on')).toBeVisible()
+    await expect(page.getByText('Powered by KLIPY')).toHaveCount(0)
+  })
+
+  test('keeps one accessible name whoever is answering', async ({ page }) => {
+    // The brand rides the placeholder; the accessible name does not move. A
+    // locator that changed with the configured provider would be untestable.
+    await stub(page, KLIPY, {
+      result: true,
+      data: { data: [], current_page: 1, per_page: 50, has_next: false },
+    })
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=klipy')
+    await expect(page.getByRole('textbox', { name: 'Search GIFs' })).toBeVisible()
+
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
+    await expect(page.getByRole('textbox', { name: 'Search GIFs' })).toBeVisible()
   })
 })

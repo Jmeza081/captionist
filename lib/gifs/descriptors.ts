@@ -1,4 +1,4 @@
-import type { GifProviderDescriptor, GifProviderId } from './provider'
+import type { BoardSource, GifProviderDescriptor, GifProviderId } from './provider'
 
 /**
  * Who the providers are, as data.
@@ -113,3 +113,20 @@ export const DESCRIPTORS: Readonly<
 
 export const ALL_DESCRIPTORS: readonly GifProviderDescriptor[] =
   Object.values(DESCRIPTORS)
+
+/**
+ * Who answered, from what the response said.
+ *
+ * The board itself is the only honest source for this. Deriving it from the
+ * environment instead looks equivalent and is not: the `?gifs=` lever pins a
+ * provider per page load, so a Klipy board would carry Giphy's mark — which is
+ * a false attribution, the precise failure the descriptor was introduced to
+ * make impossible.
+ *
+ * `undefined` for `sample`, which is the offline shelf and belongs to nobody.
+ */
+export function descriptorFor(
+  source: BoardSource,
+): GifProviderDescriptor | undefined {
+  return source === 'sample' ? undefined : DESCRIPTORS[source]
+}

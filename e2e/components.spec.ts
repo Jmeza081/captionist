@@ -310,11 +310,11 @@ test.describe('compositions', () => {
     await page.goto('/components')
 
     const panel = page.getByRole('dialog', { name: 'Attach a GIF' }).last()
-    await panel.getByLabel('Search Giphy').fill('friday')
+    await panel.getByLabel('Search GIFs').fill('friday')
     await expect(panel.getByRole('button', { name: /Attach a rocket/ })).toBeVisible()
     await expect(panel.getByRole('button', { name: /^Attach/ })).toHaveCount(1)
 
-    await panel.getByLabel('Search Giphy').fill('zzzz')
+    await panel.getByLabel('Search GIFs').fill('zzzz')
     await expect(panel.getByText(/No GIFs for/)).toBeVisible()
   })
 

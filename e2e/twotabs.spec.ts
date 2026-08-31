@@ -91,7 +91,7 @@ test.describe('the phase 4 gate', () => {
     }
 
     // Round one's role holder is the host, so the guests are watching them pick.
-    await expect(one.getByText(/is scrolling Giphy/)).toBeVisible()
+    await expect(one.getByText(/is scrolling for a GIF/)).toBeVisible()
     await expect(host.getByText('Pick the GIF everyone has to suffer through.')).toBeVisible()
   })
 
@@ -132,6 +132,6 @@ test.describe('the phase 4 gate', () => {
     // In the room, and watching: they have no entry in the round in progress,
     // so `competitors()` leaves them out and nobody waits on one.
     await expect(late.locator('main[data-phase]')).toHaveAttribute('data-phase', 'brief')
-    await expect(late.getByText(/is scrolling Giphy/)).toBeVisible()
+    await expect(late.getByText(/is scrolling for a GIF/)).toBeVisible()
   })
 })
