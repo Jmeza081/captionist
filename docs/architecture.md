@@ -1636,7 +1636,6 @@ graph BT
     Glyph["ReactionGlyph<br/><i>'use client' · a character, or the still —<br/>which upgrades to the animation</i>"]
     Dots["WaitingDots"]
     Static["TvStatic<br/><i>'use client' · seeded canvas noise</i>"]
-    Scene["SceneBackdrop<br/><i>'use client' · a dead channel behind a wait —<br/>the one atom that imports another</i>"]
   end
   subgraph molecules["molecules/ — compose atoms, and occasionally another molecule"]
     Room["JoinPanel · PlayerRow · PromptBanner"]
@@ -1650,6 +1649,7 @@ graph BT
     Landing["HeroWall · LandingNav · QuickJoin"]
     Boot["BootChecklist<br/><i>an ol — the order is the meaning</i>"]
     Mark["Wordmark<br/><i>the mark and the name — a molecule<br/>because it imports Logo, and Icon<br/>is the only atom exemption</i>"]
+    Scene["SceneBackdrop<br/><i>'use client' · a dead channel behind a wait —<br/>a molecule for Wordmark's reason: it composes TvStatic</i>"]
   end
   subgraph organisms["organisms/ — room state or routing"]
     Shell["RoomShell<br/>+ context (notify)"]

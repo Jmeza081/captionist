@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
-import { SceneBackdrop } from '@/components/atoms/SceneBackdrop'
+import { SceneBackdrop } from '@/components/molecules/SceneBackdrop'
 import { Button } from '@/components/atoms/Button'
 import { Chip } from '@/components/atoms/Chip'
 import { Eyebrow } from '@/components/atoms/Eyebrow'

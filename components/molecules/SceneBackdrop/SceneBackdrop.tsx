@@ -58,6 +58,11 @@ export interface SceneBackdropProps {
  * demo and worth a control of its own; this is a dark loop behind a sentence,
  * and a button floating over a waiting screen would be the loudest thing on it.
  * The motion query still turns it off, which is the preference that matters.
+ *
+ * **A molecule, because it composes `TvStatic`.** It shipped as an atom and was
+ * wrong there the moment it grew the tuning state: the tier is decided by
+ * dependency, not by size, and `Icon` is the only atom another atom may import.
+ * That is the same rule that made `Wordmark` a molecule for importing `Logo`.
  */
 export function SceneBackdrop({
   mp4,
