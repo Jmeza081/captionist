@@ -60,14 +60,18 @@ export const WALL_SLUGS: readonly string[] = [
 ]
 
 /**
- * The waiting screen's backdrop: fireworks over a night sky, 16:9.
+ * The waiting screen's backdrop: firelight in a dark room.
  *
- * Chosen against the brief the Giphy one was chosen against — it opens nearly
- * black with warm light in the middle of the frame, so it loses to the
- * headline under a full scrim instead of fighting it, and its own aspect
- * matches the frame so the poster and the video do not jump.
+ * Chosen against the brief the fireworks before it were chosen against — it
+ * opens nearly black with one warm ember low in the frame and brightens into a
+ * lit close-up, so under a full scrim what survives is the warmth rather than a
+ * picture competing with the headline.
+ *
+ * Not 16:9, unlike the clip it replaces: 640×454, near enough 1.4:1. The
+ * backdrop covers and crops, so the frame's own aspect never mattered — what
+ * has to agree is the poster with the video, and both come off this one item.
  */
-export const BACKDROP_SLUG = 'celebrate-165'
+export const BACKDROP_SLUG = 'gunna-fire'
 
 /** The 404's GIF. Near-square, because the card that holds it is one. */
 export const NOT_FOUND_SLUG = 'shocked-meme-4'

@@ -100,16 +100,16 @@ test.describe('the brief', () => {
           data: {
             data: [
               {
-                slug: 'celebrate-165',
-                title: 'Colorful Fireworks Celebrate Night Sky',
+                slug: 'gunna-fire',
+                title: 'Gunna: Fire and Writing',
                 type: 'gif',
                 tags: [],
                 file: {
                   md: {
-                    gif: { url: 'https://static.klipy.com/b.gif', width: 640, height: 360 },
-                    mp4: { url: 'https://static.klipy.com/b.mp4', width: 640, height: 360 },
+                    gif: { url: 'https://static.klipy.com/b.gif', width: 640, height: 454 },
+                    mp4: { url: 'https://static.klipy.com/b.mp4', width: 640, height: 454 },
                   },
-                  xs: { jpg: { url: 'https://static.klipy.com/b.jpg', width: 160, height: 90 } },
+                  xs: { jpg: { url: 'https://static.klipy.com/b.jpg', width: 90, height: 64 } },
                 },
               },
             ],
