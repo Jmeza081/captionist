@@ -287,7 +287,7 @@ export function BriefScreen() {
         suggestions={SEARCH_SUGGESTIONS}
         selectedId={picked?.id}
         selectionLabel="Selected"
-        searchesLeft={gifs.remaining}
+        onMore={gifs.more}
         provider={gifs.descriptor}
         ads={gifs.ads}
         onPick={setPicked}
@@ -298,10 +298,11 @@ export function BriefScreen() {
         tools={
           <>
             {/*
-              Free, and instant. This used to fetch the next page of results,
-              which was a whole API call to show you something the board in
-              front of you could already answer — it holds fifty tiles now,
-              not twelve. `surprise` reads from those.
+              Free, and instant: it reads off the fifty tiles already on the
+              board rather than fetching a page of its own. Distinct from
+              "Shuffle results" beside the search field, which does go and get
+              another board — this one commits to a tile, that one changes what
+              there is to commit to.
             */}
             <Button
               variant="secondary"

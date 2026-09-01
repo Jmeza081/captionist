@@ -128,4 +128,34 @@ describe('the request', () => {
 
     expect(board.items.map((gif) => gif.id)).toEqual(['a', 'c'])
   })
+
+  it('infers a next page from what was returned, not from what was drawable', async () => {
+    // Giphy sends no `has_next`, so a full page is the signal. Counting the
+    // drawable tiles instead would let one page of undrawables report itself
+    // as the end of the results and strand "Shuffle results" early — which is
+    // exactly what this asserts does not happen.
+    const drawable = (id: string) => ({
+      id,
+      title: id,
+      images: { fixed_width: { url: `https://x/${id}.gif` } },
+    })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        answer(200, {
+          data: [drawable('a'), { title: 'broken', images: {} }, drawable('c')],
+        }),
+      ),
+    )
+    const thin = await giphyProvider.search({ ...query, limit: 3 }, 'key')
+    expect(thin.items).toHaveLength(2)
+    expect(thin.hasMore).toBe(true)
+
+    // A short page is the end of the results.
+    vi.stubGlobal('fetch', vi.fn(async () => answer(200, { data: [drawable('a')] })))
+    await expect(giphyProvider.search({ ...query, limit: 3 }, 'key')).resolves.toMatchObject({
+      hasMore: false,
+    })
+  })
 })

@@ -1,14 +1,16 @@
 import type { GameAction } from './actions'
 import {
   FALLBACK_PROMPTS,
+  MAX_PLAYERS,
   MIN_PLAYERS,
   RANK_POINTS,
+  ROUNDS_MAX,
+  ROUNDS_MIN,
   SEAT_GRACE_MS,
   TIEBREAK_BONUS,
   WAITING_ALL_IN_MS,
   colorFor,
   durationFor,
-  roundsMaxFor,
 } from './constants'
 import { pick, shuffle } from './rng'
 import { asHatId } from '@/lib/hats'
@@ -44,13 +46,14 @@ export function reduce(state: GameState, action: GameAction): GameState {
       return state
 
     /**
-     * Settings change together, because two of them constrain each other.
+     * Both numeric settings are clamped to their own bounds on the way in.
      *
-     * Lowering the room size can strand `totalRounds` above what that size
-     * affords, and a host dragging one stepper should not have to know it
-     * silently invalidated another. Clamped here rather than in `/host` so
-     * every road in — the setup screen, a URL lever, a fixture — lands on a
-     * legal pair.
+     * They used to constrain *each other* — lowering the room size stranded
+     * `totalRounds` above what the GIF allowance afforded that size — and that
+     * coupling is gone with the allowance (ADR-0026). What survives is the
+     * reason it was done here rather than in `/host`: every road in — the setup
+     * screen, a URL lever, a fixture — should land on a legal room, and only
+     * one of those roads passes a stepper that already knows the bounds.
      */
     case 'room/settingsChanged': {
       const settings = { ...state.settings, ...action.patch }
@@ -58,7 +61,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
         ...state,
         settings: {
           ...settings,
-          totalRounds: Math.min(settings.totalRounds, roundsMaxFor(settings.maxPlayers)),
+          maxPlayers: clamp(settings.maxPlayers, MIN_PLAYERS, MAX_PLAYERS),
+          totalRounds: clamp(settings.totalRounds, ROUNDS_MIN, ROUNDS_MAX),
         },
       })
     }
@@ -390,7 +394,7 @@ function fallbackSubject(state: GameState): [RoundSubject, number] {
    *
    * The room's own seed chooses, so every client lands on the same image from
    * the same state — a `Math.random` here would give the host one GIF and each
-   * guest another. The brief screen locks a real Giphy result in a beat before
+   * guest another. The brief screen locks a real provider result in a beat before
    * this fires (see `BriefScreen`); this is the net for a role holder whose tab
    * is gone.
    */
@@ -532,4 +536,9 @@ function mapPlayer(
 /** Every accepted change advances `rev`; the transport orders on it. */
 function bump(state: GameState): GameState {
   return { ...state, rev: state.rev + 1 }
+}
+
+/** Keeps a setting inside its own bounds, whichever road it arrived by. */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
 }

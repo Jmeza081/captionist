@@ -86,19 +86,22 @@ recalled APIs.
 ## Architecture
 
 Six routes: `/`, `/components`, `/join` and `/host` are static, `/join/[code]`
-and `/room/[code]` are dynamic. **Giphy is called from the browser** — their
-terms forbid proxying it, so the route that used to is gone and the key is
-public ([ADR 0020](docs/adr/0020-giphy-is-called-from-the-browser.md)). The free
-allowance is what caps the room at ten players and five rounds
-([ADR 0021](docs/adr/0021-the-rooms-limits-are-a-rate-limit.md)) — treat both
-numbers as load-bearing, not as taste. `/host` and `/join` are the front door —
-a room's rules are set before it exists, and a guest picks a name and a face
-before asking for a seat. The
-round flow's engine is built (`lib/game` pure core, `lib/room` host engine) and
-all ten of its phases have screens. `app/layout.tsx` owns fonts, global CSS and
-`app/tokens.scss` (which publishes the token custom properties). Components are
-tiered atoms → molecules → organisms by *dependency*, not size; pages compose
-and hold almost no markup.
+and `/room/[code]` are dynamic. **The GIF provider is called from the browser**
+— Klipy by default, Giphy as a second adapter
+([ADR 0022](docs/adr/0022-the-gif-provider-is-a-seam.md)); their terms forbid
+proxying it, so the route that used to is gone and the key is public
+([ADR 0020](docs/adr/0020-giphy-is-called-from-the-browser.md)). The room holds
+up to twenty players over up to ten rounds, and searching is unmetered — those
+are game-design numbers now, not a bill. They were sized against Giphy's free
+allowance until a Klipy production key removed the premise
+([ADR 0026](docs/adr/0026-the-rooms-limits-are-a-design-choice.md), superseding
+ADR 0021). `/host` and `/join` are the front door — a room's rules are set
+before it exists, and a guest picks a name and a face before asking for a seat.
+The round flow's engine is built (`lib/game` pure core, `lib/room` host engine)
+and all ten of its phases have screens. `app/layout.tsx` owns fonts, global CSS
+and `app/tokens.scss` (which publishes the token custom properties). Components
+are tiered atoms → molecules → organisms by *dependency*, not size; pages
+compose and hold almost no markup.
 
 Tokens flow Sass → CSS custom properties → `theme/tokens.ts`, so values exist
 once. `theme/tokens.ts` holds names only. `e2e/tokens.spec.ts` guards the bridge.

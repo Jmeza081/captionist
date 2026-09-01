@@ -240,15 +240,18 @@ test.describe('reaction tallies', () => {
  * passed none of them, so this whole surface existed only in the gallery. The
  * wire is what was missing: the `chat` event carried a bare string.
  *
- * It used to be fed by a Giphy picker in the rail. That picker is gone —
- * mounting it spent an API call for every player the moment they joined the
- * room, against an allowance of a hundred an hour (ADR-0021). The remaining
- * producer is an image reaction, which posts immediately with its attachment
- * inline rather than staging one for the send key.
+ * Two things produce one. An image reaction posts immediately, carrying its
+ * attachment inline; the GIF picker in the rail *stages* one for the send key.
+ *
+ * That picker was removed once, because mounting it spent an API call for every
+ * player the moment they joined the room (ADR-0021). It is back, mounted only
+ * while it is open — which is the shape that finding actually called for, and
+ * is asserted below rather than assumed. See ADR-0026.
  */
 const ATTACH = 'C-F34796'
 const EMPTYSEND = 'C-F34797'
 const NOGIFKEY = 'C-F34798'
+const LAZYGIF = 'C-F34799'
 
 /** The committed Slackmoji art an image reaction posts. Avatars are `<img>` too. */
 const ATTACHED = 'img[src^="/media/slackmoji-"]'
@@ -298,7 +301,7 @@ test.describe('attaching an image', () => {
     await expect(guest.getByRole('button', { name: 'Send message' })).toBeEnabled()
   })
 
-  test('offers no GIF key in the composer', async ({ context }) => {
+  test('stages a GIF from the rail picker and sends it', async ({ context }) => {
     const host = await context.newPage()
     await host.goto(`/room/${NOGIFKEY}?gifs=stub`)
     await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
@@ -306,10 +309,44 @@ test.describe('attaching an image', () => {
     const guest = await join(context, NOGIFKEY, 'Vic')
     await openChat(guest)
 
-    // A regression guard on a budget decision, not on a layout. `Composer`
-    // still *has* the prop — the gallery renders it — so the only thing
-    // stopping this coming back by accident is a test that says it is gone.
     await expect(guest.getByRole('button', { name: 'Add a reaction' })).toBeVisible()
-    await expect(guest.getByRole('button', { name: 'Attach a GIF' })).toHaveCount(0)
+    await guest.getByRole('button', { name: 'Attach a GIF' }).click()
+
+    const panel = guest.getByRole('dialog', { name: 'Attach a GIF' })
+    await expect(panel).toBeVisible()
+    await panel.getByRole('button').filter({ has: guest.locator('img') }).first().click()
+
+    // Staged, not sent: a GIF waits on the send key, which is what makes it a
+    // message rather than a reaction. The send key goes live on the attachment
+    // alone — a GIF is a complete thing to say.
+    await expect(panel).toBeHidden()
+    await expect(guest.getByText('GIF attached')).toBeVisible()
+    await expect(guest.getByRole('button', { name: 'Send message' })).toBeEnabled()
+
+    await guest.getByRole('button', { name: 'Send message' }).click()
+    await expect(guest.getByText('GIF attached')).toBeHidden()
+
+    // And it crosses the wire. `lib/gifs/allow.ts` gates the src on the event
+    // lane, so a GIF that failed the allowlist would arrive as nothing.
+    await openChat(host)
+    await expect(
+      host.getByRole('log', { name: 'Room chat' }).locator('img'),
+    ).not.toHaveCount(0)
+  })
+
+  test('does not open a picker, or spend a call, just by joining', async ({ context }) => {
+    const host = await context.newPage()
+    await host.goto(`/room/${LAZYGIF}?gifs=stub`)
+    await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
+
+    const guest = await join(context, LAZYGIF, 'Vic')
+    await openChat(guest)
+
+    // The regression ADR-0021 actually found, and the reason the picker can be
+    // back at all: it used to fetch on mount, so every player in the room paid
+    // for a surface most of them never opened. The key is offered; the panel
+    // is not mounted until it is tapped.
+    await expect(guest.getByRole('button', { name: 'Attach a GIF' })).toBeVisible()
+    await expect(guest.getByRole('dialog', { name: 'Attach a GIF' })).toHaveCount(0)
   })
 })

@@ -79,9 +79,14 @@ export function PodiumScreen() {
         Why the game stopped short.
 
         A podium that arrives in round two with no explanation reads as a bug,
-        and this one has a cause worth naming: the room ran through Giphy's
-        hourly allowance. Scores stand — `history` is the durable record and
-        the abandoned round never reached it.
+        and this one has a cause worth naming: the room ran through the GIF
+        provider's hourly allowance. Scores stand — `history` is the durable
+        record and the abandoned round never reached it.
+
+        Deliberately does not name the provider. Which one answered is a build
+        setting the player never chose, the message is the same either way, and
+        a copy string that has to be kept in step with a vendor swap is the
+        exact class of drift ADR-0022 removed everywhere else.
       */}
       <Modal
         open={state.endedBecause === 'gifs' && !excuseSeen}
@@ -94,7 +99,7 @@ export function PodiumScreen() {
           {
             eyebrow: 'Out of GIFs',
             heading: 'Nobody paid the GIF bill',
-            body: 'We hit Giphy’s hourly limit, so that’s the game. Scores stand. Try again at the top of the hour.',
+            body: 'We hit the GIF provider’s hourly limit, so that’s the game. Scores stand. Try again at the top of the hour.',
           },
         ]}
       />

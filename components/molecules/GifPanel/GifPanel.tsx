@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { Button } from '@/components/atoms/Button'
 import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
@@ -46,6 +47,15 @@ export interface GifPanelProps {
 
   /** One-tap searches under the field. */
   suggestions?: readonly string[]
+  /**
+   * Another board for the same query — the design's "Shuffle results".
+   *
+   * Sits with the suggestion chips rather than in the screen's action row,
+   * because it changes what the board shows rather than ending the phase, and
+   * because putting it here means both variants get it from one place. Omit it
+   * on a surface handed a fixed list, which has no next page to turn to.
+   */
+  onMore?: () => void
   status?: 'loading' | 'ready' | 'error'
   /** Shown under the field — an error, or a note that these are samples. */
   message?: string
@@ -53,15 +63,6 @@ export interface GifPanelProps {
   tools?: ReactNode
   /** The badge on the chosen tile: "Selected" when picking, "Your answer" when answering. */
   selectionLabel?: string
-  /**
-   * Searches left this round, from `useGifSearch`.
-   *
-   * Omit it and the panel shows no counter and blocks nothing — which is what
-   * a surface handed a fixed list wants. Supply it and the budget becomes
-   * visible *before* the first tap: the suggestion chips read as free, and
-   * each one spends a search. The board on arrival is not one of them.
-   */
-  searchesLeft?: number
   /**
    * Who supplied `results`, or `undefined` for the offline shelf.
    *
@@ -93,37 +94,17 @@ export function GifPanel({
   onQueryChange,
   onSubmit,
   suggestions,
+  onMore,
   status = 'ready',
   message,
   tools,
   selectionLabel = 'Selected',
-  searchesLeft,
   provider,
   ads,
 }: GifPanelProps) {
   const [localQuery, setLocalQuery] = useState('')
   const controlled = query !== undefined
   const value = controlled ? query : localQuery
-
-  // `undefined` means this surface has no budget, which is not the same as a
-  // budget of zero. Only the latter blocks anything.
-  const budgeted = searchesLeft !== undefined
-  const spent = budgeted && searchesLeft <= 0
-
-  /**
-   * What is left, said before it runs out rather than after.
-   *
-   * The chips look free — they are one tap and they are sitting right there —
-   * and each one spends a search. A counter that only appears at zero would
-   * teach that the hard way.
-   */
-  const counter = !budgeted
-    ? undefined
-    : searchesLeft <= 0
-      ? 'No searches left. Pick from what’s on the board.'
-      : searchesLeft === 1
-        ? 'One search left.'
-        : `${searchesLeft} searches left.`
 
   const shown = useMemo(() => {
     /**
@@ -171,12 +152,9 @@ export function GifPanel({
         else setLocalQuery(e.target.value)
       }}
       onKeyDown={(e) => {
-        // Still focusable, still typeable, still swallows its own Enter — it
-        // just has nothing left to spend. Blocked is not disabled: the
-        // counter below says what is missing.
         if (e.key === 'Enter' && onSubmit) {
           e.preventDefault()
-          if (!spent) onSubmit(value)
+          onSubmit(value)
         }
       }}
       icon={<Icon name="search" size={board ? 18 : 13} />}
@@ -276,36 +254,37 @@ export function GifPanel({
           {tools}
         </Inline>
 
-        {suggestions && suggestions.length > 0 && (
+        {((suggestions && suggestions.length > 0) || onMore) && (
           <Inline gap={8}>
-            {suggestions.map((term) => (
-              <Chip
-                key={term}
-                selected={term === value}
-                blocked={spent}
-                onClick={() => {
-                  if (!spent) onSubmit?.(term)
-                }}
-              >
+            {suggestions?.map((term) => (
+              <Chip key={term} selected={term === value} onClick={() => onSubmit?.(term)}>
                 {term}
               </Chip>
             ))}
+            {onMore && (
+              <Button variant="ghost" size="text" onClick={onMore}>
+                <Icon name="shuffle" size={14} />
+                Shuffle results
+              </Button>
+            )}
           </Inline>
         )}
 
         {/*
-          The round's budget and the provider's mark, on one line.
+          The provider's mark.
 
-          The mark is a requirement, not a flourish — every provider's terms ask
-          for it "where the API is utilized", and it lives here rather than on
-          each screen so the next board to be built cannot ship without it. It
-          says nothing over the offline shelf, which is nobody's to claim; the
+          A requirement, not a flourish — every provider's terms ask for it
+          "where the API is utilized", and it lives here rather than on each
+          screen so the next board to be built cannot ship without it. It says
+          nothing over the offline shelf, which is nobody's to claim; the
           `message` line below already explains that case.
+
+          It used to share this line with the round's search counter. The
+          budget is gone (ADR-0026) and the mark kept the row.
         */}
-        {(counter || provider) && (
+        {provider && (
           <Inline gap={10} justify="between" className={styles.meta}>
-            <span className={styles.note}>{counter}</span>
-            {provider && <span className={styles.via}>{provider.attribution}</span>}
+            <span className={styles.via}>{provider.attribution}</span>
           </Inline>
         )}
 
@@ -339,6 +318,15 @@ export function GifPanel({
       </div>
 
       {field}
+      {onMore && (
+        <div className={styles.popoverTools}>
+          <Button variant="ghost" size="text" onClick={onMore}>
+            <Icon name="shuffle" size={13} />
+            Shuffle results
+          </Button>
+        </div>
+      )}
+      {message && <p className={styles.note}>{message}</p>}
       {grid}
     </div>
   )

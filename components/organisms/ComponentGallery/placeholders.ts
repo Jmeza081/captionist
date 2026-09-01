@@ -1,7 +1,7 @@
 /**
  * Stand-in artwork for the gallery.
  *
- * The real room uses Giphy GIFs and the design's avatar sprites, neither of
+ * The real room uses the GIF provider's art and the design's avatar sprites, neither of
  * which is in the repo. These are inline SVG data URIs so the gallery renders
  * identically offline and in CI — no network, no missing-image boxes, and
  * nothing to keep in sync with an asset pipeline that doesn't exist yet.

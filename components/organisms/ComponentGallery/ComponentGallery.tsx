@@ -151,7 +151,7 @@ export function ComponentGallery() {
         <h1 className={styles.title}>Built components</h1>
         <p className={styles.standfirst}>
           Every component that exists, rendered against the real tokens. Artwork
-          is a stand-in — the room uses Giphy GIFs and the design&rsquo;s avatar
+          is a stand-in — the room uses the provider&rsquo;s GIFs and the design&rsquo;s avatar
           sprites, neither of which is in the repo yet.
         </p>
       </header>
@@ -238,7 +238,7 @@ export function ComponentGallery() {
         <Case label="Room settings">
           <Stack gap={14}>
             <Toggle
-              label="Let the picked player search Giphy"
+              label="Let the picked player search GIFs"
               checked={giphySearch}
               onChange={setGiphySearch}
             />

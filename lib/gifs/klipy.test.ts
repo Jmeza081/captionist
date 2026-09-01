@@ -188,7 +188,24 @@ describe('the double-nested envelope', () => {
   it('yields an empty board rather than throwing when a level is missing', async () => {
     mockFetch(() => answer(200, { result: true, data: {} }))
 
-    await expect(search()).resolves.toEqual({ items: [], ads: [] })
+    await expect(search()).resolves.toEqual({ items: [], ads: [], hasMore: false })
+  })
+
+  it('takes Klipy at its word about a next page', async () => {
+    // "Shuffle results" turns the page when this is true and wraps back to the
+    // first when it is not, so a wrong answer here strands the control on an
+    // empty board at the end of a thin result set.
+    mockFetch(() => ok())
+    await expect(search()).resolves.toMatchObject({ hasMore: true })
+
+    mockFetch(() =>
+      answer(200, { result: true, data: { data: [item()], has_next: false } }),
+    )
+    await expect(search()).resolves.toMatchObject({ hasMore: false })
+
+    // A body that did not say has no next page — absent means no, never yes.
+    mockFetch(() => answer(200, { result: true, data: { data: [item()] } }))
+    await expect(search()).resolves.toMatchObject({ hasMore: false })
   })
 
   it('carries the slug as the id, not the numeric id', async () => {

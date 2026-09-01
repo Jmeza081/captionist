@@ -53,17 +53,16 @@ export const MIN_PLAYERS = 3
 /**
  * The ceiling on a room, whatever a host asks for.
  *
- * Ten, and the reason is Giphy rather than the game.
+ * Twenty, and the reason is the game rather than a vendor.
  *
- * The design draws a twenty-player room and nothing about the round engine
- * minds one. What minds is `react` mode, where every competitor opens their
- * own picker every round and — with the proxy's cache gone, see
- * `lib/gifs/giphy.ts` — every one of those is a live API call against an
- * allowance of 100 an hour. Ten and five is where the room is held while it is
- * in beta — a full room hunting hard still outruns the free tier partway
- * through, which is a priced trade rather than an accident. See ADR-0021.
+ * It was ten for a while, and that was arithmetic on Giphy's 100 calls an hour
+ * — every competitor opens their own picker every round, and with the proxy's
+ * cache gone each one is a live call. A Klipy production key is unmetered, so
+ * the premise is gone and the number is back where the design draws it. What
+ * holds it at twenty now is the vote board: nineteen submissions is already a
+ * long scroll to rank three of. See ADR-0026.
  */
-export const MAX_PLAYERS = 10
+export const MAX_PLAYERS = 20
 
 /**
  * What a host is called when they never gave a name.
@@ -87,11 +86,12 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   voting: 'rank',
   capSeconds: 90,
   // The biggest room by default, so a host who touches nothing gets the least
-  // surprising one — and three rounds, which is what that size affords. A host
-  // who wants five lowers the room size and watches the bound move, which is
-  // the clearest way to teach that the two are connected.
+  // surprising one — a seat count is a ceiling, not a quota, and a room of six
+  // is not worse for having had room for twenty. Five rounds because that is
+  // the game the landing page describes; the two settings are independent now,
+  // so neither has to be read as a consequence of the other.
   maxPlayers: MAX_PLAYERS,
-  totalRounds: 3,
+  totalRounds: 5,
   uniqueNicknames: true,
 }
 
@@ -100,51 +100,22 @@ export const CAP_SECONDS_MIN = 30
 export const CAP_SECONDS_MAX = 180
 export const CAP_SECONDS_STEP = 15
 export const ROUNDS_MIN = 1
-/** Five for the same reason the room holds ten — see `MAX_PLAYERS`. */
-export const ROUNDS_MAX = 5
-
 /**
- * Giphy's free allowance, and what a round is assumed to spend of it.
+ * Ten, and it no longer depends on the roster.
  *
- * `SEARCHES_PER_ROUND` is 3, so a competitor's *ceiling* is four calls a round
- * — one to arrive plus three searches. Sizing against that ceiling would allow
- * a ten-player room two rounds, which is barely a game, and it would be sizing
- * against a room where every single person exhausts every single search every
- * single round. So the model assumes two of the three get used: **three calls
- * per competitor per round**.
- *
- * A room that beats the assumption is not broken. It ends early, on the podium,
- * saying why — `game/gifsExhausted` is the backstop this leans on, and it is
- * why the number can be an estimate rather than a guarantee. See ADR-0021.
+ * Rounds used to be bounded by room size, because seats times rounds was what
+ * the free allowance bought — `roundsMaxFor()` was that whole cost model in one
+ * function. Nothing buys rounds any more, so the two settings are independent
+ * and this is a plain ceiling. Ten rounds at the default 90s cap is a game of
+ * about half an hour, which is the real limit and a host's to choose.
+ * See ADR-0026.
  */
-const HOURLY_ALLOWANCE = 100
-const ASSUMED_CALLS_PER_COMPETITOR_ROUND = 3
+export const ROUNDS_MAX = 10
 
 /**
- * The most rounds a room of this size can afford.
- *
- * The role holder sits every round out, so a room of `size` fields `size - 1`
- * competitors and each of them opens a picker every round. That product is the
- * whole cost model:
- *
- *     3–7 players → 5 rounds · 8–9 → 4 · 10 → 3
- *
- * Exposed rather than inlined in `/host` because three places need the same
- * answer: the stepper's bound, the clamp when a room's size drops under a
- * round count it can no longer afford, and the line under the control that
- * says why the bound is where it is.
- */
-export function roundsMaxFor(maxPlayers: number): number {
-  const competitors = Math.max(1, maxPlayers - 1)
-  const affordable = Math.floor(
-    HOURLY_ALLOWANCE / (competitors * ASSUMED_CALLS_PER_COMPETITOR_ROUND),
-  )
-  return Math.min(ROUNDS_MAX, Math.max(ROUNDS_MIN, affordable))
-}
-
-/**
- * Avatar fills from the design. Seven colours for a ten-player ceiling, so the
- * palette cycles — `colorFor` below owns that.
+ * Avatar fills from the design. Seven colours for a twenty-seat ceiling, so the
+ * palette cycles — `colorFor` below owns that. A colour is never the only thing
+ * telling two players apart; the face and the name carry that.
  */
 export const PLAYER_COLORS: readonly string[] = [
   '#FF787D', // red

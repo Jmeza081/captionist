@@ -5,6 +5,7 @@ import { GifQuotaError } from './errors'
 import { descriptorFor } from './descriptors'
 import { intendedProvider } from './registry'
 import { fetchBoard, reportPick } from './source'
+import { firstPage } from './provider'
 import type { GifAd, GifCursor, GifProviderDescriptor } from './provider'
 import type { GifResult, GifSearchResponse } from './types'
 
@@ -14,16 +15,14 @@ import type { GifResult, GifSearchResponse } from './types'
  * Calls the provider directly — there is no `/api/gifs` any more, and there is
  * no cache behind it either. Both were prohibited by Giphy; `giphy.ts` carries
  * the terms. Which provider answers is `source.ts`'s business, not this hook's:
- * all it needs is a board, a budget, and a way to tell a spent allowance from a
- * failed request.
+ * all it needs is a board and a way to tell a spent allowance from a failed
+ * request.
  *
- * What that costs is a budget. Every board is a live API call against an
- * allowance of 100 an hour for the whole room, so a competitor gets
- * `SEARCHES_PER_ROUND` of them. **The board you land on is free** — arriving
- * at a picker is not a choice anyone made, and charging for it would mean the
- * counter opened at one less than it says. Reset is free too: `BriefScreen`
- * and `ComposeScreen` unmount between phases, so each round mounts a fresh
- * hook.
+ * **Searching is unmetered.** Every board is still a live API call, but a Klipy
+ * production key does not charge for them, so the three-a-round budget this
+ * hook used to keep is gone (ADR-0026). What survives it is `onExhausted`: a
+ * 429 is no longer expected, and a picker that simply stopped working if one
+ * arrived would be worse than the designed ending.
  *
  * No debounce, on purpose: the design's picker says "Enter to search", so a
  * request fires on submit and on a suggestion chip — which deletes the whole
@@ -45,10 +44,11 @@ export interface GifSearchOptions {
    */
   enabled?: boolean
   /**
-   * The hourly allowance is gone.
+   * The provider's allowance is spent — a 429 came back.
    *
    * A callback rather than a `send` in here, so the hook stays ignorant of the
-   * room — the screens own that, and a test can assert on a spy.
+   * room — the screens own that, and a test can assert on a spy. Unmetered is
+   * not infinite, so this outlived the budget that used to make it likely.
    */
   onExhausted?: () => void
 }
@@ -85,8 +85,16 @@ export interface GifSearch {
    */
   setQuery: (query: string) => void
   search: (query: string) => void
-  /** Searches left this round. Zero means the controls say so and stop firing. */
-  remaining: number
+  /**
+   * Another board for the same query — the design's "Shuffle results".
+   *
+   * Turns the page rather than adding to it, which is what "shuffle" promises
+   * and what the picker's scroll position wants. Wraps back to the first page
+   * at the end of a thin result set, so the control never leaves somebody
+   * looking at nothing. A no-op while a board is already in flight, and over
+   * the offline shelf, which has no second page.
+   */
+  more: () => void
   /**
    * Say that this GIF was the one.
    *
@@ -116,18 +124,6 @@ export interface GifSearch {
  */
 const LIMIT = 50
 
-/**
- * Searches a competitor may run per round, on top of the free arrival board.
- *
- * So a round costs at most `1 + SEARCHES_PER_ROUND` calls a seat. At a full
- * ten-player `react` room over five rounds that ceiling is 180, which is over
- * the free tier's 100 an hour — a deliberate, recorded trade: the room is more
- * fun with room to hunt, running out is a designed ending rather than a broken
- * picker, and a production key is the answer if the game earns one. See
- * ADR-0021.
- */
-export const SEARCHES_PER_ROUND = 3
-
 const FAILED = 'That search didn’t come back. Try again.'
 
 export function useGifSearch(options?: GifSearchOptions): GifSearch {
@@ -147,9 +143,11 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   // Before the first board lands there is nothing to credit, and claiming a
   // provider that has not answered yet is the same mistake in miniature.
   const [descriptor, setDescriptor] = useState<GifProviderDescriptor | undefined>(undefined)
-  const [spent, setSpent] = useState(0)
 
   const cursor = useRef<GifCursor | undefined>(undefined)
+  // Whether spending that cursor would return anything, so `more` can wrap
+  // instead of turning the page into an empty board.
+  const hasMore = useRef(false)
   // Read by `chose`, which must keep a stable identity: the screens hand it to
   // click handlers, and an unstable one would churn them every render.
   const sourceRef = useRef<GifSearchResponse['source']>('sample')
@@ -157,22 +155,17 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   const inFlight = useRef<AbortController | undefined>(undefined)
   // Monotonic: a response from an abandoned search must not overwrite a newer one.
   const latest = useRef(0)
-  // The budget is decided from a ref and displayed from state. Two clicks in
-  // the same tick both read the same stale state; they cannot both read a ref
-  // that the first one already incremented.
-  const spentRef = useRef(0)
-
-  /** Take a search if there is one left. */
-  const spend = useCallback((): boolean => {
-    if (spentRef.current >= SEARCHES_PER_ROUND) return false
-    spentRef.current += 1
-    setSpent(spentRef.current)
-    return true
-  }, [])
+  // Written where a board starts and cleared where one settles, never during
+  // render. `more` reads it so a second tap cannot fire a second request while
+  // the first is still out — and it is a ref rather than `status` so `more`
+  // keeps a stable identity, the same reason `chose` does.
+  const loading = useRef(false)
 
   const apply = useCallback((body: GifSearchResponse, ticket: number) => {
     if (ticket !== latest.current) return
+    loading.current = false
     cursor.current = body.cursor
+    hasMore.current = body.hasMore
     sourceRef.current = body.source
     queryRef.current = body.query
     setResults(body.results)
@@ -213,6 +206,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
 
   const fail = useCallback((error: unknown, ticket: number, signal: AbortSignal) => {
     if (signal.aborted || ticket !== latest.current) return
+    loading.current = false
     // A spent quota is not a failed search — it ends the game, and the screen
     // that owns the room says so.
     if (error instanceof GifQuotaError) {
@@ -225,13 +219,12 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
 
   const run = useCallback(
     (next: string, from: GifCursor | undefined) => {
-      if (!spend()) return
-
       inFlight.current?.abort()
       const controller = new AbortController()
       inFlight.current = controller
       const ticket = ++latest.current
 
+      loading.current = true
       setStatus('loading')
       setQuery(next)
 
@@ -239,7 +232,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
         .then((body) => apply(body, ticket))
         .catch((error: unknown) => fail(error, ticket, controller.signal))
     },
-    [apply, fail, spend],
+    [apply, fail],
   )
 
   // Trending on arrival, so the grid is never empty. Deliberately not routed
@@ -248,10 +241,10 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
   useEffect(() => {
     if (!enabled) return
 
-    // No `spend()` here, deliberately: arriving is free.
     const controller = new AbortController()
     inFlight.current = controller
     const ticket = ++latest.current
+    loading.current = true
 
     void fetchBoard('', undefined, LIMIT)
       .then((body) => apply(body, ticket))
@@ -266,6 +259,22 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     },
     [],
   )
+
+  /**
+   * The next page of the same query, wrapping at the end.
+   *
+   * `cursor` already points at where the next page starts — `source.ts` mints
+   * it that way — so this spends it rather than deriving one. When the last
+   * board said there is no next page, it goes back to the first: a thin result
+   * set should cycle, not dead-end on an empty grid.
+   */
+  const more = useCallback(() => {
+    const from = cursor.current
+    // Nothing to turn the page on yet, and the shelf has only the one.
+    if (!from || sourceRef.current === 'sample') return
+    if (loading.current) return
+    run(queryRef.current, hasMore.current ? from : firstPage(from.provider))
+  }, [run])
 
   const surprise = useCallback((): GifResult | undefined => {
     if (results.length === 0) return undefined
@@ -285,7 +294,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     setQuery,
     chose,
     search: (next: string) => run(next, undefined),
-    remaining: Math.max(0, SEARCHES_PER_ROUND - spent),
+    more,
     surprise,
   }
 }

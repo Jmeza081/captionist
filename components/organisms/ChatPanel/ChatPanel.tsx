@@ -5,9 +5,12 @@ import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import { TallyPill } from '@/components/atoms/TallyPill'
 import { ChatMessage } from '@/components/molecules/ChatMessage'
 import { Composer } from '@/components/molecules/Composer'
+import type { ComposerAttachment } from '@/components/molecules/Composer'
+import { GifPanel } from '@/components/molecules/GifPanel'
 import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
 import { playerById, toAvatarProps } from '@/lib/game/selectors'
+import { useGifSearch } from '@/lib/gifs/useGifSearch'
 import {
   isImageGlyph,
   labelFor,
@@ -52,24 +55,19 @@ const selectTallies = (snapshot: EventSnapshot) => snapshot.tallies
 /**
  * Which surface is open above the composer.
  *
- * A union rather than two booleans, so DESIGNSYSTEM rule 3 — "one overlay
- * surface at a time" — holds by construction: there is no state in which both
+ * A union rather than three booleans, so DESIGNSYSTEM rule 3 — "one overlay
+ * surface at a time" — holds by construction: there is no state in which two
  * are open, so nobody has to remember to call the other setter. `RoomShell`
- * models its own overlays the same way.
- *
- * There used to be a staged attachment held alongside this — a GIF picked
- * from the panel, waiting on the send key. The panel is gone (mounting it
- * cost every player an API call on join, see ADR-0021) and nothing else
- * stages: an image reaction posts immediately, carrying its attachment inline.
- * So the staging state went with it rather than lingering as a `useState` that
- * could only ever hold `undefined`.
+ * models its own overlays the same way. Adding the GIF panel back cost nothing
+ * here for exactly that reason.
  *
  * The reaction surface carries *what it is aimed at* rather than being a bare
  * flag: a message you picked, or — when `messageId` is null — the composer,
  * which posts. Holding the target in the surface is what stops the picker
- * quietly landing on whatever arrived last.
+ * quietly landing on whatever arrived last. The GIF surface aims at nothing:
+ * it stages, and the send key decides.
  */
-type Surface = { kind: 'reactions'; messageId: string | null } | null
+type Surface = { kind: 'reactions'; messageId: string | null } | { kind: 'gif' } | null
 
 export function ChatPanel() {
   const { state } = useRoom()
@@ -81,7 +79,19 @@ export function ChatPanel() {
 
   const [draft, setDraft] = useState('')
   const [surface, setSurface] = useState<Surface>(null)
+  const [attachment, setAttachment] = useState<ComposerAttachment | undefined>(undefined)
   const listRef = useRef<HTMLDivElement>(null)
+
+  /**
+   * The picker, mounted only while it is open.
+   *
+   * This is the whole reason chat may have one again. ADR-0021 removed it
+   * because `ChatPanel` fetched on mount, so every player in the room spent an
+   * API call on joining whether or not they ever opened it. `enabled` makes
+   * the cost follow the tap instead — which stays the right shape now that a
+   * production key means nobody is counting (ADR-0026).
+   */
+  const gifs = useGifSearch({ enabled: surface?.kind === 'gif' })
 
   // Pinned to the bottom, the way a live room wants. Keyed on the count rather
   // than the array so opening the picker does not yank the view.
@@ -168,8 +178,9 @@ export function ChatPanel() {
         value={draft}
         onChange={setDraft}
         onSend={() => {
-          say(draft, { replyTo })
+          say(draft, { replyTo, attachment })
           setDraft('')
+          setAttachment(undefined)
           clearReply()
           setSurface(null)
         }}
@@ -188,6 +199,43 @@ export function ChatPanel() {
           setSurface((open) =>
             open?.kind === 'reactions' ? null : { kind: 'reactions', messageId: null },
           )
+        }
+        onAttachGif={() =>
+          setSurface((open) => (open?.kind === 'gif' ? null : { kind: 'gif' }))
+        }
+        attachment={attachment}
+        onClearAttachment={() => setAttachment(undefined)}
+        panel={
+          surface?.kind === 'gif' ? (
+            <GifPanel
+              variant="popover"
+              results={gifs.results}
+              status={gifs.status}
+              message={gifs.message}
+              /*
+                Controlled, and searched by the provider rather than filtered
+                here. That is not a preference: `GifPanel` narrows a fixed list
+                locally when it is handed one, and doing that to a provider's
+                results is the client-side filtering both of them forbid. The
+                `provider` prop is what turns it off — see the note on `shown`.
+              */
+              query={gifs.query}
+              onQueryChange={gifs.setQuery}
+              onSubmit={gifs.search}
+              onMore={gifs.more}
+              provider={gifs.descriptor}
+              onClose={() => setSurface(null)}
+              onPick={(gif) => {
+                // Klipy's attribution depends on hearing that a GIF was
+                // chosen, and a message is as much a use of their media as a
+                // caption is. Said here because it is the last moment the id
+                // still exists.
+                gifs.chose(gif)
+                setAttachment({ src: gif.src, alt: gif.alt })
+                setSurface(null)
+              }}
+            />
+          ) : undefined
         }
         replyTo={replyTo}
         onClearReply={clearReply}

@@ -1,6 +1,8 @@
 # 0021 — The room's limits are a rate limit, not a game design
 
-**Status:** accepted · 2026-08-31
+**Status:** superseded by
+[ADR 0026](./0026-the-rooms-limits-are-a-design-choice.md) · 2026-09-01
+(accepted 2026-08-31)
 
 ## Context
 
@@ -109,6 +111,13 @@ and the room is in beta. A production key is the answer if the game earns one.
 > so they are still documented here. They should change deliberately, against
 > measured usage rather than a model, and under their own ADR — and at that
 > point they are game design rather than a rate limit.
+>
+> **Update, 2026-09-01.** The production key was approved and that decision has
+> now been taken: [ADR 0026](./0026-the-rooms-limits-are-a-design-choice.md)
+> supersedes this one. `MAX_PLAYERS` is 20, `ROUNDS_MAX` is 10, `roundsMaxFor()`
+> and `SEARCHES_PER_ROUND` are gone, and paging and chat's GIF picker are back.
+> Everything below is kept as the record of what a free tier cost this app —
+> read it as history, not as the rules the code enforces.
 
 **A full `react` room does not finish on the free tier.** Ten players, five
 rounds, everyone hunting: the allowance goes around round three. `caption` mode

@@ -47,7 +47,7 @@ export type GameAction = ActionMeta &
     | { type: 'host/restarted' }
     | { type: 'host/left' }
     /**
-     * Giphy's hourly allowance is spent, so the room stops.
+     * The GIF provider's hourly allowance is spent, so the room stops.
      *
      * Deliberately **not** host-only. Only the client that got the 429 can
      * observe it, and that is rarely the host — they may be the role holder,

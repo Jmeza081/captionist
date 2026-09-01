@@ -28,6 +28,18 @@ function tiles(page: Page) {
   return page.locator('button:has(img)')
 }
 
+/**
+ * A board has landed, whether or not it had anything on it.
+ *
+ * The attribution mark renders from the descriptor of whoever actually
+ * answered, so it appears exactly when a response has been applied. The call
+ * counters below serve *empty* boards deliberately — they are measuring
+ * requests, not tiles — so waiting on a tile there would wait forever.
+ */
+function boardLanded(page: Page) {
+  return page.getByText(/Powered by (KLIPY|Giphy)/)
+}
+
 /** An empty board, in whichever provider's shape was asked for. */
 function emptyBoard(url: string): string {
   // Klipy's envelope is double-nested and Giphy's is flat. `{ data: [] }` would
@@ -114,85 +126,75 @@ test.describe('the picker, without a key', () => {
   })
 })
 
-test.describe('the budget', () => {
-  test('gives the arrival board away, then counts down the three', async ({ page }) => {
+test.describe('the search budget, which is gone', () => {
+  test('says nothing about a budget, and never stops taking searches', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
     await expect(tiles(page).first()).toBeVisible()
 
-    // Three a round, and the board you arrive on is not one of them. Said
-    // before the chips are tapped, not after: they read as free, and each one
-    // costs a search.
-    await expect(page.getByText('3 searches left.')).toBeVisible()
+    // The inverse of what this group used to assert. ADR-0021 rationed three
+    // searches a round against Giphy's 100 an hour and put a counter above the
+    // board; ADR-0026 removed the ration with the allowance behind it. A
+    // counter that rations nothing would be worse than none.
+    await expect(page.getByText(/searches left/)).toHaveCount(0)
+    await expect(page.getByText(/No searches left/)).toHaveCount(0)
 
+    // Well past the old ceiling of three, through both roads that used to
+    // spend one: the field, and a suggestion chip.
     const search = page.getByRole('textbox', { name: 'Search GIFs' })
-    for (const [term, left] of [
-      ['prod', '2 searches left.'],
-      ['merge', 'One search left.'],
-    ] as const) {
+    for (const term of ['prod', 'merge', 'rollback', 'oncall', 'retro', 'standup']) {
       await search.fill(term)
       await search.press('Enter')
-      await expect(page.getByText(left)).toBeVisible()
+      await expect(tiles(page).first()).toBeVisible()
     }
 
-    await search.fill('rollback')
-    await search.press('Enter')
-    await expect(page.getByText(/No searches left/)).toBeVisible()
-  })
-
-  test('blocks the chips without disabling them', async ({ page }) => {
-    await page.goto('/room/DEV?seed=42&phase=brief&gifs=stub')
-    await expect(tiles(page).first()).toBeVisible()
-
-    const search = page.getByRole('textbox', { name: 'Search GIFs' })
-    for (const term of ['prod', 'merge', 'rollback']) {
-      await search.fill(term)
-      await search.press('Enter')
-    }
-    await expect(page.getByText(/No searches left/)).toBeVisible()
-
-    // Non-negotiable #10. A spent chip stays live and focusable and the
-    // counter says why; a greyed-out inert one is what this forbids.
     const chip = page.getByRole('button', { name: 'deploy on friday' }).first()
     await expect(chip).toBeEnabled()
-    await chip.focus()
-    await expect(chip).toBeFocused()
+    await chip.click()
+    await expect(tiles(page).first()).toBeVisible()
+    await expect(page.getByText(/searches left/)).toHaveCount(0)
   })
 })
 
 test.describe('the allowance', () => {
-  test('spends one call arriving, one per search, then stops at three', async ({
-    page,
-  }) => {
+  test('spends one call arriving, and exactly one per search', async ({ page }) => {
     const calls = await countCalls(page)
     await page.goto('/room/DEV?seed=42&phase=brief&gifs=live')
 
     // Measured as a delta rather than an absolute, because `reactStrictMode`
     // makes the arrival *fetch* twice in development — mount, tear down,
-    // mount. Production runs the effect once. Arriving costs no budget either
-    // way; what is asserted is that a search costs exactly one call and that
-    // the fourth one costs nothing at all.
-    await expect(page.getByText('3 searches left.')).toBeVisible()
+    // mount. Production runs the effect once.
+    await expect(boardLanded(page)).toBeVisible()
     const afterArriving = calls()
     expect(afterArriving).toBeGreaterThan(0)
 
-    // A search is exactly one call. No debounce means no burst of them.
+    // A search is exactly one call. No debounce means no burst of them, and
+    // that is still worth pinning now that nothing rations them — a picker
+    // that fired per keystroke would be a bandwidth bill instead of an API
+    // one. See ADR-0026.
     const search = page.getByRole('textbox', { name: 'Search GIFs' })
     await search.fill('prod')
     await search.press('Enter')
-    await expect(page.getByText('2 searches left.')).toBeVisible()
-    expect(calls()).toBe(afterArriving + 1)
+    await expect.poll(calls).toBe(afterArriving + 1)
 
-    // And the cap holds against someone who keeps trying — through the field
-    // and through a chip, which are the two ways to spend one. Three a round
-    // is what the room's cost model rests on; see ADR-0021 for what that
-    // buys and what it costs.
-    for (const term of ['merge', 'rollback', 'oncall', 'retro']) {
+    // Three more, one call each, past where the old budget stopped.
+    for (const term of ['merge', 'rollback', 'oncall']) {
       await search.fill(term)
       await search.press('Enter')
     }
-    await page.getByRole('button', { name: 'deploy on friday' }).first().click()
-    await expect(page.getByText(/No searches left/)).toBeVisible()
-    expect(calls()).toBe(afterArriving + 3)
+    await expect.poll(calls).toBe(afterArriving + 4)
+  })
+
+  test('shuffles to another board for exactly one more call', async ({ page }) => {
+    const calls = await countCalls(page)
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=live')
+    await expect(boardLanded(page)).toBeVisible()
+    const afterArriving = calls()
+
+    // ADR-0021 deleted this control as "a third drain on the budget" and kept
+    // `GifCursor` threaded through for the day it came back. One call, like a
+    // search — it is a search, for the same query on the next page.
+    await page.getByRole('button', { name: /Shuffle results/ }).click()
+    await expect.poll(calls).toBe(afterArriving + 1)
   })
 
   test('costs nothing on a screen with no picker', async ({ page }) => {

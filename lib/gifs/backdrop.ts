@@ -1,10 +1,11 @@
 /**
  * The GIF behind the waiting faces.
  *
- * Hard-coded rather than searched, for the reason `notFound.ts` gives about
- * the 404: nobody is picking for this, and a screen that exists to say *wait*
- * should not depend on an upstream API answering. It is a URL on Giphy's CDN,
- * so it costs no key and no request of ours.
+ * Named rather than searched, for the reason `notFound.ts` gives about the
+ * 404: nobody is picking for this, and a screen that exists to say *wait*
+ * should not be at the mercy of what happens to be trending. What is committed
+ * is the slug; the media is resolved in the browser on every load, because a
+ * committed URL is retained delivery data — see ADR-0025.
  *
  * **Why this one.** The waiting faces are the barest screens in the app — an
  * avatar, a headline, a line of body, and a lot of canvas — and the thing that
@@ -15,16 +16,16 @@
  * headline it sits behind. What survives the veil is the warmth, which is all
  * a backdrop on a waiting screen is for.
  *
- * **The renditions are chosen, not guessed.** `giphy.mp4` is 360KB against
- * `giphy.gif`'s 2.4MB, and decodes on the video path rather than the main
- * thread — [ADR 0005](../../docs/adr/0005-media-that-can-move-ships-a-still.md)
- * is why there is a still beside it at all, and why the still is what a
- * visitor who asked for stillness gets. `480w_s.jpg` is the still: 32KB, and
- * the same 16:9 frame, so the poster and the video do not jump.
+ * **The renditions are chosen, not guessed.** The MP4 is a fraction of the
+ * GIF's bytes and decodes on the video path rather than the main thread —
+ * [ADR 0005](../../docs/adr/0005-media-that-can-move-ships-a-still.md) is why
+ * there is a still beside it at all, and why the still is what a visitor who
+ * asked for stillness gets. The adapter picks both off the same rendition, so
+ * the poster and the video do not jump.
  *
- * Check a rendition actually *renders* before swapping this, not just that it
- * answers 200 — Giphy serves a "THIS CONTENT IS NOT AVAILABLE" card at some
- * rendition paths, which would be a strange thing to wait in front of.
+ * Check the clip actually *renders* before swapping this slug, not just that
+ * the lookup answers — a provider that has pulled a GIF may still return a
+ * placeholder card, which would be a strange thing to wait in front of.
  *
  * **No stub swap, unlike `notFoundGif()`.** The Playwright suite resolves every
  * host but the dev server to nothing, so this simply does not load there — and

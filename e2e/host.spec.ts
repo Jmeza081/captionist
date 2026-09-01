@@ -13,10 +13,10 @@ test.describe('setting a room up', () => {
 
     await expect(page).toHaveURL(/\/room\/C-[346789A-HJKMNPQRTUVWXY]{6}$/)
     await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
-    // `DEFAULT_SETTINGS`, read back off the room's own header. Three rounds,
-    // because the default room is the biggest one and that is what ten seats
-    // afford — see `roundsMaxFor`.
-    await expect(page.getByText('Caption the image · 3 rounds · 90s · rank top 3')).toBeVisible()
+    // `DEFAULT_SETTINGS`, read back off the room's own header. The biggest
+    // room and five rounds — the game the landing page describes. It was three
+    // while the GIF allowance priced it; see ADR-0026.
+    await expect(page.getByText('Caption the image · 5 rounds · 90s · rank top 3')).toBeVisible()
   })
 
   test('carries the chosen rules into the room', async ({ page }) => {
@@ -26,7 +26,8 @@ test.describe('setting a room up', () => {
     await page.getByRole('button', { name: 'Decrease Number of rounds' }).click()
     await page.getByRole('button', { name: 'Open the room' }).click()
 
-    await expect(page.getByText('React to the caption · 2 rounds · 90s · rank top 3')).toBeVisible()
+    // One below the default of five.
+    await expect(page.getByText('React to the caption · 4 rounds · 90s · rank top 3')).toBeVisible()
   })
 
   test('drops the caption format when there are no captions to format', async ({ page }) => {
@@ -115,53 +116,49 @@ test.describe('setting a room up', () => {
 })
 
 test.describe('room size and rounds', () => {
-  test('moves the rounds bound as the room grows, and says why', async ({ page }) => {
+  test('offers the design\u2019s full room, and says where rounds stop', async ({ page }) => {
     await page.goto('/host')
 
     const size = page.getByRole('spinbutton', { name: 'Room size' })
     const rounds = page.getByRole('spinbutton', { name: 'Number of rounds' })
 
-    // The default room is the biggest one, and three rounds is what that size
-    // affords — every competitor opens a GIF picker every round.
-    await expect(size).toHaveAttribute('aria-valuenow', '10')
-    await expect(rounds).toHaveAttribute('aria-valuenow', '3')
-    await expect(
-      page.getByText('The most 10 players fit in the free GIF allowance.'),
-    ).toBeVisible()
+    // The default room is the biggest one and plays five rounds — the game
+    // every piece of copy in the repo describes. Both were smaller while the
+    // free GIF allowance priced them; see ADR-0026.
+    await expect(size).toHaveAttribute('aria-valuenow', '20')
+    await expect(size).toHaveAttribute('aria-valuemax', '20')
+    await expect(rounds).toHaveAttribute('aria-valuenow', '5')
+    await expect(rounds).toHaveAttribute('aria-valuemax', '10')
 
-    // Shrinking the room buys rounds back, and the bound moves with it rather
-    // than the stepper silently refusing at a number nothing explains.
-    for (let i = 0; i < 4; i++) {
-      await page.getByRole('button', { name: 'Decrease Room size' }).click()
-    }
-    await expect(size).toHaveAttribute('aria-valuenow', '6')
-    await expect(rounds).toHaveAttribute('aria-valuemax', '5')
-    await expect(page.getByText('Up to 5 at this room size.')).toBeVisible()
+    // Rule 10 applied to a bound: the stepper says where it stops rather than
+    // silently refusing at a number nothing explains.
+    await expect(page.getByText('Up to 10 rounds.')).toBeVisible()
   })
 
-  test('never leaves a round count the room cannot afford', async ({ page }) => {
+  test('does not move one stepper when the other is dragged', async ({ page }) => {
     await page.goto('/host')
 
-    for (let i = 0; i < 4; i++) {
-      await page.getByRole('button', { name: 'Decrease Room size' }).click()
-    }
-    for (let i = 0; i < 2; i++) {
+    const size = page.getByRole('spinbutton', { name: 'Room size' })
+    const rounds = page.getByRole('spinbutton', { name: 'Number of rounds' })
+
+    for (let i = 0; i < 5; i++) {
       await page.getByRole('button', { name: 'Increase Number of rounds' }).click()
     }
-    await expect(page.getByRole('spinbutton', { name: 'Number of rounds' })).toHaveAttribute(
-      'aria-valuenow',
-      '5',
-    )
+    await expect(rounds).toHaveAttribute('aria-valuenow', '10')
 
-    // Widening the room back out strands five rounds above what ten seats pay
-    // for. The host dragged one stepper; they should not have to notice they
-    // invalidated the other.
-    for (let i = 0; i < 4; i++) {
+    // Room size used to bound the round count, so widening the room pulled
+    // this back down under the host's hand. The two settings are independent
+    // now, and this is the assertion that would catch the coupling returning.
+    for (let i = 0; i < 6; i++) {
+      await page.getByRole('button', { name: 'Decrease Room size' }).click()
+    }
+    await expect(size).toHaveAttribute('aria-valuenow', '14')
+    await expect(rounds).toHaveAttribute('aria-valuenow', '10')
+
+    for (let i = 0; i < 6; i++) {
       await page.getByRole('button', { name: 'Increase Room size' }).click()
     }
-    await expect(page.getByRole('spinbutton', { name: 'Number of rounds' })).toHaveAttribute(
-      'aria-valuenow',
-      '3',
-    )
+    await expect(size).toHaveAttribute('aria-valuenow', '20')
+    await expect(rounds).toHaveAttribute('aria-valuenow', '10')
   })
 })

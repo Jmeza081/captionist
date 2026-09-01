@@ -262,7 +262,11 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
     return ad ? [ad] : []
   })
 
-  return { items, ads }
+  // Klipy says so itself, which is better than inferring it the way the Giphy
+  // adapter has to. Absent means no — a body that did not say has no next page.
+  const hasMore = body.data?.has_next === true
+
+  return { items, ads, hasMore }
 }
 
 /**
@@ -292,7 +296,7 @@ function share(id: string, apiKey: string, query?: string): void {
  * browsable board, and an ad has nowhere to go on a landing page.
  */
 async function items(slugs: readonly string[], apiKey: string): Promise<GifBoard> {
-  if (slugs.length === 0) return { items: [], ads: [] }
+  if (slugs.length === 0) return { items: [], ads: [], hasMore: false }
 
   const url =
     `${ENDPOINT}/${apiKey}/gifs/items?slugs=${encodeURIComponent(slugs.slice(0, 50).join(','))}`
@@ -330,7 +334,8 @@ async function items(slugs: readonly string[], apiKey: string): Promise<GifBoard
     return gif ? [gif] : []
   })
 
-  return { items: ordered, ads: [] }
+  // A slug lookup is not a page of anything, so there is never a next one.
+  return { items: ordered, ads: [], hasMore: false }
 }
 
 export const klipyProvider: GifProvider = { descriptor: KLIPY, search, share, items }

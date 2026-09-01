@@ -59,11 +59,16 @@ export interface GifSearchResponse {
    * Where the next page would start.
    *
    * Opaque, and provider-minted: Giphy counts items and Klipy counts pages, and
-   * a caller that knew which would break on the swap. Nothing asks for a second
-   * page today — ADR-0021 deleted "Shuffle results" — but the position is still
-   * threaded through, and this is the shape it will want back.
+   * a caller that knew which would break on the swap. "Shuffle results" spends
+   * it (ADR-0026).
    */
   cursor: GifCursor
+  /**
+   * Whether spending `cursor` would return anything.
+   *
+   * False on the offline shelf, which is twelve tiles and has no second page.
+   */
+  hasMore: boolean
   query: string
   /**
    * Who supplied these tiles.

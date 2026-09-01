@@ -252,12 +252,13 @@ export interface RoomSettings {
   /**
    * How many seats this room offers, 3 to `MAX_PLAYERS`.
    *
-   * A room setting rather than the global constant because it bounds
-   * `totalRounds`: every competitor opens a picker every round, so seats times
-   * rounds is what the GIF allowance actually buys. `roundsMaxFor()` owns that
-   * relationship.
+   * A room setting rather than the global constant because a host picks it,
+   * and because `authorize` gates joining on the host's number rather than on
+   * the ceiling. It used to bound `totalRounds` as well — seats times rounds
+   * was what the GIF allowance bought — and no longer does (ADR-0026).
    */
   maxPlayers: number
+  /** How many rounds this room plays, 1 to `ROUNDS_MAX`. */
   totalRounds: number
   uniqueNicknames: boolean
 }
@@ -289,7 +290,8 @@ export interface GameState {
    *
    * Absent on a room that reached its last round the ordinary way, which is
    * why the podium can treat it as "there is something to explain". Only one
-   * reason so far: Giphy's hourly allowance ran out mid-round.
+   * reason so far: the GIF provider's allowance ran out mid-round. Unmetered
+   * is not infinite, so this stays even with a production key (ADR-0026).
    */
   endedBecause?: 'gifs'
 }

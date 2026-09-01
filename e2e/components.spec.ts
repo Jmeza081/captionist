@@ -81,7 +81,7 @@ test.describe('component gallery', () => {
     await page.goto('/components')
 
     const toggle = page.getByRole('switch', {
-      name: 'Let the picked player search Giphy',
+      name: 'Let the picked player search GIFs',
     })
 
     await expect(toggle).toHaveAttribute('aria-checked', 'false')

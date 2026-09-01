@@ -11,7 +11,6 @@ import {
   ROUNDS_MIN,
   WAITING_ALL_IN_MS,
   colorFor,
-  roundsMaxFor,
 } from './constants'
 import { createRoom } from './create'
 import { project } from './project'
@@ -725,51 +724,44 @@ describe('running out of GIFs', () => {
 })
 
 describe('room size and round count', () => {
-  it('affords fewer rounds the bigger the room gets', () => {
-    // Every competitor opens a picker every round, so seats times rounds is
-    // what the GIF allowance buys. These are the numbers `/host` shows.
-    expect(roundsMaxFor(3)).toBe(5)
-    expect(roundsMaxFor(6)).toBe(5)
-    expect(roundsMaxFor(7)).toBe(5)
-    expect(roundsMaxFor(8)).toBe(4)
-    expect(roundsMaxFor(9)).toBe(4)
-    expect(roundsMaxFor(10)).toBe(3)
-  })
-
-  it('never returns a bound the stepper cannot show', () => {
-    for (let size = MIN_PLAYERS; size <= MAX_PLAYERS; size++) {
-      const max = roundsMaxFor(size)
-      expect(max, `size ${size}`).toBeGreaterThanOrEqual(ROUNDS_MIN)
-      expect(max, `size ${size}`).toBeLessThanOrEqual(ROUNDS_MAX)
-    }
-  })
-
-  it('clamps the round count when the room grows past what it affords', () => {
-    const small = fixtureFor('lobby', { players: 3 })
-    const five = apply(small, small.hostId, {
-      type: 'room/settingsChanged',
-      patch: { maxPlayers: 6, totalRounds: 5 },
-    })
-    expect(five.settings.totalRounds).toBe(5)
-
-    // Widening the room to ten strands five rounds above what ten seats can
-    // pay for, and a host dragging one stepper should not have to notice.
-    const wide = apply(five, five.hostId, {
-      type: 'room/settingsChanged',
-      patch: { maxPlayers: 10 },
-    })
-    expect(wide.settings.maxPlayers).toBe(10)
-    expect(wide.settings.totalRounds).toBe(3)
-  })
-
-  it('leaves a round count the new size can still afford alone', () => {
+  it('does not let one setting bound the other', () => {
+    // Seats times rounds used to be what the GIF allowance bought, so widening
+    // the room pulled the round count down with it. A production key removed
+    // that premise (ADR-0026) and this is the assertion that would catch the
+    // coupling coming back.
     const state = fixtureFor('lobby', { players: 3 })
-    const two = apply(state, state.hostId, {
+    const full = apply(state, state.hostId, {
       type: 'room/settingsChanged',
-      patch: { maxPlayers: 10, totalRounds: 2 },
+      patch: { maxPlayers: MAX_PLAYERS, totalRounds: ROUNDS_MAX },
     })
-    // Two fits inside ten seats, so nothing is taken away.
-    expect(two.settings.totalRounds).toBe(2)
+    expect(full.settings.maxPlayers).toBe(MAX_PLAYERS)
+    expect(full.settings.totalRounds).toBe(ROUNDS_MAX)
+
+    // And widening the room afterwards leaves the round count alone.
+    const wide = apply(full, full.hostId, {
+      type: 'room/settingsChanged',
+      patch: { maxPlayers: MAX_PLAYERS },
+    })
+    expect(wide.settings.totalRounds).toBe(ROUNDS_MAX)
+  })
+
+  it('clamps each setting into its own bounds, whichever road it arrived by', () => {
+    // A URL lever or a stale fixture can carry anything; the stepper is only
+    // one of the roads in, which is why the clamp lives in the reducer.
+    const state = fixtureFor('lobby', { players: 3 })
+    const over = apply(state, state.hostId, {
+      type: 'room/settingsChanged',
+      patch: { maxPlayers: MAX_PLAYERS + 40, totalRounds: ROUNDS_MAX + 40 },
+    })
+    expect(over.settings.maxPlayers).toBe(MAX_PLAYERS)
+    expect(over.settings.totalRounds).toBe(ROUNDS_MAX)
+
+    const under = apply(state, state.hostId, {
+      type: 'room/settingsChanged',
+      patch: { maxPlayers: 0, totalRounds: 0 },
+    })
+    expect(under.settings.maxPlayers).toBe(MIN_PLAYERS)
+    expect(under.settings.totalRounds).toBe(ROUNDS_MIN)
   })
 
   it('fills against the room’s own size, not the global ceiling', () => {
@@ -779,7 +771,7 @@ describe('room size and round count', () => {
       patch: { maxPlayers: 5 },
     })
 
-    // Five seats, five taken. The refusal names the host's number, not ten.
+    // Five seats, five taken. The refusal names the host's number, not twenty.
     const verdict = authorize(small, {
       type: 'player/joined',
       player: { id: 'late', name: 'Roberto', avatarSeed: 'fern' },

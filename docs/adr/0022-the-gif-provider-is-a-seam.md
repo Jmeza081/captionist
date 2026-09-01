@@ -111,6 +111,14 @@ as taking a decision. The caps stay until they are changed deliberately, with
 measurements — superseding that ADR now would leave the repo documenting limits
 it still enforces.
 
+> **Correction, 2026-09-01.** They have moved. The production key was approved
+> and [ADR 0026](./0026-the-rooms-limits-are-a-design-choice.md) supersedes
+> ADR 0021. One clause above did not survive contact: the caps did *not* need
+> measurements to change, because each was a quotient with the allowance in its
+> denominator and removing the denominator leaves no division to do. What the
+> measurements were actually for — and what `usage.ts` delivered — was the
+> production-key application itself.
+
 **A false attribution disappeared.** `ComponentGallery` rendered `GifPanel`
 without a `source` prop, so it took the `'giphy'` default and printed "via
 Giphy" over local placeholder art. Defaulting to `undefined` fixes it, and the

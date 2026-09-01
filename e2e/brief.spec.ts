@@ -47,13 +47,13 @@ test.describe('the brief', () => {
     // Both live with the search now — nothing waits at the bottom of a board
     // that scrolls a long way.
     //
-    // The secondary is "Surprise me", not "Shuffle results". Shuffle fetched
-    // the next page of twelve; the board holds fifty and that page was a whole
-    // API call to show what was already on screen. Surprise reads one off the
-    // board it has, for nothing. See ADR-0021.
+    // "Surprise me" and "Shuffle results" are different controls and both are
+    // here. Surprise commits to one of the fifty tiles already loaded, for
+    // nothing; Shuffle goes and gets another fifty. ADR-0021 deleted the
+    // second to save the call and ADR-0026 put it back.
     await expect(page.getByRole('button', { name: 'Surprise me' })).toBeInViewport()
     await expect(page.getByRole('button', { name: 'Pick one first' })).toBeInViewport()
-    await expect(page.getByRole('button', { name: 'Shuffle results' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Shuffle results/ })).toHaveCount(1)
 
     // And the note about the clock reads with the headline, not with the button.
     await expect(

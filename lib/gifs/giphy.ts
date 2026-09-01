@@ -149,13 +149,28 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
    * downstream re-sorts: `GifPanel` renders `results` in the order it gets
    * them, and its local narrowing is off whenever `onSubmit` is supplied.
    */
-  const items = (body.data ?? []).flatMap((item) => {
+  const returned = body.data ?? []
+
+  const items = returned.flatMap((item) => {
     const result = toResult(item, term)
     return result ? [result] : []
   })
 
+  /**
+   * Whether there is a next page, inferred rather than told.
+   *
+   * Giphy's `pagination.total_count` is unreliable on `trending` and absent on
+   * some responses, so a full page is the signal: fewer items than asked for
+   * means the end of the results.
+   *
+   * Counted off `returned`, never off `items`. A page whose tiles were all
+   * undrawable would otherwise report itself as the end of the results and
+   * strand "Shuffle results" one page early.
+   */
+  const hasMore = returned.length >= query.limit
+
   // Giphy is not asked for ads and has no `adSizes`, so there are never any.
-  return { items, ads: [] }
+  return { items, ads: [], hasMore }
 }
 
 export const giphyProvider: GifProvider = { descriptor: GIPHY, search }

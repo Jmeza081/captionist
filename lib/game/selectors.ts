@@ -7,7 +7,6 @@ import {
   RANK_POINTS,
   ROUNDS_MAX,
   SEAT_GRACE_MS,
-  roundsMaxFor,
 } from './constants'
 import type {
   Ballot,
@@ -1293,16 +1292,17 @@ export interface HostSetupCopy {
 /**
  * Why the rounds stepper stops where it does.
  *
- * Said under the control rather than discovered by pushing against it: the
- * bound moves with the room size, and a stepper that silently refuses is a
- * stepper people assume is broken. Rule 10's reasoning applied to a bound
- * instead of a button.
+ * Said under the control rather than discovered by pushing against it: a
+ * stepper that silently refuses is a stepper people assume is broken. Rule
+ * 10's reasoning applied to a bound instead of a button.
+ *
+ * The bound used to move with the room size, because seats times rounds was
+ * what the GIF allowance bought. It is a flat ceiling now (ADR-0026), so the
+ * hint no longer needs the roster to answer.
  */
-export function roundsHint(maxPlayers: number, totalRounds: number): string {
-  const max = roundsMaxFor(maxPlayers)
-  if (totalRounds < max) return `Up to ${max} at this room size.`
-  if (max === ROUNDS_MAX) return 'The most the room plays.'
-  return `The most ${maxPlayers} players fit in the free GIF allowance.`
+export function roundsHint(totalRounds: number): string {
+  if (totalRounds < ROUNDS_MAX) return `Up to ${ROUNDS_MAX} rounds.`
+  return 'The most the room plays.'
 }
 
 export function hostSetupCopy(): HostSetupCopy {

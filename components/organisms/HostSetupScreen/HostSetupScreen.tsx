@@ -26,8 +26,8 @@ import {
   DEFAULT_SETTINGS,
   MAX_PLAYERS,
   MIN_PLAYERS,
+  ROUNDS_MAX,
   ROUNDS_MIN,
-  roundsMaxFor,
 } from '@/lib/game/constants'
 import { hostSetupCopy, modeChoices, roundsHint, showsCaptionFormat } from '@/lib/game/selectors'
 import type { HatId } from '@/lib/game/types'
@@ -239,15 +239,14 @@ export function HostSetupScreen() {
                 />
 
                 {/*
-                  Room size sits *above* rounds, because it bounds it.
+                  Room size and rounds are independent settings.
 
-                  Every competitor opens a GIF picker every round, so seats
-                  times rounds is what the free Giphy allowance actually buys
-                  — `roundsMaxFor` owns that relationship and this is the one
-                  screen where a host can see it move. Lowering the size never
-                  strands the round count: the reducer clamps the pair, and
-                  this clamps alongside it so the stepper never shows a value
-                  the room will not keep.
+                  They used to constrain each other — every competitor opens a
+                  GIF picker every round, so seats times rounds was what the
+                  free allowance bought, and lowering the size pulled the round
+                  count down with it. A production key removed that premise
+                  (ADR-0026), so each stepper now owns its own bound and a host
+                  dragging one never moves the other under their hand.
                 */}
                 <Stepper
                   label={copy.roomSizeLabel}
@@ -255,12 +254,7 @@ export function HostSetupScreen() {
                   format={(n) => `${n} players`}
                   min={MIN_PLAYERS}
                   max={MAX_PLAYERS}
-                  onChange={(maxPlayers) =>
-                    patch({
-                      maxPlayers,
-                      totalRounds: Math.min(settings.totalRounds, roundsMaxFor(maxPlayers)),
-                    })
-                  }
+                  onChange={(maxPlayers) => patch({ maxPlayers })}
                 />
 
                 <Stack gap={5}>
@@ -269,12 +263,10 @@ export function HostSetupScreen() {
                     value={settings.totalRounds}
                     format={(n) => String(n)}
                     min={ROUNDS_MIN}
-                    max={roundsMaxFor(settings.maxPlayers)}
+                    max={ROUNDS_MAX}
                     onChange={(totalRounds) => patch({ totalRounds })}
                   />
-                  <p className={styles.hint}>
-                    {roundsHint(settings.maxPlayers, settings.totalRounds)}
-                  </p>
+                  <p className={styles.hint}>{roundsHint(settings.totalRounds)}</p>
                 </Stack>
               </Stack>
             </Stack>

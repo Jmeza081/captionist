@@ -16,7 +16,7 @@ import { normalizeCode } from '@/lib/game/codes'
  * refuses any other. That check is the whole security boundary — see
  * `lib/ably/seat.ts`.
  *
- * And it never caches. The Giphy route sets `s-maxage`; a minted token is the
+ * And it never caches. The deleted GIF route once set `s-maxage`; a minted token is the
  * one response in the app that must not be shared or replayed.
  */
 export async function GET(request: Request): Promise<NextResponse> {

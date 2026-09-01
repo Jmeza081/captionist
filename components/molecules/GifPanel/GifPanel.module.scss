@@ -17,6 +17,12 @@
   gap: t.$space-8;
 }
 
+// Shrinks the shuffle key to its own width. The panel is a flex column, so a
+// bare child would stretch the full width and read as a primary action.
+.popoverTools {
+  display: flex;
+}
+
 .title {
   @include t.eyebrowText;
   color: t.$text-meta;
@@ -154,8 +160,8 @@
   color: t.$text-meta;
 }
 
-// The budget counter and Giphy's mark share a line. `justify: between` on the
-// Inline puts the mark at the end even when there is no counter beside it.
+// The provider's mark, alone on its row now the search counter is gone. Full
+// width so `justify: between` on the Inline still puts it at the end.
 .meta {
   width: 100%;
 }

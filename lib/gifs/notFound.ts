@@ -6,10 +6,12 @@ import type { GifResult } from './types'
  *
  * One hard-coded pick rather than a search, for the same reason the page's
  * copy is hard-coded: a 404 is not a round, there is nobody to pick for it,
- * and a page that exists to say "this went wrong" should not depend on an
- * upstream API answering. It is a URL on Giphy's CDN, so it costs no API key
- * and no request of ours — `isAllowedImageSrc` would pass it too, though
- * nothing checks it here: this string is ours, not a player's.
+ * and a page that exists to say "this went wrong" should not show whatever
+ * happens to be trending. What is committed is the slug, not the URL — a
+ * committed media URL is retained delivery data (ADR-0025) — so the media is
+ * resolved in the browser like the wall's. `isAllowedImageSrc` would pass what
+ * comes back, though nothing checks it here: this pick is ours, not a
+ * player's.
  *
  * Confused Travolta, because the joke tells itself: he has been the
  * internet's shorthand for "there is nothing here" for a decade, which is the
@@ -21,11 +23,10 @@ import type { GifResult } from './types'
  * now (`$media-ratio`), and the beach cut is 500×251: `object-fit: cover`
  * would have thrown away half its width and doubled what was left.
  *
- * WebP rather than the GIF — 1.08MB against 2.5MB — on a page nobody meant to
- * land on. Check a rendition actually *renders* before swapping this, not just
- * that it answers 200: Giphy serves a "THIS CONTENT IS NOT AVAILABLE" card at
- * some rendition paths, which is a funnier 404 than the one we wrote and not
- * the one we chose.
+ * WebP rather than the GIF, on a page nobody meant to land on. Check the clip
+ * actually *renders* before swapping this slug, not just that the lookup
+ * answers: a provider that has pulled a GIF may still return a placeholder
+ * card, which is a funnier 404 than the one we wrote and not the one we chose.
  */
 
 
@@ -46,11 +47,11 @@ const OFFLINE = SAMPLE_GIFS.find((gif) => gif.id === 'sample-prod')
  * A function rather than a constant, so the stub switch is read when the page
  * renders rather than when the module is first evaluated.
  *
- * This one is not an API call and never was — it is a single hard-coded CDN
- * URL in the HTML, which is the sanctioned way to show Giphy media. What
- * changed is only the switch's name: the picker calls Giphy from the browser
- * now, so the variable had to become `NEXT_PUBLIC_`, and a server-only read of
- * the old name would silently stop stubbing.
+ * It resolves one named slug from the browser rather than searching, which is
+ * the sanctioned way to show a provider's media for a pick that is ours. The
+ * switch is `NEXT_PUBLIC_` because every one of these calls is made in the
+ * browser now, and a server-only read of the old name would silently stop
+ * stubbing.
  *
  * Be honest about how far that goes: `/_not-found` is prerendered (`○` in
  * `next build`), so a production build resolves this once and bakes the answer

@@ -11,11 +11,14 @@ export const metadata: Metadata = {
  * It asks no server for a code: under ADR 0003 the host's browser *is* the
  * server, so `generateCode` in the click handler is the whole of it.
  *
- * The one thing it does await is the wall beside the form, resolved here for
- * the same reason the landing page resolves its own — the tiles arrive in the
- * first HTML at their final size, so nothing shifts when the media lands. It
- * is the same hour-cached `wallTiles()` call as `/`, so a host who came from
- * the front door already has every one of these in cache.
+ * **It awaits nothing.** The wall beside the form used to be resolved here, by
+ * an hour-cached `wallTiles()` call shared with `/`. That call was a
+ * server-side request against the provider's terms and it is gone: `HeroWall`
+ * ships twenty `TvStatic` cells in the first HTML and resolves the real art in
+ * the browser from committed slugs — see
+ * [ADR 0025](../../docs/adr/0025-the-app-remembers-slugs-not-urls.md). The
+ * cells are already at their final size, so nothing shifts when the media
+ * lands, which is what the old arrangement was actually buying.
  */
 export default async function HostPage() {
 

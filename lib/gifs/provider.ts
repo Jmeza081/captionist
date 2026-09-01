@@ -33,9 +33,9 @@ export type BoardSource = GifProviderId | 'sample'
  * is in — a caller that knew would be a caller that breaks on the swap.
  *
  * `provider` rides along so a cursor minted against one source can never be
- * spent against another. Nothing pages today (ADR-0021 deleted "Shuffle
- * results"), but `useGifSearch` still threads the position through, and this is
- * the shape it will want back.
+ * spent against another. "Shuffle results" spends it — ADR-0021 deleted that
+ * control to save a call and ADR-0026 put it back, which is the case this type
+ * was kept alive for.
  */
 export interface GifCursor {
   readonly provider: GifProviderId
@@ -82,6 +82,16 @@ export interface GifAd {
 export interface GifBoard {
   /** In the provider's own order, with nothing reordered or removed. */
   readonly items: readonly GifResult[]
+  /**
+   * Whether asking for the next page would return anything.
+   *
+   * "Shuffle results" wraps back to the first page when this is false, so the
+   * control never lands somebody on an empty board at the end of a thin result
+   * set. Klipy says so directly (`has_next`); Giphy does not, so its adapter
+   * infers it — see the note there, because inferring it from the *drawable*
+   * count rather than the returned count is a real bug waiting to happen.
+   */
+  readonly hasMore: boolean
   /**
    * Whatever ads came back, in the order they came.
    *

@@ -138,21 +138,34 @@ so a guest briefly saw a lobby they were missing from. And a refusal arriving
 before seating — a full room, a duplicate nickname — published into a snackbar
 the boot branch returned before rendering, leaving the spinner turning forever.
 
+**The caps came off.** Not a phase either — the Klipy production key was
+approved on 2026-09-01, which removed the premise every room limit rested on.
+`MAX_PLAYERS` is 20, `ROUNDS_MAX` is 10, `roundsMaxFor()` and
+`SEARCHES_PER_ROUND` are gone, "Shuffle results" is back on the picker and chat
+has its GIF panel again (lazily mounted, which was ADR 0021's real finding).
+[ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md) supersedes
+ADR 0021 and records why none of it needed a measurement to justify. The vote
+board at nineteen submissions is the new binding constraint; `?bots=19` reaches
+it.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.
 
-- [ ] **Apply for a Klipy production key.** The test key in `.env.local` is 100
-      calls an hour — the same ceiling as the Giphy beta key it replaced, and the
-      one every cap in [ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)
-      is arithmetic on. A production key is free and unmetered, and is what makes
-      those caps a design choice rather than a bill. Take the measured numbers
-      from the GIF allowance panel on `/components`, not the model.
+- [x] **Apply for a Klipy production key.** Approved 2026-09-01. Every cap in
+      [ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md) was arithmetic
+      on the 100-an-hour test key; a production key is free and unmetered, which
+      made those caps a design choice rather than a bill —
+      [ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md) is where
+      they were re-set. **Make sure `.env.local` and the deployed environment
+      hold the *production* key**, not the test one: nothing in the app can tell
+      them apart, and a full room will outrun a test key.
 - [ ] **Turn ads on in the Klipy Partner Panel.** The free production tier is
-      ad-funded and ad objects arrive inline in the results. Nothing renders them
-      yet: no key here has ever been served one, so the shape is unverified and
-      anything not `type: "gif"` is currently dropped. Enabling them is the
-      prerequisite for building that, not the other way round.
+      ad-funded and ad objects arrive inline in the results. The adapter no
+      longer drops them (`0826dd7`) and `AdSlot` renders them in a sandboxed
+      iframe above the board — but **no key here has ever been served a real
+      one**, so that path is built and unexercised. A production key is the
+      first chance to check it end to end.
 - [ ] **Swap the keys.** `NEXT_PUBLIC_KLIPY_API_KEY`, `NEXT_PUBLIC_GIPHY_API_KEY`
       and `ABLY_API_KEY` in `.env.local` are personal development credentials:
       the GIF keys spend a personal rate limit and the Ably key bills a personal
@@ -167,11 +180,14 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
 - [ ] **Clear `ABLY_STUB` and `NEXT_PUBLIC_GIFS_STUB`** in the deployed
       environment. The URL levers are already gated to non-production; these are
       not.
-- [ ] **Decide about a production Giphy key.** The room fits inside the free
-      100/hour for one game at a time
-      ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)); a second
-      game in the same hour does not. Giphy quotes production pricing privately
-      and only after an application.
+- [ ] **Decide about a production Giphy key.** Lower stakes than it was: Klipy
+      is the default and its production key carries the room, so Giphy is the
+      fallback adapter rather than the road. On its free 100/hour a full room no
+      longer fits at all — the caps that used to make it fit are gone
+      ([ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md)) — so the
+      real choice is a production key or accepting that `?gifs=giphy` is a
+      development lever and a small-room fallback. Giphy quotes production
+      pricing privately and only after an application.
 - [ ] **Widen `allowedDevOrigins`** only for LAN testing, never for the deployed
       build.
 
@@ -180,10 +196,10 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
 | | Decision |
 | --- | --- |
 | Authority | The host browser is the server. Ably is pub/sub + presence. No database. |
-| Role holder | **Does not compete.** Sets the round up, sits it out, then votes. This is also the cost model: a room of N fields N−1 pickers per round, which is what `roundsMaxFor()` prices. |
+| Role holder | **Does not compete.** Sets the round up, sits it out, then votes. That used to double as the cost model — a room of N fields N−1 pickers per round, which `roundsMaxFor()` priced — and is now purely a game rule. |
 | Uploads | **Not a feature.** Priced the storage target and removed the scaffolding — [ADR 0014](./adr/0014-uploads-are-not-a-feature.md). Giphy covers both modes. |
-| GIFs | **Klipy by default, Giphy as a second adapter**, both called from the browser with a public key ([ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). Giphy's terms forbid proxying and caching ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)); Klipy's production key is free and unmetered, which is why it is the default. The room's caps still come from Giphy's 100/hour ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)) and have **not** moved — `lib/gifs/usage.ts` is now measuring what that ADR only modelled. The wall, the waiting backdrop and the 404 are Klipy too, resolved in the browser from committed *slugs* — a build-time importer and a committed media URL are both things Klipy's terms rule out ([ADR 0025](./adr/0025-the-app-remembers-slugs-not-urls.md)). |
-| Chat | Deferred to phase 6; it is a `RoomEvent`, never game state. **No GIF picker** — mounting one cost every player an API call on joining ([ADR 0021](./adr/0021-the-rooms-limits-are-a-rate-limit.md)). Emoji, Slackmoji and text only. |
+| GIFs | **Klipy by default, Giphy as a second adapter**, both called from the browser with a public key ([ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). Giphy's terms forbid proxying and caching ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)); Klipy's production key is free and unmetered, which is why it is the default. The room's caps **no longer come from an allowance at all** — the production key landed and [ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md) re-set them as game design, superseding ADR 0021. `lib/gifs/usage.ts` stays as the only thing counting what a full room spends. The wall, the waiting backdrop and the 404 are Klipy too, resolved in the browser from committed *slugs* — a build-time importer and a committed media URL are both things Klipy's terms rule out ([ADR 0025](./adr/0025-the-app-remembers-slugs-not-urls.md)). |
+| Chat | Deferred to phase 6; it is a `RoomEvent`, never game state. The GIF picker is back and **mounted lazily** — what ADR 0021 actually found was that mounting one *on join* cost every player a call, which is still true and is why `useGifSearch({ enabled })` gates it ([ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md)). |
 | `format:'one'`, `voting:'single'` | Implemented in phase 7. Both were live controls in `/host` that no screen read — a single-vote room paid 3/2/1, and "One line" changed nothing but a summary label. |
 | GIF search toggle | **Removed, against the design.** `giphyEnabled` was a `/host` toggle nothing read, and it offered a room state the game cannot be played in — both modes need a GIF every round. `?gifs=stub` covers the real want ([ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). |
 | Help modal | Never pauses the room. Only the host's explicit pause stops the clock. |
@@ -223,7 +239,7 @@ can leak into a screen.
 | `?voting=single`, `?format=one` | Boots that fixture under the other voting rule or caption format, for the same reason as `?mode=`. Without them the only road to a single-vote room is `/host` → `sessionStorage` → a room, which drags a route boundary into a screen spec. |
 | `?as=p2` | Takes a different seat. Round one's role holder is always `p0`, and the role holder sits the round out — so the caption and answer faces cannot be reached as the host. It exercised the guest path a phase before real joining depended on it. |
 | `?transport=broadcast` | Runs the room over `BroadcastChannel` instead of Ably — one browser, many tabs, no network and no key. What the whole test suite runs on; `ABLY_STUB=1` does the same thing stickily. |
-| `?gifs=stub` | Serves offline sample art instead of calling Giphy. `NEXT_PUBLIC_GIFS_STUB=1` does the same thing permanently; a missing `NEXT_PUBLIC_GIPHY_API_KEY` falls back to it outside production. |
+| `?gifs=stub` | Serves offline sample art instead of calling the provider. `?gifs=giphy` / `?gifs=klipy` pin one for a page load. `NEXT_PUBLIC_GIFS_STUB=1` does the stub permanently; a missing key falls back to it outside production. |
 
 `?as=` needs `?phase=`: it takes a seat that already exists, and in a fresh room
 the other seats are empty until somebody joins. Real joining is built now, so

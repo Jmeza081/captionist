@@ -4,6 +4,7 @@ import {
   DEFAULT_SETTINGS,
   HOST_FALLBACK_NAME,
   PROMPT_MAX,
+  ROUNDS_MAX,
   SEAT_GRACE_MS,
 } from './constants'
 import { fixtureFor, lobbyFixture } from './fixtures'
@@ -432,16 +433,18 @@ describe('the setup screen', () => {
 
   it('says why the rounds stepper stops where it does', () => {
     // Room to grow: name the ceiling so nobody has to find it by pushing.
-    expect(roundsHint(10, 2)).toBe('Up to 3 at this room size.')
+    expect(roundsHint(2)).toBe('Up to 10 rounds.')
 
-    // At the ceiling, and the ceiling is the game's own — not Giphy's.
-    expect(roundsHint(6, 5)).toBe('The most the room plays.')
+    // At the ceiling, and the ceiling is the game's own — no vendor left to
+    // blame it on, which is the whole point of ADR-0026.
+    expect(roundsHint(10)).toBe('The most the room plays.')
+  })
 
-    // At a ceiling the allowance imposed. This is the one that has to explain
-    // itself, because it is the only bound that is not about the game.
-    expect(roundsHint(10, 3)).toBe(
-      'The most 10 players fit in the free GIF allowance.',
-    )
+  it('does not let the roster change what the hint says', () => {
+    // The bound used to move with room size. Nothing about the roster reaches
+    // this function any more, and that is the regression worth pinning.
+    expect(roundsHint(5)).toBe(roundsHint(5))
+    expect(roundsHint(ROUNDS_MAX)).toBe('The most the room plays.')
   })
 })
 

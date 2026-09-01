@@ -12,9 +12,10 @@ export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * what is missing rather than going grey and inert. See DESIGNSYSTEM.md
    * §4.7.
    *
-   * The picker's suggestion chips need it because each one now spends a
-   * board off the round's budget, so there is a real "not right now" state
-   * they have to be able to express.
+   * The picker's suggestion chips were the first case: each one spent a board
+   * off the round's search budget. That budget is gone (ADR-0026) and the prop
+   * stays, because the contract is the design system's rather than the
+   * picker's — see the gallery, which is where it is demonstrated now.
    */
   blocked?: boolean
   children: ReactNode

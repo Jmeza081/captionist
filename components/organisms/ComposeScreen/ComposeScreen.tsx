@@ -173,7 +173,7 @@ export function ComposeScreen() {
           suggestions={SEARCH_SUGGESTIONS}
           selectedId={picked?.id}
           selectionLabel="Your answer"
-          searchesLeft={gifs.remaining}
+          onMore={gifs.more}
           provider={gifs.descriptor}
           ads={gifs.ads}
           onPick={setPicked}
