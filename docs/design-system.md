@@ -76,7 +76,7 @@ own:
 | `$static-scanline-width` | `1px` | One line, and the gap after it — 2px reads as blinds |
 | `$static-sweep` | `rgba(255,255,255,.06)` | The pale edges of the rolling tear |
 | `$static-tear` | `rgba(0,0,0,.45)` | Its dark centre |
-| `$scrim-static` | `rgba(0,0,0,.62)` | The veil over all of it |
+| `$scrim-static` | `rgba(0,0,0,.62)` | The veil over all of it, on the backdrop and the wall alike |
 
 `$scrim-static` is its own weight rather than reusing a wall scrim, and the
 reason is worth keeping: `$scrim-wall` (.75) **plus its blur** is what media we
@@ -84,6 +84,13 @@ did not choose needs, and over a picture made entirely of high frequency it
 leaves flat grey — the effect vanishes. `$scrim-wall-soft` (.45) shows the
 picture but lets near-white dots up under a headline. So static takes .62 and
 **no blur at all**, whatever `scrim` the caller asked for.
+
+The picture itself is two hard levels, not a grey ramp, and it swaps between
+five differently-seeded fields rather than sliding one around. Both are
+legibility decisions as much as aesthetic ones: a low-contrast field slid about
+changes so little between frames that it reads as not moving at all, which is
+how the first version shipped looking frozen while its animation was genuinely
+running.
 
 Text on dark is named by role: `$text-primary` (`#fff`), `$text-chat` (.78),
 `$text-body` (.55), `$text-label` (.45), `$text-meta` (.4), `$text-caption`
