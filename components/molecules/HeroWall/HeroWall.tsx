@@ -62,10 +62,8 @@ export function HeroWall({
    * the URL must not be retained — so the wall arrives complete and correctly
    * sized in the first HTML, and improves. See `art.ts`.
    */
-  const resolved = useResolvedArt(WALL_SLUGS)
-  const tiles = resolved
-    ? cycleTiles(resolved.map(toWallTile), fallback.length)
-    : fallback
+  const { art } = useResolvedArt(WALL_SLUGS)
+  const tiles = art ? cycleTiles(art.map(toWallTile), fallback.length) : fallback
   const videos = useRef<HTMLVideoElement[]>([])
   // `useReducedMotion` reports stillness until it knows otherwise, so this
   // starts paused and nothing plays before we know whether it should.
@@ -147,7 +145,7 @@ export function HeroWall({
         once real art has resolved — the offline shelf is ours and is nobody
         else's to be credited for, and until then that is what is on screen.
       */}
-      {resolved && (
+      {art && (
         <span className={styles.credit}>
           GIFs via {intendedProvider().descriptor.name}
         </span>

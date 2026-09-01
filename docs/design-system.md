@@ -65,6 +65,15 @@ the GIF wall's veil where display type sits on top of it, `$scrim-wall-soft`
 `$wall-scrim-blur` / `$wall-scrim-blur-soft` as the matching backdrop blurs.
 `$scrim-own-entry`, `$scrim-tally` and `$scrim-backdrop` cover the rest.
 
+`SceneBackdrop` draws television static while its clip is still being fetched,
+and that has two tokens of its own: `$static-grain` (`160px`) is how big one
+tile of noise is drawn — coarser than film grain, because a set with no signal
+has visible dots and fine noise reads as a dirty screen — and `$static-sweep`
+(`rgba(255,255,255,.06)`) is the pale band that rolls through an untuned
+picture. Note that the static takes `$scrim-wall-soft` and **no blur** whatever
+`scrim` is asked for: `$scrim-wall` exists for media we do not control, and
+blurring something made entirely of high frequency leaves flat grey.
+
 Text on dark is named by role: `$text-primary` (`#fff`), `$text-chat` (.78),
 `$text-body` (.55), `$text-label` (.45), `$text-meta` (.4), `$text-caption`
 (.35), `$text-timestamp` (.3).
@@ -447,7 +456,7 @@ primitives.
 | `LandingNav` | molecule | The public front door's bar. Not `AppHeader` — that one is live room state, this is static links and a way in |
 | `HeroWall` | molecule | A tilted wall of looping GIFs — the landing hero's background, and the 60% beside `/host`'s form. Video over GIF, still-first, and stoppable. `scrim` picks the veil's weight: `full` for a wall carrying display type, `soft` for one carrying nothing |
 | `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
-| `SceneBackdrop` | atom | Media behind a whole screen rather than inside a card — the waiting faces, where an avatar and a headline were the only things on the canvas. Fixed, inert and `aria-hidden`, with a scrim in two weights. Carries [ADR 0005](./adr/0005-media-that-can-move-ships-a-still.md)'s contract: playback starts **off** and a client island turns it on, so a visitor who asked for stillness never sees a frame. `HeroWall` holds the same contract for a grid of tiles; neither shape serves the other |
+| `SceneBackdrop` | atom | Media behind a whole screen rather than inside a card — the waiting faces, where an avatar and a headline were the only things on the canvas. Fixed, inert and `aria-hidden`, with a scrim in two weights. Carries [ADR 0005](./adr/0005-media-that-can-move-ships-a-still.md)'s contract: playback starts **off** and a client island turns it on, so a visitor who asked for stillness never sees a frame. `HeroWall` holds the same contract for a grid of tiles; neither shape serves the other Draws television static while its clip is still being fetched, and nothing once the lookup settles on nothing — `tuning` tells those apart. |
 | `HatPicker` | molecule | Choosing a hat on `/join` and `/host`. Sixteen plus a "No hat" tile, folded to six behind a "Show all hats" disclosure because it is the *second* picker on that card. Built to `AvatarPicker`'s shape — a real radiogroup, roving tabindex, arrows that move the selection with the focus — and names what is worn in the header slot where the face picker puts its shuffle. `heading` draws the label as a section head, which `/host` uses and `/join` does not |
 | `AvatarPicker` | molecule | Choosing a face on `/join` and `/host`. Offers a window of ten from the seventy-seed catalogue — one line inside a container wide enough, five and five on a phone — with a "Shuffle faces" that re-rolls the offer and keeps your pick. A real radiogroup with roving tabindex and arrow keys. Owns the seed-to-preview-colour mapping so two screens cannot drift |
 | `ModeCard` | molecule | One of the two game modes, as a card with the sentence that explains it — a format, not a setting |

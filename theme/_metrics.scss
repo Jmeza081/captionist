@@ -386,6 +386,12 @@ $wall-overhang: 12vw;
 $wall-scrim-blur: 6px;
 $wall-scrim-blur-soft: 2px;
 
+// How big one tile of television static is drawn — the `SceneBackdrop`'s
+// no-signal placeholder. Coarser than film grain on purpose: a set with no
+// signal has visible dots, and fine noise reads as a dirty screen rather than a
+// dead channel. Smaller values also cost more to composite over a full page.
+$static-grain: 160px;
+
 // The landing page's join pill. Its own control, not the `/join` route's slots:
 // one is a glance-and-go field beside a headline, the other is a thumb-sized
 // grid that is the whole screen.

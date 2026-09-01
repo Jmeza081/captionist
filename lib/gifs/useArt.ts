@@ -20,15 +20,30 @@ import type { GifResult } from './types'
  * throws and nothing here shows a spinner: a landing page is not worth an error
  * state.
  */
-export function useResolvedArt(slugs: readonly string[]): GifResult[] | undefined {
-  const [art, setArt] = useState<GifResult[] | undefined>(undefined)
+export interface ResolvedArt {
+  /** The real thing, once it lands. `undefined` until then, and if it never does. */
+  art?: GifResult[]
+  /**
+   * Whether the lookup is still out.
+   *
+   * Distinct from "there is no art", and the distinction is visible: a surface
+   * that is *waiting* can say so, where one that has settled on nothing should
+   * stop pretending. `SceneBackdrop` tunes a dead channel on the first and
+   * shows a plain background on the second.
+   */
+  pending: boolean
+}
+
+export function useResolvedArt(slugs: readonly string[]): ResolvedArt {
+  const [state, setState] = useState<ResolvedArt>({ pending: true })
 
   useEffect(() => {
     let live = true
     // State is set from the async continuation, never synchronously inside the
     // effect — the same rule `useGifSearch` follows for its arrival board.
     void resolveArt(slugs).then((found) => {
-      if (live && found.length > 0) setArt(found)
+      if (!live) return
+      setState({ art: found.length > 0 ? found : undefined, pending: false })
     })
     return () => {
       live = false
@@ -36,7 +51,7 @@ export function useResolvedArt(slugs: readonly string[]): GifResult[] | undefine
     // The slug lists are module constants, so this runs once per mount.
   }, [slugs])
 
-  return art
+  return state
 }
 
 /**
@@ -46,7 +61,8 @@ export function useResolvedArt(slugs: readonly string[]): GifResult[] | undefine
  * every render would re-run the effect every render, which is one API call per
  * render rather than one per mount.
  */
-export function useResolvedOne(slug: string): GifResult | undefined {
+export function useResolvedOne(slug: string): { gif?: GifResult; pending: boolean } {
   const slugs = useMemo(() => [slug], [slug])
-  return useResolvedArt(slugs)?.[0]
+  const { art, pending } = useResolvedArt(slugs)
+  return { gif: art?.[0], pending }
 }

@@ -80,8 +80,15 @@ export function BriefScreen() {
    * own staged pick wins; failing that, a random tile off the board you were
    * looking at.
    */
-  // Resolved in the browser; `undefined` until it lands, and if it never does.
-  const backdrop = toBackdrop(useResolvedOne(BACKDROP_SLUG) ?? { src: '', alt: '' })
+  /**
+   * Resolved in the browser, so there is a beat with no clip.
+   *
+   * The screen used to render nothing at all for it. It tunes static instead —
+   * `SceneBackdrop` draws the state rather than the absence — and settles to a
+   * plain background if the lookup comes back with nothing.
+   */
+  const waiting = useResolvedOne(BACKDROP_SLUG)
+  const backdrop = waiting.gif ? toBackdrop(waiting.gif) : undefined
 
   const armed = useRef({ picked, results: gifs.results, send, chose: gifs.chose })
   // Every render, deliberately: the timer must see the board as it is when it
@@ -137,11 +144,14 @@ export function BriefScreen() {
             positioned and the headline is not, so inside the same stacking
             context the backdrop would paint over the words it is supposed to
             sit behind. Out here it is the column that takes the layer. */}
-        {/* Resolved in the browser, and absent until it lands — a decoration
-            that has not arrived is simply a decoration that has not arrived. */}
-        {backdrop && (
-          <SceneBackdrop mp4={backdrop.mp4} still={backdrop.still} scrim="full" />
-        )}
+        {/* Static while the clip is still coming, the clip once it lands, and
+            nothing at all if it never does. */}
+        <SceneBackdrop
+          mp4={backdrop?.mp4}
+          still={backdrop?.still}
+          tuning={waiting.pending}
+          scrim="full"
+        />
 
         <Stack gap={20} align="center" className={styles.waiting}>
           {holder && (

@@ -171,6 +171,44 @@ test.describe('the brief', () => {
     await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
     await expect(page.locator('[data-testid="scene-backdrop"]')).toHaveCount(0)
     await expect(page.getByText(/Backdrop/)).toHaveCount(0)
+
+    // Settled on nothing is not the same as still looking: a dead channel
+    // hissing behind the words forever would be a distraction, not a flourish.
+    await expect(page.locator('[data-testid="scene-backdrop-tuning"]')).toHaveCount(0)
+  })
+
+  test('tunes a dead channel while the backdrop is still coming', async ({ page }) => {
+    /**
+     * The clip is fetched in the browser, so there is a beat with nothing to
+     * show. It used to be blank, which read as a screen that had forgotten its
+     * own design; it draws static now.
+     *
+     * The lookup is held open rather than mocked away — the state under test is
+     * *pending*, and a route that answered instantly would skip straight past it.
+     */
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await page.route('**api.klipy.com/**/gifs/items**', async (route) => {
+      await held
+      await route.abort()
+    })
+
+    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=klipy')
+    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
+
+    const tuning = page.locator('[data-testid="scene-backdrop-tuning"]')
+    await expect(tuning).toBeVisible()
+    // Static, not a half-built video element.
+    await expect(page.locator('[data-testid="scene-backdrop"]')).toHaveCount(0)
+
+    // The words are what the screen is for, and they still win over the grain.
+    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
+
+    // And it clears itself once the lookup settles, however it settles.
+    release()
+    await expect(tuning).toHaveCount(0)
   })
 
   test('turns the wait into something to read', async ({ page }) => {

@@ -36,12 +36,15 @@ export function AdSlot({ ads }: { ads: readonly GifAd[] }) {
     <Stack gap={8} className={styles.slot}>
       <span className={styles.label}>Sponsored</span>
       {/*
-        A wrapping row, not a stack.
+        However many came back, laid out to survive however many that is.
 
-        Klipy returns two banners per board. Side by side they cost one banner's
-        height on a desktop panel; stacked they cost two, and push the tiles
-        the player came for below the fold. `Inline` wraps by default, so a
-        phone gets the stack it has no room to avoid.
+        The Partner Panel is set to one ad per board and that is what arrives —
+        so this is a row of one today. It stays a `map` rather than becoming
+        `ads[0]` because showing fewer than were returned would be suppressing
+        them, and the setting that makes it one is a dashboard toggle rather
+        than anything this code controls. `Inline` wraps by default, so if two
+        ever return they sit side by side on a desktop panel for one banner's
+        height and stack on a phone that has no room to avoid it.
       */}
       <Inline gap={10} justify="center">
         {ads.map((ad, index) => (

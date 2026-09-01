@@ -27,6 +27,6 @@ export function ResolvedNotFoundMedia({
   topText: string
   tallies: ReactNode
 }) {
-  const shown = useResolvedOne(NOT_FOUND_SLUG) ?? fallback
+  const shown = useResolvedOne(NOT_FOUND_SLUG).gif ?? fallback
   return <MediaCard src={shown.src} alt={shown.alt} topText={topText} tallies={tallies} />
 }

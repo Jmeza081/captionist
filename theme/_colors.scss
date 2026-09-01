@@ -109,3 +109,7 @@ $scrim-wall-soft: rgba(0, 0, 0, 0.45);
 $scrim-own-entry: rgba(10, 10, 11, 0.5);
 $scrim-tally: rgba(10, 10, 11, 0.8);
 $scrim-backdrop: rgba(6, 6, 7, 0.82);
+
+// The pale band that rolls through an untuned analogue picture. Barely there —
+// it should register as a sweep, never as a stripe.
+$static-sweep: rgba(255, 255, 255, 0.06);

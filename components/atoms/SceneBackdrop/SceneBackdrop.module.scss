@@ -48,3 +48,123 @@
   background-color: t.$scrim-wall;
   backdrop-filter: blur(t.$wall-scrim-blur);
 }
+
+/**
+ * The veil over static.
+ *
+ * `soft`'s darkness, and no blur at all. Blur softens media we did not choose;
+ * grain is ours and is nothing *but* high frequency, so blurring leaves flat
+ * grey and no effect. The darkening still does the work that matters — the
+ * headline sits on top of this and has to win.
+ */
+.tuning {
+  background-color: t.$scrim-wall-soft;
+  backdrop-filter: none;
+}
+
+/**
+ * Television static — the picture a set makes when it has no signal.
+ *
+ * Generated rather than shipped: an inline SVG `feTurbulence` desaturated to
+ * grey is a few hundred bytes and needs no asset, no request and no decode. A
+ * PNG noise tile would be a file to fetch on a screen that is *already* waiting
+ * for a fetch, which would be a strange thing to add.
+ *
+ * Two layers, because one does not read as a CRT. The noise is the grain; the
+ * sweep is the soft horizontal band an untuned analogue picture rolls through.
+ */
+.static {
+  position: absolute;
+  inset: 0;
+  /**
+   * Sized, and it has to be.
+   *
+   * An `<svg>` with no `width`/`height` has no intrinsic size, and a
+   * `background-image` of one paints nothing at all — the element is there, the
+   * noise is not, and the screen looks like it simply forgot its backdrop.
+   * Which is exactly what this state exists to stop it looking like.
+   */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  // Coarser than film grain: a set with no signal has visible dots, and fine
+  // noise reads as a dirty screen rather than a dead channel.
+  background-size: t.$static-grain t.$static-grain;
+  background-repeat: repeat;
+  /**
+   * Held down, but not out.
+   *
+   * `scrim="full"` sits over this — a dark veil plus a heavy blur, sized for
+   * media we do not control — and it flattens grain far harder than it flattens
+   * a video. Tuned against that rather than against a bare canvas: the words
+   * still win, and there is visibly a channel behind them.
+   */
+  opacity: 0.55;
+  // Cheap to animate: the compositor moves a painted layer instead of the
+  // browser re-rasterising noise every frame.
+  will-change: background-position;
+  animation: staticGrain 0.5s steps(5) infinite;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      t.$static-sweep 48%,
+      transparent 60%
+    );
+    animation: staticSweep 7s linear infinite;
+  }
+}
+
+/**
+ * Jumps rather than slides.
+ *
+ * `steps()` is what makes it read as static: a smoothly panning noise field
+ * looks like drifting fog, and a set with no signal does not drift.
+ */
+@keyframes staticGrain {
+  0% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: 40% 20%;
+  }
+  50% {
+    background-position: 15% 60%;
+  }
+  75% {
+    background-position: 70% 35%;
+  }
+  100% {
+    background-position: 30% 85%;
+  }
+}
+
+@keyframes staticSweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/**
+ * Stillness is a preference, and this is decoration.
+ *
+ * ADR 0005 is about the clip; the same reasoning covers its stand-in, and more
+ * plainly — flickering grain is exactly what somebody asking for reduced motion
+ * is asking not to be shown. The grain stays as a flat field, which still reads
+ * as a dead channel, and nothing moves.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .static {
+    animation: none;
+
+    &::after {
+      animation: none;
+      opacity: 0;
+    }
+  }
+}
