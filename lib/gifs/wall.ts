@@ -1,4 +1,3 @@
-import { SAMPLE_GIFS } from './samples'
 
 /**
  * The landing page's GIF wall, as the server can draw it.
@@ -42,21 +41,8 @@ export interface WallTile {
  * many tracks, so twenty tiles fill it precisely at every viewport. Change it
  * here and the track counts in `theme/_metrics.scss` have to change with it.
  */
-const WALL_SIZE = 20
+export const WALL_SIZE = 20
 
-function fromSamples(count: number): WallTile[] {
-  return Array.from({ length: count }, (_, i) => {
-    const gif = SAMPLE_GIFS[i % SAMPLE_GIFS.length]
-    return {
-      // The shelf is shorter than the wall, so ids have to be made unique or
-      // React sees duplicate keys.
-      id: `${gif?.id ?? 'sample'}-${i}`,
-      poster: gif?.still ?? gif?.src ?? '',
-      motion: gif?.src,
-      alt: gif?.alt ?? '',
-    }
-  })
-}
 
 /**
  * Fill the wall from however many tiles there are, repeating if short.
@@ -75,19 +61,6 @@ export function cycleTiles(tiles: readonly WallTile[], count: number): WallTile[
   })
 }
 
-/**
- * Still `async`, and deliberately so.
- *
- * Nothing here awaits any more, but all four callers are `async` Server
- * Components that `await` it, and the day the wall wants a live source again
- * it should not be a signature change rippling through every front door.
- */
-export async function wallTiles(count = WALL_SIZE): Promise<WallTile[]> {
-  // Always the app's own art. Nothing a server renders may come from a
-  // provider any more, and this is what a visitor sees before — or instead of —
-  // the real thing.
-  return fromSamples(count)
-}
 
 /**
  * A resolved GIF, in the shape the wall draws.

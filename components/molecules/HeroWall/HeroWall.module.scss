@@ -46,6 +46,11 @@
 }
 
 .tile {
+  // Positioned, so the static inside it has something to be absolute *against*.
+  // Without this every set escapes to the nearest positioned ancestor and all
+  // twenty stack full-bleed on top of one another — which looks like one sheet
+  // of noise behind the whole page, tile edges and all.
+  position: relative;
   overflow: hidden;
   border: 1px solid t.$line-hairline;
   border-radius: t.$radius-media;
@@ -71,6 +76,20 @@
   position: absolute;
   inset: 0;
 }
+
+/**
+ * The veil over a wall of static.
+ *
+ * Its own weight and no blur, for the reason `SceneBackdrop` carries in full:
+ * blurring a picture made entirely of high frequency leaves flat grey, and the
+ * twenty sets disappear into one panel. `$scrim-static` is dark enough that a
+ * 98px headline still wins over them.
+ */
+.tuning {
+  background-color: t.$scrim-static;
+  backdrop-filter: none;
+}
+
 
 .full {
   background-color: t.$scrim-wall;

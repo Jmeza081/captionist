@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { HostSetupScreen } from '@/components/organisms/HostSetupScreen'
-import { wallTiles } from '@/lib/gifs/wall'
 
 export const metadata: Metadata = {
   title: 'Set up a room · Captionist',
@@ -19,7 +18,6 @@ export const metadata: Metadata = {
  * the front door already has every one of these in cache.
  */
 export default async function HostPage() {
-  const tiles = await wallTiles()
 
-  return <HostSetupScreen tiles={tiles} />
+  return <HostSetupScreen />
 }

@@ -121,3 +121,6 @@ $static-tear: rgba(0, 0, 0, 0.45);
 // `$scrim-wall-soft`. See `SceneBackdrop`.
 $scrim-static: rgba(0, 0, 0, 0.62);
 $static-scanline: rgba(0, 0, 0, 0.35);
+// What a set shows behind the noise. Not `$surface-canvas`: a television that
+// is off is blacker than any surface in the app.
+$static-black: #000;

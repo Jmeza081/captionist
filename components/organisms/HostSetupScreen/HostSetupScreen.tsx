@@ -32,7 +32,6 @@ import {
 import { hostSetupCopy, modeChoices, roundsHint, showsCaptionFormat } from '@/lib/game/selectors'
 import type { HatId } from '@/lib/game/types'
 import type { GameMode, RoomSettings } from '@/lib/game/types'
-import type { WallTile } from '@/lib/gifs/wall'
 import { writeIdentity } from '@/lib/room/identity'
 import { writePendingSettings } from '@/lib/room/pendingSettings'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
@@ -57,12 +56,14 @@ import styles from './HostSetupScreen.module.scss'
  * is not rendered at all rather than stacked under a form nobody scrolled to.
  */
 
-export interface HostSetupScreenProps {
-  /** The wall beside the form, resolved on the server. See `app/host/page.tsx`. */
-  tiles: readonly WallTile[]
-}
-
-export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
+/**
+ * Takes nothing.
+ *
+ * It used to take the wall's tiles, resolved on the server. The wall draws its
+ * own now — television static until the real GIFs arrive in the browser — so
+ * there is nothing for a page to hand it.
+ */
+export function HostSetupScreen() {
   const router = useRouter()
   const copy = hostSetupCopy()
 
@@ -294,7 +295,7 @@ export function HostSetupScreen({ tiles }: HostSetupScreenProps) {
       {/* Not `aria-hidden` on the wrapper: the wall inside it already is, and
           the pause control it renders beside the wall is real UI. */}
       <aside className={styles.showcase}>
-        <HeroWall tiles={tiles} scrim="soft" />
+        <HeroWall scrim="soft" />
       </aside>
 
       {/* Outside `.formColumn` on purpose. That column is a query container,

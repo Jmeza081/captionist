@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { TvStatic } from '@/components/atoms/TvStatic'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import styles from './SceneBackdrop.module.scss'
 
@@ -101,10 +102,12 @@ export function SceneBackdrop({
          * A channel tuning in.
          *
          * Marked with its own testid rather than sharing the video's: they are
-         * different states and a spec that could not tell them apart would pass
-         * on a backdrop that never arrived.
+         * different states, and a spec that could not tell them apart would
+         * pass on a backdrop that never arrived.
          */
-        <div className={styles.static} data-testid="scene-backdrop-tuning" />
+        <div className={styles.tuningFrame} data-testid="scene-backdrop-tuning">
+          <TvStatic />
+        </div>
       )}
       {/*
         The veil — lighter over static, by this component's own rule.

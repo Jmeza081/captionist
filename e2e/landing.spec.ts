@@ -114,12 +114,26 @@ test.describe('the landing page', () => {
   test('renders the whole wall in the first response, not after hydration', async ({
     page,
   }) => {
-    // Server-rendered: the tiles are in the HTML the server sent, so the wall
-    // is complete and correctly sized before any script runs. That is what
-    // keeps it from shifting the layout underneath the headline.
+    /**
+     * Server-rendered, and now with no network at all behind it.
+     *
+     * The wall used to ship twenty committed image URLs. It ships twenty
+     * televisions showing static instead — CSS and an inline SVG, so the grid
+     * is complete and correctly sized before any script runs and before any
+     * provider has been asked anything. That is what keeps it from shifting the
+     * layout underneath the headline.
+     */
     const response = await page.request.get('/')
     const html = await response.text()
-    expect(html.split('/media/stub-').length - 1).toBeGreaterThanOrEqual(20)
+    expect(html.split('data-testid="tv-static"').length - 1).toBe(20)
+
+    // And no art of ours in the wall pretending to be a reaction GIF. Scoped to
+    // the wall on purpose: the help modal's illustrations are sample SVGs and
+    // are meant to be.
+    await page.goto('/')
+    const wall = page.getByTestId('hero-wall')
+    await expect(wall.locator('img')).toHaveCount(0)
+    await expect(wall.locator('video')).toHaveCount(0)
   })
 
   test('fills every cell of the wall, at any window the grid is asked for', async ({
@@ -154,16 +168,19 @@ test.describe('the landing page', () => {
   test('lets anyone stop the background', async ({ page }) => {
     await page.goto('/')
 
-    const stills = () =>
-      page.locator('img[src*="-still"]').count()
+    // Every cell is a television, and the control stops all twenty at once —
+    // whether they are showing static or a GIF.
+    const sets = page.locator('[data-testid="tv-static"]')
+    await expect(sets).toHaveCount(20)
+    const held = () => sets.evaluateAll((els) => els.filter((el) => el.hasAttribute('data-paused')).length)
 
-    // Motion is on by default and is a swap away from stopping.
-    await expect.poll(stills).toBe(0)
+    // Motion is on by default and is one press away from stopping.
+    await expect.poll(held).toBe(0)
     await page.getByRole('button', { name: 'Pause background' }).click()
-    await expect.poll(stills).toBe(20)
+    await expect.poll(held).toBe(20)
 
     await page.getByRole('button', { name: 'Play background' }).click()
-    await expect.poll(stills).toBe(0)
+    await expect.poll(held).toBe(0)
   })
 
   test('wears the faces you can actually pick', async ({ page }) => {
@@ -196,10 +213,24 @@ test.describe('the landing page, with reduced motion', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
-    // Stillness is the file, not a media query: an SVG used as an image does
-    // not reliably inherit the page's preference, so the tile has to be a
-    // different asset rather than the same one told to hold still.
-    await expect.poll(() => page.locator('img[src*="-still"]').count()).toBe(20)
+    /**
+     * The static holds still, and CSS is enough to make it.
+     *
+     * Unlike an animated GIF — where stillness has to be a different file,
+     * because an SVG used as an image does not reliably inherit the page's
+     * preference — this picture is drawn by the stylesheet, so the media query
+     * reaches it directly.
+     */
+    const sets = page.locator('[data-testid="tv-static"]')
+    await expect(sets).toHaveCount(20)
+    const moving = await sets.first().evaluate((el) => {
+      const noise = el.firstElementChild as HTMLElement
+      return {
+        grain: getComputedStyle(noise).animationName,
+        tear: getComputedStyle(el, '::after').animationName,
+      }
+    })
+    expect(moving).toEqual({ grain: 'none', tear: 'none' })
 
     // Offering a pause control to someone who already asked for stillness is
     // noise.

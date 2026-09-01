@@ -1,0 +1,150 @@
+@use 'theme' as t;
+
+/**
+ * The set. Clips the oversized noise inside it and carries the CRT's own
+ * structure — the scanlines and the tear that rolls down an untuned picture.
+ */
+.set {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  // Its own stacking context, so a tile's scanlines can never interleave with
+  // the tile next to it.
+  isolation: isolate;
+  background-color: t.$static-black;
+
+  // Scanlines. Darker than they are bright: a CRT's gaps read as missing light
+  // rather than as added lines.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      t.$static-scanline 0,
+      t.$static-scanline t.$static-scanline-width,
+      transparent t.$static-scanline-width,
+      transparent calc(#{t.$static-scanline-width} * 2)
+    );
+  }
+
+  // The tear: a displaced band rolling down the picture.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      t.$static-sweep 35%,
+      t.$static-tear 45%,
+      t.$static-sweep 55%,
+      transparent 90%
+    );
+    animation: staticSweep 5.5s linear infinite;
+    // Sets do not tear together either — a wall of synchronised tears looks
+    // like one picture behind a grille.
+    animation-delay: calc(var(--set, 0) * -430ms);
+  }
+}
+
+.noise {
+  position: absolute;
+  /**
+   * Oversized, and offset by the overhang.
+   *
+   * The animation slides this around inside the set, so it has to be bigger
+   * than the set in every direction or the jumps would show the canvas at the
+   * edges. Half the overhang on each side keeps it centred at rest.
+   */
+  inset: calc(#{t.$static-overhang} * -1);
+  /**
+   * Sized, and it has to be.
+   *
+   * An `<svg>` with no `width`/`height` has no intrinsic size, and a
+   * `background-image` of one paints nothing at all — the element is there and
+   * the noise is not, which looks exactly like the bug this replaces.
+   */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23s)'/%3E%3C/svg%3E");
+  background-size: t.$static-grain t.$static-grain;
+  background-repeat: repeat;
+  /**
+   * A different patch of noise per set, and a different moment in the flicker.
+   *
+   * Without this, twenty sets show the same field at the same instant and the
+   * wall reads as one sheet of static behind the page rather than as twenty
+   * televisions. The multipliers are coprime-ish with the tile so neighbours do
+   * not land on the same crop.
+   */
+  background-position: calc(var(--set, 0) * 53px) calc(var(--set, 0) * 29px);
+  will-change: transform;
+  animation: staticGrain 0.22s steps(1) infinite;
+  animation-delay: calc(var(--set, 0) * -31ms);
+}
+
+/**
+ * A different field every frame, not a drifting one.
+ *
+ * `steps(1)` makes each keyframe *snap*: a smoothly moving noise field looks
+ * like fog blowing past, and a set with no signal does not drift. The offsets
+ * are deliberately unrelated to the tile size, so every jump lands on a
+ * different part of the repeat and reads as newly generated noise.
+ *
+ * `translate3d` rather than `background-position`: position repaints, transform
+ * composites, and this runs twenty times at once on the landing page.
+ */
+@keyframes staticGrain {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(-37px, -61px, 0);
+  }
+  40% {
+    transform: translate3d(-91px, -23px, 0);
+  }
+  60% {
+    transform: translate3d(-13px, -97px, 0);
+  }
+  80% {
+    transform: translate3d(-71px, -43px, 0);
+  }
+  100% {
+    transform: translate3d(-53px, -79px, 0);
+  }
+}
+
+@keyframes staticSweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/**
+ * Held still — by the wall's pause control, or by the system preference.
+ *
+ * ADR 0005 is about a clip; the same reasoning covers its stand-in, and more
+ * plainly. Flickering dots are precisely what somebody asking for reduced
+ * motion is asking not to be shown. The field stays, so it still reads as a
+ * dead channel, and nothing moves.
+ */
+.set[data-paused] .noise,
+.set[data-paused]::after {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .noise {
+    animation: none;
+  }
+
+  .set::after {
+    animation: none;
+    opacity: 0;
+  }
+}

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { JoinScreen } from '@/components/organisms/JoinScreen'
-import { wallTiles } from '@/lib/gifs/wall'
 
 export const metadata: Metadata = {
   title: 'Join a room · Captionist',
@@ -21,7 +20,6 @@ export const metadata: Metadata = {
  * door already has every one of these in cache.
  */
 export default async function JoinPage() {
-  const tiles = await wallTiles()
 
-  return <JoinScreen tiles={tiles} />
+  return <JoinScreen />
 }

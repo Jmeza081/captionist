@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { JoinScreen } from '@/components/organisms/JoinScreen'
 import { CODE_PREFIX, normalizeCode } from '@/lib/game/codes'
-import { wallTiles } from '@/lib/gifs/wall'
 
 export const metadata: Metadata = {
   title: 'Join a room · Captionist',
@@ -29,7 +28,6 @@ export default async function JoinCodePage({
   const { code } = await params
   const normalized = normalizeCode(code)
   const body = normalized ? normalized.slice(CODE_PREFIX.length) : ''
-  const tiles = await wallTiles()
 
   /**
    * Read here rather than with `useSearchParams` in the screen.
@@ -45,5 +43,5 @@ export default async function JoinCodePage({
       ? queued
       : undefined
 
-  return <JoinScreen initialCode={body} tiles={tiles} autoJoin={autoJoin} />
+  return <JoinScreen initialCode={body} autoJoin={autoJoin} />
 }

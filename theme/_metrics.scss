@@ -396,6 +396,11 @@ $static-grain: 160px;
 // density; 2px starts to look like blinds.
 $static-scanline-width: 1px;
 
+// How far the noise layer overhangs its set on every side. The animation slides
+// it around inside, and anything less than the largest jump would show the
+// canvas at an edge mid-flicker.
+$static-overhang: 120px;
+
 // The landing page's join pill. Its own control, not the `/join` route's slots:
 // one is a glance-and-go field beside a headline, the other is a thumb-sized
 // grid that is the whole screen.

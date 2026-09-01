@@ -4,7 +4,6 @@ import { HeroWall } from '@/components/molecules/HeroWall'
 import { LandingNav } from '@/components/molecules/LandingNav'
 import { LandingActions } from '@/components/organisms/LandingActions'
 import { PLAYER_COLORS } from '@/lib/game/constants'
-import { wallTiles } from '@/lib/gifs/wall'
 import styles from './page.module.scss'
 
 /**
@@ -34,11 +33,10 @@ const FACES = [
 ] as const
 
 export default async function HomePage() {
-  const tiles = await wallTiles()
 
   return (
     <div className={styles.page}>
-      <HeroWall tiles={tiles} />
+      <HeroWall />
 
       <div className={styles.content}>
         <LandingNav joinHref="/join" repoHref={REPO} />

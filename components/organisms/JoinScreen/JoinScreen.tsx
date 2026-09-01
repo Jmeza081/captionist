@@ -13,7 +13,6 @@ import { HeroWall } from '@/components/molecules/HeroWall'
 import { normalizeCode } from '@/lib/game/codes'
 import { JOIN_ERRORS, joinCopy } from '@/lib/game/selectors'
 import type { HatId } from '@/lib/game/types'
-import type { WallTile } from '@/lib/gifs/wall'
 import { devGuestDelay } from '@/lib/room/devGuests'
 import { writeIdentity } from '@/lib/room/identity'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
@@ -46,7 +45,6 @@ export interface JoinScreenProps {
   /** Prefilled from `/join/[code]` — the QR and the shared link land here. */
   initialCode?: string
   /** The wall beside the form, resolved on the server. See `app/join/page.tsx`. */
-  tiles: readonly WallTile[]
   /**
    * This tab is a development guest, and its position in the queue.
    *
@@ -59,7 +57,7 @@ export interface JoinScreenProps {
   autoJoin?: number
 }
 
-export function JoinScreen({ initialCode = '', tiles, autoJoin }: JoinScreenProps) {
+export function JoinScreen({ initialCode = '', autoJoin }: JoinScreenProps) {
   const router = useRouter()
   const copy = joinCopy()
 
@@ -204,7 +202,7 @@ export function JoinScreen({ initialCode = '', tiles, autoJoin }: JoinScreenProp
       {/* Not `aria-hidden` on the wrapper: the wall inside it already is, and
           the pause control it renders beside the wall is real UI. */}
       <aside className={styles.showcase}>
-        <HeroWall tiles={tiles} scrim="soft" />
+        <HeroWall scrim="soft" />
       </aside>
     </div>
   )

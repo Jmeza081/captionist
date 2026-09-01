@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { WALL_SLUGS } from '@/lib/gifs/art'
 import { intendedProvider } from '@/lib/gifs/registry'
 import { useResolvedArt } from '@/lib/gifs/useArt'
-import { cycleTiles, toWallTile, type WallTile } from '@/lib/gifs/wall'
+import { TvStatic } from '@/components/atoms/TvStatic'
+import { cycleTiles, toWallTile, WALL_SIZE, type WallTile } from '@/lib/gifs/wall'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import styles from './HeroWall.module.scss'
 
@@ -44,14 +45,23 @@ import styles from './HeroWall.module.scss'
 export type HeroWallScrim = 'full' | 'soft'
 
 export interface HeroWallProps {
-  tiles: readonly WallTile[]
+  /**
+   * How many sets the wall is.
+   *
+   * A count rather than art, because there is none to hand it: the server may
+   * not fetch a provider's media, so every cell starts as television static and
+   * the real GIFs arrive in the browser. The wall is complete and correctly
+   * sized in the first HTML either way, which is what keeps it from shifting
+   * the layout under the headline.
+   */
+  count?: number
   /** Describes the wall for anyone who can't see it. */
   label?: string
   scrim?: HeroWallScrim
 }
 
 export function HeroWall({
-  tiles: fallback,
+  count = WALL_SIZE,
   label = 'a wall of looping reaction GIFs',
   scrim = 'full',
 }: HeroWallProps) {
@@ -63,7 +73,17 @@ export function HeroWall({
    * sized in the first HTML, and improves. See `art.ts`.
    */
   const { art } = useResolvedArt(WALL_SLUGS)
-  const tiles = art ? cycleTiles(art.map(toWallTile), fallback.length) : fallback
+  /**
+   * Twenty sets, tuned or tuning.
+   *
+   * `undefined` in a cell means that cell is still static — which is every cell
+   * until the lookup lands, and every cell forever if it never does. A wall of
+   * dead channels is a coherent thing for a page to show; a wall of house SVGs
+   * pretending to be reaction GIFs was not.
+   */
+  const tiles: (WallTile | undefined)[] = art
+    ? cycleTiles(art.map(toWallTile), count)
+    : Array.from({ length: count })
   const videos = useRef<HTMLVideoElement[]>([])
   // `useReducedMotion` reports stillness until it knows otherwise, so this
   // starts paused and nothing plays before we know whether it should.
@@ -87,8 +107,13 @@ export function HeroWall({
       <div className={styles.wall} aria-hidden="true">
         <div className={styles.grid} data-testid="hero-wall">
           {tiles.map((tile, i) => (
-            <div key={tile.id} className={styles.tile}>
-              {tile.mp4 ? (
+            // The index is the key, not the tile: a cell is a set on a wall and
+            // keeps its place while its picture changes. Keying by the GIF would
+            // tear down and rebuild all twenty the moment the lookup landed.
+            <div key={i} className={styles.tile}>
+              {!tile ? (
+                <TvStatic seed={i} paused={!playing} />
+              ) : tile.mp4 ? (
                 <video
                   ref={(el) => {
                     if (el) videos.current[i] = el
@@ -121,9 +146,16 @@ export function HeroWall({
           ))}
         </div>
 
-        {/* Over the wall, under the content. At `full` this is what holds 98px
-            type legible against media we do not control. */}
-        <div className={`${styles.scrim} ${styles[scrim]}`} />
+        {/*
+          Over the wall, under the content. At `full` this is what holds 98px
+          type legible against media we do not control.
+
+          A weight of its own while the sets are still static, for the reason
+          `SceneBackdrop` documents: `full`'s blur exists to soften media we did
+          not choose, and over a picture made entirely of high frequency it
+          leaves flat grey — twenty dead channels turn into one grey panel.
+        */}
+        <div className={`${styles.scrim} ${art ? styles[scrim] : styles.tuning}`} />
       </div>
 
       {/* Outside the wall on purpose: the wall is inert and makes its own
