@@ -113,3 +113,11 @@ $scrim-backdrop: rgba(6, 6, 7, 0.82);
 // The pale band that rolls through an untuned analogue picture. Barely there —
 // it should register as a sweep, never as a stripe.
 $static-sweep: rgba(255, 255, 255, 0.06);
+
+// The darker displaced band at the centre of that sweep, and the gaps between
+// a CRT's scanlines. Both subtract light rather than adding it.
+$static-tear: rgba(0, 0, 0, 0.45);
+// The veil over television static — its own weight between `$scrim-wall` and
+// `$scrim-wall-soft`. See `SceneBackdrop`.
+$scrim-static: rgba(0, 0, 0, 0.62);
+$static-scanline: rgba(0, 0, 0, 0.35);

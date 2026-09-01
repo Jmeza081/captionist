@@ -65,14 +65,25 @@ the GIF wall's veil where display type sits on top of it, `$scrim-wall-soft`
 `$wall-scrim-blur` / `$wall-scrim-blur-soft` as the matching backdrop blurs.
 `$scrim-own-entry`, `$scrim-tally` and `$scrim-backdrop` cover the rest.
 
-`SceneBackdrop` draws television static while its clip is still being fetched,
-and that has two tokens of its own: `$static-grain` (`160px`) is how big one
-tile of noise is drawn — coarser than film grain, because a set with no signal
-has visible dots and fine noise reads as a dirty screen — and `$static-sweep`
-(`rgba(255,255,255,.06)`) is the pale band that rolls through an untuned
-picture. Note that the static takes `$scrim-wall-soft` and **no blur** whatever
-`scrim` is asked for: `$scrim-wall` exists for media we do not control, and
-blurring something made entirely of high frequency leaves flat grey.
+`SceneBackdrop` draws television static while its clip is still being fetched —
+a set tuned to a channel that is not there — and that picture has tokens of its
+own:
+
+| Token | Value | Draws |
+| --- | --- | --- |
+| `$static-grain` | `160px` | One tile of noise. Fine, because a CRT's dots are |
+| `$static-scanline` | `rgba(0,0,0,.35)` | The gap between scanlines |
+| `$static-scanline-width` | `1px` | One line, and the gap after it — 2px reads as blinds |
+| `$static-sweep` | `rgba(255,255,255,.06)` | The pale edges of the rolling tear |
+| `$static-tear` | `rgba(0,0,0,.45)` | Its dark centre |
+| `$scrim-static` | `rgba(0,0,0,.62)` | The veil over all of it |
+
+`$scrim-static` is its own weight rather than reusing a wall scrim, and the
+reason is worth keeping: `$scrim-wall` (.75) **plus its blur** is what media we
+did not choose needs, and over a picture made entirely of high frequency it
+leaves flat grey — the effect vanishes. `$scrim-wall-soft` (.45) shows the
+picture but lets near-white dots up under a headline. So static takes .62 and
+**no blur at all**, whatever `scrim` the caller asked for.
 
 Text on dark is named by role: `$text-primary` (`#fff`), `$text-chat` (.78),
 `$text-body` (.55), `$text-label` (.45), `$text-meta` (.4), `$text-caption`

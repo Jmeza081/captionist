@@ -392,6 +392,10 @@ $wall-scrim-blur-soft: 2px;
 // dead channel. Smaller values also cost more to composite over a full page.
 $static-grain: 160px;
 
+// One scanline, and the gap after it. 1px reads as line structure at any
+// density; 2px starts to look like blinds.
+$static-scanline-width: 1px;
+
 // The landing page's join pill. Its own control, not the `/join` route's slots:
 // one is a glance-and-go field beside a headline, the other is a thumb-sized
 // grid that is the whole screen.
