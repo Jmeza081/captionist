@@ -152,12 +152,17 @@ export function ComposeScreen() {
   if (copy.view === 'submit') {
     return (
       <Stack gap={20}>
+        {/* Sticky, because it is the thing every answer on this screen is
+            answering. The board below it is fifty tiles: scroll twice and the
+            prompt you are searching for is off the top of the page. */}
         {subject?.kind === 'prompt' && (
-          <PromptBanner
-            prompt={subject.text}
-            author={holder ? toAvatarProps(state, holder) : undefined}
-            size="lg"
-          />
+          <div className={styles.promptDock}>
+            <PromptBanner
+              prompt={subject.text}
+              author={holder ? toAvatarProps(state, holder) : undefined}
+              size="lg"
+            />
+          </div>
         )}
 
         <h1 className={styles.headline}>{copy.headline}</h1>

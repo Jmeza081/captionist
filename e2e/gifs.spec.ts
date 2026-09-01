@@ -507,3 +507,57 @@ test.describe('advertising', () => {
     await expect(tiles(page)).toHaveCount(1)
   })
 })
+
+/**
+ * The set behind a tile that has not got its picture yet.
+ *
+ * A board is fifty lazily-loaded tiles, and until this they were fifty
+ * transparent boxes behind a hairline while the WebP decoded — and forever
+ * where it never did. `TunedImage` puts `TvStatic` behind each one, which is
+ * the same treatment the landing wall has given a cell since it shipped.
+ *
+ * Both tests block the media rather than racing the decode: a stub tile is a
+ * local SVG and loads in single-digit milliseconds, so "before it loads" is not
+ * a window a spec can stand in. Blocked, the static is the *settled* state and
+ * the assertion is about what a dead channel does, not about timing.
+ */
+test.describe('a tile with no picture yet', () => {
+  const PICKER = '/room/DEV?seed=42&phase=brief&gifs=stub'
+
+  /** The set inside one tile — never a page-wide count, which proves nothing. */
+  function staticIn(page: Page) {
+    return tiles(page).first().locator('[data-testid="tv-static"]')
+  }
+
+  test('tunes a dead channel, and keeps it when the GIF never arrives', async ({ page }) => {
+    await page.route('**/media/stub-*', (route) => route.abort())
+    await page.goto(PICKER)
+    await expect(tiles(page).first()).toBeVisible()
+
+    // Never dropped on error, only on load. A GIF the provider has pulled is a
+    // set that never tuned in, and saying so is better than the empty rectangle
+    // this replaced.
+    await expect(staticIn(page)).toBeVisible()
+
+    // And still there once everything that was going to happen has. Without
+    // this the test would pass on a static that appears and then vanishes with
+    // the failed request, which is the version that leaves the hole back.
+    await page.waitForLoadState('networkidle')
+    const painted = await tiles(page)
+      .first()
+      .locator('img')
+      .evaluate((img: HTMLImageElement) => img.naturalWidth)
+    expect(painted).toBe(0)
+    await expect(staticIn(page)).toBeVisible()
+  })
+
+  test('drops the static once the picture is there', async ({ page }) => {
+    await page.goto(PICKER)
+    await expect(tiles(page).first()).toBeVisible()
+
+    // Gone rather than covered — `MediaCard` draws an unselected image at 85%,
+    // and a field repainting five times every 200ms under a loaded GIF is a
+    // bill for something nobody can see.
+    await expect(staticIn(page)).toHaveCount(0)
+  })
+})

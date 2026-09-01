@@ -14,6 +14,7 @@ import { TallyPill } from '@/components/atoms/TallyPill'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
+import { TunedImage } from '@/components/molecules/TunedImage'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import {
   ballotFrom,
@@ -114,7 +115,7 @@ export function VoteScreen() {
   const gate = lockGateFrom(state, selfId, ranked.length)
 
   return (
-    <Stack gap={26}>
+    <Stack gap={26} className={styles.screen}>
       <Stack gap={20}>
         {/* React mode's prompt takes its own full-width line: it is the shared
             context for every card, so it cannot sit beside the heading. */}
@@ -129,9 +130,11 @@ export function VoteScreen() {
         <div className={styles.bar}>
           <Inline gap={20} className={styles.intro}>
             {subject?.kind === 'media' && subject.media.src && (
-              /* eslint-disable-next-line @next/next/no-img-element -- GIFs from
-                 Giphy are remote and animated; next/image would rasterise them. */
-              <img
+              // The round's own subject, beside the heading. Not a `MediaCard`
+              // — it is a thumbnail of the thing being voted on rather than an
+              // entry — so it needed its own set, and was the last remote
+              // picture on this screen still arriving into a blank square.
+              <TunedImage
                 className={styles.thumb}
                 src={subject.media.src}
                 alt={subject.media.alt}

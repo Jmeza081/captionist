@@ -19,17 +19,37 @@ test.describe('responsiveness across the middle widths', () => {
     'the sweep sets its own widths — running it twice proves nothing twice',
   )
 
+  // Ninety navigations, sharing one dev server with everything else a fully
+  // parallel run is doing. It finishes in about fifteen seconds alone and had
+  // been quietly living inside the 45s default; adding the react lane is what
+  // pushed it over under load.
+  test.setTimeout(240_000)
+
   /** `md`, the old cliff, `lg`, where the rail arrives open, and either side. */
   const WIDTHS = [393, 768, 860, 1024, 1180, 1440]
 
+  /**
+   * Both modes, not just the one.
+   *
+   * `prompt` was the only react-mode entry here, so the whole answering half of
+   * that lane — the GIF board under a prompt banner, the tracker, the vote grid
+   * with its own full-width subject line, the reveal's runner-up rows — swept
+   * at caption-mode widths and never at its own. Every one of them draws
+   * different content in a different shape.
+   */
   const SCREENS: ReadonlyArray<readonly [string, string]> = [
     ['lobby', '/room/DEV?seed=42&phase=lobby&gifs=stub'],
     ['brief', '/room/DEV?seed=42&phase=brief&as=p2&gifs=stub'],
     ['prompt', '/room/DEV?seed=42&phase=brief&mode=react&gifs=stub'],
+    ['promptwait', '/room/DEV?seed=42&phase=brief&mode=react&as=p2&gifs=stub'],
     ['compose', '/room/DEV?seed=42&phase=compose&as=p2&gifs=stub'],
+    ['submit', '/room/DEV?seed=42&phase=compose&mode=react&as=p2&gifs=stub'],
     ['waiting', '/room/DEV?seed=42&phase=waiting&as=p2&gifs=stub'],
+    ['waiting-react', '/room/DEV?seed=42&phase=waiting&mode=react&as=p2&gifs=stub'],
     ['vote', '/room/DEV?seed=42&phase=vote&as=p2&gifs=stub'],
+    ['vote-react', '/room/DEV?seed=42&phase=vote&mode=react&as=p2&gifs=stub'],
     ['reveal', '/room/DEV?seed=42&phase=reveal&as=p2&gifs=stub'],
+    ['reveal-react', '/room/DEV?seed=42&phase=reveal&mode=react&as=p2&gifs=stub'],
     ['score', '/room/DEV?seed=42&phase=score&as=p2&gifs=stub'],
     ['podium', '/room/DEV?seed=42&phase=podium&as=p2&gifs=stub'],
     ['tiebreak', '/room/DEV?seed=42&phase=tiebreak&as=p2&gifs=stub'],
@@ -43,20 +63,16 @@ test.describe('responsiveness across the middle widths', () => {
     })
   }
 
-  test('never scrolls sideways, at any width between a phone and a desktop', async ({
-    page,
-  }) => {
-    for (const [name, url] of SCREENS) {
-      for (const width of WIDTHS) {
-        await page.setViewportSize({ width, height: 900 })
-        await page.goto(url)
-        await expect(page.locator('main[data-phase]')).toBeVisible()
-        expect(await overflow(page), `${name} at ${width}px`).toBe(0)
-      }
-    }
-  })
-
-  test('keeps every column of running text wide enough to read', async ({ page }) => {
+  /**
+   * Both claims off one navigation.
+   *
+   * They were two tests, which meant fifteen screens loaded at six widths
+   * twice — a hundred and eighty page loads sharing a dev server with the rest
+   * of a fully parallel run, and the slowest thing in the suite by some margin.
+   * Nothing about either check needs its own page load, and each failure still
+   * names the screen and the width it happened at.
+   */
+  test('holds its shape at every width between a phone and a desktop', async ({ page }) => {
     // Narrow enough that a headline breaks badly and a paragraph runs one word
     // to the line. Compose was at 136px before the screens started measuring
     // themselves, which is where this number comes from.
@@ -70,6 +86,8 @@ test.describe('responsiveness across the middle widths', () => {
         await page.setViewportSize({ width, height: 900 })
         await page.goto(url)
         await expect(page.locator('main[data-phase]')).toBeVisible()
+
+        expect(await overflow(page), `${name} at ${width}px scrolls sideways`).toBe(0)
 
         const narrowest = await page.evaluate(() => {
           let worst: { width: number; text: string } | null = null

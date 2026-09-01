@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { TunedImage } from '@/components/molecules/TunedImage'
 import { hasImage, imageSrc, mediaAspect } from '@/lib/media'
 import styles from './MediaCard.module.scss'
 
@@ -131,9 +132,21 @@ export function MediaCard({
         // rather than a number this file and the stylesheet could disagree on.
         style={aspect ? ({ '--media-aspect': `${aspect}` } as CSSProperties) : undefined}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- GIFs from
-            Giphy are remote and animated; next/image would rasterise them. */}
-        <img className={styles.image} src={imageSrc(src)} alt={missing ? '' : alt} />
+        {/*
+          A set behind it until the picture lands.
+
+          `tuning={!missing}` is the load-bearing half: `hasImage` has already
+          decided there is no media at all here, and that is a settled nothing
+          rather than a wait — the `.fallback` below says so in words, and a
+          card cannot be doing both. It is `SceneBackdrop`'s rule (tuning and no
+          clip is static; settled and no clip is nothing) applied to a card.
+        */}
+        <TunedImage
+          className={styles.image}
+          src={imageSrc(src)}
+          alt={missing ? '' : alt}
+          tuning={!missing}
+        />
 
         {missing && <span className={styles.fallback}>{alt}</span>}
 

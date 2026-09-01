@@ -1,5 +1,11 @@
 import type { ActionInput } from '@/lib/game/actions'
-import type { ConnectionState, PlayerId, PublicState, RoomCode } from '@/lib/game/types'
+import type {
+  ConnectionState,
+  GameMode,
+  PlayerId,
+  PublicState,
+  RoomCode,
+} from '@/lib/game/types'
 
 /**
  * The room transport boundary.
@@ -106,6 +112,22 @@ export interface ChatQuote {
   caption: string
 }
 
+/**
+ * What the room says about itself — a code and its subject, never a sentence.
+ *
+ * Three reasons pulling the same way. Copy is the client's and lives beside
+ * every other string, so a line the host's build renders is a line every other
+ * build has to agree with forever. A rendered sentence on this lane is
+ * sender-supplied text, which is exactly what the length cap and the allowlist
+ * on the chat lane exist to distrust. And a `PlayerId` lets the log resolve a
+ * name through the roster the way a chat author's is resolved, rather than
+ * baking in whatever it was called at publish time.
+ */
+export type AnnouncementBody =
+  | { code: 'mode'; mode: GameMode }
+  | { code: 'left'; who: PlayerId }
+  | { code: 'returned'; who: PlayerId }
+
 export type RoomEvent =
   | {
       kind: 'chat'
@@ -133,6 +155,23 @@ export type RoomEvent =
       target: ReactionTarget
       targetId: string
       emoji: string
+      at: number
+    }
+  | {
+      /**
+       * The room speaking about itself — a mode switch, a player dropping, a
+       * player coming back.
+       *
+       * Its own kind rather than a flag on `chat`, because the two differ in
+       * everything but where they land: an announcement has no attachment, no
+       * quote, no rate limit and no author who chose to write it. It is
+       * published by the **host engine**, so `from` is the host's id and the
+       * transport stamps it exactly as it stamps every other event — the
+       * sender really is who the wire says. See ADR 0028.
+       */
+      kind: 'announcement'
+      from: PlayerId
+      body: AnnouncementBody
       at: number
     }
 

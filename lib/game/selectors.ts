@@ -504,6 +504,33 @@ export function competitors(state: GameState): readonly Player[] {
   return state.players.filter((p) => !isRoleHolder(state, p.id))
 }
 
+/**
+ * The competitors the room is actually still waiting on.
+ *
+ * `competitors` answers *who is drawn* and this answers *who is awaited*, and
+ * they used to be the same function — which is how a closed tab kept its place
+ * in the denominator and the tracker went on calling it "still thinking".
+ *
+ * Two selectors rather than one filtered at the call site, because the
+ * difference is the whole point: a player who left stays **visible** in the
+ * tracker with their own status, and vanishing them would leave the room
+ * wondering why the count dropped.
+ */
+export function activeCompetitors(state: GameState): readonly Player[] {
+  return competitors(state).filter((p) => p.connection === 'online')
+}
+
+/**
+ * Everyone still here, role holder included — they judge, they don't compete.
+ *
+ * The voting half of `activeCompetitors`, and the same reason: the reducer
+ * opens the tally against this population, so any line that reports progress
+ * has to count it too.
+ */
+export function voters(state: GameState): readonly Player[] {
+  return state.players.filter((p) => p.connection === 'online')
+}
+
 export function myEntry(state: GameState, viewerId: PlayerId): Entry | undefined {
   return state.round?.entries.find((e) => e.authorId === viewerId)
 }
@@ -517,7 +544,7 @@ export function hasVoted(state: GameState, viewerId: PlayerId): boolean {
 }
 
 export function submittedCount(state: GameState): { done: number; total: number } {
-  return { done: state.round?.entries.length ?? 0, total: competitors(state).length }
+  return { done: state.round?.entries.length ?? 0, total: activeCompetitors(state).length }
 }
 
 export interface SubmissionRow {
@@ -526,13 +553,22 @@ export interface SubmissionRow {
   done: boolean
 }
 
-/** `PlayerRow variant="tracker"`, verbatim. */
+/**
+ * `PlayerRow variant="tracker"`, verbatim.
+ *
+ * Three statuses where the design has two. `typing…` was cut because it needs
+ * live keystroke presence and would have been a guess; `left` is the opposite
+ * — it is the one thing here the room knows for a *fact*, straight off the
+ * transport's presence set. A row reading "still thinking" over a closed tab
+ * was the guess.
+ */
 export function submissionRows(state: GameState): readonly SubmissionRow[] {
   return competitors(state).map((player) => {
     const done = state.round?.entries.some((e) => e.authorId === player.id) ?? false
+    const gone = player.connection !== 'online'
     return {
       player: toAvatarProps(state, player),
-      status: done ? 'submitted' : 'still thinking',
+      status: done ? 'submitted' : gone ? 'left' : 'still thinking',
       done,
     }
   })
@@ -813,7 +849,10 @@ export interface WaitingCopy {
  */
 export function waitingCopy(state: GameState): WaitingCopy {
   const react = state.settings.mode === 'react'
-  const out = competitors(state).filter((p) => !hasSubmitted(state, p.id))
+  // `activeCompetitors`, not `competitors`: the wait is over when everyone
+  // still *here* is in. Somebody who closed their tab is not a straggler the
+  // host should be offered a button to start without.
+  const out = activeCompetitors(state).filter((p) => !hasSubmitted(state, p.id))
 
   /**
    * Everyone is in, so there is no wait and no decision.
@@ -1046,7 +1085,10 @@ export function tiebreakCopy(state: GameState): TiebreakCopy {
     body: `One vote each. No abstaining, no diplomacy. The ${roleName(
       state.settings.mode,
     )} gets the deciding vote if it’s still level.`,
-    voteLine: `${voted} of ${state.players.length} have voted`,
+    // The people still here, not the whole roster — the reducer opens the
+    // count the same way, so a line reading "4 of 7" over a room that resolves
+    // at five is a timer disagreeing with the button beside it.
+    voteLine: `${voted} of ${voters(state).length} have voted`,
     exclusionLine: names.length > 0 ? `${nameList(names)} can’t vote in their own duel` : '',
     action: 'Vote this one',
   }

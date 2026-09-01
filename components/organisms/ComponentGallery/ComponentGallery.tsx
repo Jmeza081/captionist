@@ -48,10 +48,12 @@ import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { RevealReactionBar } from '@/components/molecules/RevealReactionBar'
 import { RoomShare } from '@/components/molecules/RoomShare'
 import { RoundOpener, type GameMode } from '@/components/molecules/RoundOpener'
+import { TunedImage } from '@/components/molecules/TunedImage'
 import { RoomBootScreen } from '@/components/organisms/RoomBootScreen'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
 import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
-import { ATTACHMENT, MEDIA, PLAYER_COLORS } from './placeholders'
+import { ROOM_FACE } from '@/lib/room/announce'
+import { ATTACHMENT, DEAD_CHANNEL, MEDIA, PLAYER_COLORS } from './placeholders'
 import styles from './ComponentGallery.module.scss'
 
 /** Seeded, so the gallery shows the faces the app actually draws. */
@@ -502,10 +504,12 @@ export function ComponentGallery() {
                   </>
                 }
               />
+              {/* Drawn with the room's own face rather than a player's, which
+                  is what the room does — see `ROOM_FACE`. */}
               <ChatMessage
-                author={PLAYERS.jesse}
+                author={ROOM_FACE}
                 time="2:15"
-                body="30 seconds left on voting. No lobbying."
+                body="New mode: React to the caption."
                 announcement
               />
               <ChatMessage
@@ -687,6 +691,39 @@ export function ComponentGallery() {
               </div>
             ))}
           </div>
+        </Case>
+      </Section>
+
+      <Section
+        id="tuned-image"
+        title="Tuned image"
+        spec="a set behind every remote picture, gone the moment it lands"
+      >
+        <Case label="Tuned in — the static is dropped on load, never merely covered">
+          <div className={styles.tunedStage}>
+            <TunedImage src={MEDIA.deploy} alt="a rocket" />
+          </div>
+        </Case>
+        <Case label="Never tuned in — a pulled GIF, or a CDN that does not answer">
+          <div className={styles.tunedStage}>
+            <TunedImage src={DEAD_CHANNEL} alt="a GIF that never arrived" />
+          </div>
+        </Case>
+        <Case label="Nothing coming — a card with no media at all says so in words instead">
+          <div className={styles.tunedStage}>
+            <TunedImage src={DEAD_CHANNEL} alt="a GIF that never arrived" tuning={false} />
+          </div>
+        </Case>
+        <Case label="A fixed thumb — it shrink-wraps rather than filling, and the set goes with it">
+          {/* The other shape this serves: the chat quote's 30px square, the
+              composer's 52×40 staged tile, the vote screen's 88px subject. The
+              wrapper declares no width, so the size the caller already put on
+              its image is the size the set paints in. */}
+          <Inline gap={12} align="center">
+            <TunedImage className={styles.thumb30} src={DEAD_CHANNEL} alt="" />
+            <TunedImage className={styles.thumb52} src={DEAD_CHANNEL} alt="" />
+            <TunedImage className={styles.thumb88} src={DEAD_CHANNEL} alt="" />
+          </Inline>
         </Case>
       </Section>
 

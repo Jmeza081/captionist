@@ -4,6 +4,10 @@
 
 .headline {
   margin: 0;
+  // A measure, like `.body` already has. Without one the headline set its own
+  // width from the column, so at 1440 with chat shut "Write one line. Let them
+  // find the GIF." ran the full width of a column it shares with a preview.
+  max-width: 20ch;
   @include t.screenTitleText;
 }
 
@@ -16,6 +20,10 @@
 
 .note {
   margin: 0;
+  // Beside the button, so it needs a measure of its own: `Inline` wraps, and
+  // without a cap this sentence either rags one word to the line in a narrow
+  // column or runs the width of a wide one, level with a 44px control.
+  max-width: 34ch;
   @include t.labelText;
   color: t.$text-meta;
 }
@@ -43,18 +51,34 @@
 }
 
 .preview {
-  flex: none;
-  width: 100%;
+  flex: 1 1 100%;
+  min-width: 0;
 }
 
 @container (min-width: #{t.$brief-columns}) {
+  /**
+   * Both columns grow, and the *form* is the one that stops.
+   *
+   * The other way round is what this screen shipped with: a `flex: none`
+   * preview at a borrowed 420px beside a form on `flex: 1 1 0`, so at 1440
+   * with chat shut the field took ~900px it had no use for and the panel
+   * labelled "what the room sees" was the narrowest thing on the screen. A
+   * prompt is ninety characters; a field does not get better past `44ch`.
+   */
   .column {
     flex: 1 1 0;
+    max-width: t.$brief-form-max;
   }
 
   .preview {
-    width: t.$interstitial-width * 0.75;
-    max-width: 100%;
+    flex: 1 1 0;
+    min-width: t.$brief-preview-min;
+    // Rides the field down the page rather than sitting at the top of a column
+    // twice its height — the point of a preview is to be looked at *while*
+    // typing, and the starters push the field well below it.
+    position: sticky;
+    top: t.$space-20;
+    align-self: flex-start;
   }
 }
 

@@ -10,6 +10,7 @@ import { GifPanel } from '@/components/molecules/GifPanel'
 import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
 import { playerById, toAvatarProps } from '@/lib/game/selectors'
+import { announcementLine, ROOM_FACE } from '@/lib/room/announce'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
 import {
   isImageGlyph,
@@ -70,7 +71,7 @@ const selectTallies = (snapshot: EventSnapshot) => snapshot.tallies
 type Surface = { kind: 'reactions'; messageId: string | null } | { kind: 'gif' } | null
 
 export function ChatPanel() {
-  const { state } = useRoom()
+  const { state, selfId } = useRoom()
   const messages = useChatLog()
   const unread = useUnread()
   const tallies = useEventSelector(selectTallies)
@@ -264,6 +265,22 @@ export function ChatPanel() {
       */}
       <div className={styles.log} ref={listRef} role="log" aria-label="Room chat">
         {messages.map((entry) => {
+          // The room speaking, not a player. No face, no reaction target and no
+          // divider above it: the unread run is a thing to react to and reply
+          // in, and an announcement is neither.
+          if (entry.kind === 'announcement') {
+            return (
+              <div key={entry.id} className={styles.row}>
+                <ChatMessage
+                  announcement
+                  author={ROOM_FACE}
+                  body={announcementLine(entry.body, state, selfId)}
+                  time={clockTime(entry.at)}
+                />
+              </div>
+            )
+          }
+
           const author = playerById(state, entry.from)
           // A message from somebody who has since left keeps its text — the
           // room heard it — but has no face to draw with.

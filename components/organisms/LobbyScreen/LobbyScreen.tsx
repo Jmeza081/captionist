@@ -16,7 +16,6 @@ import {
   WAITING_LINE,
   canStart,
   lobbyCopy,
-  modeName,
   settingsSummary,
   startLabel,
   toAvatarProps,
@@ -182,8 +181,11 @@ function HostLobby({
 
   const setMode = (mode: GameMode) => {
     if (mode === state.settings.mode) return
+    // No `notify` here any more. The host engine announces a mode change to the
+    // whole room, and that line reaches this tab too — as a chat toast when the
+    // rail is shut, which is where a snackbar would have been. Keeping both
+    // told the person who tapped twice and everybody else once. See ADR 0028.
     send({ type: 'room/settingsChanged', patch: { mode } })
-    notify(`Mode set to ${modeName(mode)}`)
   }
 
   return (

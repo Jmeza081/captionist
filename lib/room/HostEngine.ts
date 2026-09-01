@@ -3,6 +3,7 @@ import { authorize } from '@/lib/game/authorize'
 import { project } from '@/lib/game/project'
 import { reduce } from '@/lib/game/reducer'
 import type { GameState, PlayerId, RoomPhase } from '@/lib/game/types'
+import { roomAnnouncements } from './announce'
 import type { Intent, RoomTransport, Unsubscribe } from './transport'
 
 /**
@@ -57,6 +58,8 @@ export class HostEngine {
 
   private timer: TimerHandle | undefined
   private timerFor: RoomPhase | undefined
+  /** Seats presence has actually seen. See `reconcile`. */
+  private readonly everAttached = new Set<PlayerId>()
   private readonly teardown: Unsubscribe[] = []
   private stopped = false
 
@@ -146,11 +149,50 @@ export class HostEngine {
     // The reducer returns the identical reference for a no-op, which is what
     // makes a stale timer cost nothing: no broadcast, no render.
     if (next === this.state) return false
+    this.commit(this.state, next)
+    return true
+  }
+
+  /**
+   * Everything that follows accepting a new state, in one place.
+   *
+   * `apply` and `expire` reached this point with the same four lines copied.
+   * The announcement is why they stop: it is derived from the *transition*, so
+   * it has to sit where every accepted transition passes — an intent, the
+   * host's own action, or a clock expiring — and a fifth line copied twice is a
+   * fifth line that will one day be added once.
+   *
+   * **Ordering is load-bearing.** `publish()` comes first so every tab holds
+   * the state a line describes before the line arrives: the log resolves
+   * "Vic is back" off `state.players`, and a name landing ahead of the roster
+   * renders "Someone" for somebody sitting right there.
+   */
+  private commit(before: GameState, next: GameState): void {
     this.state = next
     this.schedule()
     this.publish()
+    this.announce(before, next)
     this.onChange?.(next)
-    return true
+  }
+
+  /**
+   * What the room says about itself — once per accepted change, to everybody.
+   *
+   * Here rather than at the two screens that switch modes, for three reasons.
+   * A screen fires even when the host *refuses* the action. No screen fires at
+   * all for a drop, because nobody taps for one. And under `?as=` the tab that
+   * taps is not the host, so the event would be stamped with a guest's id and
+   * correctly refused on arrival.
+   */
+  private announce(before: GameState, after: GameState): void {
+    for (const body of roomAnnouncements(before, after)) {
+      this.transport.publishEvent({
+        kind: 'announcement',
+        from: this.transport.selfId,
+        body,
+        at: this.now(),
+      })
+    }
   }
 
   /**
@@ -167,14 +209,23 @@ export class HostEngine {
    */
   private reconcile(attached: readonly PlayerId[]): void {
     const here = new Set(attached)
+    for (const id of here) this.everAttached.add(id)
+
     for (const player of this.state.players) {
       // The host is not a member of its own transport in every
       // implementation, and a host that dropped is not a case presence can
       // report — the room would be gone with it.
       if (player.id === this.state.hostId) continue
 
+      // **Only a seat that was ever attached can be reported as dropping.**
+      // Absence proves nothing on its own: a fixture room's players are in
+      // `state.players` and were never connections at all, and a real guest is
+      // in the roster for a moment before their presence entry is read. Both
+      // used to be marked `reconnecting` — harmless while nothing read the
+      // flag, and a room full of phantoms the moment the phase gates did.
       const present = here.has(player.id)
       if (!present && player.connection === 'online') {
+        if (!this.everAttached.has(player.id)) continue
         this.apply({ type: 'player/left' }, player.id)
       } else if (present && player.connection !== 'online') {
         this.apply({ type: 'player/reconnected' }, player.id)
@@ -230,10 +281,7 @@ export class HostEngine {
     }
     const next = reduce(this.state, action)
     if (next === this.state) return
-    this.state = next
-    this.schedule()
-    this.publish()
-    this.onChange?.(next)
+    this.commit(this.state, next)
   }
 
   private schedule(): void {

@@ -11,19 +11,22 @@ import { MAX_PLAYERS } from '@/lib/game/constants'
  */
 
 const CODE = 'C-F34783'
+/** A room of its own, because the suite runs fully parallel. */
+const MID_ROUND = 'C-F34784'
+const QUIET = 'C-F34785'
 
-async function join(context: BrowserContext, name: string): Promise<Page> {
+async function join(context: BrowserContext, name: string, code = CODE): Promise<Page> {
   const page = await context.newPage()
-  await page.goto(`/join/${CODE}`)
+  await page.goto(`/join/${code}`)
   await page.getByRole('textbox', { name: 'Nickname' }).fill(name)
   await page.getByRole('button', { name: 'Join the room' }).click()
   await expect(page.locator('main[data-phase]')).toBeVisible()
   return page
 }
 
-async function openRoom(context: BrowserContext): Promise<Page> {
+async function openRoom(context: BrowserContext, code = CODE): Promise<Page> {
   const host = await context.newPage()
-  await host.goto(`/room/${CODE}`)
+  await host.goto(`/room/${code}`)
   await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
   return host
 }
@@ -88,5 +91,72 @@ test.describe('dropping out', () => {
     // The design writes "attempt 3". The transport retries internally and
     // reports no count, so a number here would be one this screen invented.
     await expect(guest.getByText(/attempt \d/)).toHaveCount(0)
+  })
+})
+
+/**
+ * The round itself, not just the roster.
+ *
+ * The seat was already held and the presence pill already fell, but nothing in
+ * the *round* read any of it: `competitorCount` was `players.length - 1`, so a
+ * closed tab kept its place in every denominator and the room played out a full
+ * clock waiting on a browser that no longer existed. See ADR 0029.
+ */
+test.describe('a tab that closes mid-round', () => {
+  test('raises nothing in the browser on the way out', async ({ context }) => {
+    // The reported bug: `close()` left `presence.leave()` rejecting against a
+    // connection it had just shut, and nobody caught it.
+    const host = await openRoom(context, QUIET)
+    const guest = await join(context, 'Vic', QUIET)
+
+    const errors: string[] = []
+    guest.on('pageerror', (error) => errors.push(String(error)))
+    const rejections: string[] = []
+    host.on('pageerror', (error) => rejections.push(String(error)))
+
+    await expect(host.getByText(`2 of ${MAX_PLAYERS}`)).toBeVisible()
+    await guest.close()
+
+    // The host outlives the guest, so it is the tab that would report a
+    // rejection provoked by the other one leaving.
+    await expect(host.locator('main[data-phase]')).toBeVisible()
+    expect(errors, errors.join('\n')).toEqual([])
+    expect(rejections, rejections.join('\n')).toEqual([])
+  })
+
+  test('stops the room waiting on a chair nobody is in', async ({ context }) => {
+    test.setTimeout(90_000)
+    const host = await openRoom(context, MID_ROUND)
+    const one = await join(context, 'Vic', MID_ROUND)
+    const two = await join(context, 'Roberto', MID_ROUND)
+    await expect(host.getByText(`3 of ${MAX_PLAYERS}`)).toBeVisible()
+
+    await host.getByRole('button', { name: /Start game/ }).click()
+    await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'brief', {
+      timeout: 20_000,
+    })
+
+    // Round one's role holder is the host, so they set the round up and the two
+    // guests are the competitors. A tile is the only button wrapping an image.
+    const tiles = host.locator('button:has(img)')
+    await expect(tiles.first()).toBeVisible({ timeout: 20_000 })
+    await tiles.first().click()
+    await host.getByRole('button', { name: 'Lock it in' }).click()
+    for (const page of [one, two]) {
+      await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'compose', {
+        timeout: 20_000,
+      })
+    }
+
+    // One of the two writes something; the other closes their tab. Nobody the
+    // room can still reach is outstanding, so the wait is over — and before
+    // this it would have run the compose clock down to zero.
+    await one.getByRole('textbox', { name: 'Top text' }).fill('shipped it on a Friday')
+    await one.getByRole('button', { name: 'Submit caption' }).click()
+    await two.close()
+
+    await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'waiting', {
+      timeout: 25_000,
+    })
   })
 })

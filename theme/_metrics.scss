@@ -519,9 +519,48 @@ $boot-step-marker: 20px;
 /// still holds "Make it hurt. Make it funny." on two lines rather than six.
 $compose-columns: 880px;
 
-/// The prompt writer: a 340px form, the 52px gap, and the 420px banner
-/// preview beside it.
+/// The prompt writer: a 400px form, the 52px gap, and the 380px banner preview
+/// beside it.
+///
+/// The preview used to be `$interstitial-width * 0.75` — a number borrowed
+/// from an unrelated measure, and `flex: none` beside a form column that took
+/// `flex: 1 1 0`. So every pixel past this threshold went to a field holding
+/// ninety characters, and the panel labelled "what the room sees" stayed at its
+/// borrowed width no matter how much room there was. Both columns grow now, and
+/// the form is the one with the ceiling: a prompt field and five starters run
+/// out of use for width long before a banner does.
 $brief-columns: 820px;
+
+/// The banner preview's floor, and the form's ceiling.
+///
+/// `$brief-preview-min` is the narrowest the quote stays readable at 22px;
+/// `$brief-form-max` is where the form stops taking width it cannot use, which
+/// is what hands the rest to the preview.
+$brief-preview-min: 380px;
+$brief-form-max: 560px;
+
+/// Where `PromptBanner` earns its second column.
+///
+/// The author block is a 40px avatar and an eyebrow naming whose prompt it is
+/// — **186px measured**, and none of it shrinks. So a row needs that, the 20px
+/// gap, the 52px of padding and then the 300px of quote the responsive sweep
+/// holds running text to. Under this it stacks, which also puts the attribution
+/// above the words rather than level with the middle of them.
+///
+/// Measured on the banner, which is drawn in four different columns — the
+/// prompt writer's preview, the compose hero, the vote bar and the reveal — and
+/// is the only thing that knows which one it is in.
+$prompt-banner-columns: 580px;
+
+/// Where the banner can afford the padding the design draws.
+///
+/// A phone gives this component 289px to work with — `RoomShell` spends the
+/// rest on screen padding and the corner the floating keys own — and the sweep
+/// holds a quote to 260 of it. That leaves 29px for padding and border
+/// *together*, against the 52px the design's `lg` face asks for, which is how a
+/// hero banner ended up five words to the line. It gets the roomy treatment
+/// once it has the room.
+$prompt-banner-roomy: 420px;
 
 /// The vote screen's heading band — the subject, its heading and the three
 /// rank slots on one line. Under this the slots sit over the cards they fill

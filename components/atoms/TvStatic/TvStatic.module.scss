@@ -93,7 +93,7 @@
  * Swapping between them is what a set with no signal actually does.
  *
  * Costlier than a transform — an image swap paints where a transform composites
- * — so it runs at 0.3s over five frames rather than as fast as possible. The
+ * — so it runs at 0.2s over five frames rather than as fast as possible. The
  * five images are identical URLs across all twenty sets, so they are decoded
  * once and shared.
  */

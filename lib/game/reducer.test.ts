@@ -781,3 +781,166 @@ describe('room size and round count', () => {
     expect(verdict).toBe('This room is full — 5 players is the limit.')
   })
 })
+
+/* ------------------------------------------------------------------ */
+/* Dropping out                                                        */
+/* ------------------------------------------------------------------ */
+
+/** Marks a seat dropped the way `HostEngine.reconcile` does off presence. */
+function drop(state: GameState, id: PlayerId): GameState {
+  return apply(state, id, { type: 'player/left' })
+}
+
+function rejoin(state: GameState, id: PlayerId): GameState {
+  return apply(state, id, { type: 'player/reconnected' })
+}
+
+describe('a player who dropped', () => {
+  it('stops counting toward the compose gate, so the room does not wait on an empty chair', () => {
+    // Five players: p0 sets the round up, p1–p4 compete.
+    let state = fixtureFor('compose', { players: 5 })
+    state = apply(state, 'p1', { type: 'round/entrySubmitted', answer: caption('one') })
+    state = apply(state, 'p2', { type: 'round/entrySubmitted', answer: caption('two') })
+    state = apply(state, 'p3', { type: 'round/entrySubmitted', answer: caption('three') })
+    expect(state.phase).toBe('compose')
+
+    // p4 is the only one left, and closes the tab.
+    state = drop(state, 'p4')
+    expect(state.phase).toBe('waiting')
+  })
+
+  it('does not fire the gate on an entry from somebody who has since dropped', () => {
+    // The hazard a denominator-only filter creates: three of four in, and one
+    // of *those three* leaves. The count falls, their held entry does not.
+    let state = fixtureFor('compose', { players: 5 })
+    state = apply(state, 'p1', { type: 'round/entrySubmitted', answer: caption('one') })
+    state = apply(state, 'p2', { type: 'round/entrySubmitted', answer: caption('two') })
+    state = apply(state, 'p3', { type: 'round/entrySubmitted', answer: caption('three') })
+
+    state = drop(state, 'p3')
+
+    // p4 is present and still typing. The room must still be waiting for them.
+    expect(state.phase).toBe('compose')
+  })
+
+  it('opens the tally when the last outstanding voter leaves', () => {
+    let state = fixtureFor('vote', { players: 5 })
+    for (const id of ['p0', 'p1', 'p2', 'p3']) {
+      const own = state.round?.entries.find((e) => e.authorId === id)
+      const ranked = (state.round?.entries ?? [])
+        .map((e) => e.id)
+        .filter((e) => e !== own?.id)
+        .slice(0, 3)
+      state = apply(state, id, { type: 'round/ballotCast', ballot: { kind: 'rank', ranked } })
+    }
+    expect(state.phase).toBe('vote')
+
+    state = drop(state, 'p4')
+    expect(state.phase).not.toBe('vote')
+  })
+
+  it('keeps their entry in the round, so it is still voted on and still scored', () => {
+    let state = fixtureFor('compose', { players: 5 })
+    state = submitAll(state)
+    const before = state.round?.entries.length ?? 0
+
+    state = drop(state, 'p2')
+    expect(state.round?.entries).toHaveLength(before)
+    expect(state.round?.entries.some((e) => e.authorId === 'p2')).toBe(true)
+  })
+
+  it('holds the seat rather than removing it, so the rotation is not renumbered', () => {
+    let state = fixtureFor('compose', { players: 5 })
+    const order = state.players.map((p) => p.id)
+
+    state = drop(state, 'p2')
+    expect(state.players.map((p) => p.id)).toEqual(order)
+    expect(state.players.find((p) => p.id === 'p2')?.connection).toBe('reconnecting')
+    expect(state.players.find((p) => p.id === 'p2')?.seatHeldUntil).toBeGreaterThan(0)
+  })
+
+  it('does not strand the room when everyone else leaves at once', () => {
+    // Nobody online is not "everybody is in" — an empty room that fell through
+    // every gate in one tick would race itself to the podium.
+    let state = fixtureFor('compose', { players: 5 })
+    for (const id of ['p1', 'p2', 'p3', 'p4']) state = drop(state, id)
+    expect(state.phase).toBe('compose')
+  })
+})
+
+describe('a player who came back', () => {
+  it('counts again, so the room waits for them', () => {
+    let state = fixtureFor('compose', { players: 5 })
+    state = drop(state, 'p4')
+    state = rejoin(state, 'p4')
+
+    state = apply(state, 'p1', { type: 'round/entrySubmitted', answer: caption('one') })
+    state = apply(state, 'p2', { type: 'round/entrySubmitted', answer: caption('two') })
+    state = apply(state, 'p3', { type: 'round/entrySubmitted', answer: caption('three') })
+    expect(state.phase).toBe('compose')
+  })
+
+  it('never rewinds a phase the room already advanced past', () => {
+    let state = fixtureFor('compose', { players: 5 })
+    state = drop(state, 'p4')
+    state = submitAll(state)
+    expect(state.phase).toBe('waiting')
+
+    state = rejoin(state, 'p4')
+    expect(state.phase).toBe('waiting')
+  })
+
+  it('clears the held seat', () => {
+    let state = fixtureFor('compose', { players: 5 })
+    state = drop(state, 'p2')
+    state = rejoin(state, 'p2')
+    const p2 = state.players.find((p) => p.id === 'p2')
+    expect(p2?.connection).toBe('online')
+    expect(p2?.seatHeldUntil).toBeUndefined()
+  })
+})
+
+describe('a role holder who dropped', () => {
+  it('takes the fallback subject at once rather than burning the brief clock', () => {
+    let state = fixtureFor('brief', { players: 5 })
+    expect(state.round?.subject).toBeNull()
+
+    state = drop(state, state.round?.roleHolderId ?? 'p0')
+    expect(state.phase).toBe('compose')
+    expect(state.round?.subject).not.toBeNull()
+  })
+
+  it('picks the same fallback the clock would have, because the seed chose it', () => {
+    const base = fixtureFor('brief', { players: 5 })
+    const holder = base.round?.roleHolderId ?? 'p0'
+
+    const byClock = expire(base)
+    const byDrop = drop(base, holder)
+    expect(byDrop.round?.subject).toEqual(byClock.round?.subject)
+  })
+
+  it('falls back to a prompt in the reversed mode, not to an image', () => {
+    let state = fixtureFor('brief', { players: 5, settings: { mode: 'react' } })
+    state = drop(state, state.round?.roleHolderId ?? 'p0')
+    expect(state.round?.subject?.kind).toBe('prompt')
+  })
+
+  it('sets the round up from the fallback when they were already gone at the opener', () => {
+    // They dropped during `score`, before this round existed — so no connection
+    // change is coming to notice that `brief` is a dead phase.
+    let state = fixtureFor('opener', { players: 5 })
+    state = drop(state, state.round?.roleHolderId ?? 'p0')
+    expect(state.phase).toBe('opener')
+
+    state = expire(state)
+    expect(state.phase).toBe('compose')
+    expect(state.round?.subject).not.toBeNull()
+  })
+
+  it('does not hand the round to a replacement', () => {
+    let state = fixtureFor('brief', { players: 5 })
+    const holder = state.round?.roleHolderId ?? 'p0'
+    state = drop(state, holder)
+    expect(state.round?.roleHolderId).toBe(holder)
+  })
+})

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 /**
  * Ranking, and the sudden death that a dead heat routes to.
@@ -159,5 +159,79 @@ test.describe('a single-vote room', () => {
 
     await page.goto('/room/DEV?seed=42&phase=reveal&gifs=stub')
     await expect(page.getByText(/ranking points this round/)).toBeVisible()
+  })
+})
+
+/**
+ * A card with no picture yet.
+ *
+ * The vote grid draws up to nineteen remote GIFs and, until this, drew a
+ * transparent box behind a hairline for each one that had not decoded. It is
+ * the same gap the picker board had and it takes the same fix — `TunedImage`,
+ * so a card that is waiting reads as a television that has not tuned in.
+ *
+ * Blocked rather than raced: a stub entry is a local SVG and decodes in
+ * milliseconds, so "before it loads" is not a window a spec can stand in.
+ */
+test.describe('a vote card with no picture yet', () => {
+  const GRID = '/room/DEV?seed=42&phase=vote&as=p2&gifs=stub'
+
+  function firstCard(page: Page) {
+    return page.locator('figure').filter({ hasText: 'Rank this' }).first()
+  }
+
+  test('tunes a dead channel, and keeps it when the GIF never arrives', async ({ page }) => {
+    await page.route('**/media/stub-*', (route) => route.abort())
+    await page.goto(GRID)
+    await expect(page.getByRole('button', { name: 'Pick 3 more' })).toBeVisible()
+
+    const set = firstCard(page).locator('[data-testid="tv-static"]')
+    await expect(set).toBeVisible()
+
+    // Still there once everything that was going to happen has — a static that
+    // appeared and then went with the failed request would leave the hole back.
+    await page.waitForLoadState('networkidle')
+    await expect(set).toBeVisible()
+  })
+
+  test('drops the static once the picture is there', async ({ page }) => {
+    await page.goto(GRID)
+    await expect(page.getByRole('button', { name: 'Pick 3 more' })).toBeVisible()
+
+    // Gone rather than covered. An unselected card draws its image at 85%, so
+    // anything left underneath would be visible through every one of them.
+    await expect(firstCard(page).locator('[data-testid="tv-static"]')).toHaveCount(0)
+  })
+
+  /**
+   * The round's subject, beside the heading.
+   *
+   * Not a `MediaCard` — it is a thumbnail of the thing being voted on rather
+   * than an entry — so it has its own `<img>` and was the last remote picture
+   * on this screen still arriving into a blank square.
+   */
+  test('tunes the round’s own thumbnail, at the size it reserves', async ({ page }) => {
+    await page.route('**/media/stub-*', (route) => route.abort())
+    await page.goto(GRID)
+    await expect(page.getByRole('button', { name: 'Pick 3 more' })).toBeVisible()
+
+    const thumb = page
+      .getByRole('heading', { name: 'Rank your top three.' })
+      .locator('xpath=../..')
+      .locator('[data-testid="tv-static"]')
+    await expect(thumb).toBeVisible()
+
+    /**
+     * And it is still 88 square.
+     *
+     * The assertion that matters, because a *visible* set here proves nothing:
+     * a broken image with alt text is an inline non-replaced box, and width and
+     * height do not apply to one — so before `.thumb` was made `display: block`
+     * this collapsed to a strip of spilled alt text and the set collapsed with
+     * it. That was true of the bare `<img>` too, long before any of this.
+     */
+    const box = await thumb.boundingBox()
+    expect(Math.round(box?.width ?? 0)).toBe(88)
+    expect(Math.round(box?.height ?? 0)).toBe(88)
   })
 })

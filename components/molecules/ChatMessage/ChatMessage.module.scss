@@ -84,6 +84,8 @@
 
 .quoteThumb {
   flex: none;
+  // Block, for the reason `VoteScreen`'s `.thumb` documents.
+  display: block;
   width: t.$chat-quote-thumb;
   height: t.$chat-quote-thumb;
   border-radius: t.$chat-quote-thumb-radius;
@@ -126,6 +128,21 @@
     height: auto;
     max-width: 100%;
     max-height: t.$chat-attachment-height;
+  }
+
+  /**
+   * A box to tune in, for the beat before there is a picture to size against.
+   *
+   * The rule above is what makes this the one image in the app with nothing
+   * reserved: bounded rather than forced is right for a Slackmoji and it means
+   * the frame is 0×0 until the bytes land, so `TunedImage`'s set would have
+   * nothing to paint in. The design's own attachment size stands in until
+   * then, and `TunedImage` clears the attribute the moment the picture is
+   * there — so a 64px emoji still shrink-wraps and is never letterboxed.
+   */
+  [data-tuning] {
+    width: t.$chat-attachment-width;
+    height: t.$chat-attachment-height;
   }
 }
 

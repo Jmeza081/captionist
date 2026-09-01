@@ -15,11 +15,32 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
+  // A chip may shrink, and may never be wider than what holds it. Without
+  // these a `nowrap` pill in a narrow column pushes the row out sideways —
+  // which is a horizontal scrollbar on a screen that has one column.
+  min-width: 0;
+  max-width: 100%;
   transition: background-color 120ms ease, color 120ms ease;
 
   &:hover {
     background-color: t.$fill-secondary;
   }
+}
+
+/**
+ * A chip whose label is a sentence.
+ *
+ * The prompt starters are the case — "reading the PR description after
+ * approving it" is a chip only in the sense that you tap it. At `nowrap` five
+ * of them are five full-width lines that read as a broken list rather than a
+ * row; truncating them instead would hide the half that makes the joke. So this
+ * one wraps, and left-aligns, because a two-line pill centred reads as a
+ * mistake.
+ */
+.wrap {
+  white-space: normal;
+  text-align: left;
+  text-wrap: pretty;
 }
 
 .selected {

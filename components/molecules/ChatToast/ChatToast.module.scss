@@ -12,6 +12,28 @@
   box-shadow: t.$shadow-snackbar;
 }
 
+// The room's own toast. Same accent as `ChatMessage`'s announcement plate —
+// they are one thing seen from two places, and a second purple would read as
+// two different kinds of notice.
+.announcement {
+  border-color: rgba(123, 97, 255, 0.28);
+  background-color: rgba(123, 97, 255, 0.12);
+}
+
+// Stands where the avatar stands, at the avatar's size, so a stack of toasts
+// keeps one left edge whether or not a line came from a person.
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: t.$space-26;
+  height: t.$space-26;
+  border-radius: t.$radius-media-lg;
+  background-color: t.$accent-fill-strong;
+  color: t.$accent-on-fill;
+}
+
 .who {
   flex: none;
   font-family: t.$font-sans;

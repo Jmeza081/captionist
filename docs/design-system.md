@@ -174,6 +174,65 @@ overflow out sideways, which showed three tiles and hid the other nine.
 `$toolbar-scroll-cap` it shared with the reaction toolbar: 196px is several
 rows of 36px emoji tiles and about one and a half GIFs.
 
+**And a tile that has no picture yet is a television.** Reserving the ratio kept
+the board from reflowing but left the reserved area transparent — fifty lazily
+loaded tiles, each an empty box behind a hairline until its WebP decoded, and
+forever where it never did. `TunedImage` puts `TvStatic` behind each one, which
+is the treatment the landing wall has given a cell since it shipped and what the
+atom's own spec line always promised. `MediaCard` takes it too, so the vote grid,
+the reveal and the compose preview stop drawing the same hole. It is off on the
+composer's `popover` — twelve flickering thumbnails over a live chat rail is a
+different amount of noise — which is `tuning={board}` and not a second tile.
+
+It wears `$scrim-static`, the same veil `HeroWall` and `SceneBackdrop` put over
+their sets, and at a picker's scale the reason is plainer than on either of them:
+raw, fifty tiles of noise is the loudest thing on the page, and on a vote card it
+is drawn behind a caption somebody has to read. Measured rather than assumed on
+the other side too — fifty tiles all tuning holds a flat 60fps (median frame
+16.7ms, worst 16.8ms, indistinguishable from one), so the `content-visibility`
+hedge this might have needed is not needed.
+
+The one thing that is not obvious: `onLoad` alone loses a race it loses often. A
+cached GIF, a `data:` URI, anything that decodes inside the server HTML has
+finished before hydration attaches the handler, so the event never arrives and
+the static sits on top of a perfectly good picture forever. `TunedImage` checks
+`complete && naturalWidth > 0` on mount for exactly that, and `naturalWidth` is
+what keeps a broken image — which is `complete` too — reading as the failure it
+is.
+
+The split with `SceneBackdrop` — a backdrop settles to nothing, a tile settles
+to a dead channel — is
+[ADR 0027](./adr/0027-a-tile-that-never-tunes-in-keeps-hissing.md).
+
+**And then everything else that waits on a GIF.** Five more: the composer's
+staged attachment and its "Replying to" thumb, a sent message's attachment and
+*its* quote thumb, and the vote screen's own subject thumbnail beside the
+heading — the last of which is not a `MediaCard`, because it is a picture of the
+thing being voted on rather than an entry. The chat *picker* is still plain,
+which is the same call as before: a dozen flickering thumbnails over a live rail
+is a different amount of noise from one.
+
+Two things had to change for the fixed-size shape, and neither is about static:
+
+`TunedImage`'s wrapper **declares no width.** A block box with `width: auto`
+fills a block container, so the fluid call sites — a picker column, a media
+card's frame, both of which put `width: 100%` on the *image* — are unchanged,
+while a 30px quote, a 52×40 staged tile and an 88px subject shrink-wrap to the
+size their image already carries. `width: 100%` served the first two and
+stretched the other three. `flex: none` rides with it, because three of those
+thumbs are flex items that carried it themselves.
+
+**A broken image is an inline non-replaced box, and width and height do not
+apply to one.** So `.thumb`, `.replyingThumb` and `.quoteThumb` are now
+`display: block` — without it a pulled GIF collapsed the square to a strip of
+spilled alt text, which it did long before there was a set behind it. Two more
+follow from the same fact: `.tuner[data-tuning] img` is `color: transparent`, so
+a dead channel is not captioned with the alt text in white (the attribute stays
+on the element, so nothing an assistive tech reads changes), and
+`ChatMessage`'s attachment — the one image in the app that deliberately reserves
+nothing, `width: auto` so a 64px Slackmoji is never letterboxed into a banner —
+takes the design's 180×120 off `[data-tuning]` until the picture is there.
+
 **A tally pill is `ReactionCTA`'s height**, `$tally-height: 32px`. §4.4 gives
 that pill its colours and nothing else, so the 4/8/12/11 it used to be drawn at
 was ours rather than the design's — and beside a 32px CTA it read as a footnote
@@ -342,6 +401,23 @@ and `t.mq()` cannot tell the two apart. `LobbyScreen` sets
 then add to it. Reach for this only when the rail's width is genuinely part of
 the answer; `t.mq()` remains the default.
 
+**Every threshold is a named token**, in `theme/_metrics.scss` under *Column
+measures*, and each one states the widths it sums. The room's screens are all
+container-keyed now — `VoteScreen`'s sticky lock dock was the last `t.mq('md')`
+among them, and it was wrong in exactly the band the rule exists for: at a
+768–1000px window with chat docked it unpinned the button while the column
+underneath was still phone-shaped.
+
+Two of them measure a *component* rather than a screen, because
+`PromptBanner` is drawn in four different columns and the window is the measure
+of none of them: `$prompt-banner-columns` is where its 186px author block
+earns a place beside the quote instead of above it, and
+`$prompt-banner-roomy` is where it can afford the padding the design draws. A
+phone gives that banner 289px — `RoomShell` spends the rest on screen padding
+and the corner the floating keys own — and `e2e/responsive.spec.ts` holds
+running text to 260 of it, so the designed 52px of side padding is 23px more
+than the component has to give.
+
 ### Reaching tokens from React — `theme/tokens.ts`
 
 The layout primitives take spacing as a prop (`<Stack gap={26}>`), which Sass
@@ -424,7 +500,7 @@ primitives.
 | `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `text` (no horizontal padding, for a label that has to share an edge with the column it sits in), `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why"; `href` renders it as a link when the action is really a navigation |
 | `Eyebrow` | atom | The small uppercase marker above a heading. Uppercases in CSS, so the string stays sentence case |
 | `Tag` | atom | A role or ownership marker — HOST, YOU, 1st |
-| `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected; `blocked` for "not yet, and here's why", the same contract `Button` has. The picker's chips were `blocked`'s first case, when each one spent a search off the round's budget; that budget is gone (ADR-0026) and the prop stays as a design-system affordance — the gallery is where it is demonstrated now |
+| `Chip` | atom | A search suggestion or filter. Reports `aria-pressed` when selected; `blocked` for "not yet, and here's why", the same contract `Button` has; `wrap` for a label that is a sentence rather than a phrase — the prompt starters are the case, and five `nowrap` pills are five full-width lines that read as a broken list. The picker's chips were `blocked`'s first case, when each one spent a search off the round's budget; that budget is gone (ADR-0026) and the prop stays as a design-system affordance — the gallery is where it is demonstrated now |
 | `TimerPill` | atom | The round clock. Flips to urgent at ≤15s, or on demand for sudden death |
 | `ProgressRail` | atom | The 3px rail under the header that drains with the timer. `size='bar'` is the thicker one the reconnect overlay counts down with; `tone='accent'` is the boot screen's, where the rail measures work rather than time |
 | `StatusPill` | atom | A short statement of where the room is — "Locked in" over media, "4 of 7 have voted" on the canvas |
@@ -450,10 +526,10 @@ primitives.
 | --- | --- | --- |
 | `WaitingDots` | atom | Three dots breathing above a headline — the room is doing something you are not waiting on a number for. Not `ProgressRing` (one task in flight, spinning around something) and not `RoundProgress` (pips that count rounds); this one measures nothing. The stagger *is* the design's static full/55%/25% ramp, animated; reduced motion gets the ramp back as a still |
 | `JoinPanel` | molecule | A room's code and QR on their own, for a screen shared to a wall. **No caller today** — `/join` is built from `CodeEntry` + `AvatarPicker`, and the lobby's own share block is `RoomShare` |
-| `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line |
+| `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line. Reflows on **its own** width (`$prompt-banner-columns`, `$prompt-banner-roomy`) because it is drawn in four different columns: the author block is a measured 186px that does not shrink, so under the measure it stacks above the quote instead of squeezing it, and tightens its padding — a phone gives it 289px and the sweep holds running text to 260 of that |
 | `PlayerRow` | molecule | One player in a list — `roster`, `tracker`, `standing` or `pill`. The guest lobby's `pill` draws its avatar at 34px rather than the design's 30, because 30 is under `HAT_MIN_SIZE` and "who else is here" is the question a hat answers |
 | `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Drawn at its image's own ratio, with caption overlays sized against the card and stepped down a size per line they need. Its foot takes `caption`, `reply`, `reaction` and `action` as peers; `onActivate` makes the picture itself a pointer target for whatever `action` does |
-| `ChatMessage` | molecule | One chat message in three bands: a **name row**, a **bubble** carrying body, quote and attachment together, and a **reaction row** under it. The bubble is `fit-content`, so four words read as four words rather than as a plate with 200px of nothing after them, and the avatar drops to the bubble's top edge — the face belongs to what was said, the name is the label on it. `onReact` puts the CTA at the end of the reaction row, **always lit**: under the plate it is out of the reading path, which is what lets it stay visible, and a hover-only affordance is no affordance on a phone. A host announcement is the same component with `announcement` — its own accent plate, taking the avatar gutter too — which **nothing in the room sets**: it used to be `author.isHost`, so every line the host typed was a card signed "HOST · HOST", and since that branch drew only the body a GIF from the host was an empty one. The host is a player, so their chat is chat. An attachment is bounded by 180×120 rather than forced to it, so a Slackmoji posted from the composer stays its own size |
+| `ChatMessage` | molecule | One chat message in three bands: a **name row**, a **bubble** carrying body, quote and attachment together, and a **reaction row** under it. The bubble is `fit-content`, so four words read as four words rather than as a plate with 200px of nothing after them, and the avatar drops to the bubble's top edge — the face belongs to what was said, the name is the label on it. `onReact` puts the CTA at the end of the reaction row, **always lit**: under the plate it is out of the reading path, which is what lets it stay visible, and a hover-only affordance is no affordance on a phone. A room announcement is the same component with `announcement` — its own accent plate, taking the avatar gutter too. It is set by the **host engine**, never by a tap: a mode switch, a player dropping, a player coming back ([ADR 0028](adr/0028-the-room-speaks-in-its-own-lane.md)). It is drawn with `ROOM_FACE` rather than a person's props, and the eyebrow is the speaker's name alone — the old `· host` suffix came from `author.isHost`, which made every line the host typed a card signed "HOST · HOST", and since that branch drew only the body a GIF from the host was an empty one. The host is a player, so their chat is chat. An attachment is bounded by 180×120 rather than forced to it, so a Slackmoji posted from the composer stays its own size |
 | `UnreadDivider` | molecule | Where you stopped reading |
 | `ReactionToolbar` | molecule | The searchable reaction picker. Controlled by `open` so it can animate out, dismissed by Escape or a click anywhere outside it, and genie-in/out from the edge its `flipped` anchor sits on. No printed title — the thing you opened it from already said what it is for. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
 | `RoundOpener` | molecule | The interstitial before each round |
@@ -461,7 +537,7 @@ primitives.
 | `HelpModal` | molecule | "How Captionist works", wherever it opens from: the landing nav, the host's setup screen, the lobby's help key, the room toolbox. Four steps per format, and a switcher that reads the other format without changing the room — the room's own mode is only the starting point and the green dot. Its rail carries a miniature of the screen each step describes (Screens 2e–2h): the picked image wearing its Selected pill, that same image being captioned, a vote grid mid-ranking, then the champion |
 | `RoomToolbox` | molecule | The room's floating controls, fixed bottom-right, collapsing to a FAB. Everyone gets one: the "React to the room" row and the walkthrough for all, the host's controls as an extra section behind a `host` prop. Dismissed by a click outside it, or by Escape — which closes the inner picker first, so one keypress cannot collapse the bar out from under it |
 | `ChatRail` | molecule | Room chat: docked beside content above `md`, a sheet over it below. Collapses to a 64px strip, or one floating key on a phone. Both sizes are one component and the branch is entirely CSS. The strip carries no reaction key — reacting to the room is a `RoomToolbox` tool, not a chat one |
-| `ChatToast` | molecule | An arriving message while chat is shut. Not `Snackbar` — that one is the room's single centred voice for something *you* did and carries no author |
+| `ChatToast` | molecule | An arriving message while chat is shut. Not `Snackbar` — that one is the room's single centred voice for something *you* did and carries no author. `announcement` gives it `ChatMessage`'s accent treatment and drops the face: a collapsed rail is exactly how somebody misses a mode switch, and an avatar there would say a *person* told you |
 | `Composer` | molecule | The chat composer. Sends on text *or* an attachment, and carries the staged reply above them |
 | `GifPanel` | molecule | GIF search, as a `popover` above the composer or a full-page `board`. Picking attaches and, in the popover, closes; it never sends. Masonry columns, each tile at its GIF's own ratio, lazily loaded and preferring the WebP rendition — a board is fifty tiles. `onMore` adds "Shuffle results" beside the suggestion chips, which fetches the next page for the same query and wraps at the end; `provider` drives the attribution mark, which lives here rather than on each screen so a new board cannot ship without it, and never appears over the offline shelf — it also turns off local keyword narrowing, because filtering a provider's results is against their terms |
 | `AdSlot` | molecule | Sponsored banners above the picker board, in a sandboxed iframe (never `allow-same-origin`). Renders nothing when no ad came back, which is the ordinary case. Never inside the masonry: an ad is a third-party HTML document with a fixed size and a 10% rescale cap, so a fluid column letterboxes it and a `<button>` tile would make it pickable. |
@@ -476,6 +552,7 @@ primitives.
 | `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
 | `SceneBackdrop` | molecule | Media behind a whole screen rather than inside a card — the waiting faces, where an avatar and a headline were the only things on the canvas. Fixed, inert and `aria-hidden`, with a scrim in two weights. Carries [ADR 0005](./adr/0005-media-that-can-move-ships-a-still.md)'s contract: playback starts **off** and a client island turns it on, so a visitor who asked for stillness never sees a frame. `HeroWall` holds the same contract for a grid of tiles; neither shape serves the other. Draws television static while its clip is still being fetched, and nothing once the lookup settles on nothing — `tuning` tells those apart. A molecule rather than an atom because it composes `TvStatic`, which is `Wordmark`'s reason for the same promotion |
 | `TvStatic` | atom | A set tuned to a channel that is not there. The placeholder for media still being fetched — one behind the waiting screen, twenty across the landing wall. Server-rendered: an inline SVG and CSS, so it needs no script, no request and no decode. `seed` desynchronises each set; `paused` holds one still, and `prefers-reduced-motion` holds all of them. |
+| `TunedImage` | molecule | An image with a set behind it. `TvStatic` while the picture is on its way, the picture over it, and the static **dropped on load rather than covered** — `MediaCard` draws an unselected image at 85%, and a field repainting five times every 200ms under fifty loaded GIFs is a bill for something nobody can see. Never dropped on error, so a pulled GIF or a dead CDN keeps its dead channel. `tuning={false}` for a card with no media at all, which is a settled nothing rather than a wait. Veiled with `$scrim-static`, like every other set in the app. `'use client'` for one boolean, so `MediaCard` stays a server component. The wrapper declares **no width** — it fills a block container and shrink-wraps a fixed thumb, so one component serves the picker's fluid column and the chat quote's 30px square alike |
 | `HatPicker` | molecule | Choosing a hat on `/join` and `/host`. Sixteen plus a "No hat" tile, folded to six behind a "Show all hats" disclosure because it is the *second* picker on that card. Built to `AvatarPicker`'s shape — a real radiogroup, roving tabindex, arrows that move the selection with the focus — and names what is worn in the header slot where the face picker puts its shuffle. `heading` draws the label as a section head, which `/host` uses and `/join` does not |
 | `AvatarPicker` | molecule | Choosing a face on `/join` and `/host`. Offers a window of ten from the seventy-seed catalogue — one line inside a container wide enough, five and five on a phone — with a "Shuffle faces" that re-rolls the offer and keeps your pick. A real radiogroup with roving tabindex and arrow keys. Owns the seed-to-preview-colour mapping so two screens cannot drift |
 | `ModeCard` | molecule | One of the two game modes, as a card with the sentence that explains it — a format, not a setting |
@@ -570,7 +647,7 @@ the next person reads this rather than "fixing" them back.
 | Compose: submitting leaves you on the composer, *"You can swap it until the clock runs out."* | Submitting hands you the waiting face, and there is no swap. The copy says *"You get one shot"* on the way in | A product call, not a layout one: a caption you can keep rewriting until the clock dies is a different game from one where the joke you commit to is the joke you are judged on — losing a round to a line you sent too fast is the fun. It also fixed a real read: the old screen answered a submit with a snackbar and an open field, which looks like nothing happened. The phase is still room-wide; `submitted` is its per-viewer face, exactly as `pickwait` is `brief`'s, and the reducer still upserts on author so a resent message cannot give one player two entries. |
 | Waiting: *"You can still edit until the clock hits zero…"*, with an "Edit my caption" / "Swap my GIF" button | *"It goes up anonymously when the clock hits zero, and the roasting begins."*, with no edit | Phase is room-wide and authoritative, so a guest cannot rewind the room to `compose`. An inline editor here would be a second composer to hold in step with the real one. The copy had to stop promising the button. |
 | Waiting: one screen, one headline, and a host button reading *"Everyone's in — start voting"* | Two faces off the tracker. Everyone in: *"That's everyone in."*, a three-second beat instead of twelve, and **no button**. Somebody still out: *"Now we wait."*, the full twelve, and a button that names them — *"Start voting without Jack"*, or *"Start voting without 2 players"* | The button was never a gate: `waiting` is timed, and `host/skippedPhase` runs the same `advance()` the clock does. So once the last entry landed — which is *what flips the phase* — the room said "now we wait" over a tracker reading N of N, under a twelve-second clock, beside a button offering to start a vote that was starting anyway. Four announcements of one finished fact, and a decision put to the host that they had no information to make. The wait now reads the tracker: `WAITING_ALL_IN_MS` when there is nobody in it, the full `PHASE_DURATIONS.waiting` when there is. The label had a second problem of its own — `waiting` is reachable with stragglers, because the *compose* clock expiring sends the room there whoever is still typing, so the host was told everyone was in by a button sitting directly under a tracker saying they were not. Timers are honest; so are the buttons beside them. |
-| Submission tracker: `submitted` / `typing…` / `still thinking` | `submitted` / `still thinking` | `typing…` needs live keystroke presence, which is the phase-6 event lane. Two honest states beat three with one of them guessed. |
+| Submission tracker: `submitted` / `typing…` / `still thinking` | `submitted` / `still thinking` / `left` | `typing…` needs live keystroke presence, which is the phase-6 event lane. Two honest states beat three with one of them guessed. **`left` is the third, and it is the exception that proves the rule**: it is not a guess but the one thing on that row the room knows for a fact, straight off the transport's presence set. It arrived with [ADR 0029](adr/0029-a-held-seat-does-not-hold-the-round.md), because a row reading "still thinking" over a closed tab was itself the guess — and because the count above it now excludes them, so a tracker of four over a line reading "3 of 3" needs the fourth row to say why. |
 
 | Six faces on `/join` (seven on `/host`) in one fixed row, no shuffle — and "Shuffle" as trailing text inside the host's nickname field | A window of **ten** drawn from a **seventy**-seed catalogue, laid out **five and five**, with a **"Shuffle faces"** button in the picker's own header, on both screens | Seven faces is a set a room of up to twenty exhausts immediately, and two people wearing the same one is the game's own joke turned against it. A catalogue only works if you can re-roll what is on offer, so the control belongs beside the faces it re-rolls. It is not in the nickname field because the design's placement there reads as a *nickname* generator — which is a thing we have never built, and now visibly have not. The window was eight and is ten, and the design's single row survives it: ten tiles at 46px with an 8px gap need 532px, and the card's inner width is 548px. The row is a grid asking a **container query**, not a breakpoint — whether ten fit is a question about the card, whose width does not track the viewport — so it is one line on both front doors at every width they are drawn at and five-and-five on a phone. Getting there meant fixing the column: the form half was `40fr`, which rendered the design's 600px card at 472px at 1280, and a fraction that squeezes the one width the design actually states is the bug rather than the picker. Positions 7–9 repeat positions 0–2's preview colours, because the palette is seven — and the colour was always a preview, not a promise. |
 | Join: a 600px card centred on the canvas, with "Join the room" and "Make your own" as the card's last two rows | The same 600px card, but on `/host`'s surface — docked actions, and from `xl` a `HeroWall` in the 60% beside it | The design draws join at 390 and at 1440 as the same centred column, which at 1440 is three fields and two thirds of an empty window. `/host` already answered that question, and these are the two halves of one handshake: a host reads a code out, a guest types it in. Giving join a second answer would be two front doors that share their molecules and share nothing else. Both actions dock rather than only the primary, because a guest who arrived before the host did needs "Make your own" as badly as the button they cannot press yet. |

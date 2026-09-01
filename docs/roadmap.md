@@ -34,6 +34,7 @@ not.** So the state machine went first.
 | **6** | Chat + live reaction tallies on the event lane. | `ChatRail` fills; vote-card tallies go live. | ✅ done |
 | **7** | The three phase-6 deferrals — GIF attachments in chat, the "replying to" quote block, the Slackmoji tiles and pack tabs — plus the two host settings no screen read. | Screens `2b`, `2c` and `3k` are reachable; a single-vote room pays one point and a one-line room asks for one caption. | ✅ done |
 | **8** | Hats — a second cosmetic beside the face, on both entry screens, plus the crown the leader wears. | A hat picked at the door rides every avatar from 34px up; the room crowns whoever leads and takes it back when they are overtaken. | ✅ done |
+| **9** | Usability: the room narrates itself, a dropped tab stops being a phantom player, the host has to mean a close, and the react lane gets a layout audit. | A mode switch reaches every player; a guest closing a tab mid-round ends the wait instead of extending it, and raises nothing in the console; the responsive sweep covers both modes. | ✅ done |
 
 Nothing in phases 2–3 knows a transport exists beyond `useRoom()`, so **phase 5
 changes exactly one line**: which implementation `RoomProvider` constructs.
@@ -59,6 +60,39 @@ Two things to check the first time it runs for real: `allowedDevOrigins` in
 `next.config.mjs` is `['127.0.0.1']` and does not include the LAN address a
 phone uses, and `NEXT_PUBLIC_APP_URL` must stay unset or the lobby's QR encodes
 `localhost` and is a dead link on that phone.
+
+**Phase 9 was four bugs that shared one cause: state nobody read.**
+
+`ChatMessage.announcement` had existed since phase 2 with a comment saying it
+was waiting for an action. `Player.connection` had four writers and — outside
+the reconnect overlay — no reader, so `competitorCount` was `players.length - 1`
+and a closed tab kept its seat in every denominator. `seatHeldUntil` is still
+derived and still unconsumed, and [ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md)
+now says why rather than leaving it looking like an oversight.
+
+Four things changed shape:
+
+1. **An announcement is published by the engine, off the transition.** Not by
+   the screen that taps: a screen fires even when the action is refused, no
+   screen fires at all for a drop, and under `?as=` the tapping tab is not the
+   host. `HostEngine.commit()` diffs before and after, which covers the lobby's
+   control and the toolbox's with one rule ([ADR 0028](./adr/0028-the-room-speaks-in-its-own-lane.md)).
+2. **Both sides of a phase gate count the same people.** Filtering only the
+   denominator is a bug that ships easily: a held seat holds its *entry* too, so
+   three-of-four submitted minus one of those three opens the gate while a
+   present player is still typing.
+3. **`reconcile` only reports seats presence has seen.** Absence proved nothing
+   — a fixture room's players were never connections at all, and were being
+   marked `reconnecting` the whole time. Harmless until the gates read the flag.
+4. **`beforeunload` asks and `pagehide` acts.** One handler that did both would
+   send the room to `podium` and then leave a live tab sitting in it when the
+   host clicked Cancel.
+
+The layout audit found nine spots and one of them was the reported bug: the
+Prompter's preview was `flex: none` at a width borrowed from an unrelated token,
+beside a form on `flex: 1 1 0` that absorbed everything else. The rest surfaced
+because `e2e/responsive.spec.ts` had only ever swept the react lane's *first*
+screen — the answering half had never been measured at its own widths.
 
 **Phase 6 was mostly wiring, and that was the point.** `ChatMessage`,
 `Composer`, `ReactionToolbar`, `ReactionFloaters`, `UnreadDivider` and
@@ -148,6 +182,39 @@ ADR 0021 and records why none of it needed a measurement to justify. The vote
 board at nineteen submissions is the new binding constraint; `?bots=19` reaches
 it.
 
+**The picker stopped drawing holes.** Not a phase — a refinement, and the
+obvious one once the landing wall had a treatment for waiting media that no
+other surface used. A picker board is fifty lazily-loaded tiles and a vote grid
+is up to nineteen cards; each reserved its image's real ratio and then left the
+reserved area transparent until the bytes landed, and forever where they never
+did. `TunedImage` puts `TvStatic` behind both, veiled with the same
+`$scrim-static` every other set wears.
+
+The decision worth knowing is what a set does when the picture never comes:
+[ADR 0027](./adr/0027-a-tile-that-never-tunes-in-keeps-hissing.md) — a backdrop
+settles to nothing and a tile settles to a dead channel, because a backdrop is
+behind a sentence and a tile *is* the content. Fifty tiles all tuning was
+measured rather than assumed and costs nothing (median frame 16.7ms, worst
+16.8ms of 182).
+
+**A second pass took the other five**, which the ADR records as an amendment:
+the composer's staged attachment and its "Replying to" thumb, a sent message's
+attachment and its quote thumb, and the vote screen's own subject thumbnail. It
+turned up a bug older than any of it — a broken image is an inline non-replaced
+box, so CSS width and height do not apply, and that 88px thumbnail had been
+collapsing to a strip of spilled alt text since it was written. Three
+neighbouring gaps are still deliberately open:
+
+- **The cold board.** Before the first search lands there are no tiles at all,
+  only the line `Looking…`. A mosaic of ratio-varied sets would stop the board
+  jumping to full height when results arrive, but it needs invented ratios.
+- **A new search, and "Shuffle results".** `useGifSearch` never clears
+  `results`, so the previous board stays up with no signal that anything is in
+  flight.
+- **The chat composer's popover.** Provider-backed and equally blank, but a
+  dozen flickering thumbnails over a live chat rail is a different amount of
+  noise. It is `tuning={board}` → `tuning` if that reads wrong.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.
@@ -203,9 +270,14 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
 | `format:'one'`, `voting:'single'` | Implemented in phase 7. Both were live controls in `/host` that no screen read — a single-vote room paid 3/2/1, and "One line" changed nothing but a summary label. |
 | GIF search toggle | **Removed, against the design.** `giphyEnabled` was a `/host` toggle nothing read, and it offered a room state the game cannot be played in — both modes need a GIF every round. `?gifs=stub` covers the real want ([ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). |
 | Help modal | Never pauses the room. Only the host's explicit pause stops the clock. |
+| Announcements | The room speaks in the chat lane, on its own `RoomEvent` kind, published by the **host engine** and carrying a code rather than a sentence ([ADR 0028](./adr/0028-the-room-speaks-in-its-own-lane.md)). A mode switch, a drop and a return get a line; a *join* deliberately does not — the roster already draws it. |
+| A held seat | Holds the seat, the entry and the points. It does **not** hold the round: the moment presence reports a drop, that player stops counting toward every phase gate ([ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md)). The role is never reassigned mid-round — the fallback subject covers a Prompter who left, and renumbering the rotation is the thing the held seat exists to prevent. |
 
-Accepted cost of host authority: **if the host's tab dies, the room ends.**
-Phase 1 mitigates (`sessionStorage` snapshot per `rev`, `beforeunload` →
+Accepted cost of host authority: **if the host's tab dies, the room ends.** The
+host is now asked to confirm a close while a game is live — the browser's own
+dialog, from `beforeunload`, which deliberately mutates nothing; `pagehide` is
+what actually ends the room, so cancelling leaves it exactly as it was.
+Phase 1 mitigates (`sessionStorage` snapshot per `rev`, `pagehide` →
 `host/left`, `visibilitychange` → `catchUp()`), and the transport boundary keeps
 a server-authoritative variant open later.
 

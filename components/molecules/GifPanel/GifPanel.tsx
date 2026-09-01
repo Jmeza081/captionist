@@ -6,6 +6,7 @@ import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { TextField } from '@/components/atoms/TextField'
+import { TunedImage } from '@/components/molecules/TunedImage'
 import type { GifAd, GifProviderDescriptor } from '@/lib/gifs/provider'
 import { AdSlot } from './AdSlot'
 import type { GifResult } from '@/lib/gifs/types'
@@ -210,8 +211,24 @@ export function GifPanel({
             reports no WebP — and stays what `toMediaRef` broadcasts, because
             the room's other screens are not all WebP-safe.
           */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={gif.webp ?? gif.src} alt="" loading="lazy" decoding="async" />
+          {/*
+            A set behind it until the picture lands — `TunedImage` carries the
+            reasoning, and the tile is exactly the shape it was built for.
+
+            `tuning={board}` keeps it off the popover. The board is fifty
+            provider tiles somebody is scrolling through and choosing from; the
+            popover is a dozen small ones over a live chat rail, where twelve
+            flickering thumbnails would be the loudest thing on the screen. A
+            prop rather than a second tile, so there is still only one of these
+            to change.
+          */}
+          <TunedImage
+            src={gif.webp ?? gif.src}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            tuning={board}
+          />
           {board && gif.id === selectedId && (
             <span className={styles.badge}>{selectionLabel}</span>
           )}

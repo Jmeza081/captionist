@@ -166,3 +166,57 @@
   gap: t.$space-12;
   width: 100%;
 }
+
+/**
+ * The three fixed thumbs the app actually draws, at their real sizes.
+ *
+ * Deliberately `display: block` like the components they mirror — the property
+ * `VoteScreen`'s `.thumb` documents, without which a broken image collapses to
+ * an inline box and takes the set with it.
+ */
+.thumb30,
+.thumb52,
+.thumb88 {
+  display: block;
+  border-radius: t.$radius-media;
+  object-fit: cover;
+}
+
+.thumb30 {
+  width: t.$chat-quote-thumb;
+  height: t.$chat-quote-thumb;
+  border-radius: t.$chat-quote-thumb-radius;
+}
+
+.thumb52 {
+  width: t.$composer-attach-preview-w;
+  height: t.$composer-attach-preview-h;
+}
+
+.thumb88 {
+  width: t.$avatar-88;
+  height: t.$avatar-88;
+}
+
+/**
+ * A frame to show `TunedImage`'s fluid shape in.
+ *
+ * Unlike `.staticStage` it declares no position of its own — the component
+ * brings one — and the ratio goes on the *image*, which is where the fluid call
+ * sites put it. A stage that sized the wrapper instead would be showing a shape
+ * nothing ships. The fixed shape is `.thumb30`/`.thumb52`/`.thumb88` above.
+ */
+.tunedStage {
+  width: 100%;
+  max-width: t.$gif-board-min;
+  overflow: hidden;
+  border: 1px solid t.$line-hairline;
+  border-radius: t.$radius-media;
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: t.$gif-tile-ratio;
+    object-fit: cover;
+  }
+}

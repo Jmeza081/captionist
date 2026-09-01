@@ -41,6 +41,16 @@ export const MEDIA = {
 export const ATTACHMENT = frame('#1B3A4D', '#0E0F10', '👀', 180, 120)
 
 /**
+ * A picture that never arrives.
+ *
+ * Deliberately a path the dev server answers with a 404 rather than a broken
+ * data URI: it is the real failure — a GIF the provider has pulled, a CDN that
+ * does not answer — and it is what holds `TunedImage`'s static on screen long
+ * enough to look at. Everything else in this file loads instantly by design.
+ */
+export const DEAD_CHANNEL = '/media/a-channel-that-never-came.gif'
+
+/**
  * Slackmoji stand-ins. Rendered at 22px in the toolbar, so the glyph is sized
  * to fill its box rather than derived from the frame height like the media
  * placeholders — at 44/2.6 it vanished.

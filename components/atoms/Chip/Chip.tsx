@@ -18,6 +18,14 @@ export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * picker's — see the gallery, which is where it is demonstrated now.
    */
   blocked?: boolean
+  /**
+   * The label is a sentence, so let it wrap.
+   *
+   * A prop rather than a sibling component, per the design system's rule 2.
+   * Off by default: every chip that exists today is one or two words, and a row
+   * of short pills that may wrap would break at the wrong places.
+   */
+  wrap?: boolean
   children: ReactNode
 }
 
@@ -30,6 +38,7 @@ export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function Chip({
   selected = false,
   blocked = false,
+  wrap = false,
   type = 'button',
   className,
   children,
@@ -39,6 +48,7 @@ export function Chip({
     styles.chip,
     selected ? styles.selected : '',
     blocked ? styles.blocked : '',
+    wrap ? styles.wrap : '',
     className ?? '',
   ]
     .filter(Boolean)

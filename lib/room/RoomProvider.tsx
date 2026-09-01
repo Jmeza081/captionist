@@ -190,6 +190,9 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
       self: () => store.getSnapshot().selfId,
       isMember: (from) =>
         store.getSnapshot().state?.players.some((p) => p.id === from) ?? false,
+      // Announcements only. Read off the projection every tab already holds,
+      // so no tab has to be told who hosts.
+      isRoomHost: (from) => store.getSnapshot().state?.hostId === from,
     }),
   )
   const engineRef = useRef<HostEngine | undefined>(undefined)
@@ -415,14 +418,48 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
       // A throttled background tab stops firing timers, and guests must never
       // self-advance — so the room would silently freeze at 0:00 without this.
       const onVisible = () => engine.catchUp()
-      // The room ends with its host. A guest closing a tab is a different
-      // event entirely — see `startAsGuest`.
-      const onUnload = () => engine.apply({ type: 'host/left' }, hostId)
+
+      /**
+       * Make the host mean it.
+       *
+       * The room ends with its host, and until now it ended on a stray ⌘W with
+       * no way back. This is the browser's own confirmation — the wording is
+       * not ours to write — and it asks only while there is a game to lose:
+       * closing the lobby costs nothing, and closing the podium costs a
+       * scoreboard everyone has already read.
+       *
+       * **It changes nothing.** The departure moved to `pagehide` below,
+       * because a handler that ended the room *and* asked would send the room
+       * to `podium` and then leave a live tab sitting in it when the host
+       * clicked Cancel.
+       */
+      const onBeforeUnload = (event: BeforeUnloadEvent) => {
+        const phase = engine.snapshot().phase
+        if (phase === 'lobby' || phase === 'podium') return
+        event.preventDefault()
+      }
+
+      /**
+       * The actual departure. A guest closing a tab is a different event
+       * entirely — see `startAsGuest`.
+       *
+       * `pagehide` rather than `beforeunload` because it fires only when the
+       * page really is going, and `persisted` tells us when it is merely being
+       * frozen into the back/forward cache — coming back from which should
+       * find the room still there.
+       */
+      const onPageHide = (event: PageTransitionEvent) => {
+        if (event.persisted) return
+        engine.apply({ type: 'host/left' }, hostId)
+      }
+
       document.addEventListener('visibilitychange', onVisible)
-      window.addEventListener('beforeunload', onUnload)
+      window.addEventListener('beforeunload', onBeforeUnload)
+      window.addEventListener('pagehide', onPageHide)
       cleanups.push(() => {
         document.removeEventListener('visibilitychange', onVisible)
-        window.removeEventListener('beforeunload', onUnload)
+        window.removeEventListener('beforeunload', onBeforeUnload)
+        window.removeEventListener('pagehide', onPageHide)
       })
     }
 
@@ -477,9 +514,19 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
 
       // Leaving holds the seat rather than ending the room — that is the host's
       // to do, and a guest firing `host/left` would kill a game it does not own.
-      const onUnload = () => transport.sendIntent({ type: 'player/left' })
-      window.addEventListener('beforeunload', onUnload)
-      cleanups.push(() => window.removeEventListener('beforeunload', onUnload))
+      //
+      // `pagehide`, and the same `persisted` guard the host's exit takes. On
+      // `beforeunload` this fired for a page merely being frozen into the
+      // back/forward cache, which was survivable while `player/left` only held
+      // a seat — but since [ADR 0029](../../docs/adr/0029-a-held-seat-does-not-hold-the-round.md)
+      // it also drops you out of the round's gates, so tabbing away and back
+      // could hand the room a departure you never made.
+      const onPageHide = (event: PageTransitionEvent) => {
+        if (event.persisted) return
+        transport.sendIntent({ type: 'player/left' })
+      }
+      window.addEventListener('pagehide', onPageHide)
+      cleanups.push(() => window.removeEventListener('pagehide', onPageHide))
     }
 
     /** The local player's own feed, host or guest. */

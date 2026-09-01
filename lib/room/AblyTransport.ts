@@ -212,18 +212,37 @@ function build(
   let selfState: ConnectionState = 'online'
   let closed = false
 
+  /**
+   * Fire and forget — and forget the rejection too, but only the ones we caused.
+   *
+   * Every Ably call below is deliberately unawaited: a screen must never wait on
+   * the wire. What was missing is that an unawaited promise still rejects, and
+   * `close()` racing its own `presence.leave()` rejects with "Connection closed"
+   * *every single time a tab is closed* — an unhandled rejection in the browser
+   * of anyone who leaves mid-game, which is everyone eventually.
+   *
+   * Swallowing is scoped to the teardown that provoked it. A publish that fails
+   * while the transport is still live is a real fault and still says so.
+   */
+  const fire = (work: Promise<unknown>): void => {
+    void work.catch((err: unknown) => {
+      if (closed) return
+      if (process.env.NODE_ENV !== 'production') console.warn('[room] transport', err)
+    })
+  }
+
   /* ---------------- inbound ---------------- */
 
-  void inbox.subscribe((message) => {
+  fire(inbox.subscribe((message) => {
     if (closed) return
     // Messages are mutable in Ably v2 — an edit or a summary arrives on the
     // same channel. Only a create is a broadcast.
     if (message.action && message.action !== 'message.create') return
     const body = message.data as { state: PublicState; meta: StateMeta }
     for (const handler of [...stateHandlers]) handler(body.state, body.meta)
-  })
+  }))
 
-  void control.subscribe((message) => {
+  fire(control.subscribe((message) => {
     if (closed) return
     if (message.action && message.action !== 'message.create') return
 
@@ -255,7 +274,7 @@ function build(
       if (body.to !== selfId) return
       for (const handler of [...refusalHandlers]) handler(body.reason)
     }
-  })
+  }))
 
   /* ---------------- presence ---------------- */
 
@@ -272,13 +291,15 @@ function build(
   // Every action, not just `enter`: the backfill for members already here
   // arrives as `present`, and subscribing to `enter` alone silently misses
   // everyone who was in the room before we were.
-  void control.presence.subscribe(() => {
-    void readPresence()
-  })
-  void readPresence()
+  fire(
+    control.presence.subscribe(() => {
+      fire(readPresence())
+    }),
+  )
+  fire(readPresence())
 
   const publishSelf = () => {
-    void control.presence.update({ host: isHost, state: selfState } satisfies PresenceData)
+    fire(control.presence.update({ host: isHost, state: selfState } satisfies PresenceData))
   }
 
   /* ---------------- the interface ---------------- */
@@ -298,7 +319,7 @@ function build(
         })
         return
       }
-      void control.publish(INTENT, { action } satisfies IntentBody)
+      fire(control.publish(INTENT, { action } satisfies IntentBody))
     },
 
     onIntent(handler) {
@@ -322,7 +343,7 @@ function build(
           channel = client.channels.get(stateChannel(roomCode, id))
           outbox.set(id, channel)
         }
-        void channel.publish('state', { state, meta })
+        fire(channel.publish('state', { state, meta }))
       }
     },
 
@@ -335,7 +356,7 @@ function build(
       // Stamped here as well as on receive, so the sender's own echo and
       // everyone else's copy are the same object.
       const stamped = { ...event, from: selfId }
-      void control.publish(EVENT, stamped)
+      fire(control.publish(EVENT, stamped))
       queueMicrotask(() => {
         for (const handler of [...eventHandlers]) handler(stamped)
       })
@@ -348,7 +369,7 @@ function build(
 
     publishRefusal(to, reason) {
       if (!isHost) throw new Error('publishRefusal: only the host may refuse an intent')
-      void control.publish(REFUSAL, { to, reason } satisfies RefusalBody)
+      fire(control.publish(REFUSAL, { to, reason } satisfies RefusalBody))
     },
 
     onRefusal(handler) {
@@ -391,7 +412,7 @@ function build(
     close() {
       if (closed) return
       closed = true
-      void control.presence.leave()
+      fire(control.presence.leave())
       control.unsubscribe()
       inbox.unsubscribe()
       for (const channel of outbox.values()) channel.unsubscribe()

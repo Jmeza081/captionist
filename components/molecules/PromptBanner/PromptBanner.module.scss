@@ -1,34 +1,45 @@
 @use 'theme' as t;
 
+/**
+ * The measure, and nothing else.
+ *
+ * `container-type: inline-size` here and every responsive value on `.inner`,
+ * because a container cannot query itself — and on this component the thing
+ * that most needs to respond *is* the padding. A container query, not a
+ * breakpoint: the banner is drawn in four different columns — the prompt
+ * writer's preview, the compose hero, the vote bar and the reveal — and the
+ * window is the measure of none of them.
+ */
 .banner {
-  display: flex;
-  align-items: center;
+  container-type: inline-size;
   width: 100%;
+  border-radius: t.$radius-field;
   background-color: t.$accent-fill-weak;
   border: 1px solid t.$accent-border-weak;
 }
 
-.sm {
-  gap: t.$space-14;
-  padding: t.$space-14 t.$space-20;
-  border-radius: t.$radius-field;
-
-  .quote {
-    font-size: 18px;
-    line-height: 1.35;
-  }
-}
-
-.lg {
-  gap: t.$space-20;
-  padding: t.$space-20 t.$space-26;
-  border-radius: t.$radius-card;
-
-  .quote {
-    font-size: 22px;
-    letter-spacing: -0.02em;
-    line-height: 1.25;
-  }
+/**
+ * The row, and the column it becomes.
+ *
+ * `align-items: center` centred a 40px avatar against a quote that can run six
+ * lines, so in a narrow column the author sat level with the middle of the
+ * paragraph rather than at the top of it. Aligned to the start it reads as an
+ * attribution above the words wherever it lands.
+ *
+ * The wrap is what carries the reflow: the two children are full-width lines by
+ * default and become a row once the query gives them their widths back.
+ */
+.inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  // The phone budget, and it is genuinely tight. `RoomShell` gives a 393px
+  // screen a 289px content column — the rest is screen padding and the corner
+  // the floating keys own — and `e2e/responsive.spec.ts` holds running text to
+  // 260px of that. So a banner may spend 29px on padding and border, total, and
+  // the designed 26px-a-side left a 235px quote: five words to the line.
+  gap: t.$space-10;
+  padding: t.$space-12;
 }
 
 .author {
@@ -36,13 +47,66 @@
   align-items: center;
   gap: t.$space-10;
   flex: none;
+  width: 100%;
 }
 
 .quote {
-  flex: 1;
+  flex: 1 1 100%;
+  min-width: 0;
   margin: 0;
   font-family: t.$font-sans;
   font-weight: 700;
   color: t.$text-primary;
   text-wrap: pretty;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+/** Room for the padding the design draws. See `$prompt-banner-roomy`. */
+@container (min-width: #{t.$prompt-banner-roomy}) {
+  .inner {
+    gap: t.$space-14;
+    padding: t.$space-14 t.$space-20;
+  }
+}
+
+/**
+ * Room for the second column, and for the hero type that needs one.
+ *
+ * Both faces cross here rather than at their own thresholds. They have
+ * different author blocks, so in principle they earn a row at different widths
+ * — but the narrower of the two lands inside 60px of this, and one measure the
+ * whole component reflows on is worth more than two that nearly agree.
+ */
+@container (min-width: #{t.$prompt-banner-columns}) {
+  .author {
+    width: auto;
+  }
+
+  .quote {
+    flex: 1 1 0;
+  }
+
+  .lg .inner {
+    gap: t.$space-20;
+    padding: t.$space-20 t.$space-26;
+  }
+
+  .lg .quote {
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+}
+
+// The compact face keeps the field radius the base already sets. Declared so
+// the module exports the class `styles[size]` looks up — an absent one would
+// put the string "undefined" in the class list.
+.sm {
+  border-radius: t.$radius-field;
+}
+
+// The hero face, above a compose board or a prompt writer's preview.
+.lg {
+  border-radius: t.$radius-card;
 }

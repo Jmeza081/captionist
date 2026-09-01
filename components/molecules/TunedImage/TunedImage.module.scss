@@ -1,0 +1,81 @@
+@use 'theme' as t;
+
+/**
+ * The box the set and the picture share.
+ *
+ * `display: block` because a `<span>` is what wraps cleanly inside a `<button>`
+ * tile — a picker tile is a button, and a `<div>` in one is invalid markup.
+ *
+ * **It declares no width**, which is what lets one component serve both shapes
+ * this app draws. A block box with `width: auto` fills a block container, so a
+ * fluid tile — the picker's column, a media card's frame, both of which put
+ * `width: 100%` on the *image* in their own stylesheet — is unchanged. A fixed
+ * thumb — the composer's 52×40 attachment, a 30px quote, the vote screen's 88px
+ * subject — shrink-wraps to the size its image already carries. Declaring
+ * `width: 100%` here served the first two and stretched the other three.
+ *
+ * `flex: none` for the same reason and it is inert everywhere else: three of
+ * those thumbs are flex items that carried `flex: none` themselves, and the
+ * property now lands on this box rather than on the image inside it.
+ *
+ * The height still comes from the image in every case, so a tile's shape stays
+ * the one thing this component never touches.
+ */
+.tuner {
+  position: relative;
+  display: block;
+  flex: none;
+}
+
+/**
+ * Positioned, so the picture paints over the static rather than under it.
+ *
+ * `TvStatic` is `position: absolute`, and an unpositioned block always paints
+ * below a positioned sibling however late it comes in the DOM. Giving the image
+ * a position of its own puts both in the same painting step, where document
+ * order decides — set first, picture on top.
+ *
+ * `z-index` is deliberately not set: staying at `auto` keeps this out of the
+ * way of the badges, overlays and scrims the call sites layer over the frame,
+ * which are positioned later in the DOM and are meant to win.
+ */
+.tuner img {
+  position: relative;
+}
+
+/**
+ * No alt text printed across the set.
+ *
+ * A broken image draws its `alt` where the picture would be, so a GIF the
+ * provider has pulled put "friday deploy" in white across a dead channel —
+ * which reads as a bug rather than as the state it is. `color: transparent`
+ * suppresses the painted text and nothing else: the attribute stays on the
+ * element and in the accessibility tree, so what a screen reader announces is
+ * unchanged. Chromium's small broken-image glyph remains, and it is welcome —
+ * it is the one honest signal that this particular set is never tuning in.
+ *
+ * Scoped to the tuning state, so a picture that arrived is untouched.
+ */
+.tuner[data-tuning] img {
+  color: transparent;
+}
+
+/**
+ * The veil, the same one every other set in the app wears.
+ *
+ * `TvStatic` has never been shown raw: `HeroWall` and `SceneBackdrop` both put
+ * `$scrim-static` over it, and at a picker's scale the reason is plainer than
+ * it is on either of them — fifty tiles of full-brightness noise is the loudest
+ * thing on the page, and it is drawn *behind a caption* on a vote card.
+ *
+ * `$scrim-static` and not one of the wall weights, for the reason that token
+ * exists: `full` carries a blur, and blurring a picture made entirely of high
+ * frequency flattens it to grey and takes the effect with it. This is the flat
+ * weight, and the wall's own measurements found the motion still obvious under
+ * it.
+ */
+.veil {
+  position: absolute;
+  inset: 0;
+  background-color: t.$scrim-static;
+}

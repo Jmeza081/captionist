@@ -4,6 +4,7 @@ import { useId, type ReactNode } from 'react'
 import { Icon } from '@/components/atoms/Icon'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { TextField } from '@/components/atoms/TextField'
+import { TunedImage } from '@/components/molecules/TunedImage'
 import styles from './Composer.module.scss'
 
 export interface ComposerAttachment {
@@ -63,8 +64,10 @@ export function Composer({
         {replyTo && (
           <div className={styles.replying}>
             {replyTo.src && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img className={styles.replyingThumb} src={replyTo.src} alt="" />
+              // A set behind it too. The quote's thumbnail is the same remote
+              // GIF as the message it points at, and it was the same blank
+              // square while it arrived.
+              <TunedImage className={styles.replyingThumb} src={replyTo.src} alt="" />
             )}
             <div className={styles.attachedBody}>
               <span className={styles.attachedLabel}>Replying to</span>
@@ -83,8 +86,16 @@ export function Composer({
 
         {attachment && (
           <div className={styles.attached}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            {/*
+              The staged GIF, on a set until it arrives.
+
+              This one is a provider's tile that was chosen a moment ago and is
+              being fetched at its message size — the gap the picker board had,
+              one tile wide. Distinct from the *picker* over this composer,
+              which stays plain: a dozen flickering thumbnails over a live chat
+              rail is a different amount of noise from one.
+            */}
+            <TunedImage
               className={styles.attachedPreview}
               src={attachment.src}
               alt={attachment.alt}

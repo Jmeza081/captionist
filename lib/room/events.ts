@@ -1,6 +1,7 @@
 import { isAllowedImageSrc } from '@/lib/gifs/allow'
 import type { PlayerId } from '@/lib/game/types'
 import type {
+  AnnouncementBody,
   ChatAttachment,
   ChatQuote,
   ReactionTarget,
@@ -61,6 +62,14 @@ export const ATTACHMENT_ALT_MAX = 140
 export const QUOTE_CAPTION_MAX = 60
 
 export interface ChatEntry {
+  /**
+   * Discriminator, so a log entry narrows instead of carrying dead optionals.
+   *
+   * Added when announcements arrived: `text`, `attachment` and `replyTo` are
+   * all meaningless on one, and an optional field on a shared interface invites
+   * `entry.text` on a thing that has none.
+   */
+  readonly kind: 'chat'
   /** Local to this tab, and only ever a render key. */
   readonly id: string
   readonly from: PlayerId
@@ -68,6 +77,36 @@ export interface ChatEntry {
   readonly at: number
   readonly attachment?: ChatAttachment
   readonly replyTo?: ChatQuote
+}
+
+/**
+ * The room said this, not a player — `ChatMessage`'s accent card.
+ *
+ * Same list and same store as chat, because it occupies the same slot in the
+ * same stream; a second lane would be a second thing to interleave and to
+ * scroll.
+ */
+export interface AnnouncementEntry {
+  readonly kind: 'announcement'
+  readonly id: string
+  /** The host, who published it. Never drawn — see `ROOM_FACE`. */
+  readonly from: PlayerId
+  readonly body: AnnouncementBody
+  readonly at: number
+}
+
+/** One line in the log: something a player said, or something the room did. */
+export type LogEntry = ChatEntry | AnnouncementEntry
+
+/**
+ * Narrows a log entry to something a player actually said.
+ *
+ * Exported because two callers need it and both would otherwise write the
+ * predicate inline: the rail, which reacts to messages and never to
+ * announcements, and the toast lane.
+ */
+export function isChat(entry: LogEntry): entry is ChatEntry {
+  return entry.kind === 'chat'
 }
 
 /** One emoji's running count against one target. */
@@ -80,7 +119,7 @@ export interface Tally {
 
 export interface EventSnapshot {
   /** Oldest first, capped at `CHAT_HISTORY`. */
-  readonly messages: readonly ChatEntry[]
+  readonly messages: readonly LogEntry[]
   /**
    * Tallies by target, keyed `entry:<id>` / `message:<id>`.
    *
@@ -127,8 +166,27 @@ export interface EventStoreOptions {
    * and this store must not hold a stale copy of it.
    */
   isMember?: (from: PlayerId) => boolean
+  /**
+   * Whether a sender is the room's host.
+   *
+   * The guard that makes an accent card mean something. Without it any member
+   * can publish `kind: 'announcement'` and every browser in the room renders it
+   * as *the room* speaking — a member typing "Mode is now…" in chat is a joke,
+   * and the same words on the room's own card are a lie the room told.
+   *
+   * A predicate for the same reason `isMember` is one: the host is
+   * `state.hostId`, and this store holds no copy of game state.
+   */
+  isRoomHost?: (from: PlayerId) => boolean
   /** Injectable so the rate limit is testable without waiting 1.5 real seconds. */
   now?: () => number
+}
+
+/** Whether two announcements say the same thing about the same subject. */
+function sameBody(a: AnnouncementBody, b: AnnouncementBody): boolean {
+  if (a.code !== b.code) return false
+  if (a.code === 'mode') return b.code === 'mode' && a.mode === b.mode
+  return 'who' in b && a.who === b.who
 }
 
 export function tallyKey(target: ReactionTarget, targetId: string): string {
@@ -194,7 +252,7 @@ const EMPTY: EventSnapshot = {
 }
 
 export function createEventStore(options: EventStoreOptions): EventStore {
-  const { self, isMember, now = Date.now } = options
+  const { self, isMember, isRoomHost, now = Date.now } = options
 
   let snapshot: EventSnapshot = EMPTY
   const listeners = new Set<() => void>()
@@ -234,6 +292,7 @@ export function createEventStore(options: EventStoreOptions): EventStore {
 
     seq += 1
     const entry: ChatEntry = {
+      kind: 'chat',
       id: `m${seq}`,
       from: event.from,
       text,
@@ -251,6 +310,55 @@ export function createEventStore(options: EventStoreOptions): EventStore {
       messages,
       unread: mine ? snapshot.unread : snapshot.unread + 1,
       firstUnreadId: mine ? snapshot.firstUnreadId : (snapshot.firstUnreadId ?? entry.id),
+    }
+    emit()
+  }
+
+  /**
+   * The room's own line, appended like any other message.
+   *
+   * **Not routed through `receiveChat`**, and the differences are the reason
+   * the kind exists. There is no text to truncate — the wire carries a code and
+   * the words are rendered client-side. And it skips `CHAT_INTERVAL_MS`, which
+   * is not an oversight: that limit bounds a *member* flooding the log at will,
+   * while the host emits one line per accepted state transition and the reducer
+   * is what bounds those. A wifi router dying drops three players in one
+   * presence sweep — three legitimate lines inside 1.5s, and the chat limiter
+   * would silently eat two of them at the moment the log most needs to be right.
+   *
+   * What it keeps is `CHAT_HISTORY`: a line takes a slot like any other.
+   */
+  const receiveAnnouncement = (
+    event: Extract<RoomEvent, { kind: 'announcement' }>,
+  ): void => {
+    // The one guard that replaces the clock. A member is not enough here.
+    if (isRoomHost && !isRoomHost(event.from)) return
+
+    // A repeat of the line already at the end of the log, dropped — a host
+    // republishing after an Ably resume is the case, and one comparison
+    // absorbs it without a timestamp anybody could disagree about.
+    const newest = snapshot.messages[snapshot.messages.length - 1]
+    if (newest?.kind === 'announcement' && sameBody(newest.body, event.body)) return
+
+    seq += 1
+    const entry: AnnouncementEntry = {
+      kind: 'announcement',
+      id: `m${seq}`,
+      from: event.from,
+      body: event.body,
+      at: event.at,
+    }
+    const messages = [...snapshot.messages, entry].slice(-CHAT_HISTORY)
+
+    // Unread for everyone, the host included — the badge is how somebody with
+    // the rail shut finds out the mode changed under them, which is the whole
+    // reason this lane exists. Keying `mine` off the sender the way chat does
+    // would exempt the host's own tab from every drop line too.
+    snapshot = {
+      ...snapshot,
+      messages,
+      unread: snapshot.unread + 1,
+      firstUnreadId: snapshot.firstUnreadId ?? entry.id,
     }
     emit()
   }
@@ -322,6 +430,7 @@ export function createEventStore(options: EventStoreOptions): EventStore {
       // sender's identity is asserted rather than issued.
       if (isMember && !isMember(event.from)) return
       if (event.kind === 'chat') receiveChat(event)
+      else if (event.kind === 'announcement') receiveAnnouncement(event)
       else receiveReaction(event)
     },
 

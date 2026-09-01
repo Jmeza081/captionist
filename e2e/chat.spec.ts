@@ -350,3 +350,125 @@ test.describe('attaching an image', () => {
     await expect(guest.getByRole('dialog', { name: 'Attach a GIF' })).toHaveCount(0)
   })
 })
+
+/**
+ * A chat GIF that has not arrived yet.
+ *
+ * The composer's staged tile and the message it becomes are both remote GIFs
+ * fetched at their own size, and both were a blank rounded box until the bytes
+ * landed — the picker board's gap, one tile wide. `TunedImage` puts a set
+ * behind each. The *picker* over the composer is still deliberately plain: a
+ * dozen flickering thumbnails over a live chat rail is a different amount of
+ * noise from one, and that is `tuning={board}` in `GifPanel`.
+ *
+ * One page, not two. Every other test in this file needs a real second peer to
+ * say something about the wire; this one is about what one browser draws, so it
+ * takes a seat in a fixture room and leaves the tabs alone. Four multi-page
+ * tests here cost the parallel run enough to time out the width sweep in
+ * `responsive.spec.ts`, which is a real fixture of this suite's budget.
+ *
+ * Blocked rather than raced, like every other spec in this family: a stub tile
+ * is a local SVG and decodes in milliseconds.
+ */
+test.describe('a chat GIF with no picture yet', () => {
+  const SEAT = '/room/DEV?seed=42&phase=vote&as=p2&gifs=stub'
+
+  /** Stage a GIF off the rail's picker, and hand back the composer's row. */
+  async function stage(page: Page) {
+    await openChat(page)
+    await page.getByRole('button', { name: 'Attach a GIF' }).click()
+    const panel = page.getByRole('dialog', { name: 'Attach a GIF' })
+    await panel.getByRole('button').filter({ has: page.locator('img') }).first().click()
+    await expect(panel).toBeHidden()
+    // Scoped to the composer's own row — the picker it came from has no set,
+    // and a page-wide count could not tell the two apart.
+    return page.getByText('GIF attached').locator('xpath=../..')
+  }
+
+  test('tunes the staged tile, and the message it becomes', async ({ page }) => {
+    await page.route('**/media/stub-*', (route) => route.abort())
+    await page.goto(SEAT)
+
+    const staged = await stage(page)
+    await expect(staged.locator('[data-testid="tv-static"]')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Send message' }).click()
+    await expect(page.getByText('GIF attached')).toBeHidden()
+
+    /**
+     * And the message it turned into, at a size worth having.
+     *
+     * A chat attachment is the one image in the app that reserves no box of its
+     * own — bounded rather than forced, so a 64px Slackmoji is never
+     * letterboxed into a banner — which makes it zero-height until its bytes
+     * land. `.attachment [data-tuning]` stands the design's size in until then,
+     * and without that this would still "be visible" at no height at all.
+     */
+    const log = page.getByRole('log', { name: 'Room chat' })
+    const set = log.locator('[data-testid="tv-static"]').first()
+    await expect(set).toBeVisible()
+    const box = await set.boundingBox()
+    expect(box?.height ?? 0).toBeGreaterThan(100)
+  })
+
+  test('drops the set on both once the picture is there', async ({ page }) => {
+    await page.goto(SEAT)
+
+    const staged = await stage(page)
+    await expect(staged.locator('[data-testid="tv-static"]')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Send message' }).click()
+    const log = page.getByRole('log', { name: 'Room chat' })
+    await expect(log.locator('img')).not.toHaveCount(0)
+    await expect(log.locator('[data-testid="tv-static"]')).toHaveCount(0)
+  })
+})
+
+
+/**
+ * What the room says about itself.
+ *
+ * Both cases are about somebody *other than the actor* finding out: the host
+ * who flips the mode already knows, and the player whose tab closed is not
+ * reading anything. See ADR 0028.
+ */
+test.describe('room announcements', () => {
+  const MODE = 'C-F34796'
+  const DROP = 'C-F34797'
+
+  test('tells the whole room the host changed the mode', async ({ context }) => {
+    const host = await context.newPage()
+    await host.goto(`/room/${MODE}`)
+    await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
+
+    const guest = await join(context, MODE, 'Vic')
+    await openChat(guest)
+
+    // The lobby's own control, which used to notify nobody but the host.
+    await host.getByRole('radio', { name: 'React to the caption' }).click()
+
+    const log = guest.getByRole('log', { name: 'Room chat' })
+    await expect(log.getByText('New mode: React to the caption.')).toBeVisible()
+    // Drawn as the room speaking, not as anybody chatting: the accent card is
+    // signed "Room", and no player's name appears on it.
+    await expect(log.getByText('Room', { exact: true })).toBeVisible()
+    await expect(log.getByText('Vic', { exact: true })).toHaveCount(0)
+  })
+
+  test('says who dropped, and says it once', async ({ context }) => {
+    const host = await context.newPage()
+    await host.goto(`/room/${DROP}`)
+    await expect(host.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
+
+    const guest = await join(context, DROP, 'Vic')
+    await openChat(host)
+    // The presence pill lives in the rail, so this waits for the rail's own
+    // view of the room rather than for a roster the header does not draw.
+    await expect(host.getByText('2 here')).toBeVisible()
+
+    await guest.close()
+
+    await expect(host.getByText(/^Vic dropped out\./)).toBeVisible({ timeout: 20_000 })
+    await expect(host.getByText(/^Vic dropped out\./)).toHaveCount(1)
+  })
+})

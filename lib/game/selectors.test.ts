@@ -36,7 +36,11 @@ import {
   showsCaptionFormat,
   showsProgressRail,
   showsRoundProgress,
+  activeCompetitors,
+  competitors,
   standings,
+  submissionRows,
+  submittedCount,
   startLabel,
   submittedLine,
   tiebreakCards,
@@ -593,5 +597,53 @@ describe('the crown, on a face', () => {
     const state = lobbyFixture({ players: 3 })
     const face = toAvatarProps(state, state.players[0]!)
     expect(Object.keys(face).sort()).toEqual(['avatarSeed', 'color', 'hat', 'name', 'src'])
+  })
+})
+
+describe('a seat that dropped mid-round', () => {
+  /** Marks a seat dropped the way `HostEngine.reconcile` does off presence. */
+  function drop(state: GameState, id: PlayerId): GameState {
+    return {
+      ...state,
+      players: state.players.map((p) =>
+        p.id === id ? { ...p, connection: 'reconnecting' as const, seatHeldUntil: 9_999 } : p,
+      ),
+    }
+  }
+
+  it('leaves the tracker, but marked — a row deleted mid-round is worse', () => {
+    const state = drop(fixtureFor('compose', { players: 5 }), 'p2')
+
+    expect(competitors(state).map((p) => p.id)).toContain('p2')
+    expect(activeCompetitors(state).map((p) => p.id)).not.toContain('p2')
+
+    const gone = state.players.find((p) => p.id === 'p2')?.name
+    const rows = submissionRows(state)
+    expect(rows).toHaveLength(4)
+    expect(rows.find((r) => r.player.name === gone)?.status).toBe('left')
+  })
+
+  it('counts submissions against the people still here', () => {
+    const before = submittedCount(fixtureFor('compose', { players: 5 }))
+    const after = submittedCount(drop(fixtureFor('compose', { players: 5 }), 'p2'))
+
+    expect(before.total).toBe(4)
+    expect(after.total).toBe(3)
+  })
+
+  it('does not offer to start voting without somebody who already left', () => {
+    let state = fixtureFor('waiting', { players: 5 })
+    state = drop(state, 'p4')
+    // p4 is the only one who never submitted, and they are gone — so there is
+    // nobody to wait for and no decision to put to the host.
+    expect(waitingCopy(state).action).toBeUndefined()
+  })
+
+  it('still ranks them on the podium — their points do not leave with them', () => {
+    const played = fixtureFor('podium', { players: 5 })
+    const dropped = drop(played, 'p2')
+    expect(standings(dropped).map((s) => s.player.name)).toEqual(
+      standings(played).map((s) => s.player.name),
+    )
   })
 })

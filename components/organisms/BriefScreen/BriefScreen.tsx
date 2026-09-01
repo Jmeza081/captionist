@@ -217,6 +217,7 @@ export function BriefScreen() {
               {PROMPT_STARTERS.map((starter) => (
                 <Chip
                   key={starter}
+                  wrap
                   selected={draft === starter}
                   onClick={() => setDraft(starter)}
                 >

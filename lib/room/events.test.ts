@@ -4,6 +4,7 @@ import {
   CHAT_INTERVAL_MS,
   CHAT_MAX_LENGTH,
   createEventStore,
+  isChat,
   ROOM_REACTION_INTERVAL_MS,
   tallyKey,
 } from './events'
@@ -23,8 +24,14 @@ function store(overrides: { self?: string; now?: () => number } = {}): EventStor
   return createEventStore({
     self: () => overrides.self ?? 'p0',
     isMember: (from) => MEMBERS.has(from),
+    isRoomHost: (from) => from === 'p0',
     now: overrides.now ?? (() => 0),
   })
+}
+
+/** The log, narrowed to what people actually said. */
+function said(s: EventStore) {
+  return s.getSnapshot().messages.filter(isChat)
 }
 
 function chat(from: string, text: string, at = 1_000): RoomEvent {
@@ -44,7 +51,7 @@ describe('the chat log', () => {
     const s = store()
     s.receive(chat('p1', 'shipped it on a Friday'))
 
-    const [message] = s.getSnapshot().messages
+    const [message] = said(s)
     expect(message?.text).toBe('shipped it on a Friday')
     expect(message?.from).toBe('p1')
   })
@@ -68,7 +75,7 @@ describe('the chat log', () => {
 
     clock += 2
     s.receive(chat('p1', 'second'))
-    expect(s.getSnapshot().messages.map((m) => m.text)).toEqual(['first', 'second'])
+    expect(said(s).map((m) => m.text)).toEqual(['first', 'second'])
   })
 
   it('rate-limits per sender, not for the room', () => {
@@ -95,7 +102,7 @@ describe('the chat log', () => {
     const s = store()
     s.receive(chat('p1', 'x'.repeat(CHAT_MAX_LENGTH + 50)))
 
-    const [message] = s.getSnapshot().messages
+    const [message] = said(s)
     expect(message?.text).toHaveLength(CHAT_MAX_LENGTH)
   })
 
@@ -115,7 +122,7 @@ describe('the chat log', () => {
 
     const { messages } = s.getSnapshot()
     expect(messages).toHaveLength(CHAT_HISTORY)
-    expect(messages[messages.length - 1]?.text).toBe(`line ${CHAT_HISTORY + 9}`)
+    expect(said(s).at(-1)?.text).toBe(`line ${CHAT_HISTORY + 9}`)
   })
 })
 
@@ -241,7 +248,7 @@ describe('attachments and quotes', () => {
     const s = store()
     s.receive({ kind: 'chat', from: 'p1', text: '', at: 1_000, attachment: GIF })
 
-    const [message] = s.getSnapshot().messages
+    const [message] = said(s)
     expect(message?.attachment).toEqual(GIF)
     expect(message?.text).toBe('')
   })
@@ -269,7 +276,7 @@ describe('attachments and quotes', () => {
       attachment: { src: 'https://tracker.example/beacon.gif', alt: 'x' },
     })
 
-    const [message] = s.getSnapshot().messages
+    const [message] = said(s)
     expect(message?.text).toBe('look at this')
     expect(message?.attachment).toBeUndefined()
   })
@@ -292,7 +299,7 @@ describe('attachments and quotes', () => {
       at: 1_000,
       attachment: { src: GIF.src, alt: '   ' },
     })
-    expect(s.getSnapshot().messages[0]?.attachment?.alt).toBe('A GIF')
+    expect(said(s)[0]?.attachment?.alt).toBe('A GIF')
   })
 
   it('quotes a caption, dropping only the thumbnail if that is the bad part', () => {
@@ -305,7 +312,7 @@ describe('attachments and quotes', () => {
       replyTo: { src: 'http://evil.example/x.gif', caption: 'It compiles. Ship it.' },
     })
 
-    const quote = s.getSnapshot().messages[0]?.replyTo
+    const quote = said(s)[0]?.replyTo
     expect(quote?.caption).toBe('It compiles. Ship it.')
     expect(quote?.src).toBeUndefined()
   })
@@ -319,7 +326,7 @@ describe('attachments and quotes', () => {
       at: 1_000,
       replyTo: { caption: 'x'.repeat(500) },
     })
-    expect(s.getSnapshot().messages[0]?.replyTo?.caption).toHaveLength(60)
+    expect(said(s)[0]?.replyTo?.caption).toHaveLength(60)
   })
 
   it('gives a GIF no budget of its own', () => {
@@ -422,5 +429,78 @@ describe('a room reaction', () => {
     s.receive(roomReaction('nobody', '🔥'))
 
     expect(s.getSnapshot().lastReaction).toBeUndefined()
+  })
+})
+
+describe('room announcements', () => {
+  const mode = (from: string, at = 1_000): RoomEvent => ({
+    kind: 'announcement',
+    from,
+    body: { code: 'mode', mode: 'react' },
+    at,
+  })
+
+  const left = (from: string, who: string): RoomEvent => ({
+    kind: 'announcement',
+    from,
+    body: { code: 'left', who },
+    at: 1_000,
+  })
+
+  it('takes one from the host', () => {
+    const s = store()
+    s.receive(mode('p0'))
+
+    const [entry] = s.getSnapshot().messages
+    expect(entry?.kind).toBe('announcement')
+    expect(entry?.from).toBe('p0')
+  })
+
+  it('refuses one from a member who is not the host', () => {
+    // Otherwise any player can post the room's own accent card, and the card
+    // is the thing that says "this is not a person talking".
+    const s = store()
+    s.receive(mode('p1'))
+    expect(s.getSnapshot().messages).toHaveLength(0)
+  })
+
+  it('refuses one from outside the room', () => {
+    const s = store()
+    s.receive(mode('stranger'))
+    expect(s.getSnapshot().messages).toHaveLength(0)
+  })
+
+  it('is not throttled by the chat limit, so three drops at once are three lines', () => {
+    const s = store({ now: () => 0 })
+    s.receive(left('p0', 'p1'))
+    s.receive(left('p0', 'p2'))
+    s.receive(left('p0', 'p3'))
+    expect(s.getSnapshot().messages).toHaveLength(3)
+  })
+
+  it('collapses a repeat of the line already at the end of the log', () => {
+    const s = store()
+    s.receive(mode('p0'))
+    s.receive(mode('p0', 2_000))
+    expect(s.getSnapshot().messages).toHaveLength(1)
+  })
+
+  it('counts as unread, because a shut rail is how you miss a mode switch', () => {
+    const s = store()
+    s.receive(mode('p0'))
+    expect(s.getSnapshot().unread).toBe(1)
+  })
+
+  it('takes a slot in the fifty like any other line', () => {
+    const s = store({ now: () => 0 })
+    for (let i = 0; i < CHAT_HISTORY + 5; i++) {
+      s.receive({
+        kind: 'announcement',
+        from: 'p0',
+        body: { code: 'left', who: `p${i}` },
+        at: 1_000,
+      })
+    }
+    expect(s.getSnapshot().messages).toHaveLength(CHAT_HISTORY)
   })
 })

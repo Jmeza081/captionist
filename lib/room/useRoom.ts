@@ -11,7 +11,7 @@ import {
 } from 'react'
 import type { ActionInput } from '@/lib/game/actions'
 import type { RoomCode } from '@/lib/game/types'
-import type { ChatEntry, EventSnapshot, EventStore, Tally } from './events'
+import type { EventSnapshot, EventStore, LogEntry, Tally } from './events'
 import type { Identity } from './identity'
 import { tallyKey } from './events'
 import type { RoomSnapshot, RoomStore } from './store'
@@ -201,15 +201,15 @@ export function useEventSelector<T>(
   return useSyncExternalStore(binding.events.subscribe, read, readServer)
 }
 
-const selectMessages = (snapshot: EventSnapshot): readonly ChatEntry[] => snapshot.messages
+const selectMessages = (snapshot: EventSnapshot): readonly LogEntry[] => snapshot.messages
 
 const selectUnread = (snapshot: EventSnapshot): { count: number; firstId: string | undefined } => ({
   count: snapshot.unread,
   firstId: snapshot.firstUnreadId,
 })
 
-/** Everything said in this room, oldest first. */
-export function useChatLog(): readonly ChatEntry[] {
+/** Everything said in this room — and about it — oldest first. */
+export function useChatLog(): readonly LogEntry[] {
   return useEventSelector(selectMessages)
 }
 

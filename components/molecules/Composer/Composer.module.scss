@@ -44,6 +44,10 @@
 
 .replyingThumb {
   flex: none;
+  // Block for the reason `VoteScreen`'s `.thumb` documents: width and height do
+  // not apply to the inline box a broken image becomes, so without this the
+  // square collapses and the set behind it has nothing to paint in.
+  display: block;
   width: t.$chat-quote-thumb;
   height: t.$chat-quote-thumb;
   border-radius: t.$chat-quote-thumb-radius;

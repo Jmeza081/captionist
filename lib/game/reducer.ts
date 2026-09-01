@@ -88,17 +88,23 @@ export function reduce(state: GameState, action: GameAction): GameState {
       return bump({ ...state, players: [...state.players, player] })
     }
 
-    case 'player/left':
+    case 'player/left': {
       // The seat is held, not removed: a drop mid-round must not destroy a
       // submission or renumber everyone's role rotation.
-      return bump({
+      const next = {
         ...state,
         players: mapPlayer(state.players, action.actor, (p) => ({
           ...p,
-          connection: 'reconnecting',
+          connection: 'reconnecting' as const,
           seatHeldUntil: action.at + SEAT_GRACE_MS,
         })),
-      })
+      }
+      // A drop lowers the denominator, and the phase gates only ever fire when
+      // the *numerator* rises — so without this the last person the room was
+      // waiting on could close their tab and the room would sit out the whole
+      // clock waiting for them. See `settleGates`.
+      return bump(settleGates(next, action.at))
+    }
 
     case 'player/reconnected':
       return bump({
@@ -140,10 +146,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const next = { ...state, round: { ...round, entries } }
       // Everyone who is competing has submitted — don't make the room wait out
       // a clock nobody needs.
-      if (state.phase === 'compose' && entries.length >= competitorCount(state)) {
-        return bump(enterPhase(next, 'waiting', action.at))
-      }
-      return bump(next)
+      return bump(settleGates(next, action.at))
     }
 
     case 'round/ballotCast': {
@@ -151,10 +154,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (!round) return state
       const ballots = { ...round.ballots, [action.actor]: action.ballot }
       const next = { ...state, round: { ...round, ballots } }
-      if (Object.keys(ballots).length >= voterCount(state)) {
-        return bump(tally(next, action.at))
-      }
-      return bump(next)
+      return bump(settleGates(next, action.at))
     }
 
     case 'round/tiebreakVoted': {
@@ -163,10 +163,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (!round || !tiebreak) return state
       const votes = { ...tiebreak.votes, [action.actor]: action.choice }
       const next = { ...state, round: { ...round, tiebreak: { ...tiebreak, votes } } }
-      if (Object.keys(votes).length >= voterCount(state)) {
-        return bump(resolveTiebreak(next, action.at))
-      }
-      return bump(next)
+      return bump(settleGates(next, action.at))
     }
 
     case 'round/advanced': {
@@ -296,7 +293,12 @@ export function reduce(state: GameState, action: GameAction): GameState {
 function advance(state: GameState, at: number): GameState {
   switch (state.phase) {
     case 'opener':
-      return enterPhase(state, 'brief', at)
+      // The role holder may have dropped during `score`, before this round
+      // existed — in which case `brief` is a dead phase from the moment it
+      // opens, and no connection change is coming to notice it. Terminates at
+      // depth two: `settleGates`' `brief` branch calls `advance('brief')`,
+      // which reaches neither this case nor itself.
+      return settleGates(enterPhase(state, 'brief', at), at)
 
     case 'brief': {
       // A round must not stall on an absent role holder.
@@ -346,10 +348,11 @@ function enterPhase(state: GameState, phase: RoomPhase, at: number): GameState {
  */
 function phaseLength(state: GameState, phase: RoomPhase): number | null {
   if (phase !== 'waiting') return durationFor(phase, state.settings)
-  const submitted = state.round?.entries.length ?? 0
-  return submitted >= competitorCount(state)
-    ? WAITING_ALL_IN_MS
-    : durationFor(phase, state.settings)
+  // Same both-sides rule as `settleGates` — a wait that is over because
+  // everybody left should read as over, and a held entry must not make it so.
+  const roster = competingPlayers(state)
+  const submitted = countPresent(roster, state.round?.entries.map((e) => e.authorId) ?? [])
+  return submitted >= roster.length ? WAITING_ALL_IN_MS : durationFor(phase, state.settings)
 }
 
 function beginRound(state: GameState, at: number): GameState {
@@ -515,14 +518,107 @@ function commit(state: GameState, result: RoundResult, at: number): GameState {
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-/** Everyone except the role holder, who sets the round up and sits it out. */
-function competitorCount(state: GameState): number {
-  return Math.max(0, state.players.length - 1)
+/**
+ * Everyone except the role holder, who sets the round up and sits it out — and
+ * except anyone whose tab is gone.
+ *
+ * This used to be `players.length - 1`, which counted a closed tab as a player
+ * the room was still waiting on: the tracker said "still thinking" about a
+ * browser that no longer existed, and every phase ran its full clock out. The
+ * seat is still held (`player/left`) and the points still count; what stops is
+ * being *waited for*.
+ */
+function competingPlayers(state: GameState): readonly Player[] {
+  return state.players.filter(
+    (p) => p.id !== state.round?.roleHolderId && p.connection === 'online',
+  )
 }
 
 /** Everyone votes, the role holder included — they judge, they don't compete. */
-function voterCount(state: GameState): number {
-  return state.players.length
+function votingPlayers(state: GameState): readonly Player[] {
+  return state.players.filter((p) => p.connection === 'online')
+}
+
+/**
+ * How many of `roster` are among `ids` — the numerator's half of the same rule.
+ *
+ * **Both sides of a gate must count the same people, or the gate lies.** A drop
+ * holds the seat *and the entry*, so filtering only the denominator opens the
+ * gate early in a way that is easy to miss: five players, three of the four
+ * competitors have submitted, and one of *those three* closes their tab. The
+ * denominator falls to three; `entries.length` is still three, because the held
+ * entry is still there. The room would advance to voting with somebody who is
+ * present and still typing.
+ */
+function countPresent(
+  roster: readonly Player[],
+  ids: Iterable<PlayerId | undefined>,
+): number {
+  const here = new Set(roster.map((p) => p.id))
+  let n = 0
+  for (const id of ids) {
+    if (id !== undefined && here.has(id)) n += 1
+  }
+  return n
+}
+
+/**
+ * Re-ask the question a submission or a ballot asks.
+ *
+ * The three phase gates below live in the actions that raise the numerator —
+ * an entry arriving, a ballot cast. A drop moves the *denominator* instead, and
+ * arrives as a different action entirely, so the same three questions have to
+ * be asked from there too. One helper rather than three copied `if` blocks.
+ *
+ * Every branch is guarded on the current phase, so this can only ever move the
+ * room forward from where it already is: a reconnect cannot rewind a phase the
+ * room has passed, and a second call is a no-op.
+ *
+ * The zero guards are not defensive noise. With nobody online every gate is
+ * trivially true, and an empty room would fall through compose, vote, tiebreak
+ * and reveal in a single tick — a room that lost its last guest would race
+ * itself to the podium instead of sitting still and waiting for someone to
+ * come back.
+ */
+function settleGates(state: GameState, at: number): GameState {
+  const round = state.round
+  if (!round) return state
+
+  if (state.phase === 'brief' && !round.subject) {
+    // The one gate here that is not a denominator. `authorize` lets nobody but
+    // the role holder lock a subject, so a role holder who is gone leaves a
+    // phase whose only exit is its clock — and `advance` already knows what to
+    // do at the end of it. Going through `advance` rather than picking a
+    // subject here keeps `fallbackSubject` the single answer, seed and all.
+    const holder = state.players.find((p) => p.id === round.roleHolderId)
+    if (holder && holder.connection !== 'online') return advance(state, at)
+    return state
+  }
+
+  if (state.phase === 'compose') {
+    const roster = competingPlayers(state)
+    const inHand = countPresent(
+      roster,
+      round.entries.map((e) => e.authorId),
+    )
+    if (roster.length > 0 && inHand >= roster.length) return enterPhase(state, 'waiting', at)
+    return state
+  }
+
+  if (state.phase === 'vote') {
+    const roster = votingPlayers(state)
+    const inHand = countPresent(roster, Object.keys(round.ballots))
+    if (roster.length > 0 && inHand >= roster.length) return tally(state, at)
+    return state
+  }
+
+  if (state.phase === 'tiebreak' && round.tiebreak) {
+    const roster = votingPlayers(state)
+    const inHand = countPresent(roster, Object.keys(round.tiebreak.votes))
+    if (roster.length > 0 && inHand >= roster.length) return resolveTiebreak(state, at)
+  }
+
+  return state
 }
 
 function mapPlayer(

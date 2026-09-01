@@ -3,6 +3,7 @@ import { Avatar } from '@/components/atoms/Avatar'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Icon } from '@/components/atoms/Icon'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
+import { TunedImage } from '@/components/molecules/TunedImage'
 import styles from './ChatMessage.module.scss'
 import type { PlayerFace } from '@/lib/game/types'
 
@@ -31,16 +32,20 @@ export interface ChatMessageProps {
    */
   onReact?: () => void
   /**
-   * A host announcement. Replaces the whole row with an accent card — it is
+   * A room announcement. Replaces the whole row with an accent card — it is
    * the room speaking, not a player.
    *
-   * **Nothing sets this in the room today, deliberately.** `ChatPanel` used to
-   * pass `author.isHost`, which made every line the host typed an accent card
-   * signed "HOST · HOST" — and since this branch drew only the body, a GIF from
-   * the host was an empty one. The host is a player ([ADR
+   * This prop waited a long time for an action to justify it. `ChatPanel` used
+   * to pass `author.isHost`, which made every line the host typed an accent
+   * card signed "HOST · HOST" — and since this branch drew only the body, a GIF
+   * from the host was an empty one. The host is a player ([ADR
    * 0004](../../../docs/adr/0004-the-host-is-not-a-special-case.md)); their
-   * chat is chat. An announcement is a thing you *do*, and until there is an
-   * action for it this prop is the gallery's and a future feature's.
+   * chat is chat.
+   *
+   * What sets it now is the room itself — a mode switch, a player dropping, a
+   * player coming back — published by the host *engine* rather than by
+   * anybody's tap, and drawn with `ROOM_FACE` rather than a person's. See
+   * [ADR 0028](../../../docs/adr/0028-the-room-speaks-in-its-own-lane.md).
    */
   announcement?: boolean
 }
@@ -84,9 +89,10 @@ export function ChatMessage({
 
   const picture = attachment && (
     <div className={styles.attachment}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- remote
-          animated GIF; next/image would rasterise it. */}
-      <img src={attachment.src} alt={attachment.alt} />
+      {/* A set behind it while it arrives — and this is the one image in the
+          app that reserves nothing for itself, so the stylesheet gives it a
+          box off `data-tuning`. See `.attachment` there. */}
+      <TunedImage src={attachment.src} alt={attachment.alt} />
     </div>
   )
 
@@ -104,11 +110,11 @@ export function ChatMessage({
           <Icon name="send" size={13} />
         </span>
         <div className={styles.announceBody}>
-          {/* The room's own host is named "Host", and "HOST · HOST" reads as a
-              bug whether or not it is one. */}
-          <Eyebrow>
-            {author.name.toLowerCase() === 'host' ? 'host' : `${author.name} · host`}
-          </Eyebrow>
+          {/* The speaker's name and nothing else. The old `· host` suffix
+              marked a *host's chat line* — which is the exact reading ADR 0004
+              and this prop's own note reject. What speaks here is the room; see
+              `ROOM_FACE`. */}
+          <Eyebrow>{author.name}</Eyebrow>
           {body && <p className={styles.announceText}>{body}</p>}
           {/* An announcement can carry a picture and can be reacted to, same as
               any other line. Drawing only the body is what made a host's GIF an
@@ -143,9 +149,10 @@ export function ChatMessage({
             {replyTo && (
               <div className={styles.quote}>
                 {replyTo.src && (
-                  /* eslint-disable-next-line @next/next/no-img-element -- the
-                     round's own art, already remote and animated. */
-                  <img className={styles.quoteThumb} src={replyTo.src} alt="" />
+                  // The quote carries a copy of the art, not a reference to it
+                  // (ADR 0011) — so it is fetched like any other tile, and
+                  // waits like one.
+                  <TunedImage className={styles.quoteThumb} src={replyTo.src} alt="" />
                 )}
                 <div className={styles.quoteBody}>
                   <Eyebrow tone="muted">Replying to</Eyebrow>

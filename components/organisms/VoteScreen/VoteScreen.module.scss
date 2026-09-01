@@ -1,5 +1,20 @@
 @use 'theme' as t;
 
+/**
+ * The screen, so the dock can ask how wide it is.
+ *
+ * `.lockDock` was the last `t.mq('md')` doing a *reflow* in a room screen — a
+ * viewport query inside a container-keyed layout, and wrong in exactly the band
+ * this screen was rebuilt for: at a 768–1000px window with chat docked it
+ * unpinned the button and dropped its gradient while the column underneath was
+ * still phone-shaped. It asks the column now, like everything else here.
+ * (`LobbyScreen` keeps one, on a `gap` between settings pairs — a viewport
+ * query that changes no layout is a different thing from one that does.)
+ */
+.screen {
+  container-type: inline-size;
+}
+
 .headline {
   margin: 0;
   @include t.screenTitleText;
@@ -65,6 +80,13 @@
 // The round's shared image, small enough to be a reminder rather than a card.
 .thumb {
   flex: none;
+  // Block, so the box survives an image that never arrives.
+  //
+  // A broken `<img>` with alt text is an *inline non-replaced* box, and
+  // width/height do not apply to one — so the 88px square collapsed to a strip
+  // of spilled alt text, which it did long before `TunedImage` was behind it.
+  // Now it is also the box the set paints in.
+  display: block;
   width: t.$avatar-88;
   height: t.$avatar-88;
   border-radius: t.$radius-media;
@@ -94,9 +116,9 @@
     rgba(10, 10, 11, 0) 100%
   );
 
-  @include t.mq('md') {
+  @container (min-width: #{t.$vote-bar-columns}) {
     position: static;
-    // Still reserving room on the right, just more of it: from `md` the
+    // Still reserving room on the right, just more of it: past this measure the
     // toolbox FAB is a labelled pill rather than a 44px key, and everyone has
     // one now — so the widest thing in this corner is no longer chat's.
     padding-right: t.$toolbox-fab-clear;

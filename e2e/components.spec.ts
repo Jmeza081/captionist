@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 // The gallery renders every built component in its states. These specs cover
 // the behaviour that a static screenshot can't: the interactive components,
@@ -513,5 +513,59 @@ test.describe('television static', () => {
       els.map((el) => (el as HTMLElement).style.getPropertyValue('--set')),
     )
     expect(new Set(seeds).size).toBe(6)
+  })
+})
+
+/**
+ * The atom applied — a set behind a picture, rather than a set on its own.
+ *
+ * The gallery holds all three outcomes because only one of them is the happy
+ * path and the other two are the ones that used to be a transparent box: a GIF
+ * that never arrives, and a card that was never going to have one.
+ */
+test.describe('tuned image', () => {
+  const stage = (page: Page, index: number) =>
+    page.locator('#tuned-image [class*="tunedStage"]').nth(index)
+
+  test('drops the static when the picture lands, and keeps it when it never does', async ({
+    page,
+  }) => {
+    await page.goto('/components#tuned-image')
+    await expect(stage(page, 0).locator('img')).toBeVisible()
+
+    // Dropped, not covered — the whole reason this is a component rather than a
+    // background on the tile.
+    await expect(stage(page, 0).locator('[data-testid="tv-static"]')).toHaveCount(0)
+
+    // And the 404 keeps its dead channel. `onError` is deliberately not handled:
+    // a set that never tuned in is the honest picture of a pulled GIF, and it is
+    // better than the empty rectangle it replaced.
+    await expect(stage(page, 1).locator('[data-testid="tv-static"]')).toBeVisible()
+  })
+
+  test('shows nothing at all where nothing is coming', async ({ page }) => {
+    await page.goto('/components#tuned-image')
+
+    // `tuning={false}` is what `MediaCard` passes for an entry with no media.
+    // A settled nothing and a wait must not look the same — `SceneBackdrop`
+    // made that call for a backdrop and this is the same rule on a card.
+    await expect(stage(page, 2).locator('[data-testid="tv-static"]')).toHaveCount(0)
+  })
+
+  test('is still painting a picture, not a frozen one', async ({ page }) => {
+    await page.goto('/components#tuned-image')
+
+    const set = stage(page, 1).locator('[data-testid="tv-static"]')
+    await expect(set).toBeVisible()
+
+    // Painted pixels, following the guard above: a static that is *there* and
+    // not moving is exactly the failure mode this effect has shipped with twice,
+    // and no computed-style assertion can tell the two apart.
+    const seen = new Set<string>()
+    for (let i = 0; i < 4; i += 1) {
+      seen.add((await set.screenshot({ animations: 'allow' })).toString('base64'))
+      await page.waitForTimeout(80)
+    }
+    expect(seen.size).toBeGreaterThan(1)
   })
 })

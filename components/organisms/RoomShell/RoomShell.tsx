@@ -18,7 +18,6 @@ import { ChatPanel } from '@/components/organisms/ChatPanel'
 import { RoomBootScreen } from '@/components/organisms/RoomBootScreen'
 import {
   isUrgent,
-  modeName,
   phaseLabel,
   playerById,
   presentCount,
@@ -36,6 +35,7 @@ import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import type { ChatQuote } from '@/lib/room/transport'
 import { previewColor } from '@/lib/avatar'
 import { useBootTimeline } from '@/lib/room/bootTimeline'
+import { announcementLine, ROOM_FACE } from '@/lib/room/announce'
 import { clearPendingSettings } from '@/lib/room/pendingSettings'
 import { isSeated } from '@/lib/room/store'
 import { ROOM_TARGET } from '@/lib/room/transport'
@@ -354,6 +354,20 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
                 pending.length > 0 ? (
                   <>
                     {pending.slice(-TOAST_LIMIT).map((entry) => {
+                      // The room's own lines toast too, and this is the case
+                      // they were built for: somebody on a phone with the rail
+                      // shut is exactly the person who would otherwise find out
+                      // the mode changed when the next round looked wrong.
+                      if (entry.kind === 'announcement') {
+                        return (
+                          <ChatToast
+                            key={entry.id}
+                            announcement
+                            author={ROOM_FACE}
+                            body={announcementLine(entry.body, state, selfId)}
+                          />
+                        )
+                      }
                       const author = playerById(state, entry.from)
                       return (
                         <ChatToast
@@ -419,10 +433,9 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
                   onTogglePause: () =>
                     send({ type: countdown.paused ? 'host/resumed' : 'host/paused' }),
                   onSkip: () => send({ type: 'host/skippedPhase' }),
-                  onSwitchMode: () => {
-                    send({ type: 'host/switchedMode', mode: otherMode })
-                    notify(`Mode set to ${modeName(otherMode)}`)
-                  },
+                  // No snackbar: the room announces this to everyone, and the
+                  // host is in the room. See `LobbyScreen.setMode`.
+                  onSwitchMode: () => send({ type: 'host/switchedMode', mode: otherMode }),
                   switchModeLabel:
                     otherMode === 'react' ? 'Switch to prompts' : 'Switch to captions',
                   onForceTie: () => send({ type: 'host/forcedTie' }),

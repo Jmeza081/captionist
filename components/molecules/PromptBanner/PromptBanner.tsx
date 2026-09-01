@@ -31,17 +31,23 @@ export function PromptBanner({
   label,
 }: PromptBannerProps) {
   return (
+    /* Two elements, because a container cannot query itself: the outer one is
+       the measure and the inner one is everything that responds to it —
+       padding included, which on a phone is the difference between a readable
+       quote and a column of two words. */
     <div className={`${styles.banner} ${styles[size]}`}>
-      {author ? (
-        <div className={styles.author}>
-          <Avatar {...author} size={size === 'lg' ? 40 : 30} />
-          <Eyebrow>{label ?? `${author.name}’s prompt`}</Eyebrow>
-        </div>
-      ) : (
-        <Eyebrow>{label ?? 'Prompt'}</Eyebrow>
-      )}
+      <div className={styles.inner}>
+        {author ? (
+          <div className={styles.author}>
+            <Avatar {...author} size={size === 'lg' ? 40 : 30} />
+            <Eyebrow>{label ?? `${author.name}’s prompt`}</Eyebrow>
+          </div>
+        ) : (
+          <Eyebrow>{label ?? 'Prompt'}</Eyebrow>
+        )}
 
-      <p className={styles.quote}>&ldquo;{prompt}&rdquo;</p>
+        <p className={styles.quote}>&ldquo;{prompt}&rdquo;</p>
+      </div>
     </div>
   )
 }

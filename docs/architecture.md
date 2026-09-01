@@ -73,7 +73,10 @@ the card. Nine measures in `theme/_metrics.scss` (`$compose-columns`,
 `$reveal-columns`, `$duel-columns`, `$vote-bar-columns`, `$vote-card-min`,
 `$brief-columns`, `$score-columns`, `$standing-bar-min`, `$standing-note-min`)
 are now thresholds for `@container` queries against the box each screen
-actually occupies, joining `$lobby-columns`, which was the first of them. The
+actually occupies, joining `$lobby-columns`, which was the first of them —
+and the react-lane audit has since added `$prompt-banner-columns` and
+`$prompt-banner-roomy`, which belong to a molecule rather than a screen the way
+`$standing-bar-min` and `$standing-note-min` already did. The
 mechanism is a wrapping flex row whose children go from full-width lines to
 real widths inside the query, because a container cannot query itself.
 `PlayerRow`'s `standing` variant is its own container — the row is the only
@@ -85,8 +88,12 @@ The rail's own two questions came apart in the process. **Docking is not
 arriving open**: `ChatRail` still switches from sheet to docked column at `md`,
 but `useWideViewport()` asks `lg` now, so between the two the rail docks
 *collapsed* — chat one key away, the round keeping the column. `e2e/responsive.spec.ts`
-sweeps ten screens at six widths and asserts no sideways scroll, a floor under
-every column of running text, and a floor under every vote card.
+sweeps fifteen screens at six widths and asserts no sideways scroll, a floor
+under every column of running text, and a floor under every vote card. The first
+two of those were separate tests until the react-lane audit merged them into one
+sweep — they walked the same fifteen URLs through the same browser twice, and
+the second pass was the slower half of a spec the parallel run was already
+timing out.
 
 **The lobby is two layouts, because the design draws two artboards.** A host's
 lobby is a work surface — a QR to share, a mode to set, a button to press — and
@@ -393,6 +400,98 @@ because twelve tiles have no second page. `more()` wraps back to `firstPage()`
 when `hasMore` is false, so a thin result set cycles instead of dead-ending on
 an empty grid.
 
+**Since then a picture no longer arrives into a hole.** `TunedImage` is
+`HeroWall`'s cell as a molecule — `TvStatic` behind, the picture over it, and
+the static dropped the moment the picture lands — and `GifPanel`'s board tile
+and `MediaCard`'s image both take it, so the picker's fifty tiles and the vote
+grid's nineteen cards stop reserving a shape and then showing a transparent box
+inside it. Seven call sites in production, in the end: those two, both of the
+composer's thumbs, both of a chat message's, and the vote screen's own subject
+picture — which is not a `MediaCard`, because it is a picture of the thing being
+voted on rather than an entry. **It is never dropped on error**, so a GIF the
+provider has pulled keeps its dead channel rather than reverting to the empty
+rectangle this replaced, and `tuning={false}` turns it off where nothing is
+coming at all, because a settled nothing and a wait must not look the same — a
+backdrop settles to nothing and a tile settles to a dead channel, which is
+[ADR 0027](./adr/0027-a-tile-that-never-tunes-in-keeps-hissing.md). The
+`'use client'` is the leaf and nothing above it: `MediaCard` is still a server
+component. The mechanism is in [the rendering path](#rendering-path).
+
+**Since then the room says what just happened, in the place everybody is
+already looking.** A mode switch used to be a `notify()` toast — one in
+`LobbyScreen`, one in `RoomShell` — which the host saw and nobody else did, so
+the rest of the room found out when the next round opened at the wrong shape.
+Both toasts are gone. `RoomEvent` has a third kind, `announcement`, drawn as
+`ChatMessage`'s accent card: the prop that has existed since phase 2 with its
+own doc comment saying it was waiting for an action to set it. **It carries a
+code rather than a sentence** — `AnnouncementBody` is
+`{ code: 'mode' | 'left' | 'returned', … }` — so the copy stays client-side
+beside every other string and the lane carries no sender-supplied text to
+distrust. The rule that produces one is a **state diff**:
+`roomAnnouncements(before, after)` in `lib/room/announce.ts`, called from
+`HostEngine`'s new private `commit()`, which is the one point `apply` and
+`expire` both pass through. That is why it is a diff and not a per-action emit —
+`room/settingsChanged` from the lobby's control and `host/switchedMode` from the
+toolbox are the same fact told twice, a screen fires even when the host is
+*refused*, and no screen fires at all for a drop. `ChatEntry` gained
+`kind: 'chat'`, `AnnouncementEntry` joined it under `LogEntry`, and
+`useChatLog()` returns the union.
+[ADR 0028](./adr/0028-the-room-speaks-in-its-own-lane.md).
+
+**And a held seat stopped holding the round.** `player/left` marks a seat
+`reconnecting` and holds it, which phase 5 shipped with exactly one reader —
+the reconnect overlay. The round had none: `competitorCount` was
+`players.length - 1` and `voterCount` was `players.length`, so a closed tab kept
+its place in every denominator, the tracker said "still thinking" over a browser
+that no longer existed, and every phase they were in ran its full clock out with
+nobody left to end it. They are `competingPlayers`/`votingPlayers` now, filtered
+on `connection === 'online'`, with `countPresent(roster, ids)` counting the
+numerator against the same population — **both sides of a gate must count the
+same people, or the gate lies**, and filtering only the denominator opens it
+early on a player who is present and still typing. The other half is that a drop
+moves the denominator and arrives as its own action, while the three phase gates
+lived in the actions that raise the numerator: `settleGates(state, at)` is the
+one helper all five call sites reach, `player/left` included.
+[ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md).
+
+Two things ride with that and are easy to miss. `HostEngine.reconcile` only
+reports a drop for a seat presence has **actually seen** (`everAttached`),
+because absence proves nothing on its own — a `?phase=` fixture's players were
+never connections at all, and a real guest is in the roster for a moment before
+their presence entry is read. Both used to be marked `reconnecting`, harmless
+while nothing read the flag and a room full of phantoms the moment the gates
+did. And the host's own exit came apart into two handlers: `beforeunload` now
+only *asks*, and only while there is a game to lose — never in the lobby or on
+the podium — while `pagehide` is what applies `host/left`. See
+[who hosts](#who-hosts) and
+[ADR 0030](./adr/0030-a-confirmation-may-not-be-the-departure.md) — a handler
+that both asked and applied would send the room to `podium` and then leave a
+live tab sitting in it when the host clicked Cancel. The *guest's* exit moved
+to `pagehide` too, with the same `event.persisted` guard: that half is about
+correctness rather than confirmation, because a tab frozen into the
+back/forward cache was reporting a departure nobody made — survivable while
+`player/left` only held a seat, and not once it also dropped you out of the
+phase gates.
+
+**The react lane's layout was audited at the same time, in stylesheets rather
+than in props.** `BriefScreen`'s prompt split had a `flex: none` preview at a
+borrowed width beside a form on `flex: 1 1 0`, so every pixel past `$brief-columns`
+went to a field holding ninety characters while the panel labelled "what the
+room sees" stayed narrow; both columns grow now, the *form* is the one with the
+ceiling (`$brief-form-max`), the preview has a floor (`$brief-preview-min`) and
+is sticky so it rides the field down the page. `PromptBanner` is drawn in four
+different columns and is the only thing that knows which, so it is a query
+container — `.banner` measures, `.inner` reflows — with two thresholds,
+`$prompt-banner-roomy` for the padding the design draws and
+`$prompt-banner-columns` for the second column. `ComposeScreen` pins the prompt
+in a `.promptDock`, `RevealScreen`'s runner titles clamp to two lines, `Chip`
+gained a `wrap` prop — off by default, and set by the brief's prompt starters,
+which are the first chips in the app whose label is a sentence rather than two
+words — and `VoteScreen` replaced
+its last `t.mq('md')` — a viewport query inside a container-keyed layout, wrong
+in exactly the 768–1000px band with the rail docked — with a container query on
+a new `.screen`.
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -429,9 +528,10 @@ here now*. Where they overlap, this file links rather than repeats.
 | Language | TypeScript 5.9, `strict` | `@/*` path alias maps to the repo root |
 | Styling | Sass modules + `theme/` tokens | `sassOptions.loadPaths` makes `@use 'theme'` resolve from anywhere |
 | Layout | `Stack` · `Inline` · `Box` · `Grid` | Spacing is a token-typed prop; see "Token flow" below |
-| Game state | `lib/game/` — pure reducer, no React | `reduce()` is total and pure; randomness is a seeded PRNG cursor in state |
+| Game state | `lib/game/` — pure reducer, no React | `reduce()` is total and pure; randomness is a seeded PRNG cursor in state. **Every phase gate counts the people who are still here** — `competingPlayers`/`votingPlayers` filter on `connection`, `countPresent` holds the numerator to the same population, and `settleGates` re-asks the question from the five actions that can move either side of it ([ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md)) |
 | Room runtime | `lib/room/` — `RoomTransport` + `HostEngine` | The host browser is the server — see [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md). `RoomSnapshot.boot` is the same runtime reporting where an *opening* room has got to, and `isSeated()` is the one predicate that says whether this tab is in it yet |
-| Chat + tallies | `lib/room/events.ts` — a second store, beside `RoomStore` | [ADR 0010](./adr/0010-chat-is-a-second-store-and-its-sender-is-stamped.md) — the event lane, never game state: a message must not bump the `rev` guests drop stale game updates against. Every guard runs on *receive* — membership, 1.5s per sender on the local clock, 140 characters, 50 messages of scrollback, and since phase 7 an origin check on every URL a message carries |
+| Chat + tallies | `lib/room/events.ts` — a second store, beside `RoomStore` | [ADR 0010](./adr/0010-chat-is-a-second-store-and-its-sender-is-stamped.md) — the event lane, never game state: a message must not bump the `rev` guests drop stale game updates against. Every guard runs on *receive* — membership, 1.5s per sender on the local clock, 140 characters, 50 messages of scrollback, and since phase 7 an origin check on every URL a message carries. The log is `LogEntry = ChatEntry \| AnnouncementEntry` now, one list because the two occupy the same slot in the same stream, and the room's own line has its own guard rather than the clock: `isRoomHost`, since any member who could publish `kind: 'announcement'` would have every browser render it as *the room* speaking |
+| What the room says about itself | `lib/room/announce.ts` — the rule and the words, together | `roomAnnouncements(before, after)` is a pure diff of two `GameState`s, so every road a change arrives by is covered once; `announcementLine(body, state, selfId)` renders it where it is *read*, off the current roster, which is what lets the line say "you" and stops somebody being announced under a nickname they have since changed. `ROOM_FACE` is the author — a constant, not the host's props, because passing the host's would credit them with unplugging somebody else's router. In `lib/room/` rather than `lib/game/` because `AnnouncementBody` is wire vocabulary, and `lib/room → lib/game` is the allowed direction. [ADR 0028](./adr/0028-the-room-speaks-in-its-own-lane.md) |
 | Image origins | `lib/gifs/allow.ts` — `isAllowedImageSrc` | One allowlist for everything a *sender* can point an `<img>` at: a chat attachment, a quote's thumbnail, a reaction's glyph. Same-origin `/media/*.svg` or `/media/emoji/*.svg` — **one optional path segment, not a wildcard**, so the surface it opens is exactly the directory the importer writes — and `https://` hosts **read off `ALL_DESCRIPTORS`**, so a provider brings its own hosts and the allowlist is not a second place to remember them: subdomains at or under `giphy.com`, and the three pinned `static{,1,2}.klipy.com`. Parsed with `URL` so a lookalike fails on hostname — `exact` exists because `endsWith('klipy.com')` would have admitted `evilklipy.com`. **The catalog added no host**: `fonts.gstatic.com` is still refused, and `allow.test.ts` asserts the refusal. [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md) · [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
 | Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the toolbox's react row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
 | Reaction affordance | `ReactionCTA` on all five sites the design names | Caption cards, chat messages, the composer, the reveal bar and the **room toolbox** — DESIGNSYSTEM §4.4's "uniform everywhere", which three of the five did not honour until recently. `ChatMessage` had no affordance at all, so every chat reaction landed on whatever arrived last, and the composer withheld its CTA on an empty log while rendering six quick keys that silently did nothing. The fifth site was the collapsed chat rail and **is now `RoomToolbox`**: reacting to the room is something any player does at any time, not an edge-of-chat control, so `ChatRail` no longer takes `onReact` and `RoomShell`'s `Overlay` union is back to `'toolbox' \| 'help' \| null`. `ChatPanel`'s reaction surface still carries *what it is aimed at* — a message id, or `null` for the composer, which **posts**: an emoji from the composer is a chat message that also fires the room's burst, rather than a chat control that quietly did something else. A *picture* reaction posts as an **attachment**, not as text: an image tile's glyph is a URL and `say`'s body is verbatim, so a Slackmoji used to render `/media/slackmoji-lgtm.svg` in 14px type. And the message CTA is reachable again — it was drawn only on the player row, while `ChatPanel` marked every host line an announcement, so in a host's own room no message had one |
@@ -808,7 +908,7 @@ to be about markup the owner of room authority instead.
 ```mermaid
 graph LR
   U["components/organisms/ + app/<br/><i>markup only</i>"]
-  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown · bootTimeline<br/>useStoredPerson · useSuggestedName</i>"]
+  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · announce · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown · bootTimeline<br/>useStoredPerson · useSuggestedName</i>"]
   G["lib/game/<br/><i>pure — types · reducer · authorize<br/>selectors · project · rng</i>"]
   F["lib/gifs/<br/><i>provider · descriptors · registry · source<br/>klipy · giphy · samples · art · wall · usage<br/>useGifSearch · useArt · allow — isAllowedImageSrc</i>"]
   AV["lib/avatar.ts<br/><i>seed → data URI, cached · DiceBear 10 critters<br/>70 seeds · avatarPage · seedLabel</i>"]
@@ -822,14 +922,14 @@ graph LR
   GL["components/atoms/ReactionGlyph"]
   TKR["app/api/ably/seat<br/>app/api/ably/token"]
   ABL["lib/ably/<br/><i>token · seat — server only, node:crypto</i>"]
-  U -->|"useRoom() · useChat() · publish(event)"| R
+  U -->|"useRoom() · useChat() · publish(event)<br/>announcementLine · ROOM_FACE — the words,<br/>rendered where they are read"| R
   U -->|"REACTIONS · glyphFor · labelFor · isImageGlyph"| RX
   U -->|"readRecent · pushRecent<br/>ReactionToolbar only"| RC
   U -->|"useGifSearch() · useResolvedArt()<br/>both in the browser — nothing on the server"| F
   U -->|"selectors · constants"| G
   AT -->|"avatarUri(seed)"| AV
   PK -->|"AVATAR_SEEDS · AVATAR_WINDOW<br/>avatarPage · seedLabel · previewColor"| AV
-  R -->|"reduce · authorize · project"| G
+  R -->|"reduce · authorize · project<br/>modeName · playerById · SEAT_GRACE_MS — announce.ts"| G
   R -->|"isAllowedImageSrc — every URL<br/>a sender puts on the lane"| F
   G -->|"re-exports REVEAL_REACTIONS"| RX
   RC --> RX
@@ -1174,12 +1274,23 @@ roadmap promised, made a module so nothing upstream knows which road it got.
 
 **`RoomProvider` branches on that one answer.** A host resolves its seat, builds
 the engine, attaches bots and the autopilot under `?bots=`, listens for
-`visibilitychange` to catch up a throttled tab, and sends `host/left` on
-`beforeunload` — the room ends with its host, unchanged from
+`visibilitychange` to catch up a throttled tab, and ends the room on its way out
+— unchanged from
 [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md) and now
 visible to other people. A guest builds only a `GuestClient` and sends
 `player/left` on `beforeunload`, which holds a seat instead of ending a game it
-does not own. `store.setIdentity(selfId, isHost)` is how the answer reaches the
+does not own.
+
+**The host's exit is two handlers now, and splitting them is what makes the
+confirmation safe.** `beforeunload` only `preventDefault()`s — the browser's own
+"leave site?" dialog, whose wording is not ours to write — and only while there
+is a game to lose, so `lobby` and `podium` close without a question. It mutates
+nothing, because a handler that both ended the room *and* asked would send the
+room to `podium` and then leave a live tab sitting in it the moment the host
+clicked Cancel. The departure is `pagehide`, which fires only when the page
+really is going, and it returns early on `event.persisted`: that is the tab being
+frozen into the back/forward cache, and coming back from one should find the
+room still there. `store.setIdentity(selfId, isHost)` is how the answer reaches the
 store: `isHost` is no longer knowable at mount, so it starts `false` rather than
 being a constructor argument. A tab that assumed otherwise would flash the
 host's controls at a guest. A room that cannot be built at all — asking for
@@ -1248,7 +1359,17 @@ here** — see [what is verified](#what-is-verified-and-what-is-not).
 ### Host authority
 
 The host's browser is the server. One loop, in this order: **authorize → reduce
-→ schedule → publish.** Nothing else may produce a `GameState`.
+→ schedule → publish → announce.** Nothing else may produce a `GameState`.
+
+The last two are one private method, `commit(before, next)`, and it exists
+because there are two roads to an accepted state — `apply`, for an intent or the
+host's own action, and `expire`, for a clock — which had the same four lines
+copied. The announcement is what made that a problem rather than a tidiness
+note: it is derived from the *transition*, so it has to sit where every accepted
+transition passes. **Ordering inside it is load-bearing**: `publish()` runs
+before `announce()`, so every tab holds the state a line describes before the
+line arrives — the log resolves "Vic is back" off `state.players`, and a name
+landing ahead of the roster renders "Someone" for somebody sitting right there.
 
 ```mermaid
 sequenceDiagram
@@ -1361,7 +1482,14 @@ Seven details are load-bearing:
   dropped is not a case presence can report — the room went with it. It has to
   be idempotent, since a presence set arrives on every change, and it is: the
   reducer returns the same reference for a no-op, so reconciling an unchanged
-  room costs nothing.
+  room costs nothing. **Only a seat presence has actually seen may be reported
+  as dropping.** `everAttached` is that set, and it is the correction the phase
+  gates forced: absence proves nothing on its own, so a `?phase=` fixture's
+  players — who were never connections at all — and a real guest in the roster
+  for the moment before their presence entry is read were both being marked
+  `reconnecting`. Harmless while the flag had one reader, and a room full of
+  phantoms the moment [ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md)
+  gave it several.
 - **A member appearing has to trigger a publish.** `recipients()` already
   unioned `members()`, but nothing published when that set grew, so a guest
   attaching after `start()` waited on a broadcast that never came and never got
@@ -1376,6 +1504,41 @@ Seven details are load-bearing:
 microtask at zero latency. A synchronous local transport would have meant no
 screen ever needed a pending state, and every submit path being rewritten the
 day Ably landed. It landed, and none were.
+
+### Who the round is waiting for
+
+Presence reaches the roster through `reconcile`; this is what the *reducer* then
+does with it, and until recently the answer was nothing.
+[ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md) is the decision;
+three mechanisms carry it.
+
+- **Both populations are presence-aware.** `competingPlayers(state)` is everyone
+  but the role holder *and* everyone still online; `votingPlayers(state)` is
+  everyone still online, role holder included, because they judge rather than
+  compete. `lib/game/selectors.ts` has the reading half of the same pair —
+  `activeCompetitors()` and `voters()` — deliberately beside `competitors()`
+  rather than replacing it: **who is drawn and who is awaited are different
+  questions**, and a player who left stays visible in the tracker with a third
+  status, `left`, instead of vanishing and leaving the room wondering why the
+  count dropped. `submittedCount`, `waitingCopy` and `tiebreakCopy`'s vote line
+  all count the present now, so no screen can report progress against a
+  population the reducer is not using.
+- **`countPresent(roster, ids)` is the numerator's half.** Both sides of a gate
+  must count the same people or the gate lies, and the failure is easy to miss:
+  a drop holds the seat *and the entry*, so lowering only the denominator opens
+  voting on a player who is present and still typing.
+- **`settleGates(state, at)` re-asks the question from the other direction.**
+  The three phase gates live in the actions that raise the numerator — an entry
+  arriving, a ballot cast, a tiebreak vote — and a drop moves the denominator
+  from a different action entirely. One helper covers both, called from
+  `round/entrySubmitted`, `round/ballotCast`, `round/tiebreakVoted`,
+  `player/left`, and from `advance('opener')`, which is the case a connection
+  change cannot report: a role holder who dropped during `score` makes `brief` a
+  dead phase from the frame it opens. Every branch is guarded on the current
+  phase, so it can only move the room forward and a second call is a no-op; the
+  zero guards are load-bearing rather than defensive, because with nobody online
+  every gate is trivially true and an empty room would race itself to the podium
+  instead of sitting still until somebody came back.
 
 ### The event lane
 
@@ -1397,33 +1560,74 @@ graph LR
     HK["useChatLog · useUnread · useTallies<br/>useLastReaction · useEventSelector"]
     RS["RoomStore<br/><i>rev · phase · players</i>"]
     SH["RoomShellContext<br/><i>replyTo · startReply · clearReply</i>"]
+    AN["lib/room/announce.ts<br/><i>announcementLine(body, state, selfId)<br/>ROOM_FACE</i>"]
   end
+  HE["HostEngine.commit()<br/><i>host tab only — roomAnnouncements(before, after)</i>"]
   T["RoomTransport<br/><i>event lane, on the control channel</i>"]
   AL["lib/gifs/allow.ts<br/><i>isAllowedImageSrc</i>"]
 
   C -->|"startReply(quote) — from a vote card"| SH
   SH -->|"replyTo — read in the composer"| C
   C --> CH
-  CH -->|"publishEvent(RoomEvent)<br/><i>text · attachment? · replyTo?</i>"| T
+  CH -->|"publishEvent · kind chat or reaction<br/><i>text · attachment? · replyTo?</i>"| T
+  HE -->|"publishEvent · kind announcement<br/><i>a code, never a sentence</i>"| T
   T -->|"onEvent — from stamped on receive"| EV
   EV -->|"attachment.src · replyTo.src · emoji"| AL
-  EV --> HK --> C
-  RS -.->|"selfId · isMember(from)"| EV
+  EV --> HK -->|"a LogEntry list — branch on entry.kind"| C
+  C -->|"the words, at render"| AN
+  RS -.->|"selfId · isMember(from) · isRoomHost(from)"| EV
 ```
 
-Nothing on that road touches `HostEngine`. An event carries no authority, so
-there is nothing to authorize, nothing to reduce and nothing to schedule: the
-host receives a message exactly as every guest does, through its own endpoint's
-`onEvent`. The only thread back to room state is a pair of getters — who this
-tab is, and whether a sender is in `state.players` — read live rather than
-copied, so the store cannot hold a stale roster.
+Nothing a *player* puts on that road touches `HostEngine`. An event carries no
+authority, so there is nothing to authorize, nothing to reduce and nothing to
+schedule: the host receives a message exactly as every guest does, through its
+own endpoint's `onEvent`. The only thread back to room state is three getters —
+who this tab is, whether a sender is in `state.players`, and whether a sender is
+`state.hostId` — read live rather than copied, so the store cannot hold a stale
+roster.
+
+**The announcement is the one event with a publisher rather than a sender, and
+it is the only arrow on that diagram that leaves the engine.** It is published
+from `commit()`, so `from` is the host's id and every transport stamps it the
+way it stamps everything else — the sender really is who the wire says. That is
+what makes `isRoomHost` a guard worth having: without it any member could
+publish `kind: 'announcement'` and every browser in the room would render it as
+the room speaking. A member typing "Mode is now…" into chat is a joke; the same
+words on the room's own accent card are a lie the room told.
+
+Three differences from a chat message, and each is why the kind exists rather
+than a flag on `chat`. It **skips the 1.5s limiter**, deliberately: that bound
+exists for a member flooding the log at will, while the host emits one line per
+accepted transition and the reducer bounds those — a wifi router dying drops
+three players in one presence sweep, three legitimate lines inside 1.5s, and the
+chat limiter would silently eat two at the moment the log most needs to be
+right. There is **nothing to truncate**, because the wire carries a code and
+`announcementLine` renders the words client-side against the current roster. And
+**it is unread for everyone, the host included** — keying `mine` off the sender
+the way chat does would exempt the host's own tab from every drop line, and the
+badge is how somebody with the rail shut finds out the mode changed under them,
+which is the whole reason the lane exists. What it does keep is `CHAT_HISTORY`:
+a line takes a slot like any other. The one guard it adds is a repeat of the
+line already at the end of the log, dropped by comparing bodies — a host
+republishing after an Ably resume, absorbed without a timestamp anybody could
+disagree about.
+
+`ChatEntry` gained `kind: 'chat'` in the same change, and that is not
+bookkeeping: `text`, `attachment` and `replyTo` are all meaningless on an
+announcement, and an optional field on a shared interface invites `entry.text`
+on a thing that has none. `isChat` is exported because two callers need the
+narrowing and would otherwise write it inline — the rail, which reacts to
+messages and never to announcements, and the toast lane.
 
 **The guards run where events arrive, not where they are sent.** A throttle on
 the composer binds only the tab that agreed to run it, which is every tab except
-the one worth throttling. So `receive()` holds all five:
+the one worth throttling. So `receive()` holds all six:
 
 - **Membership.** A sender who is not in the roster is dropped, on every
   transport — including the ones where identity is asserted rather than issued.
+- **Authorship of the room's own voice.** An `announcement` from anyone but
+  `state.hostId` is dropped. It is the guard that replaces the clock on that
+  kind, and a member is not enough here.
 - **Rate.** 1.5s per sender, measured on the *local* clock. `at` is a number the
   sender chose, so a flooding tab would simply stamp its messages 1.5s apart and
   walk straight through a limit that read it. An attachment buys no second
@@ -1635,7 +1839,7 @@ graph BT
     Feedback["Snackbar · ReactionCTA"]
     Glyph["ReactionGlyph<br/><i>'use client' · a character, or the still —<br/>which upgrades to the animation</i>"]
     Dots["WaitingDots"]
-    Static["TvStatic<br/><i>'use client' · seeded canvas noise</i>"]
+    Static["TvStatic<br/><i>a server component · inline-SVG noise and CSS —<br/>no script, no request, no decode</i>"]
   end
   subgraph molecules["molecules/ — compose atoms, and occasionally another molecule"]
     Room["JoinPanel · PlayerRow · PromptBanner"]
@@ -1650,6 +1854,7 @@ graph BT
     Boot["BootChecklist<br/><i>an ol — the order is the meaning</i>"]
     Mark["Wordmark<br/><i>the mark and the name — a molecule<br/>because it imports Logo, and Icon<br/>is the only atom exemption</i>"]
     Scene["SceneBackdrop<br/><i>'use client' · a dead channel behind a wait —<br/>a molecule for Wordmark's reason: it composes TvStatic</i>"]
+    Tuned["TunedImage<br/><i>'use client' · TvStatic behind a picture on its way —<br/>dropped on load, and never on error</i>"]
   end
   subgraph organisms["organisms/ — room state or routing"]
     Shell["RoomShell<br/>+ context (notify)"]
@@ -1726,7 +1931,14 @@ graph BT
   Glyph -->|"the burst, and the reveal's one-tap row"| Compose
   Static -->|"the picture inside the frame"| Scene
   Static -->|"HeroWall — one tuning set per cell,<br/>while the real GIF is still out"| Landing
+  Static -->|"one set per picture, seeded off the src —<br/>so no two tiles in a grid run the same field"| Tuned
   Static --> Gallery
+  Tuned -->|"GifPanel's board tile — tuning={board},<br/>so the chat popover is deliberately out"| Overlay
+  Tuned -->|"MediaCard's img — the client boundary is the leaf,<br/>so the card is still a server component"| Media
+  Tuned -->|"ChatMessage — the attachment,<br/>and the quote's own thumb"| Chat
+  Tuned -->|"Composer — the staged GIF,<br/>and the reply quote's thumb"| Compose
+  Tuned -->|"VoteScreen's own subject thumbnail —<br/>not an entry, so not a MediaCard"| Screens
+  Tuned --> Gallery
   Scene -->|"BriefScreen — behind the wait,<br/>and it settles to the picked GIF"| Screens
   Dots -->|"LobbyScreen · ComposeScreen · WaitingScreen"| Screens
   Dots --> Gallery
@@ -2120,6 +2332,37 @@ becomes column-major (tab order still follows the DOM), and the popover's
 scroller had to become a **wrapper** around the columns, because a multicol box
 with a capped height treats that height as its fragmentainer and lays the rest
 out sideways off the panel.
+
+**Announcements added no component at all, and that is the interesting part of
+them.** `ChatMessage`'s `announcement` prop has been there since phase 2 with a
+doc comment saying it was waiting for an action to set it; the action arrived
+and the prop was already the right shape. `ChatToast` needed the same prop, for
+the case the lane was built for — somebody on a phone with the rail shut is
+exactly the person who would otherwise find out the mode changed when the next
+round looked wrong. Both branches are inside `ChatPanel` and `RoomShell`
+respectively, on `entry.kind`, and both draw `ROOM_FACE` rather than the host's
+props: a face gutter with the host in it would re-create the "HOST · HOST"
+eyebrow the prop's own note already rejects, and on a drop it would credit the
+host with unplugging somebody else's router. So no tier moved, no edge in the
+map above changed, and the diff is one atom-level prop and two `if`s.
+
+**The react-lane audit is the case rule 2 does not reach, for the fourth time:
+a component being the wrong *shape* everywhere is a fix rather than a variant.**
+Four of the five changes are stylesheets only. `BriefScreen`'s two columns both
+grow, with the ceiling on the form rather than a borrowed fixed width on the
+preview, which is sticky so it stays in view while the field it previews pushes
+down the page. `PromptBanner` split into `.banner`, which does nothing but
+measure, and `.inner`, which carries every responsive value — a container cannot
+query itself, and on this component the thing that most needs to respond *is*
+the padding: a phone gives it 289px, the responsive sweep holds running text to
+260 of that, and the design's 26px-a-side left a 235px quote at five words to
+the line. `ComposeScreen`'s submit face pins the prompt in a `.promptDock` with
+real ground under it, because tiles scrolling behind a transparent banner show
+through the accent fill. `RevealScreen`'s runner titles clamp to two lines,
+which is what a row can spare before it stops being a list. The fifth is a prop
+and belongs to an atom: `Chip` gained `wrap`, off by default, because the
+brief's prompt starters are sentences and every other chip in the app is one or
+two words — a row of short pills that may wrap would break at the wrong places.
 
 ## Token flow
 
@@ -2515,6 +2758,58 @@ own ratio too — while still dropping `id` and `keywords`, which stay the
 picker's alone. A source that reports no dimensions renders either way: at
 `$gif-tile-ratio` in the picker, and at the card's clamp on a vote tile.
 
+**Reserving the shape left a hole in the middle of it, and that hole is now a
+television.** A board is fifty lazily-loaded tiles and a vote grid is up to
+nineteen cards; each one had its ratio before it had its bytes and drew a
+transparent box in the meantime — forever, where the bytes never came.
+`TunedImage` is the landing wall's cell made available to anything that draws
+one image: `TvStatic` behind, the picture over it, and the static **unmounted
+rather than covered** the moment the picture is there — an unselected vote card
+draws its image at 85%, so a field left painting underneath would show through
+every card on the grid. The seed comes from a hash of `src`, which is pure, so
+the server and the browser agree and no two neighbouring tiles run the same
+field.
+
+Two things about the wiring are not obvious. **`onLoad` alone is a race it loses
+often**: a cached GIF, a `data:` URI, or anything that decoded inside the server
+HTML finished before hydration attached the handler, so mount also checks
+`complete && naturalWidth > 0` — and `naturalWidth` is the half that keeps a
+broken image, which is `complete` too, reading as the failure it is. **And the
+client boundary is the leaf**: `TunedImage` carries the `'use client'` for
+exactly one boolean, so `MediaCard` and `GifPanel`'s tile keep the rest of their
+markup on the server. `tuning` turns the whole thing off where nothing is
+coming — `false` on a `MediaCard` whose entry has no media at all, a settled
+nothing rather than a wait, and `tuning={board}` on `GifPanel`, which keeps a
+dozen flickering thumbnails off a live chat rail.
+
+A second pass took the five remote pictures the first one left: the composer's
+staged attachment and its "Replying to" thumb, a sent message's attachment and
+its quote thumb, and `VoteScreen`'s own subject thumbnail — which is not a
+`MediaCard`, because it is a picture of the thing being voted on rather than an
+entry. That is why the wrapper **declares no width**: a block box with
+`width: auto` fills a block container, so a fluid tile is unchanged while a 30px
+quote, a 52×40 staged tile and an 88px subject shrink-wrap to the size their
+image already carries. `flex: none` rides with it — inert everywhere else, and
+load-bearing for three of those thumbs, which are flex items that used to carry
+it themselves. It also found a bug older than the component — a broken
+image is an inline non-replaced box, so CSS width and height do not apply, and
+the vote screen's thumbnail had been collapsing to spilled alt text since it was
+written. `display: block` on the three fixed thumbs fixes that and gives the set
+a box; `[data-tuning]` marks the wrapper while the set is up, which is how
+`ChatMessage`'s deliberately unreserved attachment stands in with the design's
+180×120 and how the alt text is kept from printing in white across a dead
+channel.
+
+It wears `$scrim-static` — the flat, unblurred weight `HeroWall` and
+`SceneBackdrop` already put over their sets, because blurring a picture made
+entirely of high frequency leaves grey. And the split with `SceneBackdrop`, whose
+failure settles to *nothing*, is
+[ADR 0027](./adr/0027-a-tile-that-never-tunes-in-keeps-hissing.md): a backdrop is
+behind a sentence and can get out of the way, where a tile is the content and has
+to be something. Fifty tiles all tuning was measured rather than assumed — a flat
+60fps, median frame 16.7ms and worst 16.8ms of 182, indistinguishable from one —
+so nothing hedges the lazy tail.
+
 ### The realtime path
 
 The fifth shape is the room's own, and it is the shape the GIF path used to
@@ -2552,6 +2847,7 @@ sequenceDiagram
   A-->>B: presence set → somebody already hosts, so we are a guest
   A-->>H: presence changed
   H->>H: reconcile(attached) → player/left · player/reconnected
+  Note over H: only for a seat everAttached has seen,<br/>then settleGates re-asks the phase gate
   B->>A: publish intent — captionist:CODE:control
   A-->>H: message.clientId IS Intent.from
   H->>H: authorize → reduce → schedule → project
@@ -2564,9 +2860,12 @@ sequenceDiagram
   B->>A: publish event chat/reaction — control
   A-->>H: message.clientId IS RoomEvent.from
   Note over H: no authorize, no reduce, no rev —<br/>the host is just another subscriber
+  H->>A: publish event announcement — control
+  Note over H: from commit(), so from is the host's id
+  A-->>B: isRoomHost(from) passes → the room's own card
 ```
 
-Four things that diagram is saying. **The key never leaves the server** — which
+Five things that diagram is saying. **The key never leaves the server** — which
 is now the *opposite* of the GIF keys, whose terms force them into the browser
 ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md)). Ably has no such
 rule, so this one stays put: the browser presents a signed token
@@ -2576,10 +2875,25 @@ request and talks to Ably directly, so neither route is in the room's hot path.
 `captionist:<code>:state:<playerId>` because `project()` is per viewer.
 **Presence is the membership fact**, not a heartbeat we infer one from — it
 elects the host, and the host reconciles it into `player/left` and
-`player/reconnected` on every change. And **the event lane runs beside the
+`player/reconnected` on every change, which the round is now counting rather
+than merely holding a seat over ([who the round is waiting
+for](#who-the-round-is-waiting-for)). **The event lane runs beside the
 authority loop rather than through it**: a chat message reaches the host the way
 it reaches everyone else, with `from` stamped from `clientId` on receive, and
-`HostEngine` never sees it — [the event lane](#the-event-lane).
+`HostEngine` never sees it — [the event lane](#the-event-lane). And **one event
+runs the other way**: an announcement is published *by* the engine on the same
+control channel, so the lane is not "everything the host does not send" but
+"everything that carries no authority", which an announcement does not — it
+reports a decision already made rather than asking for one.
+
+One thing about that lane is a browser fact rather than a protocol one.
+`AblyTransport` deliberately awaits none of its own publishes — a screen must
+never wait on the wire — and an unawaited promise still rejects. `close()`
+racing its own `presence.leave()` rejects with "Connection closed" *every time a
+tab is closed*, which is an unhandled rejection in the browser of everyone who
+eventually leaves. A `fire()` helper wraps every one of them and swallows only
+the rejections the teardown itself provoked: a publish that fails while the
+transport is still live is a real fault and still says so.
 
 The stub branch is not a footnote. With no `ABLY_API_KEY` the whole right-hand
 side of that diagram is unreached, and that is the state this machine is in.
@@ -2657,6 +2971,20 @@ is left out is the part no import can supply — a *workspace's own* custom emoj
 — and it is the same missing storage target, now declined outright
 ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)).
 
+**The room's own announcements removed no row either, and are worth a sentence
+here because the obvious reading is wrong.** `ChatMessage`'s `announcement`
+variant is DESIGNSYSTEM's, and it has been built since phase 2 — this table
+never listed it as missing, correctly, because what was missing was an *action*
+to set it rather than a component to draw it. Nothing about the round flow's
+four omissions changed. One thing the design does *not* draw did arrive:
+`submissionRows` has a third status, `left`, where the artboards have two. That
+is an addition rather than a departure — the design's other status, `typing…`,
+stays out for the reason it always has, because it needs live keystroke presence
+and would be a guess, and `left` is the opposite of a guess: it is the one thing
+on that row the room knows for a fact, straight off the transport's presence
+set. A row reading "still thinking" over a closed tab was the guess.
+[ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md).
+
 | Area | What exists | What doesn't |
 | --- | --- | --- |
 | The round-flow screens | **All ten phases**, inside the `RoomShell` chrome drawn above — `opener` as the `RoundOpener` overlay, the other nine through the [tier map](#component-tiers). `PhasePending` is gone | Four pieces of the design, each left out for a reason rather than for time — see below the table |
@@ -2669,7 +2997,7 @@ The four omissions in the round-flow screens, in phase order:
 | Screen | Left out | Why |
 | --- | --- | --- |
 | `waiting` | "Edit my caption" | Phase is room-wide and authoritative, so a guest cannot rewind the room to `compose`, and an inline editor would be a second composer to keep in step with the real one. `waitingCopy` was rewritten to match — it says what happens next rather than promising an edit that isn't offered |
-| `waiting` | *"Everyone's in — start voting"*, always | The button was never a gate — `waiting` is timed, and `host/skippedPhase` runs the same `advance()` the clock does — so once the last entry landed the room said "now we wait" over a tracker reading N of N, under a 12s clock, beside a button offering to start a vote that was starting anyway. `waitingCopy` now reads the tracker: everyone in gets *"That's everyone in."*, `WAITING_ALL_IN_MS` instead of the full `PHASE_DURATIONS.waiting`, and no button; a straggler gets *"Now we wait."*, the full 12s, and a label that names who is being left behind |
+| `waiting` | *"Everyone's in — start voting"*, always | The button was never a gate — `waiting` is timed, and `host/skippedPhase` runs the same `advance()` the clock does — so once the last entry landed the room said "now we wait" over a tracker reading N of N, under a 12s clock, beside a button offering to start a vote that was starting anyway. `waitingCopy` now reads the tracker: everyone in gets *"That's everyone in."*, `WAITING_ALL_IN_MS` instead of the full `PHASE_DURATIONS.waiting`, and no button; a straggler gets *"Now we wait."*, the full 12s, and a label that names who is being left behind. Both readings count the *present* now — `phaseLength` applies `settleGates`' both-sides rule, so a wait that is over because everybody left reads as over and a held entry does not make it so |
 | `vote` | The Caption \| Vote segmented control | Two views of one grid, and the vote is the one the phase is for |
 | `reveal` | `auto-advancing in 6s` | `reveal` is untimed by design. The label would be counting a clock that does not exist; the host's advance button is the real mechanism, and `?bots=` supplies the [autopilot dwell](#dev-levers) instead |
 | `podium` | The awards row, the highlight reel and the Slack buttons | Awards need a stat layer nothing computes yet; the reel and the share need a destination outside the browser |
@@ -2738,11 +3066,16 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-336 unit tests (`lib/**/*.test.ts`, node, over 23 files) and 476 Playwright
-tests across the two viewports — 238 per project, over 29 spec files. Not all of
-them run: twelve carry a viewport `test.skip` (a docked rail exists only above
-`md`, a floating dock only below it), which is a branch of the layout rather
-than a hole in the coverage.
+370 unit tests (`lib/**/*.test.ts`, node, over 24 files) and 502 Playwright
+tests across the two viewports — 251 per project, over 29 spec files. Not all of
+them run: fourteen skip on viewport (a docked rail exists only above `md`, a
+floating dock only below it), which is a branch of the layout rather than a hole
+in the coverage. Fourteen *tests* out of twelve `test.skip` call sites, and this
+file said twelve for both until the counts were taken: `responsive.spec.ts`
+skips at the describe level and takes all of its own with it, because both
+projects would otherwise sweep the same widths through the same browser. That
+was four tests and is three, since the sweep merged the sideways-scroll and
+running-text passes into one walk of the fifteen URLs rather than two.
 
 **The avatar change's share is 12 unit tests and five specs.**
 `lib/avatar.test.ts` is the 12, and it is aimed at the two things a style swap
@@ -2894,6 +3227,78 @@ than a stolen tap. What replaces the coverage is a test that pins the backdrop
 to its own frame within a pixel on every edge, so it cannot quietly grow past
 the picture and start taking a neighbour's tap — the claim the sweep would have
 made, made directly.
+
+**`TunedImage`'s share is 10 specs per project and no unit test, because nothing
+pure moved — and every one of them blocks the media rather than racing the
+decode.** A stub tile is a local SVG that decodes in single-digit milliseconds,
+so "before it loads" is not a window a spec can stand in; aborting
+`**/media/stub-*` makes the static the *settled* state and turns a timing
+assertion into a claim about what a dead channel does. `e2e/gifs.spec.ts` and
+`e2e/vote.spec.ts` gain two each — the set is there when the GIF never arrives
+and still there after `networkidle`, and gone rather than covered when it does —
+and the `networkidle` half is the one that matters, since a static that appeared
+and then vanished with the failed request would put the hole back and pass
+without it. `e2e/components.spec.ts` gains three at `#tuned-image`, where the
+gallery's `DEAD_CHANNEL` is a 404 the dev server answers: the happy path, the
+GIF that never came, and `tuning={false}`. The third of them screenshots the set
+four times and asserts the frames differ, because a static that is *there* and
+not moving is a failure this effect has shipped with twice and no
+computed-style assertion can tell the two apart.
+
+**Three of the ten came with the second pass, and two of them assert a *box*
+rather than a picture.** `e2e/chat.spec.ts` gains two under `a chat GIF with no
+picture yet` — the composer's staged tile, and the message it becomes — and they
+run on one page rather than two: every other test in that file needs a real
+second peer to say anything about the wire, and a fourth multi-page test there
+costs the parallel run enough to time out the width sweep in
+`responsive.spec.ts`. The half that matters reads the set's `boundingBox()`,
+because `ChatMessage`'s attachment is the one image in the app that reserves
+nothing: "visible" was true at zero height, and only a height proves
+`[data-tuning]` stood the design's 180×120 in until the picture arrived.
+`e2e/vote.spec.ts` gains a third for the round's own thumbnail, and its
+assertion is that the thumb is **still 88 square** — a regression test for the
+bug underneath all of this rather than for the set. A broken `<img>` with alt
+text is an inline non-replaced box, CSS width and height do not apply to one,
+and that thumbnail had been collapsing to a strip of spilled alt text since the
+screen was written. The gallery's fourth `#tuned-image` case — the 30, 52×40 and
+88px thumbs side by side — has no spec of its own; the size claim is asserted on
+the vote screen, where the collapse actually shipped.
+
+**This pass's share is 34 unit tests and a net three specs per project, and the
+split is the honest one: almost all of it is pure, because almost all of it
+was.** `lib/room/announce.test.ts` is 9 new tests over the diff and the copy —
+that a mode switch is named whichever action carried it, that a join is
+deliberately silent, that **three drops in one presence sweep are three lines**
+(the case the chat limiter would have eaten two of), that the line says "you"
+when it is you, and that the grace window it promises is read off `SEAT_GRACE_MS`
+rather than written out, which is a test holding a sentence and a constant
+together. `lib/game/reducer.test.ts` grew by 14, and the pair worth naming is
+"does not fire the gate on an entry from somebody who has since dropped" beside
+"stops counting toward the compose gate" — the two halves of `countPresent`, and
+the second is only a bug if the first is asserted too. The rest hold what a drop
+must *not* do: the entry stays in the round and is still voted on and scored,
+the seat is held rather than removed so the rotation is not renumbered, a
+reconnect never rewinds a phase, and a room whose last guest leaves does not
+race itself to the podium. `lib/game/selectors.test.ts` is 4 more on the reading
+half — the tracker keeps the row and marks it, `submittedCount` counts the
+people still here, `waitingCopy` stops offering to start voting without somebody
+who already left, and the podium still ranks them, because their points do not
+leave with them. `lib/room/events.test.ts` is 7 over the new guard and the three
+ways an announcement is not a message: taken from the host, refused from a
+member and from outside the room, not throttled, a repeat at the tail collapsed,
+unread for everyone, and a slot in the fifty like any other line.
+
+The browser half is two specs and a merge. `e2e/chat.spec.ts` gains "tells the
+whole room the host changed the mode" and "says who dropped, and says it once",
+both across two real tabs, because a lane whose whole point is that *everyone
+else* sees it cannot be proved in one. `e2e/reconnect.spec.ts` gains "stops the
+room waiting on a chair nobody is in" — the ADR 0029 claim made executable — and
+"raises nothing in the browser on the way out", which is the `fire()` helper:
+it fails on an unhandled rejection rather than on a missing element, which is
+the only shape that catches a promise nobody awaited. `e2e/responsive.spec.ts`
+lost a test and gained none: its two assertions now ride one walk of the fifteen
+URLs instead of two, which is a coverage-neutral change made because the second
+walk was timing the parallel run out.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

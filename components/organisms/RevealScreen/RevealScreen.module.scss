@@ -153,10 +153,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+// Two lines, then an ellipsis — not one.
+//
+// A caption is short and survived a single line. React mode's runner-up title
+// is an *answer*, which is a GIF's own alt text and routinely a sentence, so a
+// 440px column cut most of them at the first clause. Two lines is the most this
+// row can spare before it stops being a list.
 .runnerTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   @include t.labelText;
   color: t.$text-primary;
 }
