@@ -53,66 +53,58 @@
 .noise {
   position: absolute;
   /**
-   * Oversized, and offset by the overhang.
+   * Oversized, so the per-set offset never shows an edge.
    *
-   * The animation slides this around inside the set, so it has to be bigger
-   * than the set in every direction or the jumps would show the canvas at the
-   * edges. Half the overhang on each side keeps it centred at rest.
+   * Each set crops a different part of the field — see `--set` below — and
+   * without the overhang a large offset would slide the canvas into view.
    */
   inset: calc(#{t.$static-overhang} * -1);
-  /**
-   * Sized, and it has to be.
-   *
-   * An `<svg>` with no `width`/`height` has no intrinsic size, and a
-   * `background-image` of one paints nothing at all — the element is there and
-   * the noise is not, which looks exactly like the bug this replaces.
-   */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23s)'/%3E%3C/svg%3E");
   background-size: t.$static-grain t.$static-grain;
   background-repeat: repeat;
   /**
-   * A different patch of noise per set, and a different moment in the flicker.
+   * A different patch per set, so twenty of these are twenty televisions.
    *
-   * Without this, twenty sets show the same field at the same instant and the
-   * wall reads as one sheet of static behind the page rather than as twenty
-   * televisions. The multipliers are coprime-ish with the tile so neighbours do
-   * not land on the same crop.
+   * Without it they show the same field at the same instant and the wall reads
+   * as one sheet of static behind the page rather than as a grid of sets.
    */
   background-position: calc(var(--set, 0) * 53px) calc(var(--set, 0) * 29px);
-  will-change: transform;
-  animation: staticGrain 0.22s steps(1) infinite;
-  animation-delay: calc(var(--set, 0) * -31ms);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='1' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E");
+  animation: staticGrain 0.3s steps(1) infinite;
+  animation-delay: calc(var(--set, 0) * -37ms);
 }
 
 /**
- * A different field every frame, not a drifting one.
+ * Five genuinely different fields, swapped — not one field slid about.
  *
- * `steps(1)` makes each keyframe *snap*: a smoothly moving noise field looks
- * like fog blowing past, and a set with no signal does not drift. The offsets
- * are deliberately unrelated to the tile size, so every jump lands on a
- * different part of the repeat and reads as newly generated noise.
+ * This is the whole difference between reading as static and reading as a
+ * texture. Translating a *repeating* tile can only ever slide the same grain
+ * around: consecutive frames stay correlated, the eye locks onto the pattern,
+ * and it looks like it is not moving at all — which is exactly how the first
+ * version failed, while its transform really was changing every 44ms.
  *
- * `translate3d` rather than `background-position`: position repaints, transform
- * composites, and this runs twenty times at once on the landing page.
+ * `feTurbulence` takes a `seed`, so these are five uncorrelated noise fields.
+ * Swapping between them is what a set with no signal actually does.
+ *
+ * Costlier than a transform — an image swap paints where a transform composites
+ * — so it runs at 0.3s over five frames rather than as fast as possible. The
+ * five images are identical URLs across all twenty sets, so they are decoded
+ * once and shared.
  */
 @keyframes staticGrain {
   0% {
-    transform: translate3d(0, 0, 0);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='1' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E");
   }
   20% {
-    transform: translate3d(-37px, -61px, 0);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='1' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E");
   }
   40% {
-    transform: translate3d(-91px, -23px, 0);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='1' seed='13' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E");
   }
   60% {
-    transform: translate3d(-13px, -97px, 0);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='1' seed='21' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E");
   }
   80% {
-    transform: translate3d(-71px, -43px, 0);
-  }
-  100% {
-    transform: translate3d(-53px, -79px, 0);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='1' seed='34' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncG type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncB type='discrete' tableValues='0 0.25 0.6 1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E");
   }
 }
 

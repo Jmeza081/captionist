@@ -469,3 +469,49 @@ test.describe('the phase-3 atoms', () => {
     expect(await ratioOf('A frame with no size')).toBeCloseTo(1, 1)
   })
 })
+
+test.describe('television static', () => {
+  test('actually regenerates, rather than sliding one field about', async ({ page }) => {
+    await page.goto('/components#tv-static')
+
+    const sets = page.locator('#tv-static [data-testid="tv-static"]')
+    await expect(sets.first()).toBeVisible()
+
+    /**
+     * The bug this guards is specific and was invisible to every other check.
+     *
+     * The first version translated a *repeating* noise tile. Its transform
+     * really did change every frame — a computed-style assertion passed happily
+     * — and it still looked like it was not moving, because sliding a periodic
+     * pattern keeps consecutive frames correlated. So this asserts the painted
+     * pixels, which is the only thing that could tell the difference.
+     */
+    const frames = async (index: number) => {
+      const seen = new Set<string>()
+      for (let i = 0; i < 4; i += 1) {
+        seen.add((await sets.nth(index).screenshot({ animations: 'allow' })).toString('base64'))
+        await page.waitForTimeout(80)
+      }
+      return seen.size
+    }
+
+    expect(await frames(0)).toBeGreaterThan(1)
+    // And the paused one is genuinely one picture, not a slower one.
+    expect(await frames(1)).toBe(1)
+  })
+
+  test('gives every set its own picture', async ({ page }) => {
+    await page.goto('/components#tv-static')
+
+    // Twenty of these sit side by side on the landing wall. In lockstep they
+    // read as one sheet of noise behind a grille rather than as a wall of
+    // televisions, so each takes a seed that offsets its field and its phase.
+    const wall = page.locator('#tv-static [class*="staticWall"] [data-testid="tv-static"]')
+    await expect(wall).toHaveCount(6)
+
+    const seeds = await wall.evaluateAll((els) =>
+      els.map((el) => (el as HTMLElement).style.getPropertyValue('--set')),
+    )
+    expect(new Set(seeds).size).toBe(6)
+  })
+})

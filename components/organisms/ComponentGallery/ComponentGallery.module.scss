@@ -139,3 +139,30 @@
     min-height: 0;
   }
 }
+
+/**
+ * A frame to show `TvStatic` in.
+ *
+ * The atom fills whatever it is inside, so the gallery has to give it a box —
+ * positioned, because the picture inside is absolute and would otherwise
+ * escape to the nearest positioned ancestor and cover the page. Which is a
+ * mistake worth making impossible to repeat here, since it is exactly the one
+ * the landing wall shipped with.
+ */
+.staticStage {
+  position: relative;
+  aspect-ratio: t.$gif-tile-ratio;
+  width: 100%;
+  max-width: t.$gif-board-min;
+  overflow: hidden;
+  border: 1px solid t.$line-hairline;
+  border-radius: t.$radius-media;
+}
+
+// Six sets together, so the seeding is visible rather than described.
+.staticWall {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: t.$space-12;
+  width: 100%;
+}

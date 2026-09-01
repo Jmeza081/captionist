@@ -25,6 +25,7 @@ import { TallyPill } from '@/components/atoms/TallyPill'
 import { TextField } from '@/components/atoms/TextField'
 import { TimerPill, formatClock } from '@/components/atoms/TimerPill'
 import { Toggle } from '@/components/atoms/Toggle'
+import { TvStatic } from '@/components/atoms/TvStatic'
 import { WaitingDots } from '@/components/atoms/WaitingDots'
 import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatMessage } from '@/components/molecules/ChatMessage'
@@ -661,6 +662,32 @@ export function ComponentGallery() {
             />
           </Case>
         </Grid>
+      </Section>
+
+      <Section
+        id="tv-static"
+        title="TV static"
+        spec="the placeholder for media still being fetched"
+      >
+        <Case label="One set — a channel that has not tuned in">
+          <div className={styles.staticStage}>
+            <TvStatic />
+          </div>
+        </Case>
+        <Case label="Held still — the wall's pause control, and reduced motion">
+          <div className={styles.staticStage}>
+            <TvStatic paused />
+          </div>
+        </Case>
+        <Case label="Seeded — each set is its own television, not one field behind a grille">
+          <div className={styles.staticWall}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className={styles.staticStage}>
+                <TvStatic seed={i} />
+              </div>
+            ))}
+          </div>
+        </Case>
       </Section>
 
       <Section
