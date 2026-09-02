@@ -610,7 +610,7 @@ afterwards, in the browser.
 
 ## Routes
 
-Ten routes of ours, as `next build` reports them — `/_not-found` used to be
+Nine routes of ours, as `next build` reports them — `/_not-found` used to be
 Next's default black page and is now `app/not-found.tsx`:
 
 ```
@@ -619,14 +619,21 @@ Route (app)       Revalidate  Expire
 ○ /_not-found
 ƒ /api/ably/seat
 ƒ /api/ably/token
-○ /components
 ○ /host
 ○ /join
 ƒ /join/[code]
 ƒ /room/[code]
 ```
 
-`/`, `/_not-found`, `/components`, `/host` and `/join` are prerendered at build
+**`/components` is not in that list, and that is the point.** The gallery is a
+dev tool, so its page file is `app/components/page.dev.tsx` and `next.config.mjs`
+only adds `dev.tsx` to `pageExtensions` under `PHASE_DEVELOPMENT_SERVER`. Under
+`next dev` it is a route; under `next build` it is an unreferenced module, so
+neither the route nor anything it imports — seventy DiceBear faces, the whole
+reaction catalogue, every molecule at once — reaches the production bundle. A
+`notFound()` guard inside the page would have shipped all of it to serve a 404.
+
+`/`, `/_not-found`, `/host` and `/join` are prerendered at build
 time, and **none of them awaits anything** — there is no revalidate column
 because no page fetches. `HeroWall` used to be handed a `wallTiles()` result the
 page awaited; that function is gone from every route and the wall is a
@@ -674,7 +681,7 @@ upgrade happens in the browser.
 graph TD
   L["app/layout.tsx<br/><i>root layout · Inter · globals.css + tokens.scss</i>"]
   P["app/page.tsx<br/><i>/ — landing · static ○ · awaits nothing</i>"]
-  C["app/components/page.tsx<br/><i>/components — the gallery · static ○</i>"]
+  C["app/components/page.dev.tsx<br/><i>/components — the gallery<br/>dev server only · not in the build</i>"]
   H["app/host/page.tsx<br/><i>/host — set the rules · static ○</i>"]
   J["app/join/page.tsx<br/><i>/join — type a code · static ○</i>"]
   JC["app/join/[code]/page.tsx<br/><i>/join/[code] — the QR target · dynamic ƒ</i>"]
@@ -803,7 +810,23 @@ and the room segment itself.
 
 `/components` renders the reusable library in its states. It's the design
 review surface and what `e2e/components.spec.ts` drives — the components are
-verified against a real browser rather than a snapshot. `JoinPanel` lives here
+verified against a real browser rather than a snapshot. **It is sorted into five
+tabs, one panel mounted at a time**, and the tabs are the tiers
+`components/README.md` defines — atoms, molecules, organisms — plus assets and
+tokens. Nineteen sections down one scroll had become a document rather than a
+catalogue, and mounting all of it meant a chat rail, a host toolbox and twenty
+televisions animating behind whatever you were actually looking at.
+`sections.ts` is the single table the tab bar, the jump rail and the deep link
+all read, so `/components#media` knows to open Molecules before that panel
+exists — `e2e/components.spec.ts` asserts the rail and the panel list the same
+sections, which is what stops a case being filed under the wrong tier. Assets
+and Tokens are new surfaces rather than moved ones: the first reads
+`AVATAR_SEEDS`, `HAT_IDS`, `REACTIONS` and `SAMPLE_GIFS` straight from the
+modules the room reads, so a hat added to the picker appears there without
+anybody remembering; the second draws the spacing scale and the radii from the
+published CSS custom properties, which is why colour is *not* there — sixty-four
+Sass tokens are never published, and a swatch grid would be a second copy of
+every hex value. `JoinPanel` lives here
 now rather than on `/`, as does `QuickJoin` — and note that the gallery is the
 *only* thing that renders `JoinPanel`: `/join` was built from `CodeEntry`,
 `AvatarPicker` and `TextField`, because the design's join screen is a form with

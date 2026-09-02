@@ -564,7 +564,7 @@ primitives.
 
 | Component | Tier | Use when |
 | --- | --- | --- |
-| `ComponentGallery` | organism | The review surface at `/components` — every component in its states |
+| `ComponentGallery` | organism | The review surface at `/components` — every component in its states, **under `next dev` only**. Five tabs, one panel mounted at a time: the three tiers `components/README.md` defines, then Assets (faces, hats, reactions, the offline shelf, the mark — each read from the module the room reads, never a copy) and Tokens (the spacing scale and the radii, drawn from the published custom properties). `sections.ts` is the one table the tab bar, the jump rail and the deep link share, so `/components#media` opens Molecules and scrolls to it |
 | `RoomShell` | organism | The chrome around every in-room screen — header, clock, rail, host toolbox, snackbar |
 | `RoomBootScreen` | organism | The screen a room opens behind, host or guest. One `variant` branching values — copy, badge, and where Cancel goes — never a forked sibling. Replaced a bare "Joining the room…" paragraph that served both roles identically and offered no way out. Every checklist row is a milestone that actually resolves; the two rows the mockups drew over work the app does not do were relabelled onto the real sequence rather than the work being faked to match |
 | `ChatPanel` | organism | The message list and composer inside the rail. An organism because it composes four molecules and reads the room; `ChatRail` is only the container and has no idea what a message is. Its reaction surface carries *what it is aimed at* — a message you picked, or the room when there is none |

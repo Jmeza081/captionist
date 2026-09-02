@@ -15,6 +15,13 @@ here.** A component built for exactly one page — `HeroWall`, `LandingNav`,
 `LandingActions` — is covered by that page's own spec instead. Anything another
 screen could plausibly want belongs in the gallery, and in the inventory.
 
+It runs **under `next dev` only** (`page.dev.tsx` plus `pageExtensions`), and it
+is tabbed by the tiers in the table above, so where a case appears is the same
+claim this file makes about where the file lives. A new component goes in
+`ComponentGallery/sections.ts` under its tier and then into the matching panel —
+`AtomsPanel`, `MoleculesPanel`, `OrganismsPanel` — and `e2e/components.spec.ts`
+checks the rail and the panel agree.
+
 **`Icon` is the one exception**, and it's deliberate. It's a leaf that renders a
 single `<svg>` — no state, no props beyond name/size/colour, and nothing it
 could ever import. Forbidding it would push genuinely atomic components like

@@ -3,29 +3,100 @@ import { expect, test, type Page } from '@playwright/test'
 // The gallery renders every built component in its states. These specs cover
 // the behaviour that a static screenshot can't: the interactive components,
 // and the design rules that are easy to regress silently.
+//
+// **It is sorted into tabs by tier, and only the open one is mounted**, so a
+// case that is not on Atoms is reached by its deep link — `/components#chat`
+// opens Molecules and scrolls to it. That is the same hash a reviewer pastes,
+// which is why the tests use it rather than clicking through the bar.
+
+/** The tiers, and one section that must be inside each. */
+const TABS = [
+  { tab: 'Atoms', section: 'Button' },
+  { tab: 'Molecules', section: 'Chat' },
+  { tab: 'Organisms', section: 'Room boot' },
+  { tab: 'Assets', section: 'Hats' },
+  { tab: 'Tokens', section: 'Spacing' },
+] as const
 
 test.describe('component gallery', () => {
-  test('renders every section', async ({ page }) => {
+  test('sorts the library into one tab per tier', async ({ page }) => {
     await page.goto('/components')
 
     await expect(
       page.getByRole('heading', { name: 'Built components' }),
     ).toBeVisible()
 
-    for (const section of [
-      'Button',
-      'Segmented control',
-      'Text field',
-      'Toggle & stepper',
-      'Status & labels',
-      'Avatar & player rows',
-      'Media card',
-      'Prompt banner',
-      'Chat',
-      'Overlays',
-    ]) {
+    const tabs = page.getByRole('tablist', { name: 'Component tiers' })
+
+    for (const { tab, section } of TABS) {
+      await tabs.getByRole('tab', { name: new RegExp(`^${tab}`) }).click()
+      await expect(
+        tabs.getByRole('tab', { name: new RegExp(`^${tab}`) }),
+      ).toHaveAttribute('aria-selected', 'true')
       await expect(page.getByRole('heading', { name: section })).toBeVisible()
     }
+
+    // Only the open tier is mounted — the point of the tabs. A hundred and
+    // seventy tiles, a chat rail and twenty televisions all animating behind
+    // whatever you are looking at is what this replaced.
+    await expect(page.getByRole('heading', { name: 'Button' })).toHaveCount(0)
+  })
+
+  test('the jump rail names exactly what the open tab renders', async ({ page }) => {
+    test.skip(page.viewportSize()!.width < 1280, 'the rail only exists from `lg`')
+    await page.goto('/components')
+
+    // The rail and the panel are built from one table (`sections.ts`), and this
+    // is the assertion that keeps them one: a section declared under the wrong
+    // tier would be listed here and rendered somewhere else.
+    for (const { tab } of TABS) {
+      await page
+        .getByRole('tablist', { name: 'Component tiers' })
+        .getByRole('tab', { name: new RegExp(`^${tab}`) })
+        .click()
+
+      const railed = await page
+        .getByRole('navigation')
+        .getByRole('link')
+        .evaluateAll((els) => els.map((el) => el.getAttribute('href')?.slice(1)))
+      const rendered = await page
+        .getByRole('tabpanel')
+        .locator('section[id]')
+        .evaluateAll((els) => els.map((el) => el.id))
+
+      expect(railed).toEqual(rendered)
+      expect(rendered.length).toBeGreaterThan(0)
+    }
+  })
+
+  test('a deep link opens the tab that owns the section', async ({ page }) => {
+    // `#media` is a molecule, and the gallery opens on atoms — so this only
+    // works if the hash picks the tab before it scrolls.
+    await page.goto('/components#media')
+
+    await expect(
+      page
+        .getByRole('tablist', { name: 'Component tiers' })
+        .getByRole('tab', { name: /^Molecules/ }),
+    ).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('heading', { name: 'Media card' })).toBeVisible()
+  })
+
+  test('the tab bar takes arrow keys, as a tab list should', async ({ page }) => {
+    await page.goto('/components')
+
+    const tabs = page.getByRole('tablist', { name: 'Component tiers' })
+    await tabs.getByRole('tab', { name: /^Atoms/ }).focus()
+    await page.keyboard.press('ArrowRight')
+
+    const molecules = tabs.getByRole('tab', { name: /^Molecules/ })
+    await expect(molecules).toBeFocused()
+    await expect(molecules).toHaveAttribute('aria-selected', 'true')
+
+    // And it wraps rather than dead-ending, so the last tab is one press from
+    // the first.
+    await page.keyboard.press('ArrowLeft')
+    await expect(tabs.getByRole('tab', { name: /^Atoms/ })).toBeFocused()
   })
 
   test('blocked buttons stay live and focusable, disabled ones do not', async ({
@@ -119,7 +190,7 @@ test.describe('component gallery', () => {
   })
 
   test('the reaction toolbar searches by keyword', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#chat')
 
     const toolbar = page.getByRole('dialog', { name: 'React to this caption' })
     // The tiles, not every button in the panel — the pack tabs are buttons too.
@@ -140,7 +211,7 @@ test.describe('component gallery', () => {
   })
 
   test('the reaction packs filter the grid, and search beats a pack', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#chat')
 
     const toolbar = page.getByRole('dialog', { name: 'React to this caption' })
     const tiles = toolbar.getByRole('group', { name: 'Reactions' }).getByRole('button')
@@ -170,7 +241,7 @@ test.describe('component gallery', () => {
   })
 
   test('the modal opens, steps, and closes on Escape', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#overlays')
 
     await page.getByRole('button', { name: 'Open the house rules' }).click()
 
@@ -190,7 +261,7 @@ test.describe('component gallery', () => {
   test('the chat rail collapses to a strip that keeps the unread count', async ({
     page,
   }) => {
-    await page.goto('/components')
+    await page.goto('/components#overlays')
 
     await expect(page.getByRole('complementary', { name: 'Room chat' })).toBeVisible()
 
@@ -204,7 +275,7 @@ test.describe('component gallery', () => {
   })
 
   test('the host toolbox opens and drives its own clock', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#overlays')
 
     await page.getByRole('button', { name: 'Open host toolbox' }).click()
 
@@ -232,26 +303,39 @@ test.describe('component gallery', () => {
     }
   })
 
-  test('captures the gallery', async ({ page }, testInfo) => {
+  test('captures every tab', async ({ page }, testInfo) => {
     await page.goto('/components')
     await expect(
       page.getByRole('heading', { name: 'Built components' }),
     ).toBeVisible()
 
-    const shot = await page.screenshot({ fullPage: true })
-    await testInfo.attach(`components-${testInfo.project.name}`, {
-      body: shot,
-      contentType: 'image/png',
-    })
+    for (const { tab } of TABS) {
+      await page
+        .getByRole('tablist', { name: 'Component tiers' })
+        .getByRole('tab', { name: new RegExp(`^${tab}`) })
+        .click()
+      const shot = await page.screenshot({ fullPage: true })
+      await testInfo.attach(`${tab.toLowerCase()}-${testInfo.project.name}`, {
+        body: shot,
+        contentType: 'image/png',
+      })
+    }
   })
 
-  test('the gallery does not scroll horizontally', async ({ page }) => {
+  test('no tab scrolls the page sideways', async ({ page }) => {
     await page.goto('/components')
 
-    const overflows = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-    )
-    expect(overflows).toBe(false)
+    for (const { tab } of TABS) {
+      await page
+        .getByRole('tablist', { name: 'Component tiers' })
+        .getByRole('tab', { name: new RegExp(`^${tab}`) })
+        .click()
+
+      const overflows = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      )
+      expect(overflows, `${tab} scrolls sideways`).toBe(false)
+    }
   })
 })
 
@@ -259,7 +343,7 @@ test.describe('component gallery', () => {
 
 test.describe('compositions', () => {
   test('the composer only sends with text or an attachment', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#composer')
 
     const composer = page
       .getByLabel('Message the room')
@@ -278,7 +362,7 @@ test.describe('compositions', () => {
   })
 
   test('attaching a GIF alone is enough to send', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#composer')
 
     const send = page
       .getByLabel('Message the room')
@@ -307,7 +391,7 @@ test.describe('compositions', () => {
   })
 
   test('the GIF panel searches by keyword', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#composer')
 
     const panel = page.getByRole('dialog', { name: 'Attach a GIF' }).last()
     await panel.getByLabel('Search GIFs').fill('friday')
@@ -321,7 +405,7 @@ test.describe('compositions', () => {
   test('the reveal bar caps at five reactions and toggles them', async ({
     page,
   }) => {
-    await page.goto('/components')
+    await page.goto('/components#reveal')
 
     const bar = page.getByText('React', { exact: true }).locator('xpath=..')
     // Six are supplied; the design caps the row at five.
@@ -336,7 +420,7 @@ test.describe('compositions', () => {
   test('reaction floaters are decorative and never block a click', async ({
     page,
   }) => {
-    await page.goto('/components')
+    await page.goto('/components#reveal')
 
     const bar = page.getByText('React', { exact: true }).locator('xpath=..')
     await bar.getByRole('button', { name: 'React with Skull' }).click()
@@ -353,7 +437,7 @@ test.describe('compositions', () => {
   })
 
   test('code entry normalises input and reports a bad code', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#entry')
 
     const input = page.getByRole('textbox', { name: 'Room code' }).first()
     await input.fill('')
@@ -373,7 +457,7 @@ test.describe('compositions', () => {
   test('the podium reads 1-2-3 in the DOM but centres the winner', async ({
     page,
   }) => {
-    await page.goto('/components')
+    await page.goto('/components#podium')
 
     const places = page.getByRole('listitem').filter({ hasText: 'pts' })
     await expect(places).toHaveCount(3)
@@ -394,7 +478,7 @@ test.describe('compositions', () => {
   test('a room code is announced to screen readers character by character', async ({
     page,
   }) => {
-    await page.goto('/components')
+    await page.goto('/components#entry')
 
     // Read aloud far more often than it is typed, so it is spelled out rather
     // than left for a screen reader to pronounce as a word.
@@ -405,7 +489,7 @@ test.describe('compositions', () => {
   test('the app header states the mode first in its settings line', async ({
     page,
   }) => {
-    await page.goto('/components')
+    await page.goto('/components#chrome')
 
     // The mode leads: it's how a late joiner learns which way round the game
     // runs. See DESIGNSYSTEM.md §4.9.

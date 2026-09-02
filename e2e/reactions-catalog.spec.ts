@@ -16,8 +16,11 @@ const CATALOG_TILE = 'img[src^="/media/emoji/"]'
 const PAGE = 60
 
 test.describe('the reaction catalog', () => {
+  // The picker is a molecule, and the gallery mounts one tier at a time — so
+  // the toolbar is reached by its section's deep link rather than by loading
+  // the whole library.
   test('fills a pack a page at a time', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#chat')
 
     const toolbar = page.getByRole('dialog', { name: 'React to this caption' })
     const tiles = toolbar.getByRole('group', { name: 'Reactions' }).getByRole('button')
@@ -37,7 +40,7 @@ test.describe('the reaction catalog', () => {
   })
 
   test('renders its stills with the CDN unreachable', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#chat')
 
     const toolbar = page.getByRole('dialog', { name: 'React to this caption' })
     await toolbar.getByRole('button', { name: 'Nature' }).click()
@@ -57,7 +60,7 @@ test.describe('the reaction catalog', () => {
   })
 
   test('is reachable by search, and names itself rather than its path', async ({ page }) => {
-    await page.goto('/components')
+    await page.goto('/components#chat')
 
     const toolbar = page.getByRole('dialog', { name: 'React to this caption' })
     await toolbar.getByLabel('Search reactions').fill('penguin')

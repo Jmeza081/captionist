@@ -1,16 +1,169 @@
 @use 'theme' as t;
 
+/**
+ * How much of the top the sticky tab bar owns.
+ *
+ * Composed from the scale rather than measured in px: the bar is its own
+ * padding, a 44px control, and the blurb under it. Both the jump rail and every
+ * section's `scroll-margin-top` clear it — without the second, a deep link
+ * lands with the heading it asked for hidden behind the bar.
+ */
+$dock: t.$space-52 + t.$space-44 + t.$space-14;
+
 .page {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1320px;
   margin: 0 auto;
+}
+
+/**
+ * The tab bar, pinned while a panel scrolls under it.
+ *
+ * Unlike the room's screens this page is browsed rather than played, and a
+ * catalogue you have to scroll back up to re-sort is one nobody re-sorts. It
+ * carries the canvas colour rather than a fade, because the panels below it are
+ * full of media that would read through one.
+ */
+.tabBar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-10;
+  padding-block: t.$space-12;
+  margin-bottom: t.$space-20;
+  background-color: t.$surface-canvas;
+  border-bottom: 1px solid t.$line-hairline-strong;
+}
+
+.tabs {
+  display: flex;
+  gap: t.$space-5;
+  padding: t.$space-5;
+  border-radius: t.$radius-field;
+  background-color: t.$surface-track;
+  // Five tiers do not fit a phone. They scroll sideways rather than wrapping
+  // into a second row that pushes the panel down the page.
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  gap: t.$space-8;
+  flex: none;
+  min-height: t.$tap-target-min;
+  padding: t.$space-8 t.$space-14;
+  border: 0;
+  border-radius: t.$radius-field;
+  background-color: transparent;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  font-weight: 600;
+  color: t.$text-label;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}
+
+.tabActive {
+  background-color: t.$surface-field;
+  color: t.$text-primary;
+}
+
+// The section count, so a tab says how much is behind it before you open it.
+.tabCount {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: t.$text-timestamp;
+}
+
+.tabBlurb {
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  color: t.$text-meta;
+}
+
+.body {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$space-44;
+}
+
+/**
+ * The jump rail — the open tab's sections, and where you are in them.
+ *
+ * Hidden below `lg` rather than stacked: on a phone it would be a list of
+ * links as long as the panel it indexes, in front of the panel.
+ */
+.rail {
+  display: none;
+
+  @include t.mq('lg') {
+    display: block;
+    position: sticky;
+    top: $dock;
+    flex: none;
+    width: 180px;
+  }
+}
+
+.railList {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.railLink {
+  @include t.focusRing;
+
+  display: block;
+  padding: t.$space-6 t.$space-10;
+  border-radius: t.$radius-field;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: t.$text-meta;
+  text-decoration: none;
+
+  &:hover {
+    background-color: t.$fill-subtle;
+    color: t.$text-primary;
+  }
+}
+
+.panel {
+  flex: 1;
+  // Without this a wide grid inside the panel pushes the rail off the page
+  // instead of scrolling itself.
+  min-width: 0;
+
+  // The panel takes focus when a tab is chosen, and a ring around the whole
+  // page is noise — the tab that was clicked already shows where you are.
+  &:focus-visible {
+    outline: none;
+  }
 }
 
 .masthead {
   display: flex;
   flex-direction: column;
   gap: t.$space-12;
-  margin-bottom: t.$space-52;
+  // The tab bar carries its own padding, so this is the gap to the bar rather
+  // than to the first section.
+  margin-bottom: t.$space-26;
 }
 
 .title {
@@ -26,6 +179,11 @@
 
 .section {
   margin-top: t.$space-52;
+  scroll-margin-top: $dock;
+
+  &:first-child {
+    margin-top: t.$space-26;
+  }
 }
 
 .sectionHead {
@@ -219,4 +377,214 @@
     aspect-ratio: t.$gif-tile-ratio;
     object-fit: cover;
   }
+}
+
+
+/* ---------------- Assets & tokens ---------------- */
+
+// A wrapping shelf of small square things — faces, hats, radii. Sized from the
+// tile rather than a column count, so seventy of one and ten of another lay out
+// on the same rule.
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: t.$space-12;
+  width: 100%;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-6;
+  margin: 0;
+  padding: t.$space-10 t.$space-5;
+  border-radius: t.$radius-field;
+  background-color: t.$fill-quote;
+}
+
+.tileLabel {
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 500;
+  color: t.$text-caption;
+  text-align: center;
+  // A seed is one word and an alt line is a sentence; both stay one line rather
+  // than making a shelf of tiles ragged.
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hatArt {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.shelfGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: t.$space-12;
+  width: 100%;
+}
+
+.shelfTile {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-6;
+  margin: 0;
+}
+
+.shelfArt {
+  display: block;
+  width: 100%;
+  aspect-ratio: t.$gif-tile-ratio;
+  object-fit: cover;
+  border: 1px solid t.$line-hairline;
+  border-radius: t.$radius-media;
+}
+
+.packRow {
+  display: flex;
+  align-items: baseline;
+  gap: t.$space-12;
+  font-family: t.$font-sans;
+  font-size: 13px;
+}
+
+.packName {
+  color: t.$text-body;
+}
+
+.packCount {
+  margin-left: auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: t.$text-primary;
+}
+
+/**
+ * The rows scroll rather than the page.
+ *
+ * A bar drawn at `--rail-width` is 360px, which is wider than the content
+ * column on a phone — and a token panel that shrank its own swatches would be
+ * showing a number the app does not use. So the table scrolls sideways inside
+ * itself and every bar stays true.
+ */
+.scaleTable {
+  overflow-x: auto;
+}
+
+// One step of the scale, drawn at the width the token actually is.
+.scaleRow {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  width: max-content;
+  min-width: 100%;
+}
+
+.scaleName {
+  flex: none;
+  width: 12ch;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  color: t.$text-caption;
+}
+
+.scaleBar {
+  flex: none;
+  height: 14px;
+  border-radius: t.$radius-pip;
+  background-color: t.$accent;
+}
+
+.scaleValue,
+.scaleNote {
+  font-family: t.$font-sans;
+  font-size: 12px;
+  color: t.$text-meta;
+  font-variant-numeric: tabular-nums;
+}
+
+.radiusSwatch {
+  display: block;
+  width: 56px;
+  height: 56px;
+  background-color: t.$accent-fill;
+  box-shadow: inset 0 0 0 1px t.$accent-border;
+}
+
+/* ---------------- Prose inside a case ---------------- */
+
+.note {
+  margin: 0;
+  max-width: 72ch;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  line-height: 1.55;
+  color: t.$text-body;
+}
+
+.strong {
+  color: t.$text-primary;
+  font-weight: 700;
+}
+
+.code {
+  font-family: t.$font-sans;
+  font-size: 0.92em;
+  font-weight: 600;
+  color: t.$accent-text;
+  background-color: t.$accent-fill-weak;
+  border-radius: t.$radius-pip;
+  padding: 0 t.$space-5;
+}
+
+.screenList {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.screenRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: t.$space-5 t.$space-12;
+  padding: t.$space-8 0;
+  border-bottom: 1px solid t.$line-hairline;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.screenLink {
+  @include t.focusRing;
+
+  flex: none;
+  width: 16ch;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  color: t.$accent-text;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.screenNote {
+  flex: 1;
+  min-width: 0;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  color: t.$text-body;
 }

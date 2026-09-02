@@ -85,8 +85,11 @@ recalled APIs.
 
 ## Architecture
 
-Six routes: `/`, `/components`, `/join` and `/host` are static, `/join/[code]`
-and `/room/[code]` are dynamic. **The GIF provider is called from the browser**
+Five shipped routes: `/`, `/join` and `/host` are static, `/join/[code]` and
+`/room/[code]` are dynamic. `/components`, the gallery, is a sixth that exists
+**only under `next dev`** — its page is `page.dev.tsx` and `pageExtensions`
+picks that up in the development phase alone, so neither the route nor anything
+it imports is in a production build. **The GIF provider is called from the browser**
 — Klipy by default, Giphy as a second adapter
 ([ADR 0022](docs/adr/0022-the-gif-provider-is-a-seam.md)); their terms forbid
 proxying it, so the route that used to is gone and the key is public

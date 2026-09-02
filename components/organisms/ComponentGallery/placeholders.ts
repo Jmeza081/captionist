@@ -1,3 +1,5 @@
+import type { GifResult } from '@/lib/gifs/types'
+
 /**
  * Stand-in artwork for the gallery.
  *
@@ -85,3 +87,29 @@ export const PLAYER_COLORS = {
   amber: '#FFC24B',
   green: '#83D06C',
 } as const
+
+/**
+ * The room, cast once.
+ *
+ * Seeded rather than invented per panel: the faces are the ones the app draws,
+ * and every panel showing "a player" should be showing the same people.
+ */
+export const PLAYERS = {
+  jesse: { name: 'Jesse', color: PLAYER_COLORS.red, avatarSeed: 'ember' },
+  jesska: { name: 'Jesska', color: PLAYER_COLORS.turquoise, avatarSeed: 'sunfish' },
+  melania: { name: 'Melania', color: PLAYER_COLORS.amber, avatarSeed: 'orbit' },
+  lukasz: { name: 'Lukasz', color: PLAYER_COLORS.olive, avatarSeed: 'lagoon' },
+  jack: { name: 'Jack', color: PLAYER_COLORS.purple, avatarSeed: 'moss' },
+  vic: { name: 'Vic', color: PLAYER_COLORS.yellow, avatarSeed: 'amber' },
+  roberto: { name: 'Roberto', color: PLAYER_COLORS.green, avatarSeed: 'fern' },
+} as const
+
+/** A fixed board for the composer's attach surface, which filters locally. */
+export const GIFS: GifResult[] = [
+  { id: 'g1', src: MEDIA.serverRack, alt: 'a server rack on fire', keywords: ['fire', 'prod', 'outage'] },
+  { id: 'g2', src: MEDIA.standup, alt: 'a skull', keywords: ['dead', 'standup', 'rip'] },
+  { id: 'g3', src: MEDIA.deploy, alt: 'a rocket', keywords: ['deploy', 'ship', 'friday'] },
+  { id: 'g4', src: MEDIA.oncall, alt: 'a flat expression', keywords: ['oncall', 'pager', 'tired'] },
+  { id: 'g5', src: MEDIA.retro, alt: 'a melting face', keywords: ['retro', 'fine', 'melt'] },
+  { id: 'g6', src: MEDIA.outage, alt: 'an upside-down smile', keywords: ['outage', 'ok', 'sure'] },
+]
