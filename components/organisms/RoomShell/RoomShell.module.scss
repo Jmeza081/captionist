@@ -132,7 +132,13 @@
 
 // Content and rail are siblings, never stacked: chat docks beside the room and
 // never over it (DESIGNSYSTEM.md §4.8).
+//
+// `position: relative` for the one frame in which that is not true — a docked
+// rail on its way out is taken out of flow and slides over the content the
+// column has just given back, because a leaving copy that kept its place in
+// the row would be a second column for 200ms. See `ChatRail`'s `.leaving`.
 .body {
+  position: relative;
   display: flex;
   align-items: stretch;
   flex: 1;

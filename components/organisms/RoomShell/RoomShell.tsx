@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'r
 import { Icon } from '@/components/atoms/Icon'
 import { ProgressRail } from '@/components/atoms/ProgressRail'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
-import { Snackbar } from '@/components/atoms/Snackbar'
+import { Snackbar, type SnackbarTone } from '@/components/atoms/Snackbar'
 import { TimerPill, URGENT_AT } from '@/components/atoms/TimerPill'
 import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatRail } from '@/components/molecules/ChatRail'
@@ -19,6 +19,7 @@ import { ChatPanel } from '@/components/organisms/ChatPanel'
 import { RoomBootScreen } from '@/components/organisms/RoomBootScreen'
 import {
   isUrgent,
+  hostControls,
   phaseLabel,
   playerById,
   presentCount,
@@ -68,6 +69,12 @@ import styles from './RoomShell.module.scss'
  *
  * One `useRoom()` call and one interval serve the whole page.
  */
+
+/** One queued snackbar: what it says, and whether it is a yes or a no. */
+interface Toast {
+  message: string
+  tone: SnackbarTone
+}
 
 /** DESIGNSYSTEM.md §3 — one snackbar at a time, gone in 2.8s. */
 const SNACKBAR_MS = 2_800
@@ -147,14 +154,30 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const unread = useUnread()
   const { markRead, react } = useChat()
   const burst = useLastReaction()
-  const [queue, setQueue] = useState<readonly string[]>([])
+  /**
+   * The snackbar queue, with what kind of thing each entry is.
+   *
+   * It was a list of strings, and every one of them arrived wearing the green
+   * tick — including the room's refusals, so "Need 2 more players." was
+   * presented in exactly the mark the app uses for "that worked". A screen's
+   * own `notify` is still a confirmation and still takes no argument for it;
+   * only the refusal lane says otherwise.
+   */
+  const [queue, setQueue] = useState<readonly Toast[]>([])
 
-  const notify = useCallback((message: string) => {
-    setQueue((q) => [...q, message])
+  const push = useCallback((message: string, tone: SnackbarTone) => {
+    setQueue((q) => [...q, { message, tone }])
   }, [])
 
-  // The room's own refusals are already finished sentences — see `authorize`.
-  useRoomRefusal(notify)
+  const notify = useCallback(
+    (message: string) => push(message, 'confirm'),
+    [push],
+  )
+
+  // The room's own refusals are already finished sentences — see `authorize` —
+  // and they are the room saying no, not the room agreeing.
+  const refuse = useCallback((reason: string) => push(reason, 'warning'), [push])
+  useRoomRefusal(refuse)
 
   useEffect(() => {
     if (queue.length === 0) return
@@ -462,6 +485,10 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
                   onForceTie: () => send({ type: 'host/forcedTie' }),
                   onJumpToFinal: () => send({ type: 'host/jumpedToPodium' }),
                   onRestart: () => send({ type: 'host/restarted' }),
+                  // The room's own fact about which of these apply — computed
+                  // beside the reducer's rules rather than re-derived from the
+                  // phase here, so the toolbox and the engine cannot disagree.
+                  available: hostControls(state),
                 }
               : undefined
           }
@@ -523,7 +550,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
 
       {queue[0] && (
         <div className={styles.snackbarDock}>
-          <Snackbar message={queue[0]} />
+          <Snackbar message={queue[0].message} tone={queue[0].tone} />
         </div>
       )}
     </div>

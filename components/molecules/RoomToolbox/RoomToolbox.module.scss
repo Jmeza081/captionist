@@ -187,6 +187,19 @@
   }
 }
 
+// Why several of the keys above are held back. One line for the group, in the
+// weight the eyebrows use, so it reads as a caption on the section rather than
+// as another control.
+.note {
+  margin: t.$space-2 0 0;
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: t.$text-meta;
+  text-wrap: pretty;
+}
+
 @keyframes toolboxIn {
   from {
     // 0.9 rather than 0: a panel that grows from nothing reads as a zoom, and

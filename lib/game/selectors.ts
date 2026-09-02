@@ -621,6 +621,70 @@ export function startLabel(state: GameState): string {
 }
 
 /* ------------------------------------------------------------------ */
+/* The host's toolbox                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Which of the host's controls apply right now.
+ *
+ * **The engine allows all of them in every phase**, and mostly no-ops: the
+ * reducer refuses `host/paused` unless a clock is running, `host/forcedTie`
+ * unless a round has two entries, and `host/adjustedClock` unless there is a
+ * clock to adjust. So the toolbox offered a lobby a *Pause* key that stopped a
+ * clock reading 0:00, a *Skip ahead* that advanced a room nobody had started,
+ * and a *Force a tie* with nothing to tie — three lit controls whose whole
+ * behaviour was to do nothing quietly.
+ *
+ * This is that fact stated once, in the same file the screens read, so the
+ * toolbox and the reducer cannot drift into disagreeing about it. It is not a
+ * new rule: every line here is a condition the reducer already applies.
+ *
+ * **`blocked`, never `disabled`** — the controls stay live and focusable, per
+ * `CLAUDE.md` rule 10. Per [ADR 0032](../../docs/adr/0032-a-blocked-label-counts-what-is-missing.md)
+ * the labels stay the verb rather than narrating an empty state, and the
+ * reason is carried once for the whole group by `note` instead of six times.
+ */
+export interface HostControls {
+  /** Pause, resume, and the round-timer stepper. */
+  clock: boolean
+  /** Skip the phase the room is in. */
+  skip: boolean
+  /** Force a sudden-death tiebreak out of the round in play. */
+  forceTie: boolean
+  /** End the game where it stands. */
+  jumpToFinal: boolean
+  /** Put the room back in the lobby with the scores cleared. */
+  restart: boolean
+  /** One line for the group, when something in it is held back. */
+  note?: string
+}
+
+export function hostControls(state: GameState): HostControls {
+  const started = state.phase !== 'lobby'
+  const over = state.phase === 'podium'
+  const live = started && !over
+
+  return {
+    // Not "is there a phase with a duration": `compose`, `reveal` and `score`
+    // have none, and the clock is genuinely idle there too.
+    clock: state.clock.status !== 'idle',
+    skip: live || state.phase === 'opener',
+    // The reducer's own test, to the entry: fewer than two and it returns the
+    // state untouched.
+    forceTie: live && (state.round?.entries.length ?? 0) >= 2,
+    jumpToFinal: live,
+    restart: started,
+    note: noteFor(state),
+  }
+}
+
+function noteFor(state: GameState): string | undefined {
+  if (state.phase === 'lobby') return 'Round controls wake up once the game starts.'
+  if (state.phase === 'podium') return 'The game is over. Restart to run it again.'
+  return undefined
+}
+
+/* ------------------------------------------------------------------ */
 /* Compose and waiting                                                 */
 /* ------------------------------------------------------------------ */
 

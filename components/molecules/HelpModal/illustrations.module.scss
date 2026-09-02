@@ -14,6 +14,34 @@
   background-color: t.$surface-header;
 }
 
+/**
+ * The box the set and the picture share.
+ *
+ * `TunedImage` sizes itself from the image it holds, and the image here is
+ * absolutely positioned — so it has nothing to size from. This is the frame
+ * that gives it one: `> *` reaches its wrapper, and `TvStatic` is `inset: 0`
+ * and fills this on its own either way.
+ */
+.artFrame {
+  position: absolute;
+  inset: 0;
+
+  > * {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// The set's veil, the same weight every other set in the app wears.
+// `TunedImage` carries its own; this is for the raw field, before a URL exists
+// to hand it.
+.veil {
+  position: absolute;
+  inset: 0;
+  background-color: t.$scrim-static;
+}
+
 .art {
   position: absolute;
   inset: 0;
@@ -135,45 +163,11 @@
   top: t.$space-20;
 }
 
+// Down where a meme's bottom line goes. It sat at 52 to clear the composer
+// strip under it; that strip is gone, and a bottom line floating a third of
+// the way up the frame reads as a caption that missed.
 .memeBottom {
-  bottom: t.$space-52;
-}
-
-// The composer under it, mid-sentence, with the clock the design shows.
-.field {
-  position: absolute;
-  left: t.$help-illo-inset;
-  right: t.$help-illo-inset;
-  bottom: t.$help-illo-inset;
-  display: flex;
-  align-items: center;
-  gap: t.$space-10;
-  padding: t.$space-8 t.$space-12;
-  border-radius: t.$radius-media-lg;
-  border: 1px solid t.$accent-border-quote;
-  background-color: t.$scrim-tally;
-}
-
-.fieldText {
-  flex: 1;
-  min-width: 0;
-  font-family: t.$font-sans;
-  font-size: 13px;
-  font-weight: 500;
-  color: t.$text-chat;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fieldClock {
-  @include t.tabularFigures;
-
-  flex: none;
-  font-family: t.$font-sans;
-  font-size: 11px;
-  font-weight: 700;
-  color: t.$text-caption;
+  bottom: t.$space-20;
 }
 
 // --- the vote, mid-ranking --------------------------------------------------

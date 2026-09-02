@@ -57,6 +57,13 @@ $status-waiting: $winner;
 
 $winner-fill-weak: rgba(246, 227, 56, 0.09);
 $winner-fill: rgba(246, 227, 56, 0.14);
+// The warning snackbar's edge — the room saying no, which is yellow rather
+// than red because red here is destructive and a refusal is not.
+$winner-border: rgba(246, 227, 56, 0.28);
+
+// The confirming snackbar's disc. Was a literal inside `Snackbar.module.scss`
+// and became a token the moment it had a sibling to be told apart from.
+$success-fill: rgba(131, 208, 108, 0.18);
 
 // --- Text on dark -----------------------------------------------------------
 //

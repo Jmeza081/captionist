@@ -692,7 +692,9 @@ session**, whichever way the sheet was closed: the rail stays mounted while it
 is shut — the collapsed strip is the same component — and "the close key
 remembers and the drag forgets" is a distinction nobody would predict. The
 docked rail sees none of it. And the walkthrough's rail illustrations draw **real
-GIFs**: `HELP_ART` / `HELP_SLUGS` in `lib/gifs/art.ts`, resolved through
+GIFs**, arriving on a television rather than into a hole — `TvStatic` while the
+lookup is out, `TunedImage` behind the picture once a URL exists, and the
+committed SVG only where the lookup settled on nothing: `HELP_ART` / `HELP_SLUGS` in `lib/gifs/art.ts`, resolved through
 `useResolvedArt` on the same terms as the wall, the waiting backdrop and the
 404, with the committed SVG still painting first and still what a keyless clone
 and the suite keep. They had been house SVGs with an emoji in the middle, on the

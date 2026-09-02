@@ -136,6 +136,121 @@ test.describe('the walkthrough’s pictures', () => {
   })
 })
 
+test.describe('the walkthrough’s caption step', () => {
+  test('does not repeat the bottom line in a composer under it', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: 'How Captionist works' }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'How Captionist works' })
+    await dialog.getByRole('button', { name: 'Next' }).click()
+    await expect(dialog.getByText('Everyone else captions it')).toBeVisible()
+
+    const rail = dialog.getByTestId('modal-rail')
+    // Both meme lines stay — they are what the step is demonstrating.
+    await expect(rail.getByText('Prod’s down again')).toBeVisible()
+    await expect(rail.getByText('And I’m on call')).toHaveCount(1)
+    // The composer strip under them is gone: it was a third copy of the bottom
+    // line, over a clock nothing in this step is counting.
+    await expect(rail.getByText('0:41')).toHaveCount(0)
+  })
+})
+
+test.describe('the host’s toolbox', () => {
+  test('holds back the controls a lobby has nothing to point at', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: /toolbox$/i }).first().click()
+
+    const box = page.getByRole('region', { name: 'Host toolbox' })
+    await expect(box).toBeVisible()
+
+    // The engine allows all of these in every phase and quietly no-ops most of
+    // them outside a running round, which is what left a lobby with a Pause key
+    // for a clock reading 0:00.
+    const held = ['Pause', 'Skip ahead', 'Force a tie', 'Jump to final', 'Restart game']
+    for (const name of held) {
+      const key = box.getByRole('button', { name, exact: true })
+      await expect(key).toHaveClass(/blocked/)
+      // Blocked is not disabled: it stays live and focusable (CLAUDE.md 10).
+      await expect(key).not.toBeDisabled()
+    }
+
+    // What still applies here does not get tinted with them.
+    for (const name of ['Switch to prompts', 'How this works']) {
+      await expect(box.getByRole('button', { name, exact: true })).not.toHaveClass(/blocked/)
+    }
+
+    // One line for the group rather than six labels narrating an empty state.
+    await expect(box.getByText('Round controls wake up once the game starts.')).toBeVisible()
+  })
+
+  test('lets them all through once a round is running', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=vote')
+    await page.getByRole('button', { name: /toolbox$/i }).first().click()
+
+    const box = page.getByRole('region', { name: 'Host toolbox' })
+    for (const name of ['Pause', 'Skip ahead', 'Force a tie', 'Jump to final', 'Restart game']) {
+      await expect(box.getByRole('button', { name, exact: true })).not.toHaveClass(/blocked/)
+    }
+    await expect(box.getByText('Round controls wake up')).toHaveCount(0)
+  })
+})
+
+test.describe('a refusal', () => {
+  test('wears a warning rather than the tick that means it worked', async ({ page }) => {
+    // A room the host actually cannot start, which the fixtures are not.
+    await page.goto('/host')
+    await page.getByRole('button', { name: 'Open the room' }).click()
+    await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
+
+    await page.getByRole('button', { name: /Start game/ }).click()
+
+    const bar = page.getByRole('status')
+    await expect(bar).toHaveText(/Need \d+ more player/)
+    // The room saying no is announced assertively and marked as a warning; the
+    // green tick is reserved for a thing you did that worked.
+    await expect(bar).toHaveAttribute('aria-live', 'assertive')
+    await expect(bar).toHaveClass(/warning/)
+  })
+})
+
+test.describe('a room announcement with chat shut', () => {
+  test('clears the floating corner instead of hiding behind it', async ({ page }) => {
+    await page.goto(ROOM)
+
+    const close = page.getByRole('button', { name: 'Close chat' })
+    if (await close.count()) await close.first().click()
+    await expect(page.getByRole('button', { name: /^Open chat/ })).toBeVisible()
+
+    // The host engine announces a mode change to the whole room, and with the
+    // rail shut it arrives in the toast lane — which used to land underneath
+    // the toolbox key, readable only once a second one had stacked above it.
+    await page.getByRole('radio', { name: 'React to the caption' }).click()
+    // Scoped to the collapsed strip, which is where a toast lives. The rail
+    // that just closed is still mounted for the length of its slide out, and
+    // its log carries the same announcement — so an unscoped text match races
+    // the exit animation rather than testing anything.
+    const toast = page
+      .getByRole('complementary', { name: 'Room chat, collapsed' })
+      .getByText('New mode: React to the caption.')
+    await expect(toast).toBeVisible()
+
+    const dock = (await toast.boundingBox())!
+    const overlaps = async (name: RegExp) => {
+      const key = await page.getByRole('button', { name }).first().boundingBox()
+      if (!key) return false
+      return (
+        dock.x < key.x + key.width &&
+        key.x < dock.x + dock.width &&
+        dock.y < key.y + key.height &&
+        key.y < dock.y + dock.height
+      )
+    }
+
+    expect(await overlaps(/toolbox$/i)).toBe(false)
+    expect(await overlaps(/^Open chat/)).toBe(false)
+  })
+})
+
 test.describe('the toolbox key', () => {
   test('opens behind a toolbox rather than a reaction face', async ({ page }) => {
     await page.goto(ROOM)
@@ -268,6 +383,31 @@ async function settled(page: Page): Promise<void> {
     .getByRole('complementary', { name: 'Room chat', exact: true })
     .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
 }
+
+test.describe('chat’s arrival', () => {
+  test('leaves at both sizes, and is inert on the way out', async ({ page }) => {
+    await page.goto(ROOM)
+    const open = page.getByRole('button', { name: /^Open chat/ })
+    if (await open.count()) await open.click()
+    await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Close chat' }).click()
+
+    // The key it collapses into is there at once — nothing waits on the slide.
+    await expect(page.getByRole('button', { name: /^Open chat/ })).toBeVisible()
+    // And the panel is still in the document, sliding, and inert while it does
+    // it: something halfway off the screen must not be tabbable and must not
+    // announce a second "Room chat". On a desk it is also out of flow, or it
+    // would be a second column standing beside the collapsed strip.
+    await expect(page.locator('aside[inert]')).toHaveCount(1)
+    await expect(
+      page.getByRole('complementary', { name: 'Room chat', exact: true }),
+    ).toHaveCount(0)
+
+    // Then it goes, rather than lingering as an invisible overlay.
+    await expect(page.locator('aside[inert]')).toHaveCount(0)
+  })
+})
 
 test.describe('the chat sheet’s arrival', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, 'the docked rail does not slide')

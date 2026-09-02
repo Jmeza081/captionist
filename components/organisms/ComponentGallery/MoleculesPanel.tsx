@@ -516,6 +516,17 @@ export function MoleculesPanel() {
           onForceTie: () => undefined,
           onJumpToFinal: () => undefined,
           onRestart: () => undefined,
+          // The gallery shows the bar at full strength — a room mid-round,
+          // where every control applies. Its held-back shape is the lobby's,
+          // and `e2e/refinements.spec.ts` covers that against a real room
+          // rather than against a fixture invented here.
+          available: {
+            clock: true,
+            skip: true,
+            forceTie: true,
+            jumpToFinal: true,
+            restart: true,
+          },
         }}
       />
     </>

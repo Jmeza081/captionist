@@ -19,7 +19,9 @@
   animation: toastin t.$duration-toast ease;
 }
 
-.check {
+// The mark, on its own disc. Green for a thing that worked; the room's own
+// yellow for a thing it would not do.
+.mark {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,8 +29,26 @@
   width: t.$snackbar-check;
   height: t.$snackbar-check;
   border-radius: t.$radius-avatar;
-  background-color: rgba(131, 208, 108, 0.18);
+  background-color: t.$success-fill;
   color: t.$success;
+}
+
+/**
+ * The room saying no.
+ *
+ * `$winner`'s yellow rather than `$urgent`'s red: red in this app is
+ * destructive — "Force a tie", "Restart game" — and a refusal is neither
+ * destructive nor an error, it is a thing you cannot do yet. The plate keeps
+ * the snackbar's own surface so the dock does not become two different
+ * components; only the mark and the edge change.
+ */
+.warning {
+  border-color: t.$winner-border;
+
+  .mark {
+    background-color: t.$winner-fill;
+    color: t.$winner;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

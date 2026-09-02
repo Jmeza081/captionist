@@ -13,6 +13,19 @@ export interface StepperProps {
   step?: number
   min?: number
   max?: number
+  /**
+   * The setting does not apply right now.
+   *
+   * Not `disabled`, and deliberately not `aria-disabled` either: `Button`'s
+   * `blocked` is a tint and nothing else, and `e2e/landing.spec.ts` asserts a
+   * blocked control is `not.toBeDisabled()` — which `aria-disabled` would
+   * falsify. One meaning for the word across the app is worth more than a
+   * second signal on one atom, and what a held-back control owes a reader is
+   * the *reason*, which is adjacent text. The host toolbox is the case: a
+   * round timer in a lobby is a clock reading 0:00 with two keys that adjust
+   * nothing, and one line under the group says so.
+   */
+  blocked?: boolean
 }
 
 /**
@@ -20,6 +33,10 @@ export interface StepperProps {
  *
  * Renders as a spinbutton so the value and its bounds are announced together,
  * and the keys disable at the ends rather than silently no-opping.
+ *
+ * `blocked` is the other kind of unavailable — the setting itself does not
+ * apply — and it is held back rather than disabled, which is the whole of
+ * `CLAUDE.md` rule 10.
  */
 export function Stepper({
   label,
@@ -29,6 +46,7 @@ export function Stepper({
   step = 1,
   min = Number.NEGATIVE_INFINITY,
   max = Number.POSITIVE_INFINITY,
+  blocked = false,
 }: StepperProps) {
   // Generated, not derived from `label` — a label with spaces would produce an
   // id with spaces, and aria-labelledby splits on whitespace.
@@ -38,7 +56,7 @@ export function Stepper({
   const atMax = value + step > max
 
   return (
-    <div className={styles.row}>
+    <div className={`${styles.row} ${blocked ? styles.blocked : ''}`}>
       <span className={styles.label} id={labelId}>
         {label}
       </span>

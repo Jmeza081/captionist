@@ -2,6 +2,8 @@
 
 import { Avatar } from '@/components/atoms/Avatar'
 import { Icon } from '@/components/atoms/Icon'
+import { TvStatic } from '@/components/atoms/TvStatic'
+import { TunedImage } from '@/components/molecules/TunedImage'
 import { PLAYER_COLORS } from '@/lib/game/constants'
 import type { GameMode } from '@/lib/game/types'
 import { HELP_ART, HELP_SLUGS, type HelpArtRole } from '@/lib/gifs/art'
@@ -42,7 +44,21 @@ const VIC = PLAYER_COLORS[1] ?? '#F6E338'
 const JACK = PLAYER_COLORS[2] ?? '#9B7BFF'
 
 /**
- * One picture: the real GIF once it lands, the committed SVG until then.
+ * One picture, arriving on a television rather than into a hole.
+ *
+ * Three states, in the order a viewer meets them:
+ *
+ *   1. **The lookup is out** — a set tuned to a channel that has not arrived.
+ *      It used to be the committed SVG here, which is a 🚀 on a gradient, and
+ *      on the one screen whose job is telling somebody the game is about GIFs
+ *      an emoji placeholder is the wrong promise to make for 300ms.
+ *   2. **A URL landed, the bytes have not** — the same set, now behind the
+ *      picture, dropped the moment it paints. That is `TunedImage`, which is
+ *      what every other remote GIF in the app already uses.
+ *   3. **The lookup settled on nothing** — stubbed, keyless, or the suite —
+ *      and the committed SVG comes back. A set hissing forever is the honest
+ *      picture of a fetch that failed, and the wrong one for a walkthrough
+ *      that is simply running without a provider.
  *
  * `fallback` is a `SAMPLE_GIFS` slug rather than a second `role`, because the
  * offline shelf is not a parallel catalogue of the curated six — it is twelve
@@ -52,32 +68,42 @@ const JACK = PLAYER_COLORS[2] ?? '#9B7BFF'
  * Matched on `id`, never on position: `resolveArt` drops a slug the provider
  * no longer has, so an index into the returned list silently shifts every
  * picture after the missing one along by one.
- *
- * No `TunedImage` here, unlike the picker's tiles. That one draws television
- * static while a picture is on its way; this one already has a picture on
- * screen, so there is nothing to fill and nothing to flicker.
  */
 function Art({ role, fallback }: { role: HelpArtRole; fallback: string }) {
   const still = useReducedMotion()
-  const { art } = useResolvedArt(HELP_SLUGS)
+  const { art, pending } = useResolvedArt(HELP_SLUGS)
   const resolved = art?.find((g) => g.id === HELP_ART[role])
   const stub = SAMPLE_GIFS.find((g) => g.id === `sample-${fallback}`)
-  const gif = resolved ?? stub
+  // The stand-in only after the lookup has settled. While it is out the set is
+  // the honest answer: something is coming.
+  const gif = resolved ?? (pending ? undefined : stub)
   const src = still ? (gif?.still ?? gif?.src) : gif?.src
 
-  // Animated SVG half the time, and decorative either way: next/image would
-  // rasterise the one and gains nothing on the other, which is a remote GIF at
-  // rail scale that the provider's own CDN already sized.
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      // The zoom that crops the stand-in's printed title belongs to the
-      // stand-in alone — see the stylesheet. A resolved GIF has no title burnt
-      // into it and would just be cropped for nothing.
-      className={`${styles.art} ${resolved ? '' : styles.stub}`}
-      src={src}
-      alt=""
-    />
+    <span className={styles.artFrame}>
+      {src ? (
+        <TunedImage
+          // The zoom that crops the stand-in's printed title belongs to the
+          // stand-in alone — see the stylesheet. A resolved GIF has no title
+          // burnt into it and would just be cropped for nothing.
+          className={`${styles.art} ${resolved ? '' : styles.stub}`}
+          src={src}
+          alt=""
+        />
+      ) : (
+        <>
+          {/* Its own field per illustration, so four cells in the vote grid
+              read as four sets rather than one sheet of noise behind a
+              grille. */}
+          <TvStatic seed={HELP_SLUGS.indexOf(HELP_ART[role])} />
+          {/* `TvStatic` is never shown raw — `HeroWall`, `SceneBackdrop` and
+              `TunedImage` all veil it, and here the rail sits beside display
+              type in a modal, which is the loudest place in the app to put a
+              field of full-brightness noise. */}
+          <span className={styles.veil} />
+        </>
+      )}
+    </span>
   )
 }
 
@@ -96,17 +122,21 @@ export function PickIllustration() {
   )
 }
 
-/** Caption mode, step 2: the same image, mid-caption, with the clock running. */
+/**
+ * Caption mode, step 2: the same image, wearing both lines.
+ *
+ * No composer under it any more. The design draws the field there, and on a
+ * screen that is *demonstrating* a top and a bottom line it was a third copy of
+ * the bottom one — the meme text says the caption, the body copy beside it says
+ * "you get a top and a bottom line", and the field repeated the second of them
+ * over a clock nothing in this step is counting.
+ */
 export function CaptionIllustration() {
   return (
     <div className={styles.frame} aria-hidden="true">
       <Art role="round" fallback="prod" />
       <span className={`${styles.meme} ${styles.memeTop}`}>Prod&rsquo;s down again</span>
       <span className={`${styles.meme} ${styles.memeBottom}`}>And I&rsquo;m on call</span>
-      <span className={styles.field}>
-        <span className={styles.fieldText}>And I&rsquo;m on call</span>
-        <span className={styles.fieldClock}>0:41</span>
-      </span>
     </div>
   )
 }

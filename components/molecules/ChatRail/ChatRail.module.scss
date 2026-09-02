@@ -42,8 +42,11 @@
     height: auto;
     max-height: none;
     transition: none;
-    // A docked column is part of the layout, not a thing that arrives.
-    animation: none;
+    // The column's space opens on the same frame, and the panel slides into
+    // it from the edge it docks against. Sideways rather than up, because that
+    // is the edge it lives on here — the gesture matches the geometry at both
+    // sizes rather than being one animation stretched over two shapes.
+    animation: railIn 240ms cubic-bezier(0.32, 0.72, 0, 1);
     align-self: stretch;
     width: t.$rail-width;
     max-width: 100%;
@@ -105,20 +108,31 @@
 }
 
 /**
- * On its way out, and only ever below `md`.
+ * On its way out, at both sizes — down on a phone, sideways on a desk.
  *
  * `forwards` so it rests off-screen for the last frames rather than snapping
- * back before React removes it. Above `md` it is not drawn at all: the docked
- * rail is a column in the room's layout, and a leaving copy of it beside the
- * collapsed strip would be a second column for 200ms — a visible jump on a
- * desk to buy an animation only a phone ever sees.
+ * back before React removes it.
+ *
+ * **Above `md` it has to leave the flow to leave at all.** A docked rail is a
+ * flex item, so a leaving copy that kept its place would be a second 360px
+ * column standing beside the collapsed strip for 200ms — a visible jump on a
+ * desk bought to pay for an animation. Taken out of flow it slides over the
+ * content the column just gave back, which is what a panel dismissing itself
+ * looks like everywhere else. The positioned ancestor is `RoomShell`'s
+ * `.body`, which says so.
  */
 .leaving {
   animation: sheetOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
   pointer-events: none;
 
   @include t.mq('md') {
-    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: t.$rail-width;
+    max-width: 100%;
+    animation: railOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
   }
 }
 
@@ -131,6 +145,18 @@
 @keyframes sheetOut {
   to {
     transform: translateY(100%);
+  }
+}
+
+@keyframes railIn {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes railOut {
+  to {
+    transform: translateX(100%);
   }
 }
 
@@ -245,24 +271,45 @@
 // is one key: an avatar stack and a vertical label beside a thumb are
 // decoration bought with the space the game is played in.
 
-// Above the rail, never inside it — the ladder puts toasts at 65 and the rail
-// at 40, so a toast has to escape its stacking context to sit over the room.
+/**
+ * Above the rail, never inside it — the ladder puts toasts at 65 and the rail
+ * at 40, so a toast has to escape its stacking context to sit over the room.
+ *
+ * **And above the floating corner, at both sizes.** It used to state its own
+ * position above `md` — `bottom: $space-26`, hard right of the collapsed rail
+ * — which put it straight through the toolbox pill: two fixed things in one
+ * corner, neither reading the other. A mode switch announced to a shut rail
+ * arrived underneath "Host toolbox", and you only ever saw it by changing the
+ * mode twice and reading the top of the stack.
+ *
+ * One expression at both sizes instead, off the properties the room already
+ * publishes for exactly this. `--room-dock-bottom` is where the *topmost*
+ * floating key starts — chat's on a phone, since the toolbox already lifted it;
+ * the toolbox's own on a desk, where chat is a column and does not float — so
+ * clearing that key's height plus a gap clears everything in the corner. The
+ * right edge is the rail's width plus the room's gutter, which is the toolbox's
+ * own right edge: a column of three things on one line rather than three
+ * arrangements.
+ */
 .toastDock {
   position: fixed;
-  right: var(--room-dock-right, #{t.$space-20});
-  bottom: calc(var(--room-dock-bottom, #{t.$space-20}) + #{t.$tap-target-min} + #{t.$space-14});
+  right: calc(var(--room-rail-width, 0px) + var(--room-dock-right, #{t.$space-20}));
+  bottom: calc(
+    var(--room-dock-bottom, #{t.$space-20}) + #{t.$tap-target-min} + #{t.$space-14}
+  );
   z-index: t.$z-toast;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: t.$space-8;
-  max-width: min(320px, calc(100vw - #{t.$space-26}));
+  max-width: min(
+    320px,
+    calc(
+      100vw - var(--room-rail-width, 0px) - var(--room-dock-right, #{t.$space-20}) -
+        #{t.$space-20}
+    )
+  );
   pointer-events: none;
-
-  @include t.mq('md') {
-    right: calc(#{t.$rail-width-collapsed} + #{t.$space-12});
-    bottom: t.$space-26;
-  }
 }
 
 .openKey {

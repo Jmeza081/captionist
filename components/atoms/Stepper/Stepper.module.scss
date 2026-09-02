@@ -62,3 +62,14 @@
   color: t.$text-primary;
   font-variant-numeric: tabular-nums;
 }
+
+/**
+ * The setting does not apply right now — a round timer in a lobby.
+ *
+ * The same 45% `Button`'s `blocked` drops to, and for the same reason: it must
+ * read as held back without becoming a `disabled` attribute nobody can reach.
+ * The row keeps its focus rings; only the ink changes.
+ */
+.blocked {
+  opacity: 0.45;
+}

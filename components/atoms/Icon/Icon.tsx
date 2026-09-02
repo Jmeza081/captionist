@@ -22,6 +22,7 @@ export type IconName =
   | 'wifiOff'
   | 'shuffle'
   | 'toolbox'
+  | 'warning'
 
 interface PathSpec {
   d: string[]
@@ -87,6 +88,22 @@ const PATHS: Record<IconName, PathSpec> = {
     d: ['M2 20.5 0 6.5l6 4 6-7 6 7 6-4-2 14z'],
     width: 0,
     filled: true,
+  },
+  /**
+   * A triangle with a bar and a dot, at the `help` weight.
+   *
+   * The room had one signal for "that happened" and it was a green tick, so a
+   * *refusal* — "Need 2 more players." — arrived wearing the same mark as
+   * "Room link copied". Not in the design, which draws no error state on the
+   * snackbar; traced to the set like `shuffle` and `toolbox`.
+   */
+  warning: {
+    d: [
+      'M12 3.6 22 20.4H2z',
+      'M12 10v4.2',
+      'M12 17.2v.4',
+    ],
+    width: 2.1,
   },
   /**
    * Not in the design either, and traced for the same reason `shuffle` was.

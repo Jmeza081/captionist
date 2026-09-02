@@ -8,11 +8,12 @@ import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import { Stepper } from '@/components/atoms/Stepper'
 import { formatClock } from '@/components/atoms/TimerPill'
+import type { HostControls as HostAvailability } from '@/lib/game/selectors'
 import { ReactionToolbar, type Reaction } from '@/components/molecules/ReactionToolbar'
 import styles from './RoomToolbox.module.scss'
 
 /** The host's own controls. Absent means this is a guest's toolbox. */
-export interface HostControls {
+export interface HostTools {
   /** Seconds on the round clock. */
   seconds: number
   onSecondsChange: (seconds: number) => void
@@ -25,6 +26,16 @@ export interface HostControls {
   onForceTie: () => void
   onJumpToFinal: () => void
   onRestart: () => void
+  /**
+   * Which of these apply right now, from `hostControls(state)`.
+   *
+   * The engine allows every one of them in every phase and quietly no-ops most
+   * of them outside a running round — so a lobby got a Pause key for a clock
+   * reading 0:00 and a Force a tie with nothing to tie. The availability is the
+   * room's fact, computed once beside the reducer's own rules; this component
+   * only draws it.
+   */
+  available: HostAvailability
 }
 
 export interface RoomToolboxProps {
@@ -38,7 +49,7 @@ export interface RoomToolboxProps {
   onReact: (glyph: string) => void
   onHelp: () => void
   /** Present for the host, absent for everyone else. */
-  host?: HostControls
+  host?: HostTools
   /**
    * Offset for the docked chat rail, so nothing sits under it. A number is
    * treated as pixels; a string is any CSS length, which is how the room shell
@@ -232,6 +243,7 @@ export function RoomToolbox({
               min={0}
               format={formatClock}
               onChange={host.onSecondsChange}
+              blocked={!host.available.clock}
             />
 
             <hr className={styles.rule} />
@@ -241,11 +253,17 @@ export function RoomToolbox({
                 variant="secondary"
                 size="toolbox"
                 fullWidth
+                blocked={!host.available.clock}
                 onClick={host.onTogglePause}
               >
                 {host.paused ? 'Resume' : 'Pause'}
               </Button>
-              <Button size="toolbox" fullWidth onClick={host.onSkip}>
+              <Button
+                size="toolbox"
+                fullWidth
+                blocked={!host.available.skip}
+                onClick={host.onSkip}
+              >
                 Skip ahead
               </Button>
             </div>
@@ -278,6 +296,7 @@ export function RoomToolbox({
                 variant="destructive"
                 size="toolbox"
                 fullWidth
+                blocked={!host.available.forceTie}
                 onClick={host.onForceTie}
               >
                 Force a tie
@@ -286,6 +305,7 @@ export function RoomToolbox({
                 variant="secondary"
                 size="toolbox"
                 fullWidth
+                blocked={!host.available.jumpToFinal}
                 onClick={host.onJumpToFinal}
               >
                 Jump to final
@@ -296,10 +316,17 @@ export function RoomToolbox({
               variant="destructive"
               size="toolbox"
               fullWidth
+              blocked={!host.available.restart}
               onClick={host.onRestart}
             >
               Restart game
             </Button>
+
+            {/* One line for the whole group rather than a label per key.
+                ADR 0032: a blocked label carries a count the screen cannot
+                otherwise show, and "there is no round yet" is not a count —
+                it is one fact about the room that six controls share. */}
+            {host.available.note && <p className={styles.note}>{host.available.note}</p>}
           </>
         )}
       </div>
