@@ -13,17 +13,8 @@
   }
 }
 
-.line {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: t.$space-8;
-}
-
-// One of the two is a button — it opens the modal rather than navigating — so
-// the reset lives here and both read identically. The same arrangement
-// `LandingNav` makes for the same reason.
+// A button rather than a link, because it opens the modal rather than
+// navigating; the reset is what makes it read as the text link it looks like.
 .link {
   @include t.focusRing;
 
@@ -40,10 +31,4 @@
   &:hover {
     color: t.$text-caption;
   }
-}
-
-.dot {
-  font-family: t.$font-sans;
-  font-size: 13px;
-  color: t.$text-timestamp;
 }

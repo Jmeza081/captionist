@@ -29,6 +29,20 @@ describe('suggestName', () => {
     }
   })
 
+  /**
+   * The pool is the whole point of the lists, so it is the thing to guard.
+   *
+   * Twenty-four of each was 576 pairs, and half a dozen tabs open at once met
+   * a repeat often enough to be the reason both lists grew. A floor rather than
+   * an exact count: adding a word should not need this line edited, and
+   * removing enough of them to bring the collisions back should fail.
+   */
+  it('offers a pool big enough that a room full of tabs does not collide', () => {
+    expect(NAME_PARTS.adjectives.length).toBeGreaterThanOrEqual(70)
+    expect(NAME_PARTS.nouns.length).toBeGreaterThanOrEqual(70)
+    expect(NAME_PARTS.adjectives.length * NAME_PARTS.nouns.length).toBeGreaterThan(5000)
+  })
+
   it('has no duplicates in either half', () => {
     expect(new Set(NAME_PARTS.adjectives).size).toBe(NAME_PARTS.adjectives.length)
     expect(new Set(NAME_PARTS.nouns).size).toBe(NAME_PARTS.nouns.length)

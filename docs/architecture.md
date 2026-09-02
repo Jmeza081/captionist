@@ -691,8 +691,7 @@ answer slugs — which is the same rule the screens follow and the reason it is
 not a second component.
 
 **The landing page gained a foot, and it is where the licences live.**
-`LandingLegal` is a two-link line — "Licensing and credits", and the source —
-holding `LicenseModal`, which is a configured `Modal` the way `HelpModal` is:
+`LandingLegal` is one link — "Licensing and credits" — holding `LicenseModal`, which is a configured `Modal` the way `HelpModal` is:
 four steps for the four obligations a production deploy carries (MIT for the
 app, the providers' terms for the GIFs, CC0 for the faces, CC BY for the
 reaction art, OFL for the type). Not a `/legal` route, because three of the four

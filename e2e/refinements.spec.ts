@@ -180,6 +180,13 @@ test.describe('licensing', () => {
   test('is one click from the front door', async ({ page }) => {
     await page.goto('/')
 
+    // One link in the foot, and it is not the repository: the nav already
+    // carries that, and two links to one destination on one screen is a reader
+    // wondering what the difference is.
+    const foot = page.getByRole('contentinfo')
+    await expect(foot.getByRole('button')).toHaveCount(1)
+    await expect(foot.getByRole('link')).toHaveCount(0)
+
     await page.getByRole('button', { name: 'Licensing and credits' }).click()
     const dialog = page.getByRole('dialog', { name: 'Licensing and credits' })
     await expect(dialog).toBeVisible()

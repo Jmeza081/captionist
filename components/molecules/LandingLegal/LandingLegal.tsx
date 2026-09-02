@@ -4,13 +4,8 @@ import { useState } from 'react'
 import { LicenseModal } from '@/components/molecules/LicenseModal'
 import styles from './LandingLegal.module.scss'
 
-export interface LandingLegalProps {
-  /** The public repository, so the line carries the source as well as the terms. */
-  repoHref: string
-}
-
 /**
- * The landing page's foot: the year, the source, and the licences.
+ * The landing page's foot: the licences, and nothing else.
  *
  * A molecule holding a molecule, like `HelpModal` — the state is one boolean
  * and the reason it is a component at all is that `app/page.tsx` is a Server
@@ -21,28 +16,19 @@ export interface LandingLegalProps {
  * Not in `LandingNav`. The bar has three items and the third is the way in;
  * "Licensing" beside "Join a room" competes with the one action the page is
  * for. A foot is where somebody goes looking for terms anyway.
+ *
+ * **One link, not two.** It carried the repository as well, which the nav's
+ * own "GitHub" already does — two links to one destination on one screen is a
+ * reader wondering what the difference is.
  */
-export function LandingLegal({ repoHref }: LandingLegalProps) {
+export function LandingLegal() {
   const [open, setOpen] = useState(false)
 
   return (
     <footer className={styles.foot}>
-      <span className={styles.line}>
-        <button type="button" className={styles.link} onClick={() => setOpen(true)}>
-          Licensing and credits
-        </button>
-        <span className={styles.dot} aria-hidden="true">
-          ·
-        </span>
-        <a
-          className={styles.link}
-          href={repoHref}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          Source on GitHub
-        </a>
-      </span>
+      <button type="button" className={styles.link} onClick={() => setOpen(true)}>
+        Licensing and credits
+      </button>
 
       <LicenseModal open={open} onClose={() => setOpen(false)} />
     </footer>

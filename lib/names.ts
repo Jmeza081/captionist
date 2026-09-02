@@ -10,8 +10,15 @@
  * `Adjective_Noun`, both from the room's own subject matter: the joke lands
  * before the first round does, and two people who happen to draw the same
  * adjective still differ by noun. Every pair fits the 20-character cap the
- * nickname field carries — the longest word in each list is nine letters plus
- * the separator.
+ * nickname field carries — nine letters is the ceiling for an adjective and
+ * ten for a noun, and `names.test.ts` checks every pair rather than a sample.
+ *
+ * **Seventy-four of each, which is 5,476 pairs.** It was twenty-four of each,
+ * and 576 is small enough that a hand opening half a dozen tabs meets a repeat
+ * often — and meets a repeated *adjective*, which reads as a collision even
+ * when the full name differs, about half the time. Both lists stay hand-written
+ * rather than generated: the point of them is that the words are the room's own
+ * vocabulary, and a generator would have to be handed that list anyway.
  */
 
 const ADJECTIVES: readonly string[] = [
@@ -39,6 +46,61 @@ const ADJECTIVES: readonly string[] = [
   'Frozen',
   'Orphaned',
   'Vintage',
+  // Fifty more, because twenty-four of each is 576 pairs and a hand testing
+  // with half a dozen tabs open hit a repeat often enough to notice. It is
+  // 5,476 now, and the *adjective* alone repeating — which reads as a
+  // collision even when the whole name differs — went from a coin flip across
+  // six draws to something you can go a session without seeing.
+  'Anxious',
+  'Blocked',
+  'Bloated',
+  'Blunt',
+  'Bold',
+  'Bored',
+  'Buggy',
+  'Chatty',
+  'Clean',
+  'Cranky',
+  'Crusty',
+  'Dangling',
+  'Doomed',
+  'Drifting',
+  'Dubious',
+  'Eternal',
+  'Expired',
+  'Fearless',
+  'Flapping',
+  'Fragile',
+  'Grumpy',
+  'Hungover',
+  'Immutable',
+  'Impatient',
+  'Jittery',
+  'Lonely',
+  'Lossy',
+  'Manual',
+  'Mutable',
+  'Noisy',
+  'Optional',
+  'Panicked',
+  'Patched',
+  'Pending',
+  'Pinned',
+  'Quiet',
+  'Rushed',
+  'Rusty',
+  'Salty',
+  'Scoped',
+  'Shaky',
+  'Skipped',
+  'Sleepy',
+  'Smug',
+  'Sneaky',
+  'Sober',
+  'Spicy',
+  'Sticky',
+  'Stubborn',
+  'Thirsty',
 ] as const
 
 const NOUNS: readonly string[] = [
@@ -66,6 +128,60 @@ const NOUNS: readonly string[] = [
   'Changelog',
   'Fixture',
   'Runbook',
+  // The other fifty. Same subject matter and the same cap: nine letters is the
+  // ceiling for an adjective and ten for a noun, which is what keeps every one
+  // of the 5,476 pairs inside `NAME_MAX`. `names.test.ts` checks all of them
+  // rather than a sample, for exactly the reason this list just grew.
+  'Alert',
+  'Backport',
+  'Branch',
+  'Breakpoint',
+  'Buffer',
+  'Bugfix',
+  'Burndown',
+  'Canary',
+  'Changeset',
+  'Checkout',
+  'Cherrypick',
+  'Cluster',
+  'Commit',
+  'Compiler',
+  'Conflict',
+  'Container',
+  'Cutover',
+  'Dashboard',
+  'Deadlock',
+  'Debugger',
+  'Dependency',
+  'Downtime',
+  'Endpoint',
+  'Escalation',
+  'Feature',
+  'Firewall',
+  'Gateway',
+  'Handoff',
+  'Heartbeat',
+  'Incident',
+  'Kanban',
+  'Latency',
+  'Lockfile',
+  'Merge',
+  'Metric',
+  'Namespace',
+  'Onboarding',
+  'Outage',
+  'Patchset',
+  'Payload',
+  'Quota',
+  'Regression',
+  'Release',
+  'Replica',
+  'Rewrite',
+  'Scrum',
+  'Segfault',
+  'Sunset',
+  'Threshold',
+  'Timeout',
 ] as const
 
 /** Longest possible pair, for the test that guards the field's cap. */

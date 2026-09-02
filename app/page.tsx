@@ -80,8 +80,9 @@ export default async function HomePage() {
 
         {/* The licences a production deploy carries, one click from the front
             door: the GIF providers' terms, CC0 for the faces, CC BY for the
-            reaction art and OFL for the type. */}
-        <LandingLegal repoHref={REPO} />
+            reaction art and OFL for the type. The repository is the nav's
+            `GitHub`, and is deliberately not repeated here. */}
+        <LandingLegal />
       </div>
     </div>
   )

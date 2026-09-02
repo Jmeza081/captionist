@@ -20,13 +20,19 @@
   @include t.sectionHeadingText;
 }
 
-// What you are wearing, in the row's right-hand slot. Accent, because it is
-// the one thing on the row that changes as you choose.
+// What you are wearing, in the row's right-hand slot.
+//
+// White rather than accent. It was `$accent`, which in this app is what a
+// *link* is — the licence modal's are, `$accent-text` is "accent text, links"
+// in the palette — so a bold purple word at the end of a row read as something
+// to click, and it is a read-out of the tile you already chose. The weight is
+// what separates it from the label beside it; the hue was saying something
+// untrue.
 .worn {
   font-family: t.$font-sans;
   font-size: 13px;
   font-weight: 700;
-  color: t.$accent;
+  color: t.$text-primary;
 }
 
 // The same weight as `/host`'s `.sub` under "Game mode" — this is a line of
