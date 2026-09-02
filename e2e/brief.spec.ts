@@ -13,15 +13,15 @@ test.describe('the brief', () => {
 
     await expect(page.getByText('You’re up, Jesse')).toBeVisible()
 
-    // The CTA is blocked until something is chosen, and says so.
-    const lock = page.getByRole('button', { name: 'Pick one first' })
+    // The CTA reads the same before and after a pick — the board is what says
+    // nothing is chosen yet. It is still blocked, and still focusable.
+    const lock = page.getByRole('button', { name: 'Lock it in' })
     await expect(lock).toBeVisible()
 
     await page.getByRole('textbox', { name: 'Search GIFs' }).fill('prod')
     await page.getByRole('textbox', { name: 'Search GIFs' }).press('Enter')
-    // A GIF tile is the only button on the screen wrapping an image: matching
-    // the label would also catch the blocked "Pick one first" CTA, and
-    // `aria-pressed` would catch the suggestion chips.
+    // A GIF tile is the only button on the screen wrapping an image; matching
+    // by label would catch the suggestion chips, and so would `aria-pressed`.
     const tiles = page.locator('button:has(img)')
     await expect(tiles.first()).toBeVisible()
 
@@ -44,16 +44,24 @@ test.describe('the brief', () => {
     await search.pressSequentially('rollback')
     await expect(search).toHaveValue('rollback')
 
-    // Both live with the search now — nothing waits at the bottom of a board
-    // that scrolls a long way.
+    // Both live with the search — nothing waits at the bottom of a board that
+    // scrolls a long way.
     //
     // "Surprise me" and "Shuffle results" are different controls and both are
-    // here. Surprise commits to one of the fifty tiles already loaded, for
-    // nothing; Shuffle goes and gets another fifty. ADR-0021 deleted the
-    // second to save the call and ADR-0026 put it back.
-    await expect(page.getByRole('button', { name: 'Surprise me' })).toBeInViewport()
-    await expect(page.getByRole('button', { name: 'Pick one first' })).toBeInViewport()
+    // here, side by side under the field. Surprise commits to one of the fifty
+    // tiles already loaded, for nothing; Shuffle goes and gets another fifty.
+    // ADR-0021 deleted the second to save the call and ADR-0026 put it back.
+    await expect(page.getByRole('button', { name: /Surprise me/ })).toBeInViewport()
     await expect(page.getByRole('button', { name: /Shuffle results/ })).toHaveCount(1)
+
+    // And the one control that ends the phase runs the width of the column at
+    // its foot, rather than sharing that bar with "Surprise me".
+    const lock = page.getByRole('button', { name: 'Lock it in' })
+    await expect(lock).toBeInViewport()
+    const column = page.locator('main[data-phase]')
+    expect((await lock.boundingBox())?.width).toBeGreaterThan(
+      ((await column.boundingBox())?.width ?? 0) * 0.6,
+    )
 
     // And the note about the clock reads with the headline, not with the button.
     await expect(

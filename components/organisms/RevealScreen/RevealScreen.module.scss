@@ -48,6 +48,19 @@
   gap: t.$space-26 t.$space-52;
   width: 100%;
   text-align: left;
+
+  /**
+   * Room for the winner's ring to paint in.
+   *
+   * `$shadow-winner` is a 4px gold ring *outside* the card, and on a phone the
+   * card is the full width of the column — so the ring landed exactly on the
+   * screen's horizontal clip and the winning image was outlined on two sides
+   * out of four. `screenClip`'s `overflow-clip-margin` is meant to cover this
+   * and does not reach here: it only bleeds past the clip, and the browser has
+   * to support the property. Four pixels of padding is the same answer with
+   * nothing to support.
+   */
+  padding-inline: t.$media-ring-winner;
 }
 
 .winnerCard {

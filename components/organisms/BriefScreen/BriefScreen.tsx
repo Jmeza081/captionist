@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
 import { SceneBackdrop } from '@/components/molecules/SceneBackdrop'
 import { Button } from '@/components/atoms/Button'
-import { Chip } from '@/components/atoms/Chip'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
+import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { TextField } from '@/components/atoms/TextField'
@@ -65,6 +65,21 @@ export function BriefScreen() {
 
   const [picked, setPicked] = useState<GifResult | undefined>(undefined)
   const [draft, setDraft] = useState('')
+
+  /**
+   * Which starter the shuffle is on.
+   *
+   * The five used to render as a column of chips — five sentences, each of them
+   * long enough to wrap, above the field they were meant to help fill. On a
+   * phone that was the whole screen, and on a desktop it pushed the preview
+   * labelled "what the room sees" below the fold. One at a time in the field
+   * itself is the same help without the inventory: you read the line you have
+   * and press again if it is not the one.
+   *
+   * A cycle rather than a random draw, so pressing five times shows five
+   * different starters instead of the same one twice.
+   */
+  const [starter, setStarter] = useState(-1)
 
   /**
    * The clock picks for you.
@@ -209,23 +224,27 @@ export function BriefScreen() {
             placeholder="when the deploy succeeds on the first try…"
           />
 
-          <Stack gap={10}>
-            <Eyebrow tone="muted">Need a starter</Eyebrow>
-            <Inline gap={8}>
-              {PROMPT_STARTERS.map((starter) => (
-                <Chip
-                  key={starter}
-                  wrap
-                  selected={draft === starter}
-                  onClick={() => setDraft(starter)}
-                >
-                  {starter}
-                </Chip>
-              ))}
-            </Inline>
-          </Stack>
+          {/* Directly under the field it fills, and quiet enough to read as a
+              help rather than a second way to answer. */}
+          <Inline gap={8}>
+            <Button
+              variant="ghost"
+              size="text"
+              onClick={() => {
+                const next = (starter + 1) % PROMPT_STARTERS.length
+                setStarter(next)
+                setDraft(PROMPT_STARTERS[next] ?? '')
+              }}
+            >
+              <Icon name="shuffle" size={14} />
+              Shuffle a starter
+            </Button>
+          </Inline>
 
           <Inline gap={14}>
+            {/* One label, whether or not there is a line yet. The empty field
+                above is the affordance — see `RoundPicker`, which stopped
+                swapping its CTA's text for the same reason. */}
             <Button
               blocked={!ready}
               onClick={() => {
@@ -233,7 +252,7 @@ export function BriefScreen() {
                 send({ type: 'round/subjectLocked', subject: { kind: 'prompt', text } })
               }}
             >
-              {ready ? copy.action : 'Write a line first'}
+              {copy.action}
             </Button>
             <span className={styles.note}>{copy.timeoutNote}</span>
           </Inline>
@@ -275,7 +294,6 @@ export function BriefScreen() {
       onPick={setPicked}
       selectionLabel="Selected"
       action={copy.action}
-      blockedAction="Pick one first"
       onLock={lockIn}
     />
   )

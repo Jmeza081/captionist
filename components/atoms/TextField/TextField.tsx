@@ -1,13 +1,17 @@
 'use client'
 
-import { useId, type InputHTMLAttributes, type ReactNode } from 'react'
+import { useId, type ComponentPropsWithRef, type ReactNode } from 'react'
 import styles from './TextField.module.scss'
 
 /** The four heights the design draws, named for their job. */
 export type TextFieldSize = 'caption' | 'search' | 'composer' | 'popover'
 
 export interface TextFieldProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  // `ComponentPropsWithRef` rather than `InputHTMLAttributes`, so `ref` reaches
+  // the input like any other prop — React 19 passes it as one, and the front
+  // doors need it to read what was typed before they hydrated. It rides in
+  // `...rest` with everything else.
+  extends Omit<ComponentPropsWithRef<'input'>, 'size'> {
   /** Sits above the field, uppercased. Omit for search and composer fields. */
   label?: string
   size?: TextFieldSize

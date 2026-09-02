@@ -210,23 +210,106 @@ test.describe('the room header holds its line', () => {
 })
 
 /**
- * Nothing you can tap ever sits under the floating keys.
+ * The control that ends the phase is never under the floating keys.
  *
  * There are three things to want from that corner and only two can be true at
  * once: even gutters, controls that run the full width, and nothing tappable
- * underneath the keys. Dropping the reservation bought the even gutters and
- * quietly cost the third — the lobby's start button, the duel's "Vote this
- * one", the picker's tiles and the vote grid's "Rank this" all passed under the
- * keys as you scrolled, which is the same fault ("the right end of Rank this
- * opened chat") the gutter was added to fix in the first place.
+ * ever underneath the keys. The column used to buy the third by reserving a
+ * whole key's width on both sides — 52px of gutter each side of a 393px phone,
+ * a quarter of the screen, paid by every card, caption and board tile on it.
  *
- * So the column reserves the keys' width on both sides and the keys moved in to
- * meet it. This is the claim that keeps it honest, and it is deliberately
- * stronger than the one it replaced: not "nothing rests underneath them" at the
- * foot of the page, but "nothing tappable is ever underneath them", at every
- * scroll position of every screen.
+ * The gutter is `$space-20` now — the same one the front doors use — and the
+ * corner is cleared vertically instead, which narrows the claim to the half
+ * that matters. A screen's committing control
+ * lives in a sticky bar that declares itself with `data-action-dock`, and the
+ * room lifts the whole key column above that bar (`--room-dock-base`). So the
+ * fault this suite was written for — "the right end of Lock my ranking opened
+ * chat" — cannot come back.
+ *
+ * What is no longer claimed: that an *ordinary* control never passes under a
+ * key. A board tile, a card's "Rank this" and the duel's "Vote this one" can,
+ * mid-scroll, exactly as page content passes under a floating action button in
+ * any app — and a nudge of the page frees them. `targets.spec.ts` still holds
+ * the stronger line where it can be held: nothing overlaps at the position each
+ * screen actually paints at.
  */
-test.describe('the floating keys never cover a control', () => {
+/**
+ * A sticky foot is at the foot — at every scroll position, and at both sizes.
+ *
+ * This shipped broken on the desktop half and no test could see it. `.lockDock`
+ * unpinned itself past `$vote-bar-columns`, on the reasoning that a wide layout
+ * has no need of a sticky foot; above `md` the room is an app shell, so a
+ * static bar at the end of a four-card grid sat 164px below the fold and crept
+ * up the screen as the board scrolled. Then, pinned again, it rested 78px high:
+ * above `md` the *column* is the scroller, and a scroller's own bottom padding
+ * pushes a `bottom: 0` sticky child up by exactly that much.
+ *
+ * Both faults are about where the control ends up, so that is what this
+ * measures — the gap between the control and the fold, swept top to bottom.
+ * Anything that is not the bar's own `padding-bottom` is a bug.
+ */
+test.describe('a sticky action bar', () => {
+  test.setTimeout(180_000)
+
+  /** The bar's own ground under the control, plus a pixel of rounding. */
+  const FOOT_GAP = 16
+
+  const SCREENS: readonly (readonly [string, string])[] = [
+    ['brief', '/room/DEV?seed=42&gifs=stub&phase=brief'],
+    ['compose (react)', '/room/DEV?seed=42&gifs=stub&mode=react&phase=compose&as=p2'],
+    ['vote', '/room/DEV?seed=42&gifs=stub&phase=vote&as=p2'],
+    ['vote (react)', '/room/DEV?seed=42&gifs=stub&mode=react&phase=vote&as=p2'],
+  ]
+
+  for (const [name, url] of SCREENS) {
+    test(`stays at the foot of ${name}`, async ({ page }) => {
+      await page.goto(url)
+      await expect(page.locator('main[data-phase]')).toBeVisible()
+      await expect(page.locator('[data-action-dock] button').first()).toBeVisible()
+
+      // Whichever box actually scrolls: the window on a phone, the content
+      // column above `md`, where the shell is an app shell rather than a page.
+      const plan = await page.evaluate(() => {
+        const main = document.querySelector('main')!
+        const inMain = main.scrollHeight > main.clientHeight
+        return {
+          inMain,
+          total: inMain
+            ? main.scrollHeight - main.clientHeight
+            : document.documentElement.scrollHeight - window.innerHeight,
+        }
+      })
+
+      const gaps: number[] = []
+      for (const frac of [0, 0.25, 0.5, 0.75, 1]) {
+        await page.evaluate(
+          ({ frac, inMain, total }) => {
+            const y = Math.round(total * frac)
+            if (inMain) document.querySelector('main')!.scrollTop = y
+            else window.scrollTo(0, y)
+          },
+          { frac, ...plan },
+        )
+        gaps.push(
+          await page.evaluate(() => {
+            const b = document.querySelector('[data-action-dock] button')!.getBoundingClientRect()
+            return Math.round(window.innerHeight - b.bottom)
+          }),
+        )
+      }
+
+      // Reported as a set, so a failure says which scroll position broke it
+      // rather than just the first one that did.
+      const off = gaps.filter((gap) => gap < 0 || gap > FOOT_GAP)
+      expect(
+        off,
+        `gaps from the fold at 0/25/50/75/100% scroll were ${gaps.join(', ')}px`,
+      ).toEqual([])
+    })
+  }
+})
+
+test.describe('the floating keys', () => {
   test.skip(
     ({ viewport }) => (viewport?.width ?? 0) >= 768,
     'above md chat docks into the rail and the toolbox pill sits clear of the column',
@@ -235,38 +318,50 @@ test.describe('the floating keys never cover a control', () => {
 
   const PHASES = ['lobby', 'brief', 'compose', 'waiting', 'vote', 'tiebreak', 'reveal', 'score', 'podium']
 
-  /** Every control the keys could land on, at every half-screen of scroll. */
-  async function collisions(page: Page): Promise<string[]> {
+  /**
+   * How close to the fold still counts as "at the foot".
+   *
+   * A pinned bar's control sits within the bar's own bottom padding of it. The
+   * lobby's bar sticks inside the share column and then scrolls away with it —
+   * once it has, it is page content and this rule is not about it any more.
+   */
+  const FOOT_PX = 24
+
+  /** Every docked control a key overlapped while the bar was at the foot. */
+  async function coveredAtFoot(page: Page): Promise<string[]> {
     const hits = new Set<string>()
     const steps = await page.evaluate(() =>
       Math.ceil(document.body.scrollHeight / (window.innerHeight / 2)),
     )
+
     for (let i = 0; i <= steps; i++) {
       await page.evaluate((n) => window.scrollTo(0, n * (window.innerHeight / 2)), i)
-      const found = await page.evaluate(() => {
+      const found = await page.evaluate((foot: number) => {
         const keys = Array.from(document.querySelectorAll('button, aside')).filter((el) => {
           const cs = getComputedStyle(el)
           return cs.position === 'fixed' && el.getBoundingClientRect().width <= 60
         })
         const boxes = keys.map((k) => k.getBoundingClientRect())
         const out: string[] = []
-        document.querySelectorAll('main button, main a, main input').forEach((el) => {
-          const r = el.getBoundingClientRect()
-          if (r.width === 0 || r.bottom < 0 || r.top > window.innerHeight) return
-          const clash = boxes.some(
-            (b) => r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top,
-          )
-          if (clash) out.push((el.textContent ?? '').trim().slice(0, 24) || el.tagName)
-        })
+        document
+          .querySelectorAll('[data-action-dock] button, [data-action-dock] a')
+          .forEach((el) => {
+            const r = el.getBoundingClientRect()
+            if (r.width === 0 || r.bottom < window.innerHeight - foot) return
+            const clash = boxes.some(
+              (b) => r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top,
+            )
+            if (clash) out.push((el.textContent ?? '').trim().slice(0, 24) || el.tagName)
+          })
         return out
-      })
+      }, FOOT_PX)
       found.forEach((f) => hits.add(f))
     }
     return [...hits]
   }
 
   for (const mode of ['caption', 'react'] as const) {
-    test(`${mode} mode keeps every control clear of them`, async ({ page }) => {
+    test(`${mode} mode keeps the phase's own control clear of them`, async ({ page }) => {
       for (const [seat, query] of [
         ['host', ''],
         ['guest', '&as=p2'],
@@ -275,8 +370,8 @@ test.describe('the floating keys never cover a control', () => {
           await page.goto(`/room/DEV?seed=42&gifs=stub&mode=${mode}&phase=${phase}${query}`)
           await expect(page.locator('main[data-phase]')).toBeVisible()
           expect(
-            await collisions(page),
-            `${mode} ${seat} ${phase}: a control passes under the floating keys`,
+            await coveredAtFoot(page),
+            `${mode} ${seat} ${phase}: the sticky action bar passes under the floating keys`,
           ).toEqual([])
         }
       }

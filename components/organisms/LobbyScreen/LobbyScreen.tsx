@@ -1,9 +1,10 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { Avatar } from '@/components/atoms/Avatar'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
-import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { SegmentedControl } from '@/components/atoms/SegmentedControl'
 import { Stack } from '@/components/atoms/Stack'
@@ -16,6 +17,8 @@ import {
   WAITING_LINE,
   canStart,
   lobbyCopy,
+  roomRulesLine,
+  rosterCopy,
   settingsSummary,
   startLabel,
   toAvatarProps,
@@ -45,6 +48,15 @@ import styles from './LobbyScreen.module.scss'
  * hand a guest a refusal.
  */
 
+/**
+ * The two modes, at their full names on every screen.
+ *
+ * They were abbreviated on a phone for a while, because the toggle shared its
+ * row with the walkthrough key and two mode names would not fit in what was
+ * left. The key is in the header now and the toggle takes the whole row, which
+ * is room enough — and the full name is worth keeping, because this control is
+ * where somebody who has never played learns what the two modes are.
+ */
 const MODES: Array<{ value: GameMode; label: string }> = [
   { value: 'caption', label: 'Caption the image' },
   { value: 'react', label: 'React to the caption' },
@@ -67,14 +79,34 @@ function joinUrlFor(code: string): string {
 
 export function LobbyScreen() {
   const { state, selfId, isHost, send } = useRoom()
-  const { notify, openHelp } = useRoomShell()
+  const { notify } = useRoomShell()
   if (!state) return null
 
   return isHost ? (
-    <HostLobby state={state} selfId={selfId} send={send} notify={notify} openHelp={openHelp} />
+    <HostLobby state={state} selfId={selfId} send={send} notify={notify} />
   ) : (
     <GuestLobby state={state} selfId={selfId} />
   )
+}
+
+/**
+ * A second hand, for the one line on one screen that needs one.
+ *
+ * The lobby is the only screen in the room with no clock — nothing is running
+ * yet — so the shell's single interval is idle here, and "Vic joined 4 seconds
+ * ago" is the one thing on the page that goes stale on its own. It stops the
+ * moment the game starts, because this component unmounts.
+ *
+ * Deliberately not in `RoomShell`: every other screen would pay a re-render a
+ * second for a line none of them draws.
+ */
+function useSecondHand(): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1_000)
+    return () => clearInterval(id)
+  }, [])
+  return now
 }
 
 /* ------------------------------------------------------------------ */
@@ -157,27 +189,34 @@ function GuestLobby({ state, selfId }: { state: GameState; selfId?: PlayerId }) 
 /**
  * The room's work surface: share it, set it, start it.
  *
- * Two columns once the container can hold them — the share block is a fixed
- * measure and the roster takes the rest. The blocked start is not a separate
- * screen but the same layout with a different headline and a CTA that says
- * what is missing, which is the design's own rule.
+ * **One column on a phone, two on a desk, and the order differs.** A phone
+ * reads share card → mode → what the game is → who is here, with the start
+ * button pinned to the foot; a desk keeps the design's two artboard columns,
+ * controls on the left and the roster on the right. That is a real divergence
+ * rather than a reflow, and it is deliberate: on a phone the roster is what
+ * you watch while you wait, so it wants the bottom of the column and the
+ * button wants the glass. On a desk both are on screen at once and neither
+ * has to give way.
+ *
+ * The blocked start is not a separate screen but the same layout with a
+ * different headline and a CTA that says what is missing, which is the
+ * design's own rule.
  */
 function HostLobby({
   state,
   selfId,
   send,
   notify,
-  openHelp,
 }: {
   state: GameState
   selfId?: PlayerId
   send: ReturnType<typeof useRoom>['send']
   notify: (message: string) => void
-  openHelp: () => void
 }) {
   const copy = lobbyCopy(state, selfId)
   const gate = canStart(state)
   const joinUrl = joinUrlFor(state.roomCode)
+  const roster = rosterCopy(state, selfId, useSecondHand())
 
   const setMode = (mode: GameMode) => {
     if (mode === state.settings.mode) return
@@ -189,92 +228,130 @@ function HostLobby({
   }
 
   return (
-    <Inline gap={44} align="start" className={styles.lobby}>
-      <Stack gap={26} className={styles.share}>
-        <Stack gap={12} className={styles.shareHead}>
-          <Eyebrow>Scan or type the code</Eyebrow>
-          <RoomShare
-            code={state.roomCode}
-            joinUrl={joinUrl}
-            onCopyLink={() => {
-              void navigator.clipboard?.writeText(joinUrl)
-              notify('Room link copied')
-            }}
-            onShareToSlack={() => {
-              void navigator.clipboard?.writeText(joinUrl)
-              notify('Link copied — paste it into Slack')
-            }}
-          />
+    <div className={styles.lobby}>
+      <div className={styles.columns}>
+        <Stack gap={26} className={styles.share}>
+          {/* A card on a phone, a plain block on a desk — the phone needs
+              something holding the QR, the code and the two actions together
+              when they are the whole top of the screen. See the stylesheet. */}
+          <Stack gap={12} className={styles.shareHead}>
+            <Eyebrow>Scan or type the code</Eyebrow>
+            <RoomShare
+              code={state.roomCode}
+              joinUrl={joinUrl}
+              // Where a phone reads the room's rules, because its header has no
+              // width for them. Mode left out: the toggle below says it.
+              meta={roomRulesLine(state)}
+              onCopyLink={() => {
+                void navigator.clipboard?.writeText(joinUrl)
+                notify('Room link copied')
+              }}
+              onShareToSlack={() => {
+                void navigator.clipboard?.writeText(joinUrl)
+                notify('Link copied — paste it into Slack')
+              }}
+            />
+          </Stack>
+
+          {/* The whole row is the toggle now. The walkthrough key that used to
+              share it moved to the header — see `RoomShell` — which is what
+              lets both mode names stay whole on a phone. */}
+          <div className={styles.modeRow}>
+            <SegmentedControl
+              label="Game mode"
+              value={state.settings.mode}
+              onChange={setMode}
+              options={MODES}
+              fullWidth
+            />
+          </div>
+
+          <Stack gap={10}>
+            {/* The heading is a desk's. A phone opens on a card carrying the
+                code and a toggle carrying the mode, and "Everybody in?" over
+                the top of them is a third voice saying nothing the blurb does
+                not — so it stands down there and stays in the document. */}
+            <h1 className={styles.heading}>{copy.heading}</h1>
+            <p className={styles.blurb}>{copy.body}</p>
+          </Stack>
         </Stack>
 
-        <Inline gap={10} wrap={false} className={styles.modeRow}>
-          <SegmentedControl
-            label="Game mode"
-            value={state.settings.mode}
-            onChange={setMode}
-            options={MODES}
-          />
-          <button
-            type="button"
-            className={styles.help}
-            onClick={openHelp}
-            aria-label="How Captionist works"
-          >
-            <Icon name="help" size={17} color="#A18FFF" />
-          </button>
-        </Inline>
+        <div className={styles.rosterCard}>
+          <Stack gap={14}>
+            <Inline justify="between" align="baseline">
+              <h2 className={styles.rosterTitle}>Players</h2>
+              <span className={styles.count}>
+                {state.players.length} of {state.settings.maxPlayers}
+              </span>
+            </Inline>
 
-        <Stack gap={10}>
-          <h1 className={styles.heading}>{copy.heading}</h1>
-          <p className={styles.blurb}>{copy.body}</p>
-        </Stack>
+            {/* A window three rows deep on a phone, the whole list on a desk.
+                Twenty rows above a pinned button is a lobby you scroll past
+                rather than read; `.overflow` below says who is out of sight. */}
+            <ul className={styles.roster}>
+              {state.players.map((player) => (
+                <li key={player.id}>
+                  <PlayerRow
+                    player={toAvatarProps(state, player)}
+                    variant="roster"
+                    host={player.isHost}
+                    you={player.id === selfId}
+                  />
+                </li>
+              ))}
+              {!gate.ok && (
+                <li>
+                  <div className={styles.empty}>
+                    <span className={styles.emptyDot} aria-hidden="true" />
+                    Waiting for a friend…
+                  </div>
+                </li>
+              )}
+            </ul>
 
-        <Stack gap={10} align="stretch">
-          {/* Blocked, never disabled: the control stays live and focusable and
-              the label carries the reason. */}
-          <Button
-            size="form"
-            fullWidth
-            blocked={!gate.ok}
-            onClick={() => send({ type: 'game/started' })}
-          >
-            {startLabel(state)}
-          </Button>
-          <p className={styles.note}>Late joiners can still hop in between rounds</p>
-        </Stack>
-      </Stack>
-
-      <Box background="card" radius="card" padding={20} className={styles.rosterCard}>
-        <Stack gap={14}>
-          <Inline justify="between" align="baseline">
-            <h2 className={styles.rosterTitle}>Player list</h2>
-            <span className={styles.count}>
-              {state.players.length} of {state.settings.maxPlayers}
-            </span>
-          </Inline>
-
-          <ul className={styles.roster}>
-            {state.players.map((player) => (
-              <li key={player.id}>
-                <PlayerRow
-                  player={toAvatarProps(state, player)}
-                  variant="roster"
-                  host={player.isHost}
-                  you={player.id === selfId}
-                />
-              </li>
-            ))}
-            {!gate.ok && (
-              <li>
-                <div className={styles.empty}>
-                  <span className={styles.emptyDot} aria-hidden="true" />
-                  Waiting for a friend…
-                </div>
-              </li>
+            {/* Only where the window actually hides somebody. Both lines are
+                the phone's — a desk shows the roster whole and announces
+                arrivals in the room's own lane. */}
+            {roster.hidden && (
+              <p className={styles.overflow}>
+                <Avatar {...roster.hidden.face} size={26} />
+                {roster.hidden.line}
+              </p>
             )}
-          </ul>
-        </Stack>
-      </Box>
-    </Inline>
+            {roster.arrival && (
+              <p className={styles.arrival}>
+                <span className={styles.arrivalDot} aria-hidden="true" />
+                {roster.arrival}
+              </p>
+            )}
+          </Stack>
+        </div>
+      </div>
+
+      {/**
+        * The one control that starts the room — across the foot of the glass on
+        * a phone, under the share column on a desk.
+        *
+        * A sibling of the columns rather than a child of the left one, which is
+        * what lets it be either. It has to escape `.columns` for two reasons:
+        * that box is a query container, and a query container is the containing
+        * block for anything `position: fixed` inside it; and on a phone the
+        * button belongs after the roster in reading order, where a child of the
+        * left column can never be.
+        *
+        * `data-action-dock` is what lifts the room's floating keys above it.
+        */}
+      <div className={styles.foot} data-action-dock="noted">
+        <Button
+          size="form"
+          fullWidth
+          blocked={!gate.ok}
+          onClick={() => send({ type: 'game/started' })}
+        >
+          {startLabel(state)}
+        </Button>
+        <p className={styles.note}>Late joiners can still hop in between rounds</p>
+      </div>
+    </div>
   )
 }

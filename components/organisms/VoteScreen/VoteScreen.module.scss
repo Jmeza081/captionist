@@ -1,17 +1,8 @@
 @use 'theme' as t;
 
-/**
- * The screen, so the dock can ask how wide it is.
- *
- * `.lockDock` was the last `t.mq('md')` doing a *reflow* in a room screen — a
- * viewport query inside a container-keyed layout, and wrong in exactly the band
- * this screen was rebuilt for: at a 768–1000px window with chat docked it
- * unpinned the button and dropped its gradient while the column underneath was
- * still phone-shaped. It asks the column now, like everything else here.
- * (`LobbyScreen` keeps one, on a `gap` between settings pairs — a viewport
- * query that changes no layout is a different thing from one that does.)
- */
 .screen {
+  // The bar below carries its own container; nothing else on this screen asks
+  // the screen's width, now that the lock dock has stopped unpinning itself.
   container-type: inline-size;
 }
 
@@ -93,25 +84,29 @@
   object-fit: cover;
 }
 
-// The lock button follows the grid on desktop, but a phone voter scrolls a
-// long way down the cards — so it sticks to the bottom of the viewport there.
+/**
+ * The lock button, at the foot of a board you scroll a long way down — at
+ * every width, now.
+ *
+ * Two offsets were wrong here in turn, and the second one shipped.
+ *
+ * `bottom: var(--room-dock-clearance)` came first: offsetting a sticky bar so
+ * it clears the floating keys sticks it that far *above* the fold, and the
+ * button drew in the middle of the board with cards either side of it. The
+ * keys stack above it now, so the offset is 0.
+ *
+ * Then the bar *unpinned itself* past `$vote-bar-columns`, on the reasoning
+ * that a wide layout does not need a sticky foot. It needs it more. Above `md`
+ * the room is an app shell — the window does not scroll, the content column
+ * does — so a static bar at the end of a four-card grid sat 164px below the
+ * fold on a 900px laptop and crept up the screen as you scrolled, arriving at
+ * the bottom only once the board had run out. The phase's one committing
+ * control was the one thing on the screen you had to go looking for. It sticks
+ * at every width, exactly like `RoundPicker`'s, and the 160px it owes the
+ * toolbox pill above `md` comes from the mixin rather than from here.
+ */
 .lockDock {
-  // `bottom: var(--room-dock-clearance)` was wrong and shipped: offsetting a
-  // sticky bar so it clears the floating keys sticks it that far *above* the
-  // fold, and the button sat in the middle of the board with cards either side
-  // of it. The keys are cleared with padding; the offset stays 0.
   @include t.stickyActionDock;
-
-  @container (min-width: #{t.$vote-bar-columns}) {
-    position: static;
-    // Still reserving room on the right, just more of it: past this measure the
-    // toolbox FAB is a labelled pill rather than a 44px key, and everyone has
-    // one now — so the widest thing in this corner is no longer chat's.
-    padding-right: t.$toolbox-fab-clear;
-    padding-top: t.$space-34;
-    padding-bottom: 0;
-    background: none;
-  }
 }
 
 // The reaction affordance and the popover it opens share one anchor, so the

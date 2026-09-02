@@ -239,10 +239,19 @@ $font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
 // The lobby draws the same code smaller, beside a QR rather than under one.
 // Sized off the container, not the viewport: the share column is a fixed
 // measure, so a `vw` scale would overflow it on a wide screen.
+/**
+ * Beside the QR rather than under it, so the column is what it has to fit.
+ *
+ * Fluid, and it was 2.75rem flat. On a desk the code sits in a 456px column and
+ * 44px is the design's size; on a phone the same column is the width of the
+ * card less a QR — about 200px — and eight characters at 44px ran off the end
+ * of "C-F34213" mid-digit. A code that is read aloud and typed by hand may not
+ * wrap and may not clip, so the type is what gives.
+ */
 @mixin roomCodeCompactText {
   @include roomCodeText;
 
-  font-size: 2.75rem;
+  font-size: clamp(1.6rem, 7vw, 2.75rem);
   letter-spacing: 0.04em;
 }
 

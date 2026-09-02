@@ -61,18 +61,22 @@ export function TiebreakScreen() {
               />
 
               {/**
-                * Who it is and how to pick them, in one box.
+                * Who it is and how to pick them, in one box, at every width.
                 *
-                * A row inside the card on a phone — the design joins it to the
-                * picture, which is what stops two stacked contenders reading as
-                * four loose things. A centred column under the card once the
-                * lanes are side by side, which is where the design puts it.
-                * One arrangement, two shapes; see the stylesheet.
+                * A row joined to the picture: the face and the name in the
+                * bottom-left corner of the card, the button on the same line at
+                * the right. It used to break into a centred column under the
+                * card once the lanes were side by side, and that read as four
+                * loose things rather than two cards — an avatar adrift between
+                * a picture and a button, with nothing saying which contender it
+                * belonged to. The card is the unit, and its foot is part of it.
                 */}
               <div className={styles.foot}>
                 {card.author && (
                   <Inline gap={10} wrap={false} className={styles.who}>
-                    <Avatar {...card.author} size={34} />
+                    {/* An attribution rather than a second subject — the
+                        picture above is what the duel is about. */}
+                    <Avatar {...card.author} size={26} />
                     <span className={styles.name}>{card.author.name}</span>
                   </Inline>
                 )}
@@ -81,6 +85,10 @@ export function TiebreakScreen() {
                     refuses it, so offering the button would produce a snackbar
                     rather than a vote. */}
                 <Button
+                  // Sized to share the card's foot with a name rather than to
+                  // lead a screen. The picture above it is the thing being
+                  // chosen; this is only how you choose it.
+                  size="small"
                   blocked={card.own || voted}
                   // Named by the long label whichever one is drawn, so the
                   // button says the same thing to a screen reader at every

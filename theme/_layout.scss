@@ -5,7 +5,9 @@
 // class names are literal in the compiled output, so `styles.alignCenter`
 // still resolves inside a CSS module.
 
+@use 'breakpoints';
 @use 'colors';
+@use 'metrics';
 @use 'spacing';
 
 @mixin alignClasses {
@@ -60,9 +62,18 @@
  * through it, or a caption meets the gradient at its own height and loses its
  * bottom half cleanly, which reads as clipping rather than depth.
  *
- * **Room on the right.** The floating keys own that corner, and a full-width
- * control ran underneath them — the right end of "Lock my ranking" opened chat
- * instead of ranking.
+ * **The full width of the column, and the keys stack above it.** The bar used
+ * to reserve a key's width on its right, because the floating chat and toolbox
+ * keys own that corner and a full-width control ran underneath them. Paying
+ * for them sideways cost the bar its width — on a phone "Lock my ranking" sat
+ * short of the right edge and read as a stray pill rather than the screen's
+ * one action. The room clears them vertically now instead: a screen carrying
+ * one of these declares it with `data-action-dock`, and `RoomShell` lifts the
+ * key column above the band this bar owns. See `--room-dock-base`.
+ *
+ * From `md` up the corner is a labelled toolbox pill rather than a stacked
+ * column of keys, and the room does not lift it — so the sideways reservation
+ * is still the right answer there, and it is the only place it survives.
  */
 @mixin stickyActionDock($fade: spacing.$space-52) {
   position: sticky;
@@ -75,18 +86,44 @@
    * a sticky bar stops sticking with the whole band still below it, and comes
    * to rest a key's height above the bottom of the page.
    *
-   * This dock does not need that band: it clears the keys sideways, on the
-   * right, so it can have the space back and end where the screen ends. The
-   * margin gives it back everything but a screen's own bottom padding.
+   * This dock does not need that band: the keys have been lifted above it, so
+   * it takes the whole thing back and the column ends on the bar's own bottom
+   * edge.
+   *
+   * All of it, not all-but-twenty. Leaving a screen's bottom padding under the
+   * bar meant that at the end of the scroll the bar came to rest twenty pixels
+   * up — and the keys, which are fixed to the *viewport*, do not rise with it,
+   * so the lift that clears them everywhere else stopped clearing them exactly
+   * where the scroll ends. The bar's own `padding-bottom` is the ground under
+   * the control; nothing else needs to be.
+   *
+   * `--room-column-foot` and not `--room-dock-clearance`: the clearance is the
+   * *keys'* band, which is the column's padding only below `md`. Negating the
+   * phone's figure inside a 78px desktop column overshot it by 62px, which
+   * hung the bar below the scrollport.
    */
-  margin-bottom: calc(#{spacing.$space-20} - var(--room-dock-clearance, #{spacing.$space-20}));
+  margin-bottom: calc(-1 * var(--room-column-foot, #{spacing.$space-20}));
   padding-top: $fade;
   padding-bottom: spacing.$space-14;
-  padding-right: calc(#{spacing.$tap-target-min} + #{spacing.$space-20});
+
+  @include breakpoints.mq('md') {
+    padding-right: metrics.$toolbox-fab-clear;
+  }
+
+  /**
+   * Solid ground everywhere but the fade, measured rather than guessed.
+   *
+   * It was `55%`, which was right for a bar holding one control and wrong the
+   * moment one held two: the lobby's start bar carries a line above its button,
+   * and at 55% of a taller box that line straddled the edge of the gradient and
+   * read as text printed over a player's face. The fade is `$fade` tall by
+   * definition — it is the padding above the content — so the stop belongs
+   * there rather than at a percentage of whatever the content turned out to be.
+   */
   background: linear-gradient(
     to top,
     colors.$surface-canvas 0%,
-    colors.$surface-canvas 55%,
+    colors.$surface-canvas calc(100% - #{$fade}),
     rgba(10, 10, 11, 0) 100%
   );
 

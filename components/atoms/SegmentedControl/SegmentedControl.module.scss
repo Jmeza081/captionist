@@ -15,6 +15,16 @@
   min-width: 0;
 }
 
+// See `fullWidth` — the track owns the row, and the options split it evenly.
+.fullWidth {
+  display: flex;
+  width: 100%;
+
+  .item {
+    flex: 1;
+  }
+}
+
 // On a card the track drops a step so it still reads as inset.
 .card {
   border-radius: t.$segmented-radius-card;

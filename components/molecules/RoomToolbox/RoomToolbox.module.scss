@@ -2,7 +2,9 @@
 
 .toolbox {
   position: fixed;
-  bottom: t.$space-20;
+  // The room says where the floating corner starts, so the panel rises with
+  // its own key when a screen's sticky action bar is underneath both of them.
+  bottom: var(--room-dock-base, #{t.$space-20});
   z-index: t.$z-toolbox;
   width: t.$toolbox-width;
   max-width: calc(100vw - #{t.$space-34});
@@ -133,7 +135,9 @@
   @include t.focusRing;
 
   position: fixed;
-  bottom: t.$space-20;
+  // The lowest thing in the corner, and the one the rest of the column stacks
+  // on — chat's key reads `--room-dock-bottom`, which is derived from this.
+  bottom: var(--room-dock-base, #{t.$space-20});
   z-index: t.$z-toolbox;
   display: flex;
   align-items: center;

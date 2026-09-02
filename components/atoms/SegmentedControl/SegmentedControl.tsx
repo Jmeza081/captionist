@@ -20,6 +20,15 @@ export interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void
   /** `card` is the darker track used when the control sits on a card. */
   surface?: 'default' | 'card'
+  /**
+   * Stretch to the width of the container, and split it evenly.
+   *
+   * The track hugs its content by default, which is right beside something
+   * else on the same row. Where it owns the row — the lobby's mode toggle — it
+   * takes the whole of it, and that is also what lets two long option labels
+   * stay whole on a phone instead of wrapping to three ragged lines.
+   */
+  fullWidth?: boolean
 }
 
 /**
@@ -34,10 +43,13 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   surface = 'default',
+  fullWidth = false,
 }: SegmentedControlProps<T>) {
   return (
     <div
-      className={`${styles.track} ${styles[surface]}`}
+      className={[styles.track, styles[surface], fullWidth ? styles.fullWidth : '']
+        .filter(Boolean)
+        .join(' ')}
       role="radiogroup"
       aria-label={label}
     >

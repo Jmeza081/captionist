@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
+import { Icon } from '@/components/atoms/Icon'
 import { ProgressRail } from '@/components/atoms/ProgressRail'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
 import { Snackbar } from '@/components/atoms/Snackbar'
@@ -312,10 +313,26 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
         host={isHost}
         surface={state.phase === 'vote' ? 'vote' : 'default'}
         trailing={
-          // The pips and the clock are the same slot: the scoreboard is untimed
-          // and the timed phases have no rounds-played to report, so the two
-          // never contend.
-          showsRoundProgress(state) ? (
+          /*
+            Three things, and no two of them are ever wanted at once.
+
+            The pips and the clock were already the same slot: the scoreboard is
+            untimed and the timed phases have no rounds-played to report. The
+            walkthrough key joins them on the lobby, which has neither — it is
+            the screen where somebody is deciding whether to press start, and it
+            used to sit beside the mode toggle, taking a third of the one row a
+            phone has for two mode names.
+          */
+          state.phase === 'lobby' ? (
+            <button
+              type="button"
+              className={styles.helpKey}
+              onClick={openHelp}
+              aria-label="How Captionist works"
+            >
+              <Icon name="help" size={17} color="#A18FFF" />
+            </button>
+          ) : showsRoundProgress(state) ? (
             <RoundProgress
               played={state.roundNumber}
               total={state.settings.totalRounds}

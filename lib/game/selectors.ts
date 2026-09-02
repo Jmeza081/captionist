@@ -281,9 +281,99 @@ export function showsProgressRail(state: GameState): boolean {
 
 /** `AppHeader.settings` — mode first, so a late joiner learns the game. */
 export function settingsLine(state: GameState): string {
+  return [modeName(state.settings.mode), roomRulesLine(state)].join(' · ')
+}
+
+/**
+ * How many roster rows a phone's window holds. See `$lobby-roster-cap`.
+ *
+ * Stated here as well as in `theme/` because the *line* under the window has
+ * to name the same people the window hides, and a count that disagreed with
+ * the CSS would read as a bug rather than as a summary.
+ */
+export const ROSTER_WINDOW = 3
+
+/**
+ * How recently somebody has to have arrived to be worth a line.
+ *
+ * A lobby fills over a minute or two, so "just joined" past this stops being
+ * news and starts being furniture that never leaves.
+ */
+const ARRIVAL_FRESH_MS = 60_000
+
+export interface RosterCopy {
+  /** Who the phone's three-row window leaves out, and the line that says so. */
+  hidden?: { face: PlayerFace; line: string }
+  /** The newest arrival, while it is still news — "Vic joined 4 seconds ago". */
+  arrival?: string
+}
+
+/**
+ * The two lines under the phone's roster window.
+ *
+ * Both are the phone layout's: a desk shows the roster whole, so there is
+ * nobody to name, and an arrival there is visible as a row appearing. Neither
+ * is an announcement — `roomAnnouncements` deliberately says nothing about
+ * joins, because twenty of them while a room fills is noise on top of the
+ * screen that exists to show exactly that. This is that screen doing its job.
+ *
+ * `now` is a parameter rather than a `Date.now()` call so the function stays
+ * pure and its caller owns the tick.
+ */
+export function rosterCopy(
+  state: GameState,
+  viewerId: PlayerId | undefined,
+  now: number,
+): RosterCopy {
+  const out: RosterCopy = {}
+
+  const offscreen = state.players.slice(ROSTER_WINDOW)
+  const first = offscreen[0]
+  if (first) {
+    const rest = offscreen.length - 1
+    out.hidden = {
+      face: toAvatarProps(state, first),
+      line:
+        rest > 0
+          ? `${first.name} and ${rest} more · scroll for all ${state.players.length}`
+          : `${first.name} · scroll for all ${state.players.length}`,
+    }
+  }
+
+  // Yourself excluded: you know you arrived, and on a room's first paint the
+  // host would otherwise be told they had just joined their own room.
+  const newest = state.players
+    .filter((p) => p.id !== viewerId)
+    .reduce<Player | undefined>(
+      (best, p) => (best === undefined || p.joinedAt > best.joinedAt ? p : best),
+      undefined,
+    )
+
+  if (newest && now - newest.joinedAt < ARRIVAL_FRESH_MS) {
+    out.arrival = `${newest.name} joined ${agoLine(now - newest.joinedAt)}`
+  }
+
+  return out
+}
+
+/** Whole seconds, then the one word that covers the first of them. */
+function agoLine(elapsedMs: number): string {
+  const seconds = Math.max(0, Math.round(elapsedMs / 1_000))
+  if (seconds < 2) return 'just now'
+  return `${seconds} seconds ago`
+}
+
+/**
+ * The same line without the mode — rounds, clock, voting.
+ *
+ * The lobby's share card sits directly above the mode toggle on a phone, so a
+ * mode name there would be the screen saying it twice, once as a fact and once
+ * as a control. `settingsLine` keeps the mode because the header has no toggle
+ * under it and a late joiner learns the game from that line.
+ */
+export function roomRulesLine(state: GameState): string {
   const s = state.settings
   return [
-    modeName(s.mode),
     `${s.totalRounds} ${s.totalRounds === 1 ? 'round' : 'rounds'}`,
     `${s.capSeconds}s`,
     s.voting === 'rank' ? 'rank top 3' : 'single vote',

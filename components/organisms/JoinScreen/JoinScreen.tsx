@@ -16,7 +16,7 @@ import type { HatId } from '@/lib/game/types'
 import { devGuestDelay } from '@/lib/room/devGuests'
 import { writeIdentity } from '@/lib/room/identity'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
-import { useSuggestedName } from '@/lib/room/useSuggestedName'
+import { useNicknameField } from '@/lib/room/useSuggestedName'
 import styles from './JoinScreen.module.scss'
 
 /**
@@ -73,10 +73,10 @@ export function JoinScreen({ initialCode = '', autoJoin }: JoinScreenProps) {
   // remembered name is worse than none when the second tab is the second
   // player — see `useSuggestedName`.
   const stored = useStoredPerson()
-  const suggested = useSuggestedName()
-  const [typedName, setTypedName] = useState<string | undefined>(undefined)
+  // The suggestion, plus anything typed over it — including anything typed
+  // before this tab hydrated. See `useNicknameField`.
+  const [name, attachNickname, setTypedName] = useNicknameField()
   const [pickedSeed, setPickedSeed] = useState<string | undefined>(undefined)
-  const name = typedName ?? suggested
   const seed = pickedSeed ?? stored.avatarSeed
   /**
    * The hat, and a sentinel that is not `undefined`.
@@ -173,6 +173,7 @@ export function JoinScreen({ initialCode = '', autoJoin }: JoinScreenProps) {
                   value={name}
                   maxLength={20}
                   placeholder={copy.nicknamePlaceholder}
+                  ref={attachNickname}
                   onChange={(e) => setTypedName(e.target.value)}
                 />
               </Stack>

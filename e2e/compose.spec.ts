@@ -16,8 +16,9 @@ test.describe('composing', () => {
     await expect(page.getByText('Make it hurt. Make it funny.')).toBeVisible()
     await expect(page.getByText('0 of 4 have submitted')).toBeVisible()
 
-    // Blocked until there is something to submit.
-    await expect(page.getByRole('button', { name: 'Write something first' })).toBeVisible()
+    // Blocked until there is something to submit — and saying the same thing
+    // either way. The empty field above is what says what is missing.
+    await expect(page.getByRole('button', { name: 'Submit caption' })).toBeVisible()
 
     await page.getByRole('textbox', { name: 'Top text' }).fill('Prod’s down again')
     await expect(page.getByText('17 / 60')).toBeVisible()
@@ -128,8 +129,8 @@ test.describe('composing', () => {
     // One organism draws both, so the two screens carry the same furniture:
     // the search field, the two page controls, and the one control that ends
     // your turn — all within reach of the field rather than under fifty tiles.
-    await expect(page.getByRole('button', { name: 'Surprise me' })).toBeInViewport()
-    await expect(page.getByRole('button', { name: 'Pick one first' })).toBeInViewport()
+    await expect(page.getByRole('button', { name: /Surprise me/ })).toBeInViewport()
+    await expect(page.getByRole('button', { name: 'Lock in my answer' })).toBeInViewport()
     await expect(page.getByRole('button', { name: /Shuffle results/ })).toHaveCount(1)
     // And the note reads with the headline rather than as a label on the button.
     await expect(page.getByText('You get one shot')).toBeInViewport()

@@ -6,47 +6,94 @@
   // offsets by it may assume a number.
   --room-rail-width: 0px;
 
+  /**
+   * Where the *lowest* thing in the floating corner sits.
+   *
+   * The toolbox key is that thing, and chat's key stacks on top of it. Stated
+   * once so the column can be lifted as a unit: a screen with a sticky action
+   * bar raises this to the top of the bar, and both keys rise with it rather
+   * than each being told separately. See `--room-action-dock`.
+   */
+  --room-dock-base: #{t.$space-20};
+
+  /**
+   * The height the sticky action bar owns at the foot of the column.
+   *
+   * `0` unless a screen actually carries one — the `:has()` below is what
+   * turns it on, so the keys sit in the corner on the eight screens with no
+   * bar and lift above it on the two that have one. A `form` CTA plus the
+   * bar's own bottom padding; `RoundPicker`'s is shorter and clears it too.
+   */
+  --room-action-dock: 0px;
+
   // How far up from the bottom edge floating room furniture has to start.
   // On a phone the toolbox key already owns the bottom-right corner — and it
   // is everybody's now, not just the host's —
   // and chat's key would land underneath it — so anything else that floats
   // there stacks above it rather than fighting it for the same 44px.
-  --room-dock-bottom: #{t.$space-20};
+  --room-dock-bottom: var(--room-dock-base);
 
   // Where the keys sit, stated once and consumed by both of them.
   //
   // They used to pick their own: chat's key at `right: $space-14`, the toolbox
   // key at `right: $space-20`. Two 44px circles a stone's throw apart, on
-  // different right edges — visibly out of line on every phone screen, and the
-  // reason the reserved column had to be 64px rather than either number.
-  --room-dock-right: #{t.$space-8};
+  // different right edges — visibly out of line on every phone screen.
+  //
+  // The same value the column is padded by, so a key's right edge and the
+  // content's right edge are one line rather than two twelve pixels apart. It
+  // spent a while at 8 to keep the reserved column narrow; nothing reserves a
+  // column sideways any more, so it can go back to matching the gutter.
+  --room-dock-right: #{t.$space-20};
 
   /**
-   * What the column pays for that corner — on both sides, so it reads even.
+   * The phone's gutter, and the same one the front doors use.
    *
-   * There are three things to want here and only two can be true at once: even
-   * gutters, controls that run the full width, and nothing tappable underneath
-   * the keys. Dropping the reservation altogether bought the even gutters and
-   * cost the third — measured across every screen, the lobby's start button,
-   * the duel's "Vote this one", the picker's tiles and the vote grid's "Rank
-   * this" all passed under the keys as you scrolled, which is the same fault
-   * ("the right end of Rank this opened chat") the asymmetric gutter was added
-   * to fix in the first place.
+   * It was 52 for a while: `$space-8` plus a whole 44px key, so the column
+   * cleared the floating pair *sideways* and nothing tappable could pass under
+   * them. That bought safety with a quarter of a 393px phone — the room's own
+   * screens were 289px wide with 104px of empty margin, and every card,
+   * caption and board tile paid for it.
    *
-   * So the reservation is back and the keys moved in to meet it: 8px from the
-   * edge instead of 20, which makes the column they own 52 rather than 64, and
-   * the screen pays that on both sides. 289px of content on a 393px phone —
-   * exactly what the lopsided version gave — with the two gutters equal.
+   * The keys are cleared vertically now instead. A screen's one committing
+   * control is a sticky bar the key column sits on top of
+   * (`--room-action-dock`), and the rest of the corner behaves like every
+   * other floating key on a phone: it overlays the scroll. That is the trade —
+   * a key can pass over a card mid-scroll again — and it is the right way
+   * round, because the control that must never be covered is the one the bar
+   * now holds.
+   *
+   * **Why 20 and not 8.** The reservation came off in one step, to `$space-8`,
+   * and the cards were right at that width while the words were not: a screen
+   * title and a paragraph both sat on the edge of the glass. 20 reads as a
+   * margin again and still hands the cards 32 of the 44 pixels the change was
+   * about. It is also `$screen-pad-h`'s phone counterpart across the front
+   * doors — `/`, `/host` and `/join` were already on it — so the room and the
+   * door now agree, which they did not at 8. 16 would have read the same and
+   * is not on the scale (DESIGNSYSTEM.md §2); 20 is.
    */
-  --room-column-pad: calc(#{t.$space-8} + #{t.$tap-target-min});
+  --room-column-pad: #{t.$space-20};
 
   // The vertical band the pair owns, bottom edge to top of the upper key.
   // Screens clear this instead of shrinking away from a full-height gutter —
   // see `.content`.
   --room-dock-clearance: calc(
-    #{t.$space-20} + #{t.$tap-target-min} + #{t.$space-12} + #{t.$tap-target-min} +
+    var(--room-dock-base) + #{t.$tap-target-min} + #{t.$space-12} + #{t.$tap-target-min} +
       #{t.$space-20}
   );
+
+  /**
+   * What the content column actually reserves at its foot.
+   *
+   * Published because a sticky action bar has to give back *exactly* this much
+   * to come to rest on the end of the column, and the two numbers are not the
+   * same at both breakpoints: below `md` the column clears a stacked pair of
+   * keys, above it a single pill. The bar used to negate the phone's figure at
+   * every width, which above `md` overshot the column's real padding by 62px —
+   * so the dock hung below the scrollport and the last of the board could not
+   * be scrolled to. One name, read by the column that sets it and the mixin
+   * that undoes it.
+   */
+  --room-column-foot: var(--room-dock-clearance);
 
   display: flex;
   flex-direction: column;
@@ -91,8 +138,8 @@
   // Without this a wide grid inside the column pushes the rail off-screen
   // instead of scrolling itself.
   min-width: 0;
-  // Even, and wide enough to keep a control out from under the keys. See
-  // `--room-column-pad`.
+  // Even, and as narrow as the design will allow — the keys are cleared
+  // vertically now, not sideways. See `--room-column-pad`.
   padding: t.$screen-pad-v var(--room-column-pad);
 
   @include t.mq('md') {
@@ -109,22 +156,83 @@
 // exactly where all of them want to be. The whole stack now, not most of it:
 // reserving 78px under a 122px column of keys left the top one overlapping.
 .hasToolbox .content {
-  padding-bottom: var(--room-dock-clearance);
+  padding-bottom: var(--room-column-foot);
+}
 
+.shell.hasToolbox {
   // Above `md` chat has docked into the rail and only the toolbox pill floats,
   // so there is one control's worth to clear rather than a column.
   @include t.mq('md') {
-    padding-bottom: t.$space-52 + t.$space-26;
+    --room-column-foot: #{t.$space-52 + t.$space-26};
   }
 }
 
 .shell.hasToolbox {
-  --room-dock-bottom: calc(#{t.$space-20} + #{t.$tap-target-min} + #{t.$space-12});
+  --room-dock-bottom: calc(var(--room-dock-base) + #{t.$tap-target-min} + #{t.$space-12});
 
   // Above `md` the toolbox sits beside the rail rather than on top of it, so
   // there is nothing to clear.
   @include t.mq('md') {
     --room-dock-bottom: #{t.$space-20};
+  }
+}
+
+/**
+ * A screen with a sticky action bar lifts the whole key column above it.
+ *
+ * `:has()` rather than a flag through React, because the fact is the screen's
+ * and the consumers are two fixed elements outside it — the toolbox key and
+ * chat's, neither of which is anywhere near the screen in the tree. The bar
+ * marks itself with `data-action-dock` (see `stickyActionDock`), so a third
+ * screen growing one is one attribute rather than a new prop threaded through
+ * the shell.
+ *
+ * Phones only. From `md` up the bar is not sticky on either screen that has
+ * one, and the toolbox is a pill beside a docked rail rather than a key over
+ * the content.
+ */
+.shell:has([data-action-dock]) {
+  --room-action-dock: calc(#{t.$btn-form-height} + #{t.$space-14});
+
+  --room-dock-base: calc(var(--room-action-dock) + #{t.$space-8});
+
+  @include t.mq('md') {
+    --room-action-dock: 0px;
+    --room-dock-base: #{t.$space-20};
+
+    /**
+     * The bar *is* the column's foot, so the column reserves nothing under it.
+     *
+     * Above `md` the content column is the scroller, and a scroller's own
+     * bottom padding pushes a `bottom: 0` sticky child up by exactly that much
+     * — so the 78px reserved for the floating toolbox pill parked the vote's
+     * lock button 78px above the fold at every scroll position. The bar clears
+     * that pill sideways instead (`stickyActionDock`'s `padding-right`), and
+     * its own `padding-bottom` is the ground under the control.
+     *
+     * Below `md` this does not apply: the window is the scroller there, and
+     * the column's padding is on an element inside it rather than on the
+     * scrollport.
+     */
+    --room-column-foot: 0px;
+  }
+}
+
+/**
+ * A bar with a line under its control is taller by that line.
+ *
+ * The lobby's is the only one — "Late joiners can still hop in between rounds"
+ * sits under the start button, where the design puts it. A value on the
+ * attribute rather than a second attribute, so the shell has one thing to look
+ * for and the screen says which shape of bar it is.
+ */
+.shell:has([data-action-dock='noted']) {
+  --room-action-dock: calc(
+    #{t.$btn-form-height} + #{t.$space-8} + #{t.$lobby-note-line} + #{t.$space-14}
+  );
+
+  @include t.mq('md') {
+    --room-action-dock: 0px;
   }
 }
 
@@ -184,5 +292,33 @@
 
   @include t.mq('md') {
     display: contents;
+  }
+}
+
+/**
+ * The walkthrough key, in the header's trailing slot on the lobby.
+ *
+ * Drawn here rather than by `LobbyScreen` because the bar is the shell's, and
+ * a screen reaching into the header to hang a control off it is the shape that
+ * ends with three screens each hanging a different one. The lobby asks for it
+ * through `openHelp`, which it already had.
+ */
+.helpKey {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$lobby-help-key;
+  height: t.$lobby-help-key;
+  padding: 0;
+  border: 0;
+  border-radius: t.$radius-avatar;
+  background-color: t.$fill-subtle;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: t.$accent-fill;
   }
 }

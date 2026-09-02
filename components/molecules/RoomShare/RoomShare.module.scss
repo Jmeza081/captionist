@@ -1,42 +1,57 @@
 @use 'theme' as t;
 
+/**
+ * Three parts, two arrangements, one grid.
+ *
+ * The code has to sit *beside* the QR at every width — a phone that stacks
+ * them puts a 142px square above a room code and pushes the actions off the
+ * fold — but the two buttons only fit on the same line as the code once there
+ * is a laptop's worth of room. Grid areas are what let the actions move from
+ * under the whole block to under the code without the markup changing, and
+ * without either arrangement being written as an exception to the other.
+ *
+ * Areas rather than flex order: the QR spans both rows on a desk, which is the
+ * one thing flex cannot say.
+ */
 .share {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: t.$space-20;
+  display: grid;
+  grid-template-areas:
+    'qr body'
+    'actions actions';
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: t.$space-12 t.$space-14;
   width: 100%;
 
-  // Side by side once there's room; stacked on a phone, where the QR is the
-  // thing you point a camera at and wants the width.
   @include t.mq('md') {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: t.$space-26;
-    // The code cannot break, so if the column is ever narrower than the QR plus
-    // the code, the body drops below it rather than the code losing a
-    // character to the next line. A last resort: `$lobby-share-width` is sized
-    // so it does not happen at the docked rail's width.
-    flex-wrap: wrap;
+    grid-template-areas:
+      'qr body'
+      'qr actions';
+    grid-template-rows: auto 1fr;
+    gap: t.$space-8 t.$space-26;
   }
 }
 
+// Smaller on a phone, where it shares a line with the code rather than owning
+// one. Still well past the ~2cm a camera needs at arm's length.
 .qr {
+  grid-area: qr;
   flex: none;
-  width: 100%;
-  max-width: t.$share-qr;
+  width: t.$share-qr-compact;
+
+  @include t.mq('md') {
+    width: t.$share-qr;
+    padding: t.$space-12;
+  }
 }
 
 .body {
+  grid-area: body;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: t.$space-6;
   min-width: 0;
-
-  @include t.mq('md') {
-    align-items: flex-start;
-  }
 }
 
 .url {
@@ -47,9 +62,42 @@
   overflow-wrap: anywhere;
 }
 
+// The room's rules, where a phone header has no room for them. See `meta`.
+// From `md` up the header carries them and this would be the same line twice.
+.meta {
+  @include t.labelText;
+  font-weight: 500;
+  color: t.$text-meta;
+
+  @include t.mq('md') {
+    display: none;
+  }
+}
+
+/**
+ * Under the whole block on a phone, under the code on a desk.
+ *
+ * They share the line evenly where they own it: "Copy link" and "Share to
+ * Slack" are different lengths, and two content-width pills adrift at the left
+ * of a card read as leftovers rather than as the card's actions. Beside the
+ * code there is room for both at their natural width, and stretching them
+ * there would make a 456px column of buttons.
+ */
 .actions {
+  grid-area: actions;
   display: flex;
-  flex-wrap: wrap;
   gap: t.$space-8;
-  margin-top: t.$space-8;
+
+  > * {
+    flex: 1;
+  }
+
+  @include t.mq('md') {
+    margin-top: t.$space-8;
+    flex-wrap: wrap;
+
+    > * {
+      flex: none;
+    }
+  }
 }

@@ -12,6 +12,8 @@ export interface EyebrowProps {
    */
   tone?: EyebrowTone
   as?: ElementType
+  /** For the screen to place it — never to restyle it. */
+  className?: string
   children: ReactNode
 }
 
@@ -21,10 +23,10 @@ export interface EyebrowProps {
  * Uppercasing happens in CSS so the source string stays readable and screen
  * readers pronounce it as words rather than letters.
  */
-export function Eyebrow({ tone = 'accent', as, children }: EyebrowProps) {
+export function Eyebrow({ tone = 'accent', as, className, children }: EyebrowProps) {
   const Component = (as ?? 'span') as ElementType
   return (
-    <Component className={`${styles.eyebrow} ${styles[tone]}`}>
+    <Component className={`${styles.eyebrow} ${styles[tone]} ${className ?? ''}`}>
       {children}
     </Component>
   )

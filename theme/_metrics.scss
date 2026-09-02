@@ -350,12 +350,35 @@ $lobby-columns: 1080px;
 $lobby-player-min: 276px;
 $lobby-help-key: 36px;
 
+/**
+ * The line under the lobby's start button, set to a stated height.
+ *
+ * The room lifts its floating keys above a screen's action bar by that bar's
+ * height, and this is the one bar with two things in it. A `line-height` and a
+ * lift that were each derived separately would disagree by whatever the type
+ * ramp happened to resolve to; both read this instead.
+ */
+$lobby-note-line: 22px;
+
+/**
+ * The phone roster's window: three rows and the two gaps between them.
+ *
+ * A room holds twenty, and twenty rows above a sticky foot is a lobby you
+ * scroll past rather than read. Three is what the design draws, with a line
+ * under it naming who is out of sight.
+ */
+/// Three rows and the two 10px gaps between them. The gaps are written out
+/// because this file cannot see the spacing scale — see the note at the top.
+$lobby-roster-cap: ($player-row-pad-y * 2 + $avatar-40) * 3 + 20px;
+
 /// The guest lobby's card, and the dots above it. The card is narrower than
 /// the host's `$lobby-max` on purpose: a guest has one thing to read, and a
 /// roster stretched across 1360px reads as a table rather than a crowd.
 $lobby-guest-card: 820px;
 $waiting-dot: 11px;
 $share-qr: 142px;
+/// Beside the code rather than above it, so a phone's card holds both.
+$share-qr-compact: 108px;
 
 // The landing page. One-off measures, so they live here rather than on the
 // gap scale — that set is the design's own and is not ours to extend.

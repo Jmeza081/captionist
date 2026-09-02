@@ -94,12 +94,16 @@
   --media-overlay-size: #{t.$media-overlay-size-4};
 }
 
+// Four more than the design's ten, top and bottom. At 10 a poster caption sat
+// almost on the edge of the picture and read as overflow rather than as part of
+// it — most visible on the duel, where the frame is the image's own ratio and
+// there is nothing else on the card to space it against.
 .top {
-  top: t.$space-10;
+  top: t.$space-14;
 }
 
 .bottom {
-  bottom: t.$space-10;
+  bottom: t.$space-14;
 }
 
 // --- ranking ---

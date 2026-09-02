@@ -496,7 +496,11 @@ test.describe('compositions', () => {
     const settings = page.getByText(
       'React to the caption · 5 rounds · 90s · rank top 3',
     )
-    await expect(settings).toBeVisible()
+    // Always in the bar; drawn only where the bar has the width for it. On a
+    // phone the room's rules read off the lobby's share card instead — see
+    // `AppHeader`'s `.settings`.
+    await expect(settings).toBeAttached()
+    if ((page.viewportSize()?.width ?? 0) >= 768) await expect(settings).toBeVisible()
 
     // The in-round header pairs the phase with the clock.
     const header = page.locator('header').filter({ hasText: 'Round 2 of 5' })

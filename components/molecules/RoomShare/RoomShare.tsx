@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import QRCode from 'react-qr-code'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
@@ -14,6 +15,15 @@ export interface RoomShareProps {
   /** Both of these must confirm with a snackbar — they have no visible result. */
   onCopyLink: () => void
   onShareToSlack?: () => void
+  /**
+   * The room's rules, under the link — "5 rounds · 90s · rank top 3".
+   *
+   * Phone only, and it is the header's settings line moved down here. A phone
+   * header holds the wordmark, the host chip and the walkthrough key, and
+   * nothing else fits; on a laptop the line stays in the bar where every other
+   * screen carries it. Mode deliberately absent — see `roomRulesLine`.
+   */
+  meta?: ReactNode
 }
 
 /**
@@ -27,13 +37,14 @@ export function RoomShare({
   joinUrl,
   onCopyLink,
   onShareToSlack,
+  meta,
 }: RoomShareProps) {
   // Shown without the scheme: it's read aloud and typed, not clicked.
   const readable = joinUrl.replace(/^https?:\/\//, '')
 
   return (
     <div className={styles.share}>
-      <Box background="light" padding={12} radius="media" className={styles.qr}>
+      <Box background="light" padding={8} radius="media" className={styles.qr}>
         <QRCode
           value={joinUrl}
           size={256}
@@ -48,17 +59,18 @@ export function RoomShare({
       <div className={styles.body}>
         <RoomCode code={code} size="compact" />
         <span className={styles.url}>{readable}</span>
+        {meta && <span className={styles.meta}>{meta}</span>}
+      </div>
 
-        <div className={styles.actions}>
-          <Button variant="secondary" size="small" onClick={onCopyLink}>
-            Copy link
+      <div className={styles.actions}>
+        <Button variant="secondary" size="small" onClick={onCopyLink}>
+          Copy link
+        </Button>
+        {onShareToSlack && (
+          <Button variant="secondary" size="small" onClick={onShareToSlack}>
+            Share to Slack
           </Button>
-          {onShareToSlack && (
-            <Button variant="secondary" size="small" onClick={onShareToSlack}>
-              Share to Slack
-            </Button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   )

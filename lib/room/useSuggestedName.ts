@@ -1,6 +1,6 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 import { suggestName } from '@/lib/names'
 
 /**
@@ -34,4 +34,42 @@ const subscribe = (): (() => void) => () => {}
 
 export function useSuggestedName(): string {
   return useSyncExternalStore(subscribe, getSnapshot, () => SERVER)
+}
+
+/**
+ * The nickname field: this tab's suggestion, and whatever you typed over it.
+ *
+ * The pair used to be two `useState` lines in each of the two front doors, and
+ * both carried the same hydration hole. The field is server-rendered empty —
+ * `SERVER` above, because a random name generated during render is a mismatch —
+ * so between first paint and hydration there is a real, focusable input on
+ * screen that React has not adopted yet. Type into it in that window and the
+ * first client render writes the suggestion over what is in the box: somebody
+ * who typed "Vic" quickly joined as "Blameless_DeployVic".
+ *
+ * The fix is to adopt rather than overwrite. `attach` is a callback ref, which
+ * React runs as it commits the hydration — before the store's client snapshot
+ * has replaced the empty one — so it sees the box exactly as the person left
+ * it. Anything in there is theirs and wins.
+ *
+ * A callback ref rather than a `useRef` object on purpose: a ref read during
+ * render is the thing `react-hooks/refs` forbids, and it is right to. This
+ * never reads one — and it returns its three parts as a tuple rather than an
+ * object so that nothing at the call site *looks* like reading one either.
+ */
+export function useNicknameField(): readonly [
+  name: string,
+  attach: (node: HTMLInputElement | null) => void,
+  onChange: (value: string) => void,
+] {
+  const suggested = useSuggestedName()
+  const [typed, setTyped] = useState<string | undefined>(undefined)
+
+  const attach = useCallback((node: HTMLInputElement | null) => {
+    // `??` and not a plain assignment: this fires again on every remount, and
+    // a later one must not undo what has been typed since.
+    if (node?.value) setTyped((current) => current ?? node.value)
+  }, [])
+
+  return [typed ?? suggested, attach, setTyped] as const
 }

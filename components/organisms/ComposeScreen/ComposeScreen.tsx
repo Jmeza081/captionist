@@ -172,7 +172,6 @@ export function ComposeScreen() {
         onPick={setPicked}
         selectionLabel="Your answer"
         action={copy.action}
-        blockedAction="Pick one first"
         onLock={(gif) => {
           // Before `toMediaRef`, which drops the id the trigger needs.
           gifs.chose(gif)
@@ -253,7 +252,11 @@ export function ComposeScreen() {
               )
             }}
           >
-            {written ? copy.action : 'Write something first'}
+            {/* The same label whether or not a line is written. The fields
+                above are the affordance — an empty one over a visibly blocked
+                CTA already says what is missing, and swapping the text made the
+                one button on the screen change width as you typed. */}
+            {copy.action}
           </Button>
           {/* Skipping still submits — an absent entry would hold the whole room
               on a clock nobody needs. */}

@@ -2,7 +2,6 @@
 
 import type { ReactNode } from 'react'
 import { Button } from '@/components/atoms/Button'
-import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { GifPanel } from '@/components/molecules/GifPanel'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
@@ -28,7 +27,7 @@ import styles from './RoundPicker.module.scss'
  * The board itself belongs to the screen above, not to this component:
  * `useGifSearch` decides whether a face fetches at all, and `BriefScreen`'s
  * clock reads the staged tile to pick for you when it runs out. So both arrive
- * as props and this stays a layout with two buttons in it.
+ * as props and this stays a layout with one button in it.
  */
 
 export interface RoundPickerProps {
@@ -44,10 +43,20 @@ export interface RoundPickerProps {
   onPick: (gif: GifResult) => void
   /** The badge on the staged tile — "Selected" picking, "Your answer" answering. */
   selectionLabel: string
-  /** Verb-first, and only once something is staged. */
+  /**
+   * Verb-first, and the same at every moment.
+   *
+   * It used to swap to a "Pick one first" while nothing was staged — rule 10's
+   * "say what's missing in the label". The board is the affordance here: fifty
+   * tiles, none of them ringed, above a control that is visibly blocked. The
+   * label was carrying a fact the screen already states, and paying for it in
+   * width — on a phone the CTA's text changed length twice per round and wrapped
+   * the foot. See `blocked`, which is still what the control is.
+   *
+   * Optional only because `ScreenCopy.action` is: the faces without one are the
+   * waits, and none of them draws a board.
+   */
   action?: string
-  /** What the CTA says while nothing is. Blocked is not disabled. */
-  blockedAction: string
   /** Commit. Called with the staged tile, never with nothing. */
   onLock: (gif: GifResult) => void
   /** One-tap searches under the field. */
@@ -63,7 +72,6 @@ export function RoundPicker({
   onPick,
   selectionLabel,
   action,
-  blockedAction,
   onLock,
   suggestions = SEARCH_SUGGESTIONS,
 }: RoundPickerProps) {
@@ -93,48 +101,48 @@ export function RoundPicker({
         selectedId={picked?.id}
         selectionLabel={selectionLabel}
         onMore={search.more}
+        /*
+          Free, and instant: it reads off the fifty tiles already on the board
+          rather than fetching a page of its own. Beside "Shuffle results",
+          which is its opposite — that one changes what there is to commit to,
+          this one commits.
+        */
+        onSurprise={() => {
+          const gif = search.surprise()
+          if (!gif) return
+          onPick(gif)
+          notify('Picked one for you — our taste is questionable')
+        }}
         provider={search.descriptor}
         ads={search.ads}
         onPick={onPick}
       />
 
       {/**
-        * The two controls that act, at the foot of the board rather than beside
-        * the field.
+        * The one control that ends the phase, across the foot of the board.
         *
-        * They used to share the search row, on the reasoning that a board which
-        * scrolls a long way should keep its action in reach at the top. The
-        * reach was right and the place was wrong: on a phone three controls in
-        * one row squeezed the search field down to its magnifier, so the one
-        * input on the screen became unusable to keep two buttons visible.
+        * It used to share this bar with "Surprise me", and share the search row
+        * before that. The row was wrong because three controls squeezed the
+        * field down to its magnifier; the bar was wrong because two full-height
+        * buttons on a phone wrapped, and the one that moved was the one that
+        * commits. "Surprise me" is a text button beside the shuffle now — see
+        * `GifPanel` — which leaves this the width of the column, the same
+        * treatment the vote screen's lock button has.
         *
-        * Sticky at the foot keeps them in reach at every scroll position *and*
-        * gives the field the row to itself — the same treatment the vote
-        * screen's lock button already uses, and the same mixin.
+        * `data-action-dock` is what tells the room a sticky bar owns this
+        * screen's foot, so the floating keys stack above it rather than over
+        * it. See `RoomShell.module.scss`.
         */}
-      <Inline gap={10} className={styles.actionDock}>
-        {/*
-          Free, and instant: it reads off the fifty tiles already on the board
-          rather than fetching a page of its own. Distinct from "Shuffle
-          results" beside the search field, which does go and get another board
-          — this one commits to a tile, that one changes what there is to commit
-          to.
-        */}
+      <div className={styles.actionDock} data-action-dock>
         <Button
-          variant="secondary"
-          onClick={() => {
-            const gif = search.surprise()
-            if (!gif) return
-            onPick(gif)
-            notify('Picked one for you — our taste is questionable')
-          }}
+          size="form"
+          fullWidth
+          blocked={!picked}
+          onClick={() => picked && onLock(picked)}
         >
-          Surprise me
+          {action}
         </Button>
-        <Button blocked={!picked} onClick={() => picked && onLock(picked)}>
-          {picked ? action : blockedAction}
-        </Button>
-      </Inline>
+      </div>
     </Stack>
   )
 }

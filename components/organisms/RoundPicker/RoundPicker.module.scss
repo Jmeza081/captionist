@@ -18,25 +18,9 @@
   color: t.$text-meta;
 }
 
-// See `RoundPicker` — the committing pair, at the foot of a board that scrolls.
+// See `RoundPicker` — the one committing control, at the foot of a board that
+// scrolls. It runs the width of the column: the floating keys sit above it now
+// rather than beside it, so there is nothing left to reserve room for.
 .actionDock {
   @include t.stickyActionDock;
-}
-
-/**
- * Share a row where the labels fit, fill the row where they don't.
- *
- * `min-width: max-content` is what makes that decision without a breakpoint or
- * a guessed basis: neither button may be squeezed below its own label, so a
- * phone's 249px dock — 313 less the floating keys — wraps them instead of
- * printing "Pick one first" outside a 93px pill, which is what flexing the
- * action did. Wrapped, `flex: 1` gives each the whole line rather than leaving
- * two content-width buttons adrift at the left.
- *
- * Label-length proof, which matters: the action's text changes with the mode
- * and again the moment something is picked.
- */
-.actionDock > * {
-  flex: 1 1 auto;
-  min-width: max-content;
 }

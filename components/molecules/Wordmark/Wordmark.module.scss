@@ -33,6 +33,11 @@
   }
 }
 
+// See `showName` — the bar asked for it, so it is drawn at every width.
+.header.named .name {
+  display: block;
+}
+
 .landing .name {
   font-size: 20px;
   letter-spacing: -0.02em;

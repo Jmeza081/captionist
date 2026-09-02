@@ -57,18 +57,27 @@ test.describe('the lobby', () => {
     expect(second!.x).toBeGreaterThan(first!.x)
   })
 
-  test('keeps the help key on the mode toggle’s row, even on a phone', async ({ page }) => {
+  test('gives the mode toggle the whole row, and the help key the header', async ({
+    page,
+  }) => {
     await page.goto('/room/DEV?seed=42&phase=lobby')
 
     const toggle = (await page.getByRole('radiogroup').boundingBox())!
     const help = (await page.getByRole('button', { name: 'How Captionist works' }).boundingBox())!
 
-    // Two mode labels are wider than a phone, and flex wraps before it
-    // shrinks — so without the control narrowing, the key drops to its own
-    // line. It sits to the right of the toggle, overlapping its rows.
-    expect(help.x).toBeGreaterThan(toggle.x + toggle.width - 1)
-    expect(help.y).toBeLessThan(toggle.y + toggle.height)
-    expect(help.y + help.height).toBeGreaterThan(toggle.y)
+    // The key used to sit on this row, and two mode names plus a 44px key do
+    // not fit on a phone — which is why the names were abbreviated there. It
+    // is in the header now, so both names stay whole and the toggle takes the
+    // width it needs.
+    expect(help.y + help.height).toBeLessThan(toggle.y)
+    await expect(page.getByRole('radio', { name: 'Caption the image' })).toBeVisible()
+    await expect(page.getByRole('radio', { name: 'React to the caption' })).toBeVisible()
+
+    // Evenly, and across the column: a track that hugged two labels of
+    // different lengths drew two segments of different widths.
+    const first = (await page.getByRole('radio', { name: 'Caption the image' }).boundingBox())!
+    const second = (await page.getByRole('radio', { name: 'React to the caption' }).boundingBox())!
+    expect(second.width).toBeCloseTo(first.width, 0)
   })
 
   test('offers a guest nothing that is the host’s to do', async ({ page }) => {

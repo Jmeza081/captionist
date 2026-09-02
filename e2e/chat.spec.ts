@@ -187,7 +187,7 @@ test.describe('the rail on arrival', () => {
 
     // The default is derived from the viewport, so the thing to prove is that
     // your own answer outranks it rather than being recomputed over the top.
-    await page.getByRole('heading', { name: 'Player list' }).click()
+    await page.getByRole('heading', { name: 'Players' }).click()
     await expect(page.getByRole('button', { name: /^Open chat/ })).toBeVisible()
   })
 })

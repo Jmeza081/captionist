@@ -74,12 +74,13 @@
 }
 
 /**
- * One box on a phone, two stacked pieces once there is room.
+ * One box, at every width.
  *
- * The design draws the picture and its foot joined into a single card on a
- * phone — which is what stops two contenders reading as four loose things —
- * and separates them under a centred column on desktop. Same markup either
- * way; the card treatment is what switches.
+ * The picture and its foot are joined into a single card — which is what stops
+ * two contenders reading as four loose things. It used to unjoin above
+ * `$duel-columns`, where the foot became a centred column under a transparent
+ * frame; on a wide screen that put an avatar floating in the gap between a
+ * picture and a button, belonging to neither.
  */
 .contender {
   display: flex;
@@ -104,21 +105,6 @@
 }
 
 @container (min-width: #{t.$duel-columns}) {
-  .contender {
-    background-color: transparent;
-    overflow: visible;
-  }
-
-  // Under the card, centred, and stacked — the design's desktop artboard puts
-  // the face above the button rather than beside it.
-  .foot {
-    flex-direction: column;
-    gap: t.$space-14;
-    padding: t.$space-20 0 0;
-  }
-}
-
-@container (min-width: #{t.$duel-columns}) {
   .duel {
     flex-direction: row;
     align-items: stretch;
@@ -136,8 +122,22 @@
   }
 }
 
+/**
+ * An attribution beside a picture, not a card title.
+ *
+ * It was `cardTitleText` at 20–22px, which on a 392px card was the largest type
+ * on a screen whose subject is two images — the name and the face beside it are
+ * both about a third down from there now.
+ *
+ * A long one gives way rather than pushing the row apart: it shares the foot
+ * with a button that has to keep its label.
+ */
 .name {
-  @include t.cardTitleText;
+  @include t.labelText;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /**
@@ -172,13 +172,6 @@
   .actionShort {
     display: none;
   }
-}
-
-// A long name beside a button has to give way rather than push the row apart.
-.name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .versusBadge {

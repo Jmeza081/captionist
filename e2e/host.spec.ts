@@ -13,10 +13,21 @@ test.describe('setting a room up', () => {
 
     await expect(page).toHaveURL(/\/room\/C-[346789A-HJKMNPQRTUVWXY]{6}$/)
     await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'lobby')
-    // `DEFAULT_SETTINGS`, read back off the room's own header. The biggest
-    // room and five rounds — the game the landing page describes. It was three
-    // while the GIF allowance priced it; see ADR-0026.
-    await expect(page.getByText('Caption the image · 5 rounds · 90s · rank top 3')).toBeVisible()
+    /**
+     * `DEFAULT_SETTINGS`, read back off the room itself. The biggest room and
+     * five rounds — the game the landing page describes. It was three while the
+     * GIF allowance priced it; see ADR-0026.
+     *
+     * The rules without the mode, because that is the half both widths draw:
+     * the header's line on a desk, the share card's under the room code on a
+     * phone. The mode is checked as the toggle, which is where a phone says it.
+     *
+     * Filtered on visibility rather than taken `.first()`: both surfaces are in
+     * the document at both widths and CSS picks between them, so the first in
+     * DOM order is the header's — which on a phone is the hidden one.
+     */
+    await expect(page.getByText('5 rounds · 90s · rank top 3').filter({ visible: true })).toHaveCount(1)
+    await expect(page.getByRole('radio', { name: 'Caption the image' })).toBeChecked()
   })
 
   test('carries the chosen rules into the room', async ({ page }) => {
@@ -26,8 +37,10 @@ test.describe('setting a room up', () => {
     await page.getByRole('button', { name: 'Decrease Number of rounds' }).click()
     await page.getByRole('button', { name: 'Open the room' }).click()
 
-    // One below the default of five.
-    await expect(page.getByText('React to the caption · 4 rounds · 90s · rank top 3')).toBeVisible()
+    // One below the default of five. Same split as above — the rules off the
+    // line that is drawn, the mode off the toggle.
+    await expect(page.getByText('4 rounds · 90s · rank top 3').filter({ visible: true })).toHaveCount(1)
+    await expect(page.getByRole('radio', { name: 'React to the caption' })).toBeChecked()
   })
 
   test('drops the caption format when there are no captions to format', async ({ page }) => {

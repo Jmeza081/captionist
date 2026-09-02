@@ -57,6 +57,19 @@ export interface GifPanelProps {
    * on a surface handed a fixed list, which has no next page to turn to.
    */
   onMore?: () => void
+  /**
+   * Commit to a tile the board already holds — the round's "Surprise me".
+   *
+   * Beside "Shuffle results" rather than in the screen's action row, and the
+   * pair reads as what it is: one changes what there is to choose from, the
+   * other chooses. It used to be a `secondary` button sharing the sticky foot
+   * with the CTA, where two full-height controls wrapped onto two lines on a
+   * phone and the action that ends the phase was the one that moved.
+   *
+   * Board only. A popover is handed a fixed list and closes on the first tap,
+   * so there is nothing for it to surprise you with.
+   */
+  onSurprise?: () => void
   status?: 'loading' | 'ready' | 'error'
   /** Shown under the field — an error, or a note that these are samples. */
   message?: string
@@ -94,6 +107,7 @@ export function GifPanel({
   onSubmit,
   suggestions,
   onMore,
+  onSurprise,
   status = 'ready',
   message,
   selectionLabel = 'Selected',
@@ -268,18 +282,31 @@ export function GifPanel({
             them squeezed the input down to its magnifier on a phone. */}
         <div className={styles.searchField}>{field}</div>
 
-        {((suggestions && suggestions.length > 0) || onMore) && (
+        {((suggestions && suggestions.length > 0) || onMore || onSurprise) && (
           <Inline gap={8}>
             {suggestions?.map((term) => (
               <Chip key={term} selected={term === value} onClick={() => onSubmit?.(term)}>
                 {term}
               </Chip>
             ))}
-            {onMore && (
-              <Button variant="ghost" size="text" onClick={onMore}>
-                <Icon name="shuffle" size={14} />
-                Shuffle results
-              </Button>
+            {/* The two page controls travel together and wrap as a pair, so
+                a chip row that runs long cannot leave one of them stranded on a
+                line by itself. */}
+            {(onMore || onSurprise) && (
+              <Inline gap={8} wrap={false}>
+                {onMore && (
+                  <Button variant="ghost" size="text" onClick={onMore}>
+                    <Icon name="shuffle" size={14} />
+                    Shuffle results
+                  </Button>
+                )}
+                {onSurprise && (
+                  <Button variant="ghost" size="text" onClick={onSurprise}>
+                    <Icon name="star" size={14} />
+                    Surprise me
+                  </Button>
+                )}
+              </Inline>
             )}
           </Inline>
         )}

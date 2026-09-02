@@ -38,16 +38,6 @@
   min-width: 0;
 }
 
-// See `AppHeader` — the host chip yields to the settings line on a phone, and
-// only where that line is the bar's primary content.
-.roleTag {
-  display: none;
-
-  @include t.mq('md') {
-    display: inline-flex;
-  }
-}
-
 .phase {
   font-family: t.$font-sans;
   font-size: 13px;
@@ -86,7 +76,16 @@
   min-width: 0;
 }
 
+/**
+ * Never on a phone bar — see `AppHeader`.
+ *
+ * In a round the phase and the clock take the width; in the lobby the name,
+ * the host chip and the walkthrough key do, and the rules read off the share
+ * card. There is no width at which a phone holds both this and the thing
+ * beside it, and the version that tried clipped one of them.
+ */
 .settings {
+  display: none;
   flex: 0 1 auto;
   min-width: 0;
   font-family: t.$font-sans;
@@ -96,10 +95,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.secondary {
-  display: none;
 
   @include t.mq('md') {
     display: block;

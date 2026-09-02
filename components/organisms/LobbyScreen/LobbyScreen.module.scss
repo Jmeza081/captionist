@@ -1,15 +1,16 @@
 @use 'theme' as t;
 
-// Centred and capped rather than stretched to whatever is left of the column.
-// With the rail docked open the content is narrower than the window, and the
-// lobby has to read well at both widths — so it takes the room it needs and
-// gives back the rest.
-//
-// **A container, not a breakpoint.** Everything below keys off how wide this
-// column actually is, and a viewport media query cannot see that the rail took
-// 360px of it — the same window is a two-column lobby with chat shut and a
-// cramped one with chat open. `t.mq()` is still right for everything the
-// viewport genuinely decides; this is not one of those.
+/**
+ * The host lobby: one column on a phone, two on a desk, and a foot that is
+ * either the glass or the left column.
+ *
+ * **A container, not a breakpoint.** Everything below keys off how wide this
+ * column actually is, and a viewport media query cannot see that the rail took
+ * 360px of it — the same window is a two-column lobby with chat shut and a
+ * cramped one with chat open. `t.mq()` is still right for everything the
+ * viewport genuinely decides, and this file uses it for those; the two-column
+ * split is not one of them.
+ */
 .lobby {
   // The same glow the guest's half carries, and the design's own host
   // artboards draw it too — this is one room before it starts, not two.
@@ -18,6 +19,9 @@
   @include t.screenGlow;
 
   container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-26;
   width: 100%;
   max-width: t.$lobby-max;
   margin-inline: auto;
@@ -25,73 +29,105 @@
 }
 
 /**
- * Stacked by default; two columns once the container can hold them.
+ * The two columns — and, on a phone, the two blocks above the start bar.
  *
- * The share column is then a fixed measure and the roster takes the rest —
- * roughly a third to two thirds. Equal halves left the roster cramped and the
- * QR block swimming in space.
+ * A plain row rather than the container: `.lobby` is the container, and it and
+ * this box are always the same width, so the measure is the same either way.
+ * What it buys is that the start bar can be a *sibling* of this rather than a
+ * child of the left column — which is what lets the bar sit after the roster on
+ * a phone and under the share block on a desk without the markup forking.
  */
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: t.$space-26 t.$space-44;
+}
+
 .share {
   flex: none;
   width: 100%;
 }
 
+/**
+ * The roster: bare rows on a phone, a card on a desk.
+ *
+ * On a phone the rows already have their own fill and the screen is one column,
+ * so a card around them is a box inside a box holding one thing. On a desk it
+ * is the right-hand column of a two-column layout and the card is what makes it
+ * one — the design's own artboard draws it that way.
+ */
 .rosterCard {
   flex: 1;
   width: 100%;
   // Without this the card refuses to shrink below its content and pushes the
   // column off a phone.
   min-width: 0;
+
+  @include t.mq('md') {
+    padding: t.$card-pad;
+    border-radius: t.$radius-card;
+    background-color: t.$surface-card;
+  }
 }
 
 /**
- * Stacked, the share block is one centred object; in two columns it is the
- * left-hand one.
+ * The share block is a card on a phone and a plain column on a desk.
  *
- * The QR, the code, the link and its two buttons were already centred, so the
- * eyebrow above them and the mode row below were the two things breaking the
- * line — a left-aligned label over a centred block reads as a mistake at the
- * width where the block *is* the column. Keyed to the same container measure
- * the layout itself uses, so the design's two-column artboard is untouched:
- * there the share block is a column among columns and starts at its own edge.
+ * On a phone it is the top of the screen and it is four things — a label, a
+ * code, a QR and two buttons — with nothing else around them; a card is what
+ * says they are one object rather than four stacked ones. On a desk it is a
+ * column beside another column, and a card there would be a box inside a box.
  */
-.shareHead,
+.shareHead {
+  padding: t.$space-14;
+  border: 1px solid t.$line-hairline-strong;
+  border-radius: t.$radius-card;
+  background-color: t.$surface-vote;
+
+  @include t.mq('md') {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+}
+
+// The toggle owns this row outright — see `LobbyScreen`, where the walkthrough
+// key that used to share it moved into the header.
 .modeRow {
-  justify-content: center;
-  text-align: center;
-
-  @container (min-width: #{t.$lobby-columns}) {
-    justify-content: flex-start;
-    text-align: left;
-  }
+  width: 100%;
 }
 
-// A round key beside the mode toggle. Both sit on one row, which is also what
-// stops the toggle stretching to the full column.
-.help {
-  @include t.focusRing;
-
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: t.$lobby-help-key;
-  height: t.$lobby-help-key;
-  padding: 0;
-  border: 0;
-  border-radius: t.$radius-avatar;
-  background-color: t.$fill-subtle;
-  cursor: pointer;
-  transition: background-color 120ms ease;
-
-  &:hover {
-    background-color: t.$accent-fill;
-  }
-}
-
+/**
+ * A desk's heading.
+ *
+ * A phone opens on a card carrying the room code and a toggle carrying the
+ * mode, and "Everybody in?" over the top of them is a third voice saying
+ * nothing the paragraph under it does not. It stays in the document, because
+ * it is the page's heading and something reading the structure should still
+ * find one.
+ */
 .heading {
-  margin: 0;
-  @include t.screenTitleText;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+
+  @include t.mq('md') {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    @include t.screenTitleText;
+  }
 }
 
 .blurb {
@@ -101,10 +137,54 @@
   color: t.$text-body;
 }
 
+/**
+ * The start bar: across the phone's glass, under the share column on a desk.
+ *
+ * The same sticky foot the brief, the composer and the vote use, so the room
+ * lifts its floating keys above it by the same arithmetic — `data-action-dock`
+ * on the element, `--room-action-dock` in the shell.
+ *
+ * It only works because the bar is a sibling of `.columns` rather than a child
+ * of the left one. A sticky element cannot leave its containing block, and
+ * inside the share column that block ends halfway down the page: the bar pinned
+ * for half a screen and then slid up through the keys. As the last child of the
+ * lobby it has the whole page to travel.
+ *
+ * The note sits under the button, which makes this the one bar in the room with
+ * two things in it — so it declares itself as `data-action-dock="noted"` and
+ * the shell lifts the keys by the taller figure. Both that figure and the
+ * note's own line read `$lobby-note-line`, so they cannot drift apart.
+ */
+.foot {
+  @include t.stickyActionDock;
+
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-8;
+
+  @include t.mq('md') {
+    position: static;
+    gap: t.$space-10;
+    margin-bottom: 0;
+    padding: 0;
+    background: none;
+    pointer-events: auto;
+  }
+
+  // Back under the left-hand column once there is one, which is where the
+  // design's desk artboard draws it.
+  @container (min-width: #{t.$lobby-columns}) {
+    width: t.$lobby-share-width;
+  }
+}
+
+// A stated line rather than the ramp's, because the bar's height is arithmetic
+// the room depends on — see `$lobby-note-line`.
 .note {
   margin: 0;
   text-align: center;
   @include t.labelText;
+  line-height: t.$lobby-note-line;
   color: t.$text-meta;
 }
 
@@ -176,9 +256,26 @@
   background-color: t.$line-hairline-strong;
 }
 
+/**
+ * A label on a phone, a card's title on a desk.
+ *
+ * On a phone it heads a bare list under a screen that has already introduced
+ * itself, so it is furniture — the same small uppercase marker every other
+ * section label in the app uses. Inside the desk's card it is the card's
+ * title, at the size the design draws it.
+ */
 .rosterTitle {
   margin: 0;
-  @include t.cardTitleText;
+  @include t.eyebrowText;
+  color: t.$text-caption;
+
+  @include t.mq('md') {
+    @include t.cardTitleText;
+    // `eyebrowText` above sets these; a card title is sentence case at its own
+    // tracking, and neither is reset by the mixin that follows it.
+    text-transform: none;
+    letter-spacing: normal;
+  }
 }
 
 .count {
@@ -189,8 +286,18 @@
 /**
  * Players read left to right and wrap, rather than one per row: a room of
  * twenty would otherwise be a column you have to scroll to count.
+ *
+ * On a phone the column is the only one there is, so the list gets a window
+ * three rows deep and scrolls inside it — `$lobby-roster-cap`, and `.overflow`
+ * below names whoever that leaves out. Twenty rows between the mode toggle and
+ * a pinned start button is a lobby you scroll past rather than read.
  */
 .roster {
+  max-height: t.$lobby-roster-cap;
+  overflow-y: auto;
+  // A flick that reaches the end of this list must not carry on and scroll the
+  // page behind it.
+  overscroll-behavior: contain;
   display: grid;
   // `min()` on the track floor, not the bare token. `minmax(276px, 1fr)` is a
   // *hard* floor: where the card is narrower than 276 — a phone's is 249 — the
@@ -202,6 +309,46 @@
   margin: 0;
   padding: 0;
   list-style: none;
+
+  @include t.mq('md') {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/**
+ * Who the phone's window leaves out, and who has just walked in.
+ *
+ * Both are the phone's alone — a desk shows the roster whole, so there is
+ * nobody to name, and an arrival there is a row appearing where you are already
+ * looking.
+ */
+.overflow,
+.arrival {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+  margin: 0;
+  @include t.labelText;
+  font-weight: 500;
+  color: t.$text-meta;
+
+  @include t.mq('md') {
+    display: none;
+  }
+}
+
+// Green, because it is the same fact the presence pill carries: somebody is
+// here who was not.
+.arrivalDot {
+  flex: none;
+  width: t.$space-8;
+  height: t.$space-8;
+  // The dot sits in a 26px column so the two lines' text starts on one edge,
+  // under the avatar above it rather than beside it.
+  margin-inline: calc((#{t.$avatar-26} - #{t.$space-8}) / 2);
+  border-radius: t.$radius-avatar;
+  background-color: t.$success;
 }
 
 // The seat nobody is in yet. Dashed rather than absent, so a short room reads

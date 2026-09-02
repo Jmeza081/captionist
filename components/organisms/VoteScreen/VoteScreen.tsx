@@ -301,7 +301,9 @@ export function VoteScreen() {
         </Grid>
       </Stack>
 
-      <div className={styles.lockDock}>
+      {/* `data-action-dock` is what lifts the floating keys above this bar
+          instead of leaving them on top of it — see `RoomShell.module.scss`. */}
+      <div className={styles.lockDock} data-action-dock>
         <Button
           size="form"
           fullWidth

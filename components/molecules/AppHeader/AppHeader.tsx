@@ -45,19 +45,15 @@ export function AppHeader({
   return (
     <header className={`${styles.header} ${styles[surface]}`}>
       <div className={styles.left}>
-        <Wordmark />
-        {host && (
-          // In the lobby the settings line is the whole point of this bar —
-          // it is how everyone learns the game — and on a phone the chip took
-          // exactly the width its last item needed, so the host was the one
-          // person who could not read their own room's rules. In a round the
-          // line has already stood down and the chip costs nothing, so it
-          // stays. Never in-round-only styling: it is the same chip, standing
-          // down where something else needs the room more.
-          <span className={phase || step ? undefined : styles.roleTag}>
-            <Tag>Host</Tag>
-          </span>
-        )}
+        {/* The lobby is the bar with no phase and no clock, so it is the one
+            with room for the name — and the one screen where saying what the
+            app is called earns its place. */}
+        <Wordmark showName={!phase && !step} />
+        {/* At every width now. It used to stand down on the lobby's phone bar,
+            because the settings line was in there competing for the same
+            pixels and the host was the one person who could not read their own
+            room's rules. The rules read off the share card instead. */}
+        {host && <Tag>Host</Tag>}
         {(phase || step) && (
           <span className={styles.phase}>
             {phase}
@@ -83,9 +79,12 @@ export function AppHeader({
           // a round *number*: the scoreboard has no anchor because the pips
           // carry it, and keying off `phase` alone brought the settings line
           // back on the one phone header with the least room for it.
-          <span className={`${styles.settings} ${phase || step ? styles.secondary : ''}`}>
-            {settings}
-          </span>
+          //
+          // Out of a phone bar either way now. In a round the phase takes the
+          // room; in the lobby the name, the host chip and the walkthrough key
+          // take it, and the rules read off the share card instead — which is
+          // where somebody about to send the link is already looking.
+          <span className={styles.settings}>{settings}</span>
         )}
         {trailing && <div className={styles.trailing}>{trailing}</div>}
       </div>

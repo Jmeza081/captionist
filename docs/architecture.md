@@ -108,6 +108,22 @@ against one edge. `LobbyScreen` still owns both, as `HostLobby` and
 on *role* is not the thing the mode rule forbids — that rule is about never
 forking a screen on `settings.mode`, and neither half of this one reads it.
 
+**And the host's half is now two layouts of its own, on purpose.** A phone
+reads share card → mode → what the game is → who is here, with the start button
+pinned to the glass; a desk keeps the design's two columns, controls left and
+roster right. That is a real divergence rather than a reflow, and it is the one
+screen that gets one: on a phone the roster is what you watch while you wait,
+so it wants the bottom of the column and the button wants the foot, while on a
+desk both are on screen at once and neither has to give way. Three things move
+with it — the walkthrough key into `AppHeader`'s trailing slot, which gives the
+mode toggle the whole row and its two labels their full names back; the room's
+rules out of the phone header and under the room code, without the mode the
+toggle beneath already states (`roomRulesLine`); and the roster into a
+three-row window with `rosterCopy` naming who it hides and who just arrived.
+The start bar is a sibling of the columns rather than a child of the left one,
+which is what lets it be either — and is also what lets it be sticky, since a
+sticky element cannot leave its containing block.
+
 **A card is drawn at its image's shape now, clamped.** `MediaRef` gained
 optional `width`/`height`, `toMediaRef` stopped dropping Giphy's, and
 `mediaAspect` in `lib/media.ts` turns them into the ratio `MediaCard` sets as
@@ -165,14 +181,15 @@ gone.
 search box could not be typed in at all — every search had to come from a
 suggestion chip. `BriefScreen`'s foot row is gone with it: the timeout note
 moved under the headline, where it is read once on the way in, and the primary
-"Lock it in" moved into `GifPanel`'s `tools` slot
-beside the field, so the action stays in reach at the top of a board that
-scrolls a long way. **"Shuffle results" is not in that slot** — `GifPanel` draws
-it itself from `onMore`, beside the suggestion chips, so both variants get it
-from one place and the two controls stay distinguishable: "Surprise me" commits
-to a tile already on the board, "Shuffle results" changes what there is to
-commit to. "Surprise me" belongs to `RoundPicker`, which is the screen both
-boards are now drawn by.
+"Lock it in" moved to a sticky bar at the foot of the
+board, so the action stays in reach at every scroll position of a board that
+scrolls a long way — and it runs the full width of the column, because the
+room's floating keys are lifted above that bar rather than sitting beside it.
+**"Shuffle results" and "Surprise me" are both under the field**, drawn by
+`GifPanel` from `onMore` and `onSurprise`, so both variants get them from one
+place and the pair stays distinguishable: "Surprise me" commits to a tile
+already on the board, "Shuffle results" changes what there is to commit to.
+Neither shares the committing bar, which is one control wide.
 
 **Both modes search on one screen.** Picking the round's image and answering
 its prompt with a GIF are the same task — field, chips, shuffle, "Surprise me",
@@ -202,11 +219,28 @@ backstop under it: two overlays share one frame, and a long caption used to grow
 straight out through the bottom edge, where `.frame`'s `overflow: hidden` cut it
 in half silently.
 
-`RoomShell`'s `--room-dock-gutter` went from 58px to 64px in the same pass. Two
-things float in that corner and they are not flush — chat's collapsed key sits
-at `right: $space-14`, the toolbox key at `right: $space-20`, both 44px wide —
-so the column they own together is `$space-20 + $tap-target-min`. Reserving the
-chat key exactly left 6px of every full-width control under the toolbox.
+**The floating corner is cleared vertically now, not sideways.** The phone
+column used to reserve a whole key's width on both sides — `$space-8` plus
+44px — so nothing tappable could ever pass under the chat and toolbox keys. On
+a 393px phone that is a quarter of the screen, paid by every card, caption and
+board tile. `--room-column-pad` is `$space-20` instead, the same gutter the
+front doors use, and a screen's committing control sits in a sticky bar that
+declares itself with `data-action-dock`; `RoomShell` reads that with `:has()`
+and lifts the whole key column above the bar (`--room-dock-base`). The trade is
+that an ordinary control can pass under a key mid-scroll again, as page content
+does under any floating action button — what cannot is the control that ends
+the phase.
+
+Two numbers keep that honest and both were wrong once. `--room-column-foot` is
+what the content column actually reserves at its foot, and a sticky bar negates
+exactly that to come to rest on the end of the column — the bar used to negate
+the phone's figure at every width, which above `md` overshot by 62px and hung
+it below the scrollport. And above `md` a screen with a bar reserves *nothing*,
+because there the column is the scroller and a scroller's own bottom padding
+pushes a `bottom: 0` sticky child up by that much: the vote's lock button sat
+78px above the fold at every scroll position until it did. `e2e/responsive.spec.ts`
+sweeps the gap between the control and the fold at five scroll offsets on four
+screens at both sizes.
 
 **Five glows, one mixin — and four of them had never painted.** The
 accent circle every big screen carries is a `::before` at `z-index: -1`.
