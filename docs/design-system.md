@@ -571,6 +571,7 @@ primitives.
 | `LobbyScreen` | organism | The room before it starts: share block, roster, and the one button |
 | `BriefScreen` | organism | Setting the round up, and watching someone else do it — all four `viewKey` faces |
 | `ComposeScreen` | organism | Captioning an image, answering a prompt, or sitting the round out |
+| `RoundPicker` | organism | The GIF board a round is searched on, in **both** modes — the Captionist picking the image, everyone else answering the Prompter's line. Field, suggestion chips, shuffle, "Surprise me", the board, and the one control that commits, once. What differs is the `headline`, the `note`, and `above` — the eyebrow that says whose turn it is, or the `PromptBanner` you are answering, which leads the screen rather than being pinned over the board. Not `GifPanel`: that is the field and the grid, and it is also the composer's popover; this is the round around it. The search and the staged tile stay with the screen above, because `useGifSearch` fetches per face and the brief's clock reads what you staged. An organism for one reason — it says "Picked one for you" through `useRoomShell`, so both modes say it once |
 | `WaitingScreen` | organism | Your entry is locked and the room is not — your card, and who everyone is still on |
 | `VoteScreen` | organism | Ranking the room's entries. The ranking is local until you lock it |
 | `TiebreakScreen` | organism | Sudden death. The one pre-reveal screen that names people |

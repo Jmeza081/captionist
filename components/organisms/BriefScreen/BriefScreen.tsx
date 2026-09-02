@@ -9,10 +9,9 @@ import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { TextField } from '@/components/atoms/TextField'
-import { GifPanel } from '@/components/molecules/GifPanel'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
-import { useRoomShell } from '@/components/organisms/RoomShell/context'
-import { PROMPT_MAX, PROMPT_STARTERS, SEARCH_SUGGESTIONS } from '@/lib/game/constants'
+import { RoundPicker } from '@/components/organisms/RoundPicker'
+import { PROMPT_MAX, PROMPT_STARTERS } from '@/lib/game/constants'
 import { briefCopy, roleHolder, toAvatarProps } from '@/lib/game/selectors'
 import { BACKDROP_SLUG } from '@/lib/gifs/art'
 import { toBackdrop } from '@/lib/gifs/backdrop'
@@ -44,7 +43,6 @@ const AUTO_PICK_LEAD_MS = 1_200
 
 export function BriefScreen() {
   const { state, selfId, send } = useRoom()
-  const { notify } = useRoomShell()
 
   // Above the early returns, because hooks are. Both tolerate no room — and
   // `copy` has to be resolved before `useGifSearch`, because it decides
@@ -256,73 +254,29 @@ export function BriefScreen() {
 
   /* ---------------- Picking the image ---------------- */
 
-  const lockIn = (gif: GifResult | undefined) => {
-    if (!gif) return
+  const lockIn = (gif: GifResult) => {
     // Before `toMediaRef`, which drops the id the trigger needs.
     gifs.chose(gif)
     send({ type: 'round/subjectLocked', subject: { kind: 'media', media: toMediaRef(gif) } })
   }
 
   return (
-    <Stack gap={20}>
-      <Inline gap={10}>
-        {holder && <Avatar {...toAvatarProps(state, holder)} size={30} />}
-        <Eyebrow>{copy.eyebrow}</Eyebrow>
-      </Inline>
-
-      <h1 className={styles.headline}>{copy.headline}</h1>
-
-      {/* Under the headline, where it is read once on the way in, rather than
-          pinned to the bottom beside the button — a note about the clock is
-          context for the whole screen, not a label on the action. */}
-      <p className={styles.note}>{copy.timeoutNote}</p>
-
-      <GifPanel
-        variant="board"
-        results={gifs.results}
-        status={gifs.status}
-        message={gifs.message}
-        query={gifs.query}
-        onQueryChange={gifs.setQuery}
-        onSubmit={gifs.search}
-        suggestions={SEARCH_SUGGESTIONS}
-        selectedId={picked?.id}
-        selectionLabel="Selected"
-        onMore={gifs.more}
-        provider={gifs.descriptor}
-        ads={gifs.ads}
-        onPick={setPicked}
-        // Both controls sit with the search field: everything that changes what
-        // the board shows, and then the one thing that ends the phase. It keeps
-        // the action in reach at the top of a board that scrolls a long way,
-        // which is what the foot row underneath it could not do.
-        tools={
-          <>
-            {/*
-              Free, and instant: it reads off the fifty tiles already on the
-              board rather than fetching a page of its own. Distinct from
-              "Shuffle results" beside the search field, which does go and get
-              another board — this one commits to a tile, that one changes what
-              there is to commit to.
-            */}
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const gif = gifs.surprise()
-                if (gif) {
-                  setPicked(gif)
-                  notify('Picked one for you — our taste is questionable')
-                }
-              }}
-            >
-              {copy.secondary}
-            </Button>
-            <Button blocked={!picked} onClick={() => lockIn(picked)}>
-              {picked ? copy.action : 'Pick one first'}
-            </Button>
-          </>
-        }
-      />
-    </Stack>
+    <RoundPicker
+      above={
+        <Inline gap={10}>
+          {holder && <Avatar {...toAvatarProps(state, holder)} size={30} />}
+          <Eyebrow>{copy.eyebrow}</Eyebrow>
+        </Inline>
+      }
+      headline={copy.headline}
+      note={copy.timeoutNote}
+      search={gifs}
+      picked={picked}
+      onPick={setPicked}
+      selectionLabel="Selected"
+      action={copy.action}
+      blockedAction="Pick one first"
+      onLock={lockIn}
+    />
   )
 }

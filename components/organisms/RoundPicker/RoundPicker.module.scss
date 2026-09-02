@@ -1,0 +1,19 @@
+@use 'theme' as t;
+
+.headline {
+  margin: 0;
+  // A measure, because the board under it is the width of the page: without
+  // one, "Pick the GIF everyone has to suffer through." ran the full width of
+  // a 1440 column with chat shut and read as a banner rather than a sentence.
+  // Wide enough that the shorter mode's "Answer it with a GIF." stays the one
+  // line it is.
+  max-width: 24ch;
+  @include t.screenTitleText;
+}
+
+.note {
+  margin: 0;
+  max-width: 46ch;
+  @include t.labelText;
+  color: t.$text-meta;
+}

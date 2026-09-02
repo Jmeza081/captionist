@@ -286,7 +286,12 @@ export interface ScreenCopy {
   body?: string
   /** The one primary action, verb-first. */
   action?: string
-  /** The quieter escape next to it. */
+  /**
+   * The quieter escape next to it — "Skip this round", "Back to the start".
+   *
+   * Not "Surprise me": that control is the picker's own, labelled once in
+   * `RoundPicker` because both modes draw the same button on the same board.
+   */
   secondary?: string
   /** What happens if the clock wins. */
   timeoutNote?: string
@@ -307,7 +312,6 @@ export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       eyebrow: `You’re up, ${name}`,
       headline: 'Pick the GIF everyone has to suffer through.',
       action: 'Lock it in',
-      secondary: 'Surprise me',
       timeoutNote: 'If the clock runs out we’ll pick for you — and our taste is questionable.',
     }
   }

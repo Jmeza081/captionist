@@ -12,34 +12,6 @@
   color: t.$text-body;
 }
 
-.note {
-  // Sits opposite the lock button in a `justify="between"` row that wraps under
-  // ~500px. A measure keeps it two readable lines when it stacks rather than
-  // one long one running the width of a desktop.
-  max-width: 46ch;
-  @include t.labelText;
-  color: t.$text-meta;
-}
-
-/**
- * The prompt, pinned while the board scrolls under it.
- *
- * The submit face is a flat stack: the banner, then fifty lazy-loaded tiles. So
- * the one thing every answer is responding to left the screen on the first
- * scroll, and picking a GIF for a prompt you can no longer read is the whole
- * task done blind. The caption face already pins its preview in a column; this
- * is the same idea on the mode with no column to pin it in.
- */
-.promptDock {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  // Real ground under it — the tiles scrolling behind a transparent banner
-  // would show through the accent fill.
-  padding-block: t.$space-8;
-  background-color: t.$surface-canvas;
-}
-
 .tracker {
   margin: 0;
   margin-top: auto;

@@ -11,10 +11,10 @@ import { WaitingDots } from '@/components/atoms/WaitingDots'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
-import { GifPanel } from '@/components/molecules/GifPanel'
+import { RoundPicker } from '@/components/organisms/RoundPicker'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { WaitingScreen } from '@/components/organisms/WaitingScreen'
-import { CAPTION_MAX, SEARCH_SUGGESTIONS } from '@/lib/game/constants'
+import { CAPTION_MAX } from '@/lib/game/constants'
 import {
   captionFields,
   composeCopy,
@@ -151,71 +151,38 @@ export function ComposeScreen() {
 
   if (copy.view === 'submit') {
     return (
-      <Stack gap={20}>
-        {/* Sticky, because it is the thing every answer on this screen is
-            answering. The board below it is fifty tiles: scroll twice and the
-            prompt you are searching for is off the top of the page. */}
-        {subject?.kind === 'prompt' && (
-          <div className={styles.promptDock}>
+      <RoundPicker
+        /* The prompt is what every answer on this screen is answering, so it
+           leads — but it scrolls with the page. It used to be pinned, and a
+           banner riding over fifty tiles was a permanent lid on a board that
+           is the whole task. You read the line once and then go looking. */
+        above={
+          subject?.kind === 'prompt' ? (
             <PromptBanner
               prompt={subject.text}
               author={holder ? toAvatarProps(state, holder) : undefined}
               size="lg"
             />
-          </div>
-        )}
-
-        <h1 className={styles.headline}>{copy.headline}</h1>
-
-        <GifPanel
-          variant="board"
-          results={gifs.results}
-          status={gifs.status}
-          message={gifs.message}
-          query={gifs.query}
-          onQueryChange={gifs.setQuery}
-          onSubmit={gifs.search}
-          suggestions={SEARCH_SUGGESTIONS}
-          selectedId={picked?.id}
-          selectionLabel="Your answer"
-          onMore={gifs.more}
-          provider={gifs.descriptor}
-          ads={gifs.ads}
-          onPick={setPicked}
-          tools={
-            // Instant now, and free: it reads off the fifty tiles already on
-            // the board instead of fetching a random page of its own.
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const gif = gifs.surprise()
-                if (gif) setPicked(gif)
-              }}
-            >
-              Surprise me
-            </Button>
-          }
-        />
-
-        <Inline gap={14} justify="between">
-          <span className={styles.note}>{copy.body}</span>
-          <Button
-            blocked={!picked}
-            onClick={() => {
-              if (!picked) return
-              // Before `toMediaRef`, which drops the id the trigger needs.
-              gifs.chose(picked)
-              send({
-                type: 'round/entrySubmitted',
-                answer: { kind: 'media', media: toMediaRef(picked) },
-              })
-              notify(mine ? 'Answer swapped' : 'Answer locked in')
-            }}
-          >
-            {picked ? copy.action : 'Pick one first'}
-          </Button>
-        </Inline>
-      </Stack>
+          ) : undefined
+        }
+        headline={copy.headline}
+        note={copy.body}
+        search={gifs}
+        picked={picked}
+        onPick={setPicked}
+        selectionLabel="Your answer"
+        action={copy.action}
+        blockedAction="Pick one first"
+        onLock={(gif) => {
+          // Before `toMediaRef`, which drops the id the trigger needs.
+          gifs.chose(gif)
+          send({
+            type: 'round/entrySubmitted',
+            answer: { kind: 'media', media: toMediaRef(gif) },
+          })
+          notify(mine ? 'Answer swapped' : 'Answer locked in')
+        }}
+      />
     )
   }
 

@@ -37,6 +37,15 @@ and the organism above them is still the only thing that knows a room exists.
 The rule this does not licence is composing your way out of a tier — if the
 inner component needs `useRoom()`, the pair belongs in `organisms/`.
 
+**An organism may hold another organism, and two do.** `ComposeScreen` renders
+`WaitingScreen` for the viewer whose entry is in — the phase is still `compose`,
+and a second set of "we are waiting" strings is two that drift. `BriefScreen`
+and `ComposeScreen` both render `RoundPicker`, the GIF board a round is searched
+on: one screen, two modes, differing in a headline and what sits above it. The
+bar for this is the same as for a molecule holding a molecule — one genuinely
+composes the other — and `RoundPicker` is an organism at all only because it
+speaks through `useRoomShell()`.
+
 Pages in `app/` compose organisms and molecules. They should hold almost no
 markup of their own.
 

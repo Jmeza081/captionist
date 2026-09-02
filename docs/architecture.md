@@ -171,7 +171,22 @@ scrolls a long way. **"Shuffle results" is not in that slot** — `GifPanel` dra
 it itself from `onMore`, beside the suggestion chips, so both variants get it
 from one place and the two controls stay distinguishable: "Surprise me" commits
 to a tile already on the board, "Shuffle results" changes what there is to
-commit to. "Surprise me" is `BriefScreen`'s and `ComposeScreen`'s alone.
+commit to. "Surprise me" belongs to `RoundPicker`, which is the screen both
+boards are now drawn by.
+
+**Both modes search on one screen.** Picking the round's image and answering
+its prompt with a GIF are the same task — field, chips, shuffle, "Surprise me",
+board, and one control that commits — and they were two implementations of it,
+which had already drifted: the react side pinned the prompt in a sticky
+`.promptDock` that rode over the board, and hung its lock button off the bottom
+of fifty tiles instead of beside the field. `components/organisms/RoundPicker/`
+is that screen once. It takes `above` (whatever says what you are answering —
+the brief's avatar and eyebrow, the compose screen's `PromptBanner`), a
+`headline`, a `note`, and the `GifSearch` the screen above it owns. The board
+stays with the screen on purpose: `useGifSearch` decides per *face* whether a
+viewer fetches at all, and `BriefScreen`'s auto-pick clock reads the staged
+tile. An organism rather than a molecule because it says "Picked one for you"
+through `useRoomShell` — the same snackbar in both modes, from one place.
 
 **A card's picture is a target, and its caption picks its own size.**
 `MediaCard` gained `onActivate`: a transparent, `aria-hidden`, `tabIndex={-1}`
@@ -483,8 +498,9 @@ is sticky so it rides the field down the page. `PromptBanner` is drawn in four
 different columns and is the only thing that knows which, so it is a query
 container — `.banner` measures, `.inner` reflows — with two thresholds,
 `$prompt-banner-roomy` for the padding the design draws and
-`$prompt-banner-columns` for the second column. `ComposeScreen` pins the prompt
-in a `.promptDock`, `RevealScreen`'s runner titles clamp to two lines, `Chip`
+`$prompt-banner-columns` for the second column. `ComposeScreen` led with the prompt
+in a sticky `.promptDock` (unpinned since, when both boards became
+`RoundPicker`), `RevealScreen`'s runner titles clamp to two lines, `Chip`
 gained a `wrap` prop — off by default, and set by the brief's prompt starters,
 which are the first chips in the app whose label is a sentence rather than two
 words — and `VoteScreen` replaced
@@ -1861,6 +1877,7 @@ graph BT
     BootScreen["RoomBootScreen<br/><i>a screen, and props only —<br/>no useRoom, no router</i>"]
     Panel["ChatPanel<br/><i>the rail's contents — neither a screen nor the shell</i>"]
     Screens["LobbyScreen · BriefScreen · ComposeScreen<br/>WaitingScreen · VoteScreen · TiebreakScreen<br/>RevealScreen · ScoreScreen · PodiumScreen"]
+    Picker["RoundPicker<br/><i>the GIF board both modes search on —<br/>no useRoom, but it speaks through notify</i>"]
     Gallery["ComponentGallery"]
     Actions["LandingActions<br/><i>routes — no useRoom</i>"]
     EntryScreens["JoinScreen · HostSetupScreen<br/><i>route — no useRoom</i>"]
@@ -1874,6 +1891,8 @@ graph BT
     NotFound["not-found.tsx<br/><i>markup in the route, like the landing's</i>"]
   end
 
+  Overlay -->|"GifPanel — the board"| Picker
+  Picker -->|"BriefScreen picks the image,<br/>ComposeScreen answers the prompt"| Screens
   Icon --> Feedback
   Layout --> Room
   Ident --> Room
