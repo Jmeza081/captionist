@@ -407,6 +407,36 @@ test.describe('chat’s arrival', () => {
     // Then it goes, rather than lingering as an invisible overlay.
     await expect(page.locator('aside[inert]')).toHaveCount(0)
   })
+
+  test('leaves from the edge it was docked against', async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) < 768,
+      'a phone’s sheet leaves downward; this is the docked column’s edge',
+    )
+    await page.goto(ROOM)
+    // The rail slides in on a desk too, and a box read mid-arrival is where it
+    // was a frame ago rather than where it docks.
+    await settled(page)
+
+    const docked = (await page
+      .getByRole('complementary', { name: 'Room chat', exact: true })
+      .boundingBox())!
+    await page.getByRole('button', { name: 'Close chat' }).click()
+
+    const leaving = (await page.locator('aside[inert]').boundingBox())!
+
+    /*
+      The regression this pins: the sheet's own block sets `left: 0` for a
+      fixed panel across the bottom of a phone, and the `md` block flips
+      `position: static`, where that offset is inert and was therefore never
+      cleared. Turning the leaving copy absolute brought it back — and
+      `left: 0` plus `right: 0` plus a fixed width is over-constrained, which
+      CSS resolves by dropping `right`. The panel was placed hard against the
+      *left* edge and slid out across the whole room from there.
+    */
+    expect(leaving.x).toBeGreaterThanOrEqual(docked.x - 2)
+    expect(leaving.width).toBeCloseTo(docked.width, 0)
+  })
 })
 
 test.describe('the chat sheet’s arrival', () => {

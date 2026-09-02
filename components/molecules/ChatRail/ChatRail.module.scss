@@ -127,9 +127,26 @@
 
   @include t.mq('md') {
     position: absolute;
+    /*
+      **`left: auto` is the whole of this rule working.**
+
+      The sheet's own block above sets `left: 0; right: 0; bottom: 0` for a
+      fixed panel across the bottom of a phone, and the `md` block flips
+      `position: static` — where every one of those offsets is inert and
+      therefore never cleared. They come back to life the instant this sets
+      `position: absolute`, and `left: 0` + `right: 0` + a 360px `width` is
+      over-constrained: CSS 2.1 §10.3.7 resolves that by **ignoring `right`**
+      in a left-to-right document. So the panel was placed hard against the
+      *left* edge of the room and slid out across the whole screen from there,
+      having never been anywhere near the left edge in its life.
+
+      Every offset is stated here rather than inherited, so this cannot be
+      re-broken by a change to the block above it.
+    */
     top: 0;
     right: 0;
     bottom: 0;
+    left: auto;
     width: t.$rail-width;
     max-width: 100%;
     animation: railOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
