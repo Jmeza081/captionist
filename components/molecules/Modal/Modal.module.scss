@@ -82,13 +82,12 @@
 }
 
 .close {
-  // Optical, not geometric. The disc is 44px and the copy is inset 26px, so
-  // squaring the *box* with the copy would sit the × further in than every
-  // line of text beside it. Pull it out by the difference and the glyph lands
-  // on the same edge as the words; the target keeps its full 44px and stays
-  // inside the card. The plate itself is `CloseButton`'s.
+  // No optical pull any more. That existed to drag a 16px glyph out of a 44px
+  // transparent box so it landed on the copy's right edge; the visible thing
+  // is now a 36px plate, and a plate is an object — you align the object, not
+  // the mark inside it. Its 44px target overhangs by 4px on each side and is
+  // out of flow, so nothing moved but the drawing.
   margin-left: auto;
-  margin-right: -(t.$space-5);
 }
 
 .eyebrow {

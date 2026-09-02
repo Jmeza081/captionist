@@ -633,7 +633,15 @@ its last `t.mq('md')` — a viewport query inside a container-keyed layout, wron
 in exactly the 768–1000px band with the rail docked — with a container query on
 a new `.screen`.
 
-**Since then the way out of anything is a key rather than a mark.**
+**Since then the way out of anything is a key rather than a mark.** It is a
+**36px plate inside a 44px target** — `$close-key`, which is `$lobby-help-key`'s
+size on purpose: on a phone the chat sheet's × sits directly under the app
+header's round help key, and at 44 it was eight pixels wider and four further
+right, two round keys in a column agreeing on neither. The target is an
+out-of-flow `::after`, so the touch minimum survives a smaller drawing without
+widening the box its neighbours are laid out against, and the sheet's header
+takes the *room's* `$space-20` gutter below `md` rather than the docked rail's
+`$rail-pad`, which is what puts the two keys on one edge.
 `components/atoms/CloseButton/` is one filled disc with a × on it, and it
 replaced five hand-drawn dismissals: `Modal`'s, the chat sheet's,
 `RoomToolbox`'s, `GifPanel`'s popover and `Composer`'s two staged rows. Every
@@ -665,7 +673,15 @@ a cancelled one raises nothing at all. That a *capability* may move a label and
 not only a behaviour is
 [ADR 0033](./adr/0033-a-device-capability-decides-the-label.md).
 
-The chat sheet's grab handle became a
+The chat sheet slides in
+from the edge it lives on and back down to it — `lib/useExitDelay.ts` holds it
+mounted past `open`, because React removing it on the same frame is what stood
+between it and an exit animation, and no stylesheet can defer that (`@starting-style`
+and `allow-discrete` need the element to stay in the DOM). While it leaves it is
+`inert`, so a panel halfway off the screen is neither tabbable nor a second
+"Room chat"; above `md` the leaving copy is not drawn at all, since a second
+column for 200ms would be a visible jump on a desk to buy an animation only a
+phone sees. Its grab handle became a
 real button with two detents — `useSheetDrag` in
 `components/molecules/ChatRail/`, 78% and 42%, drag or flick down to shrink and
 again to dismiss, Enter to toggle and the arrows to pick one outright — with the

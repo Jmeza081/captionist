@@ -6,6 +6,7 @@ import { CloseButton } from '@/components/atoms/CloseButton'
 import { Icon } from '@/components/atoms/Icon'
 import { PresencePill } from '@/components/atoms/PresencePill'
 import type { PlayerFace } from '@/lib/game/types'
+import { useExitDelay } from '@/lib/useExitDelay'
 import { DETENTS, useSheetDrag } from './useSheetDrag'
 import styles from './ChatRail.module.scss'
 
@@ -35,11 +36,28 @@ export interface ChatRailProps {
 const STACK_LIMIT = 3
 
 /**
+ * How long the sheet takes to slide back down, in ms.
+ *
+ * Stated here and in the stylesheet's `sheetOut` — the one duplicated number in
+ * the file, because a CSS animation cannot tell React when it has finished and
+ * a `transitionend` listener for a 200ms slide is more machinery than the slide
+ * is worth. If one changes, change both.
+ */
+const SHEET_EXIT_MS = 200
+
+/**
  * Room chat: a docked rail on a desktop, a sheet on a phone.
  *
  * Never modal and never over the content — it docks, and overlays sit above
  * both. Collapses to a 64px strip that keeps the unread count, the reaction
  * affordance and who's here.
+ *
+ * **The sheet slides, and the docked rail does not.** A phone's chat arrives
+ * over the room and leaves the same way, so it comes up from the bottom edge
+ * and goes back down to it — `useExitDelay` is what keeps it on screen long
+ * enough to be seen leaving, since React would otherwise remove it on the same
+ * frame the key was pressed. Above `md` chat is a column in a layout, not a
+ * thing that arrives, and the leaving sheet is simply not drawn there.
  *
  * **The handle is draggable, and only on the sheet.** Drag it down once to
  * shrink chat to 42% so the round is readable behind it, again to dismiss;
@@ -63,52 +81,11 @@ export function ChatRail({
   toasts,
   children,
 }: ChatRailProps) {
-  // Hooks run before the collapsed branch, because the branch is a return and
-  // React counts hooks per render. It costs the strip nothing: nothing is
-  // subscribed and nothing fires until the handle is pressed.
   const sheet = useSheetDrag(() => onOpenChange(false))
-
-  if (!open) {
-    const shown = players.slice(0, STACK_LIMIT)
-    const extra = players.length - shown.length
-
-    return (
-      <aside className={styles.strip} aria-label="Room chat, collapsed">
-        {toasts && <div className={styles.toastDock}>{toasts}</div>}
-
-        <button
-          type="button"
-          className={styles.openKey}
-          onClick={() => onOpenChange(true)}
-          aria-label={
-            unread > 0
-              ? `Open chat, ${unread} unread ${unread === 1 ? 'message' : 'messages'}`
-              : 'Open chat'
-          }
-        >
-          <Icon name="chat" size={18} />
-          {unread > 0 && (
-            <span className={styles.badge} aria-hidden="true">
-              {unread}
-            </span>
-          )}
-        </button>
-
-        <span className={styles.stripRule} aria-hidden="true" />
-
-        <div className={styles.stack}>
-          {shown.map((p) => (
-            <Avatar key={p.name} {...p} size={26} />
-          ))}
-          {extra > 0 && <AvatarOverflow count={extra} size={26} />}
-        </div>
-
-        <span className={styles.vertical} aria-hidden="true">
-          Chat
-        </span>
-      </aside>
-    )
-  }
+  // Held past `open` so the slide down has something to slide. The strip and
+  // the leaving sheet are on screen together for those 200ms, which is the
+  // right picture: the key it collapses into is already where it is going.
+  const sheetMounted = useExitDelay(open, SHEET_EXIT_MS)
 
   /**
    * The sheet's height, and the finger currently changing it.
@@ -125,51 +102,135 @@ export function ChatRail({
   } as CSSProperties
 
   return (
-    <aside
-      className={`${styles.rail} ${sheet.dragging ? styles.dragging : ''}`}
-      style={sizing}
-      aria-label="Room chat"
-    >
-      {/* A real control, not a bar with a listener bolted on: it resizes the
-          sheet, so it has to be reachable without a pointer. Enter toggles the
-          two heights, the arrows pick one outright, and the drag is the
-          shortcut over the top of both. */}
+    <>
+      {!open && (
+        <CollapsedStrip
+          onOpen={() => onOpenChange(true)}
+          unread={unread}
+          players={players}
+          toasts={toasts}
+        />
+      )}
+
+      {sheetMounted && (
+        <aside
+          className={[
+            styles.rail,
+            sheet.dragging ? styles.dragging : '',
+            open ? '' : styles.leaving,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          style={sizing}
+          aria-label="Room chat"
+          // On its way out it is a picture of a sheet leaving, not a surface:
+          // `inert` takes it out of the tab order and the accessibility tree
+          // together, so nothing announces a second "Room chat" and nothing
+          // can be tabbed into a panel that is already halfway off the screen.
+          inert={!open}
+        >
+          {/* A real control, not a bar with a listener bolted on: it resizes
+              the sheet, so it has to be reachable without a pointer. Enter
+              toggles the two heights, the arrows pick one outright, and the
+              drag is the shortcut over the top of both. */}
+          <button
+            type="button"
+            className={styles.grabber}
+            onClick={sheet.toggle}
+            aria-label={
+              sheet.detent === 'tall'
+                ? 'Shrink chat, or drag to resize'
+                : 'Expand chat, or drag to resize'
+            }
+            {...sheet.handlers}
+          >
+            <span className={styles.grabberBar} aria-hidden="true" />
+          </button>
+
+          <header className={styles.head}>
+            <span className={styles.title}>Room chat</span>
+            <PresencePill count={present} />
+            {/* One key each, and CSS picks: a chevron points at the edge the
+                rail collapses to, which for a sheet is nowhere. The hidden one
+                leaves the accessibility tree with its `display`, so only ever
+                one "Close chat" is announced. */}
+            <button
+              type="button"
+              className={styles.collapse}
+              onClick={() => onOpenChange(false)}
+              aria-label="Close chat"
+            >
+              <Icon name="chevronRight" size={15} />
+            </button>
+            <CloseButton
+              className={styles.sheetClose}
+              onClick={() => onOpenChange(false)}
+              label="Close chat"
+            />
+          </header>
+
+          <div className={styles.body}>{children}</div>
+        </aside>
+      )}
+    </>
+  )
+}
+
+/**
+ * Chat, shut: one floating key on a phone, a 64px column on a desk.
+ *
+ * Split out when the sheet started outliving `open` — the two are on screen
+ * together during the slide down, so "either the strip or the sheet" stopped
+ * being true and an early return stopped being the shape.
+ */
+function CollapsedStrip({
+  onOpen,
+  unread,
+  players,
+  toasts,
+}: {
+  onOpen: () => void
+  unread: number
+  players: PlayerFace[]
+  toasts?: ReactNode
+}) {
+  const shown = players.slice(0, STACK_LIMIT)
+  const extra = players.length - shown.length
+
+  return (
+    <aside className={styles.strip} aria-label="Room chat, collapsed">
+      {toasts && <div className={styles.toastDock}>{toasts}</div>}
+
       <button
         type="button"
-        className={styles.grabber}
-        onClick={sheet.toggle}
+        className={styles.openKey}
+        onClick={onOpen}
         aria-label={
-          sheet.detent === 'tall' ? 'Shrink chat, or drag to resize' : 'Expand chat, or drag to resize'
+          unread > 0
+            ? `Open chat, ${unread} unread ${unread === 1 ? 'message' : 'messages'}`
+            : 'Open chat'
         }
-        {...sheet.handlers}
       >
-        <span className={styles.grabberBar} aria-hidden="true" />
+        <Icon name="chat" size={18} />
+        {unread > 0 && (
+          <span className={styles.badge} aria-hidden="true">
+            {unread}
+          </span>
+        )}
       </button>
 
-      <header className={styles.head}>
-        <span className={styles.title}>Room chat</span>
-        <PresencePill count={present} />
-        {/* A chevron points at the edge it collapses to, which on a sheet is
-            nowhere — so the sheet gets the app's close key and the docked rail
-            keeps its chevron. Both are rendered and CSS shows one, which is
-            how the shape is matched without a media query in React; the hidden
-            one leaves the accessibility tree with its `display`. */}
-        <button
-          type="button"
-          className={styles.collapse}
-          onClick={() => onOpenChange(false)}
-          aria-label="Close chat"
-        >
-          <Icon name="chevronRight" size={15} />
-        </button>
-        <CloseButton
-          className={styles.sheetClose}
-          onClick={() => onOpenChange(false)}
-          label="Close chat"
-        />
-      </header>
+      <span className={styles.stripRule} aria-hidden="true" />
 
-      <div className={styles.body}>{children}</div>
+      <div className={styles.stack}>
+        {shown.map((p) => (
+          <Avatar key={p.name} {...p} size={26} />
+        ))}
+        {extra > 0 && <AvatarOverflow count={extra} size={26} />}
+      </div>
+
+      <span className={styles.vertical} aria-hidden="true">
+        Chat
+      </span>
     </aside>
   )
 }

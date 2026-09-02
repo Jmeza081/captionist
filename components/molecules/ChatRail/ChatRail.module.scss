@@ -21,6 +21,10 @@
   // unhydrated sheet and the gallery both get.
   height: clamp(0px, calc(var(--sheet-height, 78dvh) - var(--sheet-drag, 0px)), var(--sheet-max, 78dvh));
   transition: height 220ms cubic-bezier(0.32, 0.72, 0, 1);
+  // Up from the edge it lives on. A phone's chat arrives over the room rather
+  // than beside it, so it comes from the bottom of the screen — the same
+  // easing the detents use, so a drag and an arrival feel like one surface.
+  animation: sheetIn 260ms cubic-bezier(0.32, 0.72, 0, 1);
   display: flex;
   flex-direction: column;
   background-color: t.$surface-header;
@@ -38,6 +42,8 @@
     height: auto;
     max-height: none;
     transition: none;
+    // A docked column is part of the layout, not a thing that arrives.
+    animation: none;
     align-self: stretch;
     width: t.$rail-width;
     max-width: 100%;
@@ -98,6 +104,36 @@
   transition: none;
 }
 
+/**
+ * On its way out, and only ever below `md`.
+ *
+ * `forwards` so it rests off-screen for the last frames rather than snapping
+ * back before React removes it. Above `md` it is not drawn at all: the docked
+ * rail is a column in the room's layout, and a leaving copy of it beside the
+ * collapsed strip would be a second column for 200ms — a visible jump on a
+ * desk to buy an animation only a phone ever sees.
+ */
+.leaving {
+  animation: sheetOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+
+  @include t.mq('md') {
+    display: none;
+  }
+}
+
+@keyframes sheetIn {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheetOut {
+  to {
+    transform: translateY(100%);
+  }
+}
+
 .sheetClose {
   margin-left: auto;
 
@@ -106,14 +142,26 @@
   }
 }
 
+// The sheet's header takes the *room's* gutter, not the rail's.
+//
+// On a phone this bar sits directly under the app header, and its × and that
+// bar's help key read as one column of round keys — so they have to share an
+// edge, and the room's edge is `$space-20` (the wordmark's inset, the floating
+// keys', `--room-dock-right`'s). `$rail-pad` is the docked column's own
+// padding and comes back at `md`, where there is no app header above it to
+// line up with.
 .head {
   display: flex;
   align-items: center;
   gap: t.$space-8;
   height: t.$chat-header-height;
-  padding: 0 t.$rail-pad;
+  padding: 0 t.$space-20;
   border-bottom: 1px solid t.$line-hairline;
   flex: none;
+
+  @include t.mq('md') {
+    padding: 0 t.$rail-pad;
+  }
 }
 
 .title {
@@ -305,5 +353,13 @@
   .rail,
   .grabberBar {
     transition: none;
+  }
+
+  // Not `animation: none`. The arrival can simply be skipped, but the exit is
+  // load-bearing — React holds the sheet for 200ms either way, and without the
+  // keyframe it would sit there, fully drawn, on top of the room. So it still
+  // runs; it just finishes before a frame has passed.
+  .rail {
+    animation-duration: 1ms;
   }
 }

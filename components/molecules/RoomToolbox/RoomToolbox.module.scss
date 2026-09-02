@@ -1,7 +1,23 @@
 @use 'theme' as t;
 
+/**
+ * The panel unfolds out of the key it replaced.
+ *
+ * Its `transform-origin` is the bottom-right corner, which is exactly where
+ * the FAB was standing a frame ago — so the bar reads as the key opening
+ * rather than as a card appearing over the room. Transform and opacity only:
+ * this sits over a screen that may be running twenty GIFs, and a panel that
+ * animated its height or its shadow would repaint all of them.
+ *
+ * The head and the body come in a beat behind the plate, 70ms apart, so the
+ * surface arrives before the controls on it do. Two delays, not five — a
+ * staggered list of every key in the bar would be a flourish you wait through
+ * every time you reach for the timer.
+ */
 .toolbox {
   position: fixed;
+  transform-origin: 100% 100%;
+  animation: toolboxIn 240ms cubic-bezier(0.32, 0.72, 0, 1);
   // The room says where the floating corner starts, so the panel rises with
   // its own key when a screen's sticky action bar is underneath both of them.
   bottom: var(--room-dock-base, #{t.$space-20});
@@ -21,6 +37,7 @@
   gap: t.$space-10;
   padding: t.$space-12 t.$space-14 t.$space-12 t.$space-20;
   border-bottom: 1px solid t.$line-hairline;
+  animation: toolboxContentIn 220ms ease-out 70ms backwards;
 }
 
 .title {
@@ -43,6 +60,9 @@
   flex-direction: column;
   gap: t.$space-8;
   padding: t.$space-12 t.$space-20 t.$space-20;
+  // `backwards` so the first painted frame is already the start of this rather
+  // than the finished state flashing for 70ms and then being animated over.
+  animation: toolboxContentIn 240ms ease-out 110ms backwards;
   max-height: calc(100dvh - #{t.$space-52} - #{t.$space-52});
   overflow-y: auto;
 }
@@ -164,5 +184,30 @@
 
   @include t.mq('md') {
     display: none;
+  }
+}
+
+@keyframes toolboxIn {
+  from {
+    // 0.9 rather than 0: a panel that grows from nothing reads as a zoom, and
+    // one that starts near its own size reads as a thing that was already
+    // there. The 10px is the distance from the key it came out of.
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+  }
+}
+
+@keyframes toolboxContentIn {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbox,
+  .head,
+  .body {
+    animation: none;
   }
 }

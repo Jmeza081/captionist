@@ -3,6 +3,7 @@
 .key {
   @include t.focusRing;
 
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -24,12 +25,29 @@
   }
 }
 
-// A header's key. The disc fills the 44px target rather than floating inside
-// it — a 32px plate in a 44px box leaves 6px of dead margin that still takes
-// the tap, which is the "it did nothing" bug from the other side.
+/**
+ * A header's key: a 36px plate inside a 44px target.
+ *
+ * The plate is `$lobby-help-key`'s size because on a phone this sits directly
+ * under that key — the app header's round help key — and a 44px disc there was
+ * eight pixels wider than the one above it. What you can see is the plate; the
+ * `::after` is the part your thumb hits, so nothing about the touch minimum
+ * changed. It is `position: absolute` and therefore out of flow, so a 44px
+ * target never widens the 36px box its neighbours are laid out against.
+ */
 .medium {
-  width: t.$tap-target-min;
-  height: t.$tap-target-min;
+  width: t.$close-key;
+  height: t.$close-key;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: t.$tap-target-min;
+    height: t.$tap-target-min;
+    transform: translate(-50%, -50%);
+  }
 }
 
 // A row that never had 44 to give: a staged GIF, a popover title bar. The

@@ -21,11 +21,15 @@ test.describe('the close key', () => {
       .getByRole('button', { name: 'Close' })
     await expect(close).toBeVisible()
 
-    // The affordance itself: a circle, filled, at the full touch minimum. Read
-    // off the computed style rather than a class name, which is hashed.
+    // The affordance itself: a filled circle the size of the app's other round
+    // keys, with a target bigger than the plate so the touch minimum survives
+    // the smaller drawing. Read off computed style rather than a class name,
+    // which is hashed.
     const box = (await close.boundingBox())!
-    expect(box.width).toBeGreaterThanOrEqual(44)
-    expect(box.height).toBeGreaterThanOrEqual(44)
+    expect(box.width).toBe(36)
+    expect(box.height).toBe(36)
+    expect(await close.evaluate((el) => getComputedStyle(el, '::after').width)).toBe('44px')
+    expect(await close.evaluate((el) => getComputedStyle(el, '::after').height)).toBe('44px')
     await expect(close).toHaveCSS('border-radius', '50%')
     // Not `transparent` and not `none` — a plate rather than a bare glyph.
     const fill = await close.evaluate((el) => getComputedStyle(el).backgroundColor)
@@ -34,6 +38,35 @@ test.describe('the close key', () => {
     // And it still does the one thing it is for.
     await close.click()
     await expect(page.getByRole('dialog', { name: 'How Captionist works' })).toHaveCount(0)
+  })
+
+  test('is the same round key as the one in the bar above it', async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) >= 768,
+      'the sheet and the app header only stack on a phone',
+    )
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: /^Open chat/ }).click()
+
+    const help = await page
+      .getByRole('button', { name: 'How Captionist works' })
+      .boundingBox()
+    const close = await page
+      .getByRole('complementary', { name: 'Room chat', exact: true })
+      .getByRole('button', { name: 'Close chat' })
+      .boundingBox()
+
+    // Two round keys in a column, so they share a size and an edge. It was a
+    // 44px disc at a 16px inset under a 36px key at a 20px one.
+    expect(close!.width).toBeCloseTo(help!.width, 0)
+    expect(close!.x + close!.width).toBeCloseTo(help!.x + help!.width, 0)
+
+    // The plate shrank; the target did not.
+    const target = await page
+      .getByRole('complementary', { name: 'Room chat', exact: true })
+      .getByRole('button', { name: 'Close chat' })
+      .evaluate((el) => getComputedStyle(el, '::after').width)
+    expect(target).toBe('44px')
   })
 
   test('draws a heavier × than the glyph carries on its own', async ({ page }) => {
@@ -222,6 +255,45 @@ async function sheetHeight(page: Page): Promise<number> {
   return box!.height
 }
 
+/**
+ * Wait for the sheet to finish arriving.
+ *
+ * `boundingBox()` reports where a thing *is*, so a box read mid-slide is the
+ * handle's position 200ms ago — and a raw `page.mouse.down()` at that point
+ * lands on the room behind it. Playwright's own `click()` waits for a stable
+ * box on its own; only a hand-driven pointer has to ask.
+ */
+async function settled(page: Page): Promise<void> {
+  await page
+    .getByRole('complementary', { name: 'Room chat', exact: true })
+    .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
+}
+
+test.describe('the chat sheet’s arrival', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, 'the docked rail does not slide')
+
+  test('stays on screen long enough to be seen leaving', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: /^Open chat/ }).click()
+    await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Close chat' }).click()
+
+    // The key it collapses into is there at once — nothing waits on the slide.
+    await expect(page.getByRole('button', { name: /^Open chat/ })).toBeVisible()
+    // And the sheet is still in the document, sliding, and inert while it does
+    // it: a panel halfway off the screen must not be tabbable and must not
+    // announce a second "Room chat".
+    await expect(page.locator('aside[inert]')).toHaveCount(1)
+    await expect(
+      page.getByRole('complementary', { name: 'Room chat', exact: true }),
+    ).toHaveCount(0)
+
+    // Then it goes, rather than lingering as an invisible overlay.
+    await expect(page.locator('aside[inert]')).toHaveCount(0)
+  })
+})
+
 test.describe('the chat sheet’s handle', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, 'the docked rail is not dragged')
 
@@ -255,6 +327,7 @@ test.describe('the chat sheet’s handle', () => {
     await page.getByRole('button', { name: /^Open chat/ }).click()
     await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
 
+    await settled(page)
     const tall = await sheetHeight(page)
     const handle = page.getByRole('button', { name: /drag to resize$/ })
     const grip = (await handle.boundingBox())!

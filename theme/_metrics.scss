@@ -305,13 +305,20 @@ $composer-attach-preview-h: 40px;
 // --- Close key ------------------------------------------------------------
 
 /**
- * The small `CloseButton`, for a row that never had 44px to give — a staged
- * GIF, a popover's title bar. The medium one is `$tap-target-min` itself and
- * needs no name of its own.
+ * The `CloseButton`'s plate — the disc you can see, not the target you hit.
  *
- * Was `$composer-attach-close`: the same 26px, named for the one row that used
- * it, back when every surface drew its own × from scratch.
+ * **36px, which is `$lobby-help-key`'s size on purpose.** The chat sheet's ×
+ * sits directly under the app header's round help key on a phone, and at 44px
+ * it was eight pixels wider than the key above it and four further right: two
+ * round keys in a column, neither the same size nor on the same edge. The
+ * target stays 44 — the plate is centred in it — so the touch minimum is
+ * unchanged and only the drawing got smaller.
+ *
+ * The small one is for a row that never had 44px to give: a staged GIF, a
+ * popover's title bar. It was `$composer-attach-close`, the same 26px, named
+ * for the one row that used it back when every surface drew its own ×.
  */
+$close-key: 36px;
 $close-key-small: 26px;
 
 // --- GIF panel ------------------------------------------------------------
