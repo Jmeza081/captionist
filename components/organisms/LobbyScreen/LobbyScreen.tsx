@@ -51,11 +51,12 @@ import styles from './LobbyScreen.module.scss'
 /**
  * The two modes, at their full names on every screen.
  *
- * They were abbreviated on a phone for a while, because the toggle shared its
- * row with the walkthrough key and two mode names would not fit in what was
- * left. The key is in the header now and the toggle takes the whole row, which
- * is room enough — and the full name is worth keeping, because this control is
- * where somebody who has never played learns what the two modes are.
+ * The names are worth their width: this control is where somebody who has
+ * never played learns what the two modes are, and an abbreviation would make
+ * the toggle a thing you set rather than a thing you read. On a phone they
+ * used to wrap to three ragged lines, because the toggle hugged its content
+ * and shared the row with the walkthrough key. The key is in the header now
+ * and the track is `fullWidth`, which is room enough for both.
  */
 const MODES: Array<{ value: GameMode; label: string }> = [
   { value: 'caption', label: 'Caption the image' },

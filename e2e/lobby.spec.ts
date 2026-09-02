@@ -66,9 +66,9 @@ test.describe('the lobby', () => {
     const help = (await page.getByRole('button', { name: 'How Captionist works' }).boundingBox())!
 
     // The key used to sit on this row, and two mode names plus a 44px key do
-    // not fit on a phone — which is why the names were abbreviated there. It
-    // is in the header now, so both names stay whole and the toggle takes the
-    // width it needs.
+    // not fit on a phone — the labels wrapped to three ragged lines and the
+    // toggle was the tallest thing on the screen. It is in the header now, so
+    // the track takes the whole row and both names stay on one line.
     expect(help.y + help.height).toBeLessThan(toggle.y)
     await expect(page.getByRole('radio', { name: 'Caption the image' })).toBeVisible()
     await expect(page.getByRole('radio', { name: 'React to the caption' })).toBeVisible()

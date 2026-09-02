@@ -1,6 +1,14 @@
 # 0017 — A buried control is not a stolen tap
 
-**Status:** accepted · 2026-08-29
+**Status:** accepted · 2026-08-29 · amended by
+[ADR 0031](./0031-the-keys-are-cleared-above-the-bar-not-beside-it.md)
+
+> ADR 0031 keeps this decision — what a buried control is, and how
+> `e2e/targets.spec.ts` measures it — and changes how the room buys it. The
+> sideways reservation described below (`--room-dock-gutter`, later
+> `--room-column-pad` at 52px) is gone; the keys are lifted above a screen's
+> action bar instead. Read the two together: this one is the rule, 0031 is the
+> mechanism that now serves it.
 
 ## Context
 

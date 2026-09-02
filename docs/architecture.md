@@ -57,11 +57,16 @@ wire moved: a room reaction is the same event it was.
 storing `false`, and your own toggle overrides the viewport from the moment you
 touch it. A phone keeps its closed rail on purpose: there the rail is a
 full-screen sheet, and arriving inside it would take the room away from somebody
-who just got there. That change is also why `LobbyScreen` became a
-**container** rather than a set of viewport breakpoints — with 360px of rail
+who just got there. That change is also why the lobby's **two-column split**
+became a container query rather than a viewport breakpoint — with 360px of rail
 docked, the window no longer describes the column the lobby is laid out in, and
 the room code, the player names and the empty seat were all wrapping or
-truncating against a measure that had silently shrunk.
+truncating against a measure that had silently shrunk. Not the *whole*
+stylesheet: `LobbyScreen.module.scss` still uses `t.mq('md')` for everything the
+viewport genuinely decides — whether the roster is a card, whether the start bar
+is sticky, whether the phone's roster window and its two summary lines exist at
+all — and `@container (min-width: $lobby-columns)` for the one question the rail
+can change the answer to.
 
 **Since then the rest of the room caught up with the lobby, and the rail
 learned to wait.** Every other screen still reflowed at `md`, which is the
@@ -111,7 +116,12 @@ forking a screen on `settings.mode`, and neither half of this one reads it.
 **And the host's half is now two layouts of its own, on purpose.** A phone
 reads share card → mode → what the game is → who is here, with the start button
 pinned to the glass; a desk keeps the design's two columns, controls left and
-roster right. That is a real divergence rather than a reflow, and it is the one
+roster right. **The design has no phone lobby to depart from**, which is why
+this is an addition rather than a departure: `Captionist Screens.dc.html` draws
+five 390px artboards — join, caption, rank top 3, reveal, and the chat sheet
+over the vote — and the lobby is not among them, so the phone order below was
+designed during the feature. It is a real divergence rather than a reflow, and
+it is the one
 screen that gets one: on a phone the roster is what you watch while you wait,
 so it wants the bottom of the column and the button wants the foot, while on a
 desk both are on screen at once and neither has to give way. Three things move
@@ -123,6 +133,23 @@ three-row window with `rosterCopy` naming who it hides and who just arrived.
 The start bar is a sibling of the columns rather than a child of the left one,
 which is what lets it be either — and is also what lets it be sticky, since a
 sticky element cannot leave its containing block.
+
+Four props carry that, and every one of them is rule 2 rather than a second
+component. `SegmentedControl` gained `fullWidth`, so the toggle splits the row
+it now owns evenly — which is also what keeps both mode names on one line on a
+phone, where sharing the row with a 44px key wrapped them to three ragged ones.
+`Wordmark` gained
+`showName`, because the lobby is the one bar with no phase and no clock and
+therefore the one with room for it. `AppHeader` draws its settings line only
+from `md` up — the rules read off the share card below that — and its `trailing`
+now carries a third occupant. And `RoomShare` gained `meta` for those rules and
+became grid-areas rather than a flex reflow: areas because the QR spans both
+rows on a desk and drops to a compact 108px beside the code on a phone, with the
+actions moving from under the code to under the whole block, which is the one
+arrangement flex cannot state. The code's own type became a `clamp()` in
+`roomCodeCompactText` for the same reason: a code that is read aloud and typed
+by hand may neither wrap nor clip, so at a phone's measure the type is what
+gives.
 
 **A card is drawn at its image's shape now, clamped.** `MediaRef` gained
 optional `width`/`height`, `toMediaRef` stopped dropping Giphy's, and
@@ -162,6 +189,19 @@ indistinguishable people in the roster. The name is still *written* by
 `writeIdentity` on the way into a room, and the room still reads it — only the
 read-back into an empty entry field is gone.
 
+**And the hole that suggestion left has since been closed.** The empty server
+snapshot is what stops a random name reaching hydration, which means the field
+is on screen, real and focusable, before React has adopted it — so somebody who
+typed fast joined as `Blameless_DeployVic`, their three letters with a
+suggestion written over them. `useNicknameField` in the same file is the pair:
+the suggestion, plus whatever is in the box, adopted rather than overwritten. It
+adopts through a **callback ref**, which React runs as it commits the hydration
+and therefore before the store's client snapshot replaces the empty one, and it
+returns a tuple rather than an object so nothing at the call site looks like
+reading a ref during render. Both front doors take it, which is why `TextField`
+now extends `ComponentPropsWithRef<'input'>` — the `ref` rides in `...rest`
+with every other prop, as React 19 passes it.
+
 **A round nobody answered ends with a real picture.** `fallbackSubject` in
 `lib/game/reducer.ts` used to hand caption mode `{ src: '', alt: 'No image was
 picked in time' }`, so one role holder's hesitation left the whole room
@@ -190,6 +230,21 @@ room's floating keys are lifted above that bar rather than sitting beside it.
 place and the pair stays distinguishable: "Surprise me" commits to a tile
 already on the board, "Shuffle results" changes what there is to commit to.
 Neither shares the committing bar, which is one control wide.
+
+**That bar's label stopped changing, and it is a live exception to rule 10.**
+`RoundPicker` lost `blockedAction` and `ComposeScreen` lost its
+`'Write something first'`; both CTAs now read the same string whether or not
+anything is staged, and stay `blocked` — live, focusable, and visibly
+unavailable — rather than saying what is missing. The argument in both cases is
+that the *screen* already states it: fifty tiles with none of them ringed, or an
+empty field directly above the button. The cost the change bought back is real
+and specific — on a phone the one control on the screen changed width as you
+typed, and the bar it sits in wrapped. This is a departure from
+`design-system.md` §4.7 and `CLAUDE.md` rule 10, not an application of them, and
+the rule still holds where the missing thing is a *count* rather than a state:
+`VoteScreen`'s "Pick 2 more" comes from `lockGateFrom` and is unchanged. Both
+sides of that split are defensible and neither is written down outside a code
+comment, which is the part worth fixing next.
 
 **Both modes search on one screen.** Picking the round's image and answering
 its prompt with a GIF are the same task — field, chips, shuffle, "Surprise me",
@@ -226,10 +281,25 @@ a 393px phone that is a quarter of the screen, paid by every card, caption and
 board tile. `--room-column-pad` is `$space-20` instead, the same gutter the
 front doors use, and a screen's committing control sits in a sticky bar that
 declares itself with `data-action-dock`; `RoomShell` reads that with `:has()`
-and lifts the whole key column above the bar (`--room-dock-base`). The trade is
-that an ordinary control can pass under a key mid-scroll again, as page content
-does under any floating action button — what cannot is the control that ends
-the phase.
+and lifts the whole key column above the bar — `--room-action-dock` is the band
+the bar owns, `--room-dock-base` is where the lower key sits on top of it. The
+trade is that an ordinary control can pass under a key mid-scroll again, as page
+content does under any floating action button — what cannot is the control that
+ends the phase. **Three components declare a bar and four phases get one**,
+through a single mixin — `stickyActionDock` in `theme/_layout.scss`.
+`RoundPicker` is two of the four (the brief while it is picking an image, and
+the composer while it is answering a prompt with one — not the react brief,
+which writes a line, and not the caption composer, which types one);
+`VoteScreen` is the third at both modes; the lobby's start bar is the fourth,
+and it is the one with a line under its button, so it declares
+`data-action-dock="noted"` and the shell lifts by the taller figure. A value on
+the attribute rather than a second attribute, and `$lobby-note-line` is read by
+both the lift and the line so they cannot drift. The trade, and what it
+overturns in the ADR before it, is
+[ADR 0031](./adr/0031-the-keys-are-cleared-above-the-bar-not-beside-it.md),
+which amends [ADR 0017](./adr/0017-a-buried-control-is-not-a-stolen-tap.md)
+rather than superseding it — same corner, same screens, different axis paying
+for it.
 
 Two numbers keep that honest and both were wrong once. `--room-column-foot` is
 what the content column actually reserves at its foot, and a sticky bar negates
@@ -241,6 +311,16 @@ pushes a `bottom: 0` sticky child up by that much: the vote's lock button sat
 78px above the fold at every scroll position until it did. `e2e/responsive.spec.ts`
 sweeps the gap between the control and the fold at five scroll offsets on four
 screens at both sizes.
+
+**Above `md` the sideways reservation survives, and it is the only place it
+does.** There the corner is a labelled toolbox pill beside a docked rail rather
+than a stacked column of keys, so nothing is lifted and the bar clears the pill
+with `padding-right: $toolbox-fab-clear` instead. `VoteScreen`'s `.lockDock` is
+the half of this that was broken on the screen nobody was looking at: it
+*unpinned* itself past `$vote-bar-columns`, so on a laptop — where the room is
+an app shell and the column scrolls, not the window — the lock button sat 164px
+below the fold and crept up as the board scrolled. It is
+`stickyActionDock` at every width now, exactly like `RoundPicker`'s.
 
 **Five glows, one mixin — and four of them had never painted.** The
 accent circle every big screen carries is a `::before` at `z-index: -1`.
@@ -337,8 +417,9 @@ promise: `components/molecules/Dropzone/` is deleted, `GifPanel` renders
 unconditionally on the brief, the `/host` row is **absent rather than
 disabled**, `MediaRef` lost the `source: 'giphy' | 'upload'` union nothing read
 (it is `{ src, alt }` plus the optional `width`/`height` a card's shape needs),
-`Icon` is back to the eleven glyphs its docblock always claimed, and four
-`$dropzone-*` metrics left
+`Icon` dropped `upload` and went back to eleven glyphs (it is twelve again
+since, `shuffle` having arrived with "Shuffle results"; the docblock counts
+them), and four `$dropzone-*` metrics left
 `theme/_metrics.scss`. A GIF provider is the only image source, in both modes.
 [ADR 0014](./adr/0014-uploads-are-not-a-feature.md).
 
@@ -1049,9 +1130,20 @@ named selector** — `viewKey`, `briefCopy`, `phaseLabel`, `canStart`, phase
 `podiumCopy`, and phase 4's `joinCopy` · `JOIN_ERRORS` · `hostSetupCopy` ·
 `modeChoices` · `showsCaptionFormat` · `settingsSummary` · `WAITING_LINE`, and
 phase 5's `presentCount` · `seatState` · `seatSecondsLeft` · `reconnectCopy`, and
-phase 7's `ballotFrom` · `captionFields` — so
+phase 7's `ballotFrom` · `captionFields`, and the phone lobby's
+`roomRulesLine` · `rosterCopy` · `ROSTER_WINDOW` — so
 the decision about what a phase means lives in a file a node test can reach, and
-the screen is left holding markup. **One live exception, and it is phase 7's:**
+the screen is left holding markup. The last three are the rule holding under a
+*layout* change rather than a phase one. `roomRulesLine` is `settingsLine`
+without the mode, because on a phone the share card sits directly above the mode
+toggle and a mode name there would be the screen saying it twice; `settingsLine`
+is now that function plus the mode. `rosterCopy` names who the phone's
+three-row window hides and who has just walked in, and takes `now` as a
+parameter rather than calling `Date.now()`, so it stays pure and the caller owns
+the tick. `ROSTER_WINDOW` is `3` in TypeScript and `$lobby-roster-cap` in Sass —
+a number stated twice on purpose, because the line under the window has to name
+the same people the CSS is cutting off, and a summary that disagreed with what
+you can see reads as a bug. **One live exception, and it is phase 7's:**
 `VoteScreen` reads `state.settings.voting` directly to choose between
 `voteCopy`'s `clearAction` and a locally composed `Clear ${ordinal(place)}`. The
 ballot shape it was originally read for is `ballotFrom`'s now, so what is left
@@ -1246,6 +1338,20 @@ one suggestion per page load rather than per render: the field keeps it while
 you browse the face picker, and a client-side hop from `/join` to `/host`
 carries the same one across. `Math.random` rather than the room's seeded PRNG is
 correct here — no room exists yet, so there is nothing for anyone to agree on.
+
+**The layering above was true of every render but the first, and that gap was a
+bug.** "Typed over rather than seeded from" holds once React owns the input;
+before hydration it does not own it, and the field is on screen and focusable
+the whole time. Typing in that window put three letters in the box that no
+state knew about, and the first client render wrote the suggestion over them —
+`Vic` joined as `Blameless_DeployVic`. `useNicknameField` is the pair of the two
+`useState` lines each front door used to carry, and it closes the window with a
+callback ref: React runs one as it commits the hydration, so it sees the box as
+the person left it, and anything in there is adopted. `??` rather than a plain
+assignment, because the ref fires again on every remount and a later one must
+not undo what has been typed since. It returns a tuple rather than an object so
+that nothing at the call site even *looks* like reading a ref during render,
+which is the thing `react-hooks/refs` forbids and is right to.
 
 **The seat is signed as well as stored.** Ably makes `Intent.from` trustworthy
 for free — a token minted with a `clientId` binds it, and the server rejects a
@@ -2031,6 +2137,7 @@ graph BT
   BootScreen -->|"returned in place of the chrome,<br/>until isSeated()"| Shell
 
   Status -->|"TimerPill · RoundProgress · ProgressRail"| Shell
+  Icon -->|"help — the lobby's walkthrough key,<br/>drawn straight into AppHeader's trailing slot"| Shell
   Feedback --> Shell
   Chat -->|"ChatRail · ChatToast"| Shell
   Overlay -->|"HelpModal · RoundOpener · RoomToolbox — everyone's<br/>ReconnectOverlay — over a live room"| Shell
@@ -2083,7 +2190,15 @@ second occupant: `RoundProgress` on `score`, `TimerPill` everywhere a clock is
 running. They share the slot rather than stacking because they can never both
 apply — the scoreboard is untimed, and the timed phases have no rounds-played to
 report. `showsRoundProgress(state)` is the selector that decides, so the branch
-is a node test's rather than a stylesheet's.
+is a node test's rather than a stylesheet's. **There is a third occupant now and
+it holds the same way**: the lobby's walkthrough key, which has neither a clock
+nor a round to report, so the slot's invariant survives a phase check
+(`state.phase === 'lobby'`) sitting in front of the selector. It moved out of
+`LobbyScreen`, where it took a third of the one row a phone has for two mode
+names, and that move is why `RoomShell` now imports `Icon` directly — the one
+new edge this pass put in the tier map. The `AppHeader` half of the same pass is the
+settings line: it is drawn only from `md` up, because in a round the phase takes
+a phone's width and in the lobby the name, the host chip and this key do.
 
 The screens are injected, not imported: `RoomShell` takes a
 `Partial<Record<RoomPhase, ComponentType>>`, and the map lives in
@@ -2488,8 +2603,11 @@ elevation, and it sits above every other overlay because when the room is gone
 nothing else matters. The toolbox pass added one more, `$toolbox-fab-clear`:
 160px a full-width control has to leave beside the collapsed toolbox from `md`
 up, where the FAB is a labelled pill rather than a 44px key. `VoteScreen`'s
-lock button is the one that needs it — it runs the width of the column, and its
-right end was under the pill. The metrics stay Sass constants because no React
+lock button was the one that needed it — it runs the width of the column, and
+its right end was under the pill. It has one consumer now, and it is
+`stickyActionDock` rather than a screen: every sticky bar clears the pill the
+same way above `md`, and below `md` none of them clears anything sideways at
+all. The metrics stay Sass constants because no React
 prop takes them, so
 publishing a custom property for each would be a bridge with nothing crossing
 it. The rule is the same either way: the number exists once, in `theme/`.
@@ -2521,6 +2639,19 @@ of text stays about the height a single line was; the fourth covers
 [ADR 0016](./adr/0016-a-media-card-is-square-and-a-caption-scales-with-it.md)
 carries the argument.
 
+**The phone-layout pass added three more, and two of them exist because a
+number has a second reader outside CSS.** `$lobby-note-line` (22px) is the line
+under the lobby's start button, stated rather than left to the type ramp,
+because the shell lifts its floating keys by that bar's *height* and a
+`line-height` derived one way with a lift derived another would disagree by
+whatever the ramp happened to resolve to. `$lobby-roster-cap` is the phone
+roster's three-row window — three rows and the two gaps between them, with the
+gaps written out because `_metrics.scss` cannot see the spacing scale — and its
+second reader is `ROSTER_WINDOW` in `lib/game/selectors.ts`, which writes the
+line naming who it hides. `$share-qr-compact` (108px) is the third and the
+ordinary kind: a QR beside the code rather than above it, so a phone's share
+card holds both.
+
 **Which step a caption gets is chosen in TypeScript, and the constant that does
 it is deliberately not a token.** `CHARS_PER_LINE` (20) lives in
 `MediaCard.tsx`, because the size is in `cqw` — a card fits about the same
@@ -2543,6 +2674,14 @@ five ramps and that the guide's single row is a lossy summary of them; this is
 the second of the five to exist in code. Type mixins never cross into
 `theme/tokens.ts` — nothing in React takes a font size as a prop — so the rule
 that holds here is the plainer half: the numbers exist once, in `theme/`.
+
+**One mixin in there has since become fluid, and the reason is the one thing on
+a screen that may neither wrap nor clip.** `roomCodeCompactText` was a flat
+2.75rem, which is the design's size in the 456px column a desk's share block
+gets. On a phone that column is the card less a QR — about 200px — and
+`C-F34213` ran off the end mid-digit. It is
+`clamp(1.6rem, 7vw, 2.75rem)` now: a code is read aloud and typed by hand, so
+where something has to give it is the type rather than the string.
 
 **`theme/_motion.scss` stopped being one mixin and became six.** There is no
 `keyframes()` any more and `app/tokens.scss` includes nothing from it: each
@@ -2613,6 +2752,14 @@ are prerendered with no revalidate rather than cached.
 `/join/[code]` is the same page rendered per request, and only because it awaits
 `params` to prefill one field.
 
+**Prerendering that field is what made the nickname a hydration question.** The
+name has to come from the browser — it is random per page load — so the server
+renders an empty, focusable input, and the gap between that paint and hydration
+is a real window somebody can type into. `useNicknameField` closes it by
+adopting rather than overwriting: a callback ref runs as React commits the
+hydration, before the store's client snapshot replaces the empty one, so
+whatever is in the box is read first and wins.
+
 ```mermaid
 sequenceDiagram
   participant B as Browser
@@ -2627,7 +2774,7 @@ sequenceDiagram
   N-->>B: prerendered HTML + RSC payload
   B->>B: hydrate (only 'use client' islands)
   B->>B: useStoredPerson() → the face, from localStorage
-  B->>B: useSuggestedName() → a fresh Adjective_Noun, per page load
+  B->>B: useNicknameField() → the callback ref adopts anything<br/>already typed, else a fresh Adjective_Noun, per page load
   B->>B: submit → writeIdentity() → router.push /room/CODE
 ```
 
@@ -3142,16 +3289,18 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-370 unit tests (`lib/**/*.test.ts`, node, over 24 files) and 502 Playwright
-tests across the two viewports — 251 per project, over 29 spec files. Not all of
-them run: fourteen skip on viewport (a docked rail exists only above `md`, a
+373 unit tests (`lib/**/*.test.ts`, node, over 24 files) and 536 Playwright
+tests across the two viewports — 268 per project, over 30 spec files. Not all of
+them run: 21 skip on viewport (a docked rail exists only above `md`, a
 floating dock only below it), which is a branch of the layout rather than a hole
-in the coverage. Fourteen *tests* out of twelve `test.skip` call sites, and this
-file said twelve for both until the counts were taken: `responsive.spec.ts`
-skips at the describe level and takes all of its own with it, because both
-projects would otherwise sweep the same widths through the same browser. That
-was four tests and is three, since the sweep merged the sideways-scroll and
-running-text passes into one walk of the fifteen URLs rather than two.
+in the coverage. 21 *tests* out of fifteen viewport `test.skip` call sites —
+sixteen in the tree, one of which is `design-review.spec.ts`'s `SHOTS` gate and
+not a viewport question at all. The two counts differ because
+`responsive.spec.ts` skips at the describe level and takes all of its own with
+it: 12 of the 21 skip on the phone (the width sweep's three, and nine that need
+a docked rail or an `xl` split), and 9 on the desk (the floating keys' two, the
+boards' four, and three that are about a phone specifically). Both projects
+would otherwise sweep the same widths through the same browser.
 
 **The avatar change's share is 12 unit tests and five specs.**
 `lib/avatar.test.ts` is the 12, and it is aimed at the two things a style swap
@@ -3375,6 +3524,47 @@ the only shape that catches a promise nobody awaited. `e2e/responsive.spec.ts`
 lost a test and gained none: its two assertions now ride one walk of the fifteen
 URLs instead of two, which is a coverage-neutral change made because the second
 walk was timing the parallel run out.
+
+**The phone-layout pass's share is no unit tests and four new browser tests per
+project, which is the honest reading of it: nothing pure moved except copy that
+was already covered.** All four come from one parameterised describe,
+`a sticky action bar`, and it runs at *both* sizes rather than skipping on one —
+which is the point, because the bug it exists for only ever showed on the desk.
+It walks the brief, the react composer and both vote screens, measures the gap
+between the docked control and the fold at five scroll offsets, and reports the
+whole set so a failure names which offset broke it rather than the first that
+did. It scrolls whichever box actually scrolls — the window on a phone, the
+content column above `md`, where the room is an app shell — and that single
+branch is the whole bug written down.
+
+**One older describe narrowed its claim in the same pass, and that is a real
+loss of coverage rather than a fix.** `the floating keys` used to assert that
+*no* control is ever under one, at every scroll position of every screen — a
+claim that was only true because of the sideways reservation
+[ADR 0031](./adr/0031-the-keys-are-cleared-above-the-bar-not-beside-it.md)
+removed. It asserts the half that survives now: `${mode} mode keeps the phase's
+own control clear of them`. What is given up is stated in the ADR's
+consequences rather than left for the next pass to discover — an ordinary
+control can pass under a key mid-scroll, and a nudge of the page frees it.
+`e2e/targets.spec.ts` still holds the stronger line where it can be held: at the
+position each screen actually paints at, nothing overlaps — which is what caught
+the lobby's start button and sent it into a bar in the first place.
+
+The rest of the pass is rewrites rather than additions, and three of them assert
+the opposite of what they used to. `lobby`'s help-key test now asserts the key
+is *above* the toggle rather than beside it, and that the two mode segments come
+out the same width. `brief` and `compose` look for `Lock it in` and
+`Submit caption` where they looked for `Pick one first` and
+`Write something first` — the CTA-label change above, pinned so it cannot drift
+back by accident. And the gallery's settings-line check became
+`toBeAttached()` plus a width guard, because the line is always in the bar and
+drawn only from `md` up; asserting visibility at both sizes would have been
+asserting the bug. There is a trap under that worth knowing before writing the
+next room spec: the header's settings line and the share card's `meta` are
+**both in the document at both widths**, and CSS picks between them — so
+`host`'s default-settings check filters on `{ visible: true }` rather than
+taking `.first()`, which in DOM order is the header's and on a phone is the
+hidden one.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

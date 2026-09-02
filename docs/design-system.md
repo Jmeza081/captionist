@@ -516,7 +516,7 @@ primitives.
 | `Stepper` | atom | A bounded numeric setting — timer, room size, round count. Renders as a spinbutton so the value and its bounds are announced together. `/host` stacks the round stepper with a hint line, because its `max` moves with the room size and a bound that silently refuses reads as broken |
 | `SegmentedControl` | atom | A small exclusive choice. A real radiogroup. `fullWidth` splits the row evenly where the control owns it — the lobby's mode toggle, which is also what lets two long option labels stay whole on a phone |
 | `Snackbar` | atom | Confirms an action with no other visible result |
-| `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+`. Appears on all five sites the design names — caption cards, chat messages, the composer, the collapsed rail and the reveal bar. Takes an `aria-label` override, so a log of twenty messages does not hand a screen reader twenty controls called "Add a reaction" |
+| `ReactionCTA` | atom | The one affordance that opens the reaction toolbar. Never a bare `+`. Appears on all five sites the design names — caption cards, chat messages, the composer, the room toolbox and the reveal bar. The fifth was the collapsed rail until the room's reaction picker moved inside `RoomToolbox`, so that surface holds it rather than competing with it. Takes an `aria-label` override, so a log of twenty messages does not hand a screen reader twenty controls called "Add a reaction" |
 | `RoomCode` | atom | A room code, for reading aloud or typing. `display` on the entry screen, `compact` beside the lobby's QR, `pill` inline beside its own label on the boot screen — where the code is being identified rather than read out, so it sits at label weight instead of owning the card — where it is `white-space: nowrap`, because a code is read out and typed by hand and `C-D77KR` above a lone `T` is one somebody will get wrong. The column gives instead: `$lobby-share-width` is sized around it |
 | `ProgressRing` | atom | An indeterminate arc spinning around whatever it wraps — the guest's face, the app's mark, or nothing at `inline` size in a checklist row. Deliberately not a prop on `Avatar`: the host's boot rings the mark rather than a face, so a ring that could only wrap an avatar would be half a component. `still` closes the loop and stops it, for a step that is done |
 
@@ -610,6 +610,9 @@ From `DESIGNSYSTEM.md` §4. These are product rules, not suggestions.
 6. **Timers are honest** — phases auto-advance at zero; ≤15s turns the pill red.
 7. **Blocked, not disabled** — state what's missing in the label ("Pick 2 more"),
    keep the control live and focusable. That's what `Button`'s `blocked` prop is.
+   The label carries a *count the screen does not already show*; where the only
+   thing missing is that you have not started, it stays the action — see
+   [ADR 0032](./adr/0032-a-blocked-label-counts-what-is-missing.md).
 8. **Chat is never modal** — it docks beside content, never over it.
 9. **Mode is always legible** — header settings line, round opener, help modal.
 
@@ -629,7 +632,9 @@ something regrettable…"* · *"Somebody has to break this tie."*
    (`eyebrowText` uppercases in CSS — the string stays sentence case.)
 2. **Buttons start with a verb** and name the outcome: "Start round", "Copy
    link", "Lock it in" — not "Submit", "OK", "Continue".
-3. **Blocked buttons say what's missing**, in the label.
+3. **Blocked buttons say what's missing**, in the label — when the screen does
+   not already say it. An empty field above an untouched button says it; a
+   remaining count does not. [ADR 0032](./adr/0032-a-blocked-label-counts-what-is-missing.md).
 4. **Headings are six words or fewer** on mobile.
 5. **Errors state what happened and what to do next**, in that order. Never a
    bare "Something went wrong", never a raw error code as the whole message.

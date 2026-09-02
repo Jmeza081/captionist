@@ -321,9 +321,10 @@ test.describe('the floating keys', () => {
   /**
    * How close to the fold still counts as "at the foot".
    *
-   * A pinned bar's control sits within the bar's own bottom padding of it. The
-   * lobby's bar sticks inside the share column and then scrolls away with it —
-   * once it has, it is page content and this rule is not about it any more.
+   * A pinned bar's control sits within the bar's own bottom padding of it. A
+   * bar that has scrolled up out of the foot is page content, and this rule is
+   * not about it — every bar in the room pins for the whole page, so in
+   * practice this only excuses the frames where one is settling.
    */
   const FOOT_PX = 24
 

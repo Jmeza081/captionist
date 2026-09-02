@@ -20,9 +20,12 @@
    * The height the sticky action bar owns at the foot of the column.
    *
    * `0` unless a screen actually carries one — the `:has()` below is what
-   * turns it on, so the keys sit in the corner on the eight screens with no
-   * bar and lift above it on the two that have one. A `form` CTA plus the
-   * bar's own bottom padding; `RoundPicker`'s is shorter and clears it too.
+   * turns it on. Four of the ten phases do: the lobby, the brief while it is
+   * picking, the composer while it is answering with a GIF, and the vote. On
+   * the other six the keys sit in the corner as they always did.
+   *
+   * A `form` CTA plus the bar's own bottom padding; `RoundPicker`'s control is
+   * shorter and clears it too.
    */
   --room-action-dock: 0px;
 
@@ -70,6 +73,9 @@
    * doors — `/`, `/host` and `/join` were already on it — so the room and the
    * door now agree, which they did not at 8. 16 would have read the same and
    * is not on the scale (DESIGNSYSTEM.md §2); 20 is.
+   *
+   * The whole trade is ADR 0031, which amends ADR 0017: same corner, same
+   * screens, different axis paying for it.
    */
   --room-column-pad: #{t.$space-20};
 
