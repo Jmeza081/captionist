@@ -65,6 +65,14 @@ export interface MediaCardProps {
   /** Caption label under the card. */
   caption?: string
   /**
+   * Draw at the image's own ratio rather than inside the grid band.
+   *
+   * For a card with no neighbours to line up with — sudden death draws two and
+   * nothing else — where the band's crop costs a quarter of the frame and buys
+   * no tidiness. See `mediaAspect`.
+   */
+  naturalRatio?: boolean
+  /**
    * Clicking the image does what the foot's `action` does.
    *
    * The affordance the vote grid was missing: a card is a picture of a joke,
@@ -100,6 +108,7 @@ export function MediaCard({
   reaction,
   reply,
   caption,
+  naturalRatio = false,
   onActivate,
 }: MediaCardProps) {
   // A card with no image at all. The round's own timeout no longer produces
@@ -107,7 +116,7 @@ export function MediaCard({
   // arrive without media, and a broken frame is worse than the alt text used
   // as the content.
   const missing = !hasImage(src)
-  const aspect = mediaAspect({ width, height })
+  const aspect = mediaAspect({ width, height }, !naturalRatio)
 
   const frameClasses = [
     styles.frame,

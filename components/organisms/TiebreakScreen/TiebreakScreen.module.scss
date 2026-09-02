@@ -14,7 +14,15 @@
     $ratio: 5 / 4
   );
 
-  text-align: center;
+  // The screen is a container too, not just the duel inside it: the tally sits
+  // *beside* `.duel`, so a query written against that one would never match and
+  // the phone treatment would draw at every width.
+  container-type: inline-size;
+
+  // Left on a phone, centred once the lanes are side by side — which is how the
+  // design draws each. A centred headline over a single stacked column reads as
+  // a poster; beside its twin it reads as a title over both.
+  text-align: left;
   // `clip` rather than `hidden`: the glow below is wider than a phone, and
   // without this it widens the page itself and the whole room scrolls
   // sideways. `clip` contains it without making this a scroll container.
@@ -48,33 +56,83 @@
 // `$duel-columns` of room, and shrinking them to fit would make the captions
 // unreadable. On this row's width, not the window's — with chat docked the two
 // differ by the whole 360px of the rail.
+/**
+ * Two contenders and the rule between them, as three siblings on one axis.
+ *
+ * The rule used to live inside the first contender's wrapper, which meant the
+ * two could never share the row evenly — whichever one carried the rule had to
+ * give up its width for it, and the duel drew one card wider than the other.
+ * Flat, the row splits in two and the rule takes only what it needs.
+ */
 .duel {
   container-type: inline-size;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
-  gap: t.$space-26 t.$space-34;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-26;
   width: 100%;
 }
 
-.lane {
-  flex: 1 1 100%;
+/**
+ * One box on a phone, two stacked pieces once there is room.
+ *
+ * The design draws the picture and its foot joined into a single card on a
+ * phone — which is what stops two contenders reading as four loose things —
+ * and separates them under a centred column on desktop. Same markup either
+ * way; the card treatment is what switches.
+ */
+.contender {
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: t.$space-34;
+  flex-direction: column;
+  width: 100%;
+  max-width: t.$duel-card-width;
+  border-radius: t.$radius-card;
+  background-color: t.$surface-card;
+  overflow: hidden;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$space-14;
+  padding: t.$space-12 t.$space-14;
+}
+
+.who {
   min-width: 0;
 }
 
-.contender {
-  width: 100%;
-  max-width: t.$duel-card-width;
+@container (min-width: #{t.$duel-columns}) {
+  .contender {
+    background-color: transparent;
+    overflow: visible;
+  }
+
+  // Under the card, centred, and stacked — the design's desktop artboard puts
+  // the face above the button rather than beside it.
+  .foot {
+    flex-direction: column;
+    gap: t.$space-14;
+    padding: t.$space-20 0 0;
+  }
 }
 
 @container (min-width: #{t.$duel-columns}) {
-  .lane {
-    flex: 0 1 auto;
+  .duel {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: t.$space-34;
+  }
+
+  // Even halves that cap rather than a fixed measure: with chat docked the row
+  // is 1000px, not 1440, and two cards at their full width plus the rule needed
+  // 1230 — so they wrapped, and the duel became a list again on the widest
+  // screen in the product.
+  .contender {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 
@@ -82,31 +140,128 @@
   @include t.cardTitleText;
 }
 
-// The divider only makes sense once the lanes are side by side.
+/**
+ * The badge that says these two are opposed, on a rule that turns with them.
+ *
+ * Across the gap on a phone, down it on a desktop. It used to be hidden below
+ * `$duel-columns` — the one width where two cards in a column most need saying
+ * they are a duel rather than a list.
+ */
 .versus {
-  display: none;
-  flex-direction: column;
+  align-self: stretch;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: t.$space-6;
-  padding-top: t.$space-52;
+  gap: t.$space-12;
+}
+
+// See `TiebreakScreen` — the button carries both labels and shows one.
+.actionLong {
+  display: none;
+}
+
+.actionShort {
+  display: inline;
+}
+
+@container (min-width: #{t.$duel-columns}) {
+  .actionLong {
+    display: inline;
+  }
+
+  .actionShort {
+    display: none;
+  }
+}
+
+// A long name beside a button has to give way rather than push the row apart.
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versusBadge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$duel-badge;
+  height: t.$duel-badge;
+  border-radius: t.$radius-avatar;
+  background-color: t.$urgent-fill;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: t.$urgent;
+}
+
+.versusRule {
+  flex: 1;
+  height: 1px;
+  background-color: t.$line-hairline-strong;
 }
 
 @container (min-width: #{t.$duel-columns}) {
   .versus {
-    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-self: stretch;
+  }
+
+  .versusRule {
+    flex: 1;
+    width: 1px;
+    height: auto;
+    min-height: t.$space-52;
   }
 }
 
-.versusLabel {
-  font-family: t.$font-sans;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+/* ---------------- The tally ---------------- */
+
+.tally {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: t.$space-8 t.$space-14;
+  width: 100%;
+}
+
+// The bar takes the room the sentence does not need, so the pair reads as one
+// measure rather than as a graphic beside a label.
+.tallyBar {
+  min-width: 0;
+}
+
+.tallyNote {
+  grid-column: 1 / -1;
+  margin: 0;
+  @include t.labelText;
   color: t.$text-caption;
 }
 
-.versusRule {
-  width: 1px;
-  height: 200px;
-  background-color: t.$line-hairline-strong;
+@container (min-width: #{t.$duel-columns}) {
+  // A desktop has the width to say it in words, and no need to draw it too.
+  .tallyBar {
+    display: none;
+  }
+
+  .tally {
+    justify-content: center;
+    grid-template-columns: auto auto;
+    gap: t.$space-14;
+  }
+
+  .tallyNote {
+    grid-column: auto;
+  }
+}
+
+// Centred once the lanes are side by side, and on the block rather than on
+// `.screen`: `.screen` *is* the container, and an element cannot query itself.
+@container (min-width: #{t.$duel-columns}) {
+  .intro {
+    text-align: center;
+  }
 }

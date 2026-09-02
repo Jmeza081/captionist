@@ -89,6 +89,30 @@ export function VoteScreen() {
     return at >= 0 ? ((at + 1) as 1 | 2 | 3) : undefined
   }
 
+  /**
+   * What a card's foot calls this entry.
+   *
+   * Never the caption. It is already drawn across the picture in the type the
+   * design chose for it, and repeating it underneath made the foot a second,
+   * worse copy — a long one wrapped to three lines and pushed the controls it
+   * shares the row with out of reach.
+   *
+   * Not the author either, which is what a foot like this would most like to
+   * carry: `project()` strips authorship from every entry but your own before
+   * the state ever leaves the host, precisely so that a vote is anonymous. The
+   * one screen that does name people is the tiebreak, and it is after the
+   * ballot rather than during it.
+   */
+  const titleOf = (entryId: EntryId): string => {
+    const card = cards.find((c) => c.entryId === entryId)
+    if (!card) return ''
+    return card.own ? 'Yours' : `${copy.entryNoun} ${cards.indexOf(card) + 1}`
+  }
+
+  /**
+   * The entry's *content*, for the places that need the words themselves — the
+   * rank slot you filled, and the quote a reply carries into chat.
+   */
   const labelOf = (entryId: EntryId): string => {
     const card = cards.find((c) => c.entryId === entryId)
     if (!card) return ''
@@ -189,7 +213,7 @@ export function VoteScreen() {
                 own={card.own}
                 ownLabel={copy.ownLabel}
                 rank={placeOf(card.entryId)}
-                caption={labelOf(card.entryId)}
+                caption={titleOf(card.entryId)}
                 tallies={
                   counts.length > 0
                     ? counts.map((tally) => (

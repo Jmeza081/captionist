@@ -44,6 +44,10 @@ interface Hit {
   y: number
   w: number
   h: number
+  /** Inside a sticky action dock — the one thing allowed over the page. */
+  dock: boolean
+  /** Floats over the page rather than scrolling with it. */
+  fixed: boolean
   label: string
 }
 
@@ -115,6 +119,11 @@ async function hits(page: Page, selector: string): Promise<Hit[]> {
           y: r.y + r.height / 2 - h / 2,
           w,
           h,
+          // Whether this control belongs to a sticky action dock, and whether
+          // it floats over the page rather than scrolling with it. The clash
+          // rule below needs both.
+          dock: Boolean(el.closest('[class*="ockDock"], [class*="ctionDock"]')),
+          fixed: getComputedStyle(el).position === 'fixed',
           label:
             el.getAttribute('aria-label') || (el.textContent || '').trim().slice(0, 30) || el.tagName,
         }
@@ -143,6 +152,23 @@ test.describe('touch targets', () => {
         for (let j = i + 1; j < boxes.length; j++) {
           const a = boxes[i]!
           const b = boxes[j]!
+          /**
+           * A sticky dock is *meant* to be over the grid it floats on.
+           *
+           * Its ground is `pointer-events: none` and only the control itself
+           * takes a tap, so a card underneath stays reachable through the fade
+           * — which is also why these pairs started showing up here at all:
+           * `elementFromPoint` cannot see a click-through overlay, so the
+           * controls beneath one stopped reading as occluded.
+           *
+           * What the rule is actually for is a control that has silently ended
+           * up under something it cannot be seen through — the floating keys.
+           * Those are `position: fixed` and never a dock, so every pair that
+           * matters is still compared: dock against key, key against anything.
+           */
+          const dockOverPage = (x: typeof a, y: typeof a) => x.dock && !y.dock && !y.fixed
+          if (dockOverPage(a, b) || dockOverPage(b, a)) continue
+
           const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
           const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
           // A pixel of rounding is not an overlap.

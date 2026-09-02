@@ -210,28 +210,63 @@ test.describe('the room header holds its line', () => {
 })
 
 /**
- * The floating keys own a band, and the column reserves it.
+ * Nothing you can tap ever sits under the floating keys.
  *
- * The content column used to dodge them sideways: `$screen-pad-h` on the left,
- * the keys' 64px column on the right. On a 393px phone that spent a quarter of
- * the screen on margin and was visibly lopsided in every frame. The column is
- * even now, and what it reserves instead is the height of the band the keys sit
- * in — so a screen scrolled to its end has nothing hiding underneath them.
+ * There are three things to want from that corner and only two can be true at
+ * once: even gutters, controls that run the full width, and nothing tappable
+ * underneath the keys. Dropping the reservation bought the even gutters and
+ * quietly cost the third — the lobby's start button, the duel's "Vote this
+ * one", the picker's tiles and the vote grid's "Rank this" all passed under the
+ * keys as you scrolled, which is the same fault ("the right end of Rank this
+ * opened chat") the gutter was added to fix in the first place.
  *
- * Mid-scroll they float over content, which is what a floating key is for. The
- * claim here is only about where the content comes to rest.
+ * So the column reserves the keys' width on both sides and the keys moved in to
+ * meet it. This is the claim that keeps it honest, and it is deliberately
+ * stronger than the one it replaced: not "nothing rests underneath them" at the
+ * foot of the page, but "nothing tappable is ever underneath them", at every
+ * scroll position of every screen.
  */
-test.describe('the floating keys never cover the end of a screen', () => {
+test.describe('the floating keys never cover a control', () => {
   test.skip(
     ({ viewport }) => (viewport?.width ?? 0) >= 768,
-    'above md chat docks into the rail and only the toolbox pill floats',
+    'above md chat docks into the rail and the toolbox pill sits clear of the column',
   )
-  test.setTimeout(180_000)
+  test.setTimeout(240_000)
 
   const PHASES = ['lobby', 'brief', 'compose', 'waiting', 'vote', 'tiebreak', 'reveal', 'score', 'podium']
 
-  test('nothing sits under them once a screen is scrolled to its end', async ({ page }) => {
-    for (const mode of ['caption', 'react']) {
+  /** Every control the keys could land on, at every half-screen of scroll. */
+  async function collisions(page: Page): Promise<string[]> {
+    const hits = new Set<string>()
+    const steps = await page.evaluate(() =>
+      Math.ceil(document.body.scrollHeight / (window.innerHeight / 2)),
+    )
+    for (let i = 0; i <= steps; i++) {
+      await page.evaluate((n) => window.scrollTo(0, n * (window.innerHeight / 2)), i)
+      const found = await page.evaluate(() => {
+        const keys = Array.from(document.querySelectorAll('button, aside')).filter((el) => {
+          const cs = getComputedStyle(el)
+          return cs.position === 'fixed' && el.getBoundingClientRect().width <= 60
+        })
+        const boxes = keys.map((k) => k.getBoundingClientRect())
+        const out: string[] = []
+        document.querySelectorAll('main button, main a, main input').forEach((el) => {
+          const r = el.getBoundingClientRect()
+          if (r.width === 0 || r.bottom < 0 || r.top > window.innerHeight) return
+          const clash = boxes.some(
+            (b) => r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top,
+          )
+          if (clash) out.push((el.textContent ?? '').trim().slice(0, 24) || el.tagName)
+        })
+        return out
+      })
+      found.forEach((f) => hits.add(f))
+    }
+    return [...hits]
+  }
+
+  for (const mode of ['caption', 'react'] as const) {
+    test(`${mode} mode keeps every control clear of them`, async ({ page }) => {
       for (const [seat, query] of [
         ['host', ''],
         ['guest', '&as=p2'],
@@ -239,33 +274,14 @@ test.describe('the floating keys never cover the end of a screen', () => {
         for (const phase of PHASES) {
           await page.goto(`/room/DEV?seed=42&gifs=stub&mode=${mode}&phase=${phase}${query}`)
           await expect(page.locator('main[data-phase]')).toBeVisible()
-          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-
-          const covered = await page.evaluate(() => {
-            const keys = Array.from(document.querySelectorAll('button, aside')).filter((el) => {
-              const cs = getComputedStyle(el)
-              return cs.position === 'fixed' && el.getBoundingClientRect().width <= 60
-            })
-            const boxes = keys.map((k) => k.getBoundingClientRect())
-            const hits: string[] = []
-            document.querySelectorAll('main *').forEach((el) => {
-              if (el.children.length > 0) return
-              const text = (el.textContent ?? '').trim()
-              if (!text) return
-              const r = el.getBoundingClientRect()
-              const clash = boxes.some(
-                (b) => r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top,
-              )
-              if (clash) hits.push(text.slice(0, 24))
-            })
-            return [...new Set(hits)]
-          })
-
-          expect(covered, `${mode} ${seat} ${phase}: content under the floating keys`).toEqual([])
+          expect(
+            await collisions(page),
+            `${mode} ${seat} ${phase}: a control passes under the floating keys`,
+          ).toEqual([])
         }
       }
-    }
-  })
+    })
+  }
 })
 
 /**

@@ -44,8 +44,21 @@ export const MEDIA_ASPECT_MAX = 4 / 3
  * `undefined` rather than a default, so the fallback lives in one place — the
  * CSS — instead of being a number two files could disagree about.
  */
-export function mediaAspect(size?: { width?: number; height?: number }): number | undefined {
+export function mediaAspect(
+  size?: { width?: number; height?: number },
+  /**
+   * Clamping is for a *grid*. Set this false where the media is not in one.
+   *
+   * The band above earns its keep by keeping rows reading as rows — that
+   * argument needs rows. Sudden death draws two cards and nothing else, so a
+   * 16:9 still has no neighbour to be out of step with, and cropping a quarter
+   * of the frame off the only two things on the screen buys nothing.
+   */
+  clamp = true,
+): number | undefined {
   const { width, height } = size ?? {}
   if (!width || !height || width <= 0 || height <= 0) return undefined
-  return Math.min(MEDIA_ASPECT_MAX, Math.max(MEDIA_ASPECT_MIN, width / height))
+  const ratio = width / height
+  if (!clamp) return ratio
+  return Math.min(MEDIA_ASPECT_MAX, Math.max(MEDIA_ASPECT_MIN, ratio))
 }

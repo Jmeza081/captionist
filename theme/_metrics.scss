@@ -472,7 +472,15 @@ $podium-height-third: 58px;
 
 /// The tiebreak's duel card. Wider than a vote card because two of them carry
 /// the whole screen, and narrower than the reveal's winner because two fit.
-$duel-card-width: 392px;
+// The duel's badge — the circle the "VS" sits in, on the rule between the two
+// contenders.
+$duel-badge: 44px;
+
+// Wider than it was. Sudden death draws two cards and nothing else, and at 392
+// they were the smallest things on a screen whose headline is the largest type
+// in the system — which is backwards for the one moment the pictures *are* the
+// decision.
+$duel-card-width: 560px;
 
 /// The reveal's two columns: the winning card, and the attribution beside it.
 $reveal-winner-width: 400px;

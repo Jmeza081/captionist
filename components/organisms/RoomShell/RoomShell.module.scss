@@ -19,7 +19,26 @@
   // key at `right: $space-20`. Two 44px circles a stone's throw apart, on
   // different right edges — visibly out of line on every phone screen, and the
   // reason the reserved column had to be 64px rather than either number.
-  --room-dock-right: #{t.$space-20};
+  --room-dock-right: #{t.$space-8};
+
+  /**
+   * What the column pays for that corner — on both sides, so it reads even.
+   *
+   * There are three things to want here and only two can be true at once: even
+   * gutters, controls that run the full width, and nothing tappable underneath
+   * the keys. Dropping the reservation altogether bought the even gutters and
+   * cost the third — measured across every screen, the lobby's start button,
+   * the duel's "Vote this one", the picker's tiles and the vote grid's "Rank
+   * this" all passed under the keys as you scrolled, which is the same fault
+   * ("the right end of Rank this opened chat") the asymmetric gutter was added
+   * to fix in the first place.
+   *
+   * So the reservation is back and the keys moved in to meet it: 8px from the
+   * edge instead of 20, which makes the column they own 52 rather than 64, and
+   * the screen pays that on both sides. 289px of content on a 393px phone —
+   * exactly what the lopsided version gave — with the two gutters equal.
+   */
+  --room-column-pad: calc(#{t.$space-8} + #{t.$tap-target-min});
 
   // The vertical band the pair owns, bottom edge to top of the upper key.
   // Screens clear this instead of shrinking away from a full-height gutter —
@@ -72,15 +91,9 @@
   // Without this a wide grid inside the column pushes the rail off-screen
   // instead of scrolling itself.
   min-width: 0;
-  // **Even gutters.** The right edge used to be padded to the floating keys'
-  // 64px column while the left stayed at `$screen-pad-h`'s 40 — a 24px
-  // difference on a 393px phone, which is a quarter of the screen spent on
-  // margin and visibly lopsided in every frame. The keys occupy a band at the
-  // bottom, not a full-height strip, so what they need reserving is height.
-  // `--room-dock-clearance` below does that, and anything that pins itself to
-  // the bottom of the viewport clears the same band rather than dodging
-  // sideways.
-  padding: t.$screen-pad-v t.$screen-pad-h;
+  // Even, and wide enough to keep a control out from under the keys. See
+  // `--room-column-pad`.
+  padding: t.$screen-pad-v var(--room-column-pad);
 
   @include t.mq('md') {
     // The rail is docked beside the column from here up and nothing floats

@@ -943,6 +943,14 @@ export interface VoteCopy {
   picksLabel: string
   /** The scrim over your own entry — a caption in one mode, an answer in the other. */
   ownLabel: string
+  /**
+   * What one entry is called in a card's foot — "Caption 3", "Answer 3".
+   *
+   * A position, not the caption itself and not the author. The caption is
+   * already drawn across the picture, and the author is stripped from every
+   * entry but your own before the state leaves the host — see `project()`.
+   */
+  entryNoun: string
   /** The card's button while nothing is chosen. */
   pickAction: string
   /** The dock button, and what it reads once the ballot is cast. */
@@ -974,6 +982,7 @@ export function voteCopy(state: GameState): VoteCopy {
     meta: `${plural(count, 'submission', 'submissions')} · shuffled so nobody games the order`,
     picksLabel: single ? 'Your pick' : 'Your picks',
     ownLabel: react ? 'Your own answer' : 'Your own caption',
+    entryNoun: react ? 'Answer' : 'Caption',
     pickAction: single ? 'Pick this' : 'Rank this',
     lockAction: single ? 'Lock my pick' : 'Lock my ranking',
     lockedLabel: single ? 'Pick locked in' : 'Ranking locked in',
@@ -1096,9 +1105,13 @@ export interface TiebreakCopy {
   body: string
   /** "4 of 7 have voted". */
   voteLine: string
+  /** `voteLine` as 0–1, for the phone's progress bar. */
+  voteFraction: number
   /** "Jack and Lukasz can’t vote in their own duel". */
   exclusionLine: string
   action: string
+  /** The same action where a card's foot puts a name beside it. */
+  actionShort: string
 }
 
 export function tiebreakCopy(state: GameState): TiebreakCopy {
@@ -1124,8 +1137,15 @@ export function tiebreakCopy(state: GameState): TiebreakCopy {
     // count the same way, so a line reading "4 of 7" over a room that resolves
     // at five is a timer disagreeing with the button beside it.
     voteLine: `${voted} of ${voters(state).length} have voted`,
+    // The same count as a fraction, for the phone's bar. Derived here rather
+    // than in the screen so the bar and the sentence can never disagree about
+    // who is still expected to vote.
+    voteFraction: voters(state).length > 0 ? voted / voters(state).length : 0,
     exclusionLine: names.length > 0 ? `${nameList(names)} can’t vote in their own duel` : '',
     action: 'Vote this one',
+    // The phone's card foot puts the button beside a name, and "Vote this one"
+    // took the width the name needed — the design draws the short one there.
+    actionShort: 'Vote',
   }
 }
 
