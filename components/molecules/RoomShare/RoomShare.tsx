@@ -12,9 +12,23 @@ export interface RoomShareProps {
   code: string
   /** Absolute URL players land on. */
   joinUrl: string
-  /** Both of these must confirm with a snackbar — they have no visible result. */
+  /** Copy has no visible result of its own, so it must confirm with a snackbar. */
   onCopyLink: () => void
-  onShareToSlack?: () => void
+  /**
+   * The second key: the OS share sheet where there is one, the clipboard where
+   * there is not. Absent for a guest, who has nothing to share.
+   */
+  onShare?: () => void
+  /**
+   * What the second key says.
+   *
+   * "Share to Slack" is a promise the clipboard cannot keep and the OS sheet
+   * does not make — the sheet lists everything installed, and Slack is one row
+   * of it. So the label is the caller's, set from what the device will
+   * actually do. Defaults to the Slack wording, which is still the truth on a
+   * laptop where the key copies a link for you to paste there.
+   */
+  shareLabel?: string
   /**
    * The room's rules, under the link — "5 rounds · 90s · rank top 3".
    *
@@ -30,13 +44,16 @@ export interface RoomShareProps {
  * The lobby's share block: scan it, read it out, or send the link.
  *
  * Copy and share have no visible result of their own, so the host is expected
- * to confirm both with a snackbar — see DESIGNSYSTEM.md §4.2.
+ * to confirm both with a snackbar — see DESIGNSYSTEM.md §4.2. The exception is
+ * a share sheet that opened: the sheet *is* the visible result, and a snackbar
+ * under it would be confirming that a thing you are looking at exists.
  */
 export function RoomShare({
   code,
   joinUrl,
   onCopyLink,
-  onShareToSlack,
+  onShare,
+  shareLabel = 'Share to Slack',
   meta,
 }: RoomShareProps) {
   // Shown without the scheme: it's read aloud and typed, not clicked.
@@ -66,9 +83,9 @@ export function RoomShare({
         <Button variant="secondary" size="small" onClick={onCopyLink}>
           Copy link
         </Button>
-        {onShareToSlack && (
-          <Button variant="secondary" size="small" onClick={onShareToSlack}>
-            Share to Slack
+        {onShare && (
+          <Button variant="secondary" size="small" onClick={onShare}>
+            {shareLabel}
           </Button>
         )}
       </div>

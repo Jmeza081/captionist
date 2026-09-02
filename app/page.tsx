@@ -1,6 +1,7 @@
 import { Avatar } from '@/components/atoms/Avatar'
 import { Stack } from '@/components/atoms/Stack'
 import { HeroWall } from '@/components/molecules/HeroWall'
+import { LandingLegal } from '@/components/molecules/LandingLegal'
 import { LandingNav } from '@/components/molecules/LandingNav'
 import { LandingActions } from '@/components/organisms/LandingActions'
 import { PLAYER_COLORS } from '@/lib/game/constants'
@@ -76,6 +77,11 @@ export default async function HomePage() {
             </span>
           </div>
         </Stack>
+
+        {/* The licences a production deploy carries, one click from the front
+            door: the GIF providers' terms, CC0 for the faces, CC BY for the
+            reaction art and OFL for the type. */}
+        <LandingLegal repoHref={REPO} />
       </div>
     </div>
   )

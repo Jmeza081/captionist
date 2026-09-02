@@ -337,7 +337,7 @@ export function MoleculesPanel() {
               code="C-F34213"
               joinUrl="https://captionist.fun/C-F34213"
               onCopyLink={() => undefined}
-              onShareToSlack={() => undefined}
+              onShare={() => undefined}
             />
           </Case>
           <Case label="Both ways into a room — the guest's entry panel">

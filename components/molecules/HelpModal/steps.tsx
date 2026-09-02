@@ -14,8 +14,11 @@ import {
  *
  * Co-located with the component that renders it, the same as `RoomShell`'s.
  * It is branched by mode rather than forked into two components, because the
- * two formats differ in who supplies what and in nothing else — steps 3 and 4
- * are the same sentences and the same rail twice on purpose.
+ * two formats differ in who supplies what — steps 3 and 4 are the same
+ * sentences on purpose. **Step 3's rail is not the same twice**, though: the
+ * words are, but caption mode ranks four captions over one image and react
+ * mode ranks four different GIFs, so `VoteIllustration` takes the mode. It is a
+ * value branch inside one component, never a second component.
  */
 
 export const HELP_MODES: ReadonlyArray<{ value: GameMode; label: string }> = [
@@ -45,7 +48,9 @@ export const HELP_STEPS: Readonly<Record<GameMode, ModalStep[]>> = {
       eyebrow: 'The vote',
       heading: 'The room ranks the top three',
       body: 'Three points for first, two for second, one for third. You cannot vote for your own — we checked.',
-      illustration: <VoteIllustration />,
+      // The one step whose picture is not the same in both modes: caption mode
+      // ranks four captions over *one* image, react mode ranks four GIFs.
+      illustration: <VoteIllustration mode="caption" />,
     },
     {
       eyebrow: 'The score',
@@ -71,7 +76,7 @@ export const HELP_STEPS: Readonly<Record<GameMode, ModalStep[]>> = {
       eyebrow: 'The vote',
       heading: 'The room ranks the top three',
       body: 'Three points for first, two for second, one for third. You cannot vote for your own — we checked.',
-      illustration: <VoteIllustration />,
+      illustration: <VoteIllustration mode="react" />,
     },
     {
       eyebrow: 'The score',

@@ -1,0 +1,284 @@
+import { expect, test, type Page } from '@playwright/test'
+
+// Selector policy: getByRole > data-testid > CSS. Never target hashed
+// `.module.scss` class names — they change on every build.
+
+/**
+ * Six refinements that share no feature between them but do share one theme:
+ * a control that did not look like one, or did the laptop's thing on a phone.
+ */
+
+/** A room whose lobby is the host's, which is the only one with a share block. */
+const ROOM = '/room/DEV?seed=42&phase=lobby'
+
+test.describe('the close key', () => {
+  test('is a filled disc with a target you can hit', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: 'How Captionist works' }).click()
+
+    const close = page
+      .getByRole('dialog', { name: 'How Captionist works' })
+      .getByRole('button', { name: 'Close' })
+    await expect(close).toBeVisible()
+
+    // The affordance itself: a circle, filled, at the full touch minimum. Read
+    // off the computed style rather than a class name, which is hashed.
+    const box = (await close.boundingBox())!
+    expect(box.width).toBeGreaterThanOrEqual(44)
+    expect(box.height).toBeGreaterThanOrEqual(44)
+    await expect(close).toHaveCSS('border-radius', '50%')
+    // Not `transparent` and not `none` — a plate rather than a bare glyph.
+    const fill = await close.evaluate((el) => getComputedStyle(el).backgroundColor)
+    expect(fill).not.toBe('rgba(0, 0, 0, 0)')
+
+    // And it still does the one thing it is for.
+    await close.click()
+    await expect(page.getByRole('dialog', { name: 'How Captionist works' })).toHaveCount(0)
+  })
+
+  test('draws a heavier × than the glyph carries on its own', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: 'How Captionist works' }).click()
+
+    const stroke = await page
+      .getByRole('dialog', { name: 'How Captionist works' })
+      .getByRole('button', { name: 'Close' })
+      .locator('svg')
+      .getAttribute('stroke-width')
+
+    // 2.2 is the design's own weight for `close`, which is what this replaced.
+    expect(Number(stroke)).toBeGreaterThan(2.2)
+  })
+})
+
+test.describe('the walkthrough’s pictures', () => {
+  test('draws a picture in every step of the rail', async ({ page }) => {
+    // The suite runs stubbed, so what renders here is the committed SVG the
+    // real GIF replaces in production. That is the case worth guarding: the
+    // fallback is what a keyless clone and this suite both keep.
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: 'How Captionist works' }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'How Captionist works' })
+    const rail = dialog.getByTestId('modal-rail')
+
+    for (const step of ['Next', 'Next', 'Next']) {
+      await expect(rail.locator('img').first()).toHaveJSProperty('complete', true)
+      await dialog.getByRole('button', { name: step }).click()
+    }
+  })
+
+  test('ranks four captions over one image, and four GIFs over none', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: 'How Captionist works' }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'How Captionist works' })
+    const rail = dialog.getByTestId('modal-rail')
+    const toVote = async () => {
+      await dialog.getByRole('button', { name: 'Next' }).click()
+      await dialog.getByRole('button', { name: 'Next' }).click()
+      await expect(dialog.getByText('The room ranks the top three')).toBeVisible()
+    }
+
+    // Caption mode: the Captionist picks ONE image and everybody writes over
+    // that same image, so four different pictures here would teach the other
+    // format to the person reading the walkthrough to learn this one.
+    await toVote()
+    const captioned = await rail.locator('img').evaluateAll((els) =>
+      els.map((el) => (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src),
+    )
+    expect(captioned).toHaveLength(4)
+    expect(new Set(captioned).size).toBe(1)
+    await expect(rail.getByText('Works on my machine')).toBeVisible()
+
+    // React mode: four answers are four GIFs, and none of them carries words.
+    await dialog.getByRole('radio', { name: 'React to the caption' }).click()
+    await toVote()
+    const answered = await rail.locator('img').evaluateAll((els) =>
+      els.map((el) => (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src),
+    )
+    expect(answered).toHaveLength(4)
+    expect(new Set(answered).size).toBe(4)
+    await expect(rail.getByText('Works on my machine')).toHaveCount(0)
+  })
+})
+
+test.describe('the toolbox key', () => {
+  test('opens behind a toolbox rather than a reaction face', async ({ page }) => {
+    await page.goto(ROOM)
+
+    const fab = page.getByRole('button', { name: /toolbox$/i }).first()
+    await expect(fab).toBeVisible()
+
+    // The smiley is the app's reaction affordance on every other surface, so
+    // the one control that is a bar of tools must not wear it. Both glyphs are
+    // traced paths; the toolbox is the only one drawn from four of them.
+    const paths = await fab.locator('svg path').count()
+    expect(paths).toBe(4)
+    // A smiley is a circle plus a path; a toolbox has no circle at all.
+    expect(await fab.locator('svg circle').count()).toBe(0)
+  })
+})
+
+test.describe('sharing a room', () => {
+  test('opens the device’s share sheet where there is one', async ({ page }) => {
+    // Stand in for the OS sheet, and record what it was handed.
+    await page.addInitScript(() => {
+      const shared: unknown[] = []
+      ;(window as unknown as { __shared: unknown[] }).__shared = shared
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: (data: unknown) => {
+          shared.push(data)
+          return Promise.resolve()
+        },
+      })
+    })
+    await page.goto(ROOM)
+
+    // The label follows what the device will actually do: the sheet lists
+    // everything installed, and Slack is one row of it.
+    const key = page.getByRole('button', { name: 'Share link' })
+    await expect(key).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Share to Slack' })).toHaveCount(0)
+
+    await key.click()
+    const shared = await page.evaluate(
+      () => (window as unknown as { __shared: { url?: string }[] }).__shared,
+    )
+    expect(shared).toHaveLength(1)
+    // `DEV` resolves to a real room code, so what is shared is the room's own
+    // join link rather than the URL that opened it.
+    expect(shared[0]?.url).toMatch(/\/join\/C-[0-9A-Z]{6}$/)
+
+    // The sheet is the visible result. A snackbar under it would be the room
+    // confirming the thing that is covering the room.
+    await expect(page.getByText('Link copied — paste it into Slack')).toHaveCount(0)
+  })
+
+  test('falls back to the clipboard, and says so, where there is not', async ({
+    context,
+    page,
+  }) => {
+    // The write is awaited now — a room that says "copied" over a rejected
+    // write is lying — so the runner has to be allowed to make one.
+    await context.grantPermissions(['clipboard-write'])
+    await page.addInitScript(() => {
+      // Some browsers ship `share` on the desktop build; take it away so this
+      // is the no-sheet case whatever the runner has.
+      Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
+    })
+    await page.goto(ROOM)
+
+    await expect(page.getByRole('button', { name: 'Share to Slack' })).toBeVisible()
+    await page.getByRole('button', { name: 'Share to Slack' }).click()
+    await expect(page.getByText('Link copied — paste it into Slack')).toBeVisible()
+  })
+})
+
+test.describe('licensing', () => {
+  test('is one click from the front door', async ({ page }) => {
+    await page.goto('/')
+
+    await page.getByRole('button', { name: 'Licensing and credits' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Licensing and credits' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Captionist is MIT')
+
+    // Four obligations to four parties, and every one of them is readable.
+    await dialog.getByRole('button', { name: 'Next' }).click()
+    await expect(
+      dialog.getByRole('link', { name: 'KLIPY', exact: true }),
+    ).toHaveAttribute('href', /klipy\.com/)
+    // The provider's own terms, not just its home page.
+    await expect(dialog.getByRole('link', { name: 'KLIPY’s' })).toHaveAttribute(
+      'href',
+      /klipy\.com\/terms/,
+    )
+
+    await dialog.getByRole('button', { name: 'Next' }).click()
+    await expect(dialog.getByRole('link', { name: 'CC0 1.0' })).toBeVisible()
+
+    await dialog.getByRole('button', { name: 'Next' }).click()
+    await expect(dialog.getByRole('link', { name: 'CC BY 4.0' })).toBeVisible()
+    await expect(dialog.getByRole('link', { name: 'Inter' })).toBeVisible()
+
+    // The last step's key closes rather than advancing into nothing.
+    await dialog.getByRole('button', { name: 'Got it' }).click()
+    await expect(dialog).toHaveCount(0)
+  })
+})
+
+/** The sheet's own height, which is what the handle changes. */
+async function sheetHeight(page: Page): Promise<number> {
+  const box = await page.getByRole('complementary', { name: 'Room chat' }).boundingBox()
+  return box!.height
+}
+
+test.describe('the chat sheet’s handle', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, 'the docked rail is not dragged')
+
+  test('resizes on a tap and closes on a second one', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: /^Open chat/ }).click()
+    await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
+
+    const tall = await sheetHeight(page)
+
+    // The handle is a control, not a bar with a listener bolted on: it is
+    // reachable, it is named, and it works without a pointer gesture at all.
+    const handle = page.getByRole('button', { name: /drag to resize$/ })
+    await expect(handle).toBeVisible()
+    await handle.click()
+
+    await expect(async () => {
+      expect(await sheetHeight(page)).toBeLessThan(tall - 40)
+    }).toPass()
+    // And it says which way it will go next.
+    await expect(page.getByRole('button', { name: /^Expand chat/ })).toBeVisible()
+
+    await page.getByRole('button', { name: /^Expand chat/ }).click()
+    await expect(async () => {
+      expect(await sheetHeight(page)).toBeGreaterThan(tall - 10)
+    }).toPass()
+  })
+
+  test('shrinks on a drag down, and dismisses on the next one', async ({ page }) => {
+    await page.goto(ROOM)
+    await page.getByRole('button', { name: /^Open chat/ }).click()
+    await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
+
+    const tall = await sheetHeight(page)
+    const handle = page.getByRole('button', { name: /drag to resize$/ })
+    const grip = (await handle.boundingBox())!
+    const from = { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 }
+
+    const dragDown = async (distance: number) => {
+      await page.mouse.move(from.x, from.y)
+      await page.mouse.down()
+      // Several steps, because one jump is a teleport rather than a drag and
+      // never fires the moves the sheet follows.
+      for (let i = 1; i <= 6; i += 1) {
+        await page.mouse.move(from.x, from.y + (distance * i) / 6)
+      }
+      await page.mouse.up()
+    }
+
+    await dragDown(Math.round(tall * 0.4))
+    await expect(async () => {
+      expect(await sheetHeight(page)).toBeLessThan(tall - 40)
+    }).toPass()
+
+    // A second drag from the short detent is the one that throws it away.
+    const short = (await handle.boundingBox())!
+    const shortFrom = { x: short.x + short.width / 2, y: short.y + short.height / 2 }
+    await page.mouse.move(shortFrom.x, shortFrom.y)
+    await page.mouse.down()
+    for (let i = 1; i <= 6; i += 1) {
+      await page.mouse.move(shortFrom.x, shortFrom.y + (200 * i) / 6)
+    }
+    await page.mouse.up()
+
+    await expect(page.getByRole('button', { name: /^Open chat/ })).toBeVisible()
+  })
+})

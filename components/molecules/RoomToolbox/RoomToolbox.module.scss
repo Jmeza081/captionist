@@ -30,24 +30,10 @@
   color: t.$text-primary;
 }
 
+// The plate is `CloseButton`'s; all this says is which end of the header it
+// sits at.
 .close {
-  @include t.focusRing;
-
   margin-left: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: t.$tap-target-min;
-  height: t.$tap-target-min;
-  border: 0;
-  border-radius: t.$radius-media-lg;
-  background: none;
-  color: t.$text-meta;
-  cursor: pointer;
-
-  &:hover {
-    color: t.$text-primary;
-  }
 }
 
 // Taller than it was, now that it carries a picker as well as the host's

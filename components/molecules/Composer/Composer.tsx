@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, type ReactNode } from 'react'
+import { CloseButton } from '@/components/atoms/CloseButton'
 import { Icon } from '@/components/atoms/Icon'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { TextField } from '@/components/atoms/TextField'
@@ -73,14 +74,15 @@ export function Composer({
               <span className={styles.attachedLabel}>Replying to</span>
               <span className={styles.replyingCaption}>{replyTo.caption}</span>
             </div>
-            <button
-              type="button"
+            <CloseButton
               className={styles.attachedClose}
-              onClick={onClearReply}
-              aria-label="Stop replying"
-            >
-              <Icon name="close" size={13} />
-            </button>
+              size="small"
+              // Optional on the props, required on the key: a staged row with
+              // no way to clear it is a trap, so the key is always drawn and a
+              // composer that was handed no handler simply has nothing to do.
+              onClick={() => onClearReply?.()}
+              label="Stop replying"
+            />
           </div>
         )}
 
@@ -106,14 +108,12 @@ export function Composer({
                 Sends with your next message
               </span>
             </div>
-            <button
-              type="button"
+            <CloseButton
               className={styles.attachedClose}
-              onClick={onClearAttachment}
-              aria-label="Remove attached GIF"
-            >
-              <Icon name="close" size={13} />
-            </button>
+              size="small"
+              onClick={() => onClearAttachment?.()}
+              label="Remove attached GIF"
+            />
           </div>
         )}
 

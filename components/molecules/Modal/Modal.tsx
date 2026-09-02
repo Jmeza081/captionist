@@ -2,14 +2,21 @@
 
 import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react'
 import { Button } from '@/components/atoms/Button'
-import { Icon } from '@/components/atoms/Icon'
+import { CloseButton } from '@/components/atoms/CloseButton'
 import styles from './Modal.module.scss'
 
 export interface ModalStep {
   /** Small accent marker above the heading — "The writing". */
   eyebrow: string
+  /** Also the React key for the step's dot, so keep it unique within a set. */
   heading: string
-  body: string
+  /**
+   * A node rather than a string, because a step sometimes has to link out —
+   * the licensing walkthrough cites four licences and a repository, and a
+   * licence you cannot open is a licence nobody read. Inline content only: it
+   * is rendered inside the card's `<p>`.
+   */
+  body: ReactNode
   /**
    * Fills the 380px rail, edge to edge.
    *
@@ -116,14 +123,10 @@ export function Modal({
               {steps.length > 1 ? `Step ${stepIndex + 1} of ${steps.length}` : ''}
             </span>
             {headerControl && <div className={styles.control}>{headerControl}</div>}
-            <button
-              type="button"
-              className={styles.close}
-              onClick={onClose}
-              aria-label="Close"
-            >
-              <Icon name="close" size={16} />
-            </button>
+            {/* "Close" alone, unlike every other one: the dialog names itself
+                on `aria-label` a line above, so a reader meeting this key has
+                just been told what it closes. */}
+            <CloseButton className={styles.close} onClick={onClose} label="Close" />
           </div>
 
           <span className={styles.eyebrow}>{step.eyebrow}</span>

@@ -77,6 +77,41 @@ export const BACKDROP_SLUG = 'gunna-fire'
 export const NOT_FOUND_SLUG = 'shocked-meme-4'
 
 /**
+ * The walkthrough's rail, one slug per illustration.
+ *
+ * Six drawings that used to be house SVGs with an emoji in the middle of them
+ * — a 🚀, a 📟 — which is a stand-in for a GIF rather than a GIF. The modal is
+ * where somebody is being *told* the game is captioning real GIFs, so it is
+ * the worst screen in the app to show them a rocket emoji on a gradient.
+ *
+ * Curated the way the wall's twenty were, and chosen against what each step
+ * describes rather than for being funny on their own:
+ *
+ *   - `round` is 16:9 and captionable — it is the one image the walkthrough
+ *     shows twice, picked in step 1 and written over in step 2, which is what
+ *     makes the four steps read as one round rather than four screenshots.
+ *   - `answer` is react mode's reply to "the deploy that ended the sprint".
+ *   - the four `vote` slugs are four different faces, because the step they
+ *     illustrate is a room ranking four strangers' entries.
+ *
+ * The SVGs are still committed and are still what renders first, on a keyless
+ * clone, and under `NEXT_PUBLIC_GIFS_STUB` — see `useResolvedArt`.
+ */
+export const HELP_ART = {
+  round: 'this-is-fine-fire-6',
+  answer: 'walking-away-from-explosion-ignace-aleya',
+  vote1: 'facepalm-hopeless-1',
+  vote2: 'nervous-sweating-5',
+  vote3: 'typing-fast-6',
+  vote4: 'wow-amazed-7',
+} as const
+
+export type HelpArtRole = keyof typeof HELP_ART
+
+/** One lookup for the whole modal. A module constant, so it is a stable dep. */
+export const HELP_SLUGS: readonly string[] = Object.values(HELP_ART)
+
+/**
  * One lookup per slug-set per page load, held in memory.
  *
  * Not a cache in the sense their terms forbid: nothing is persisted and nothing

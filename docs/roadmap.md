@@ -61,6 +61,17 @@ Two things to check the first time it runs for real: `allowedDevOrigins` in
 phone uses, and `NEXT_PUBLIC_APP_URL` must stay unset or the lobby's QR encodes
 `localhost` and is a dead link on that phone.
 
+**After phase 9 came a refinements pass**, which is not a phase — it added no
+capability and moved no gate. Six things, one theme: a control that did not look
+like one, or that did the laptop's thing on a phone. A `CloseButton` atom
+replaced five hand-drawn ×s; the room's toolbox stopped opening behind the
+reaction smiley; the walkthrough's rail carries real Klipy GIFs instead of
+emoji on a gradient; the phone's chat sheet got a draggable handle with two
+detents; the share key opens the OS share sheet where there is one
+([ADR 0033](./adr/0033-a-device-capability-decides-the-label.md)); and the
+landing page grew a foot that opens the four licences a production deploy
+carries.
+
 **Phase 9 was four bugs that shared one cause: state nobody read.**
 
 `ChatMessage.announcement` had existed since phase 2 with a comment saying it

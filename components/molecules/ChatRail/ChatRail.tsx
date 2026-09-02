@@ -1,10 +1,12 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Avatar, AvatarOverflow } from '@/components/atoms/Avatar'
+import { CloseButton } from '@/components/atoms/CloseButton'
 import { Icon } from '@/components/atoms/Icon'
 import { PresencePill } from '@/components/atoms/PresencePill'
 import type { PlayerFace } from '@/lib/game/types'
+import { DETENTS, useSheetDrag } from './useSheetDrag'
 import styles from './ChatRail.module.scss'
 
 export interface ChatRailProps {
@@ -39,6 +41,12 @@ const STACK_LIMIT = 3
  * both. Collapses to a 64px strip that keeps the unread count, the reaction
  * affordance and who's here.
  *
+ * **The handle is draggable, and only on the sheet.** Drag it down once to
+ * shrink chat to 42% so the round is readable behind it, again to dismiss;
+ * drag or flick up to go back. The docked rail never sees any of it — a column
+ * is not dragged anywhere — and the whole gesture is a shortcut for the two
+ * controls that were already there, never the only way to reach either.
+ *
  * **Both sizes are one component, and the difference is entirely CSS.** A
  * phone cannot afford 360px of docked chat, so below `md` the same markup
  * becomes a sheet over the content and the strip becomes a single key above
@@ -55,6 +63,11 @@ export function ChatRail({
   toasts,
   children,
 }: ChatRailProps) {
+  // Hooks run before the collapsed branch, because the branch is a return and
+  // React counts hooks per render. It costs the strip nothing: nothing is
+  // subscribed and nothing fires until the handle is pressed.
+  const sheet = useSheetDrag(() => onOpenChange(false))
+
   if (!open) {
     const shown = players.slice(0, STACK_LIMIT)
     const extra = players.length - shown.length
@@ -97,31 +110,63 @@ export function ChatRail({
     )
   }
 
+  /**
+   * The sheet's height, and the finger currently changing it.
+   *
+   * Custom properties rather than a height in the stylesheet, so the detents
+   * live in one place — `useSheetDrag` — instead of being stated once in TS
+   * for the gesture maths and again in Sass for the paint. Above `md` the
+   * stylesheet overrides height outright and none of this is read.
+   */
+  const sizing = {
+    '--sheet-max': `${DETENTS.tall * 100}dvh`,
+    '--sheet-height': `${DETENTS[sheet.detent] * 100}dvh`,
+    '--sheet-drag': `${sheet.offset}px`,
+  } as CSSProperties
+
   return (
-    <aside className={styles.rail} aria-label="Room chat">
-      {/* The sheet's drag handle. Decorative — the close key is the real
-          affordance, and it is reachable at both sizes. */}
-      <span className={styles.grabber} aria-hidden="true" />
+    <aside
+      className={`${styles.rail} ${sheet.dragging ? styles.dragging : ''}`}
+      style={sizing}
+      aria-label="Room chat"
+    >
+      {/* A real control, not a bar with a listener bolted on: it resizes the
+          sheet, so it has to be reachable without a pointer. Enter toggles the
+          two heights, the arrows pick one outright, and the drag is the
+          shortcut over the top of both. */}
+      <button
+        type="button"
+        className={styles.grabber}
+        onClick={sheet.toggle}
+        aria-label={
+          sheet.detent === 'tall' ? 'Shrink chat, or drag to resize' : 'Expand chat, or drag to resize'
+        }
+        {...sheet.handlers}
+      >
+        <span className={styles.grabberBar} aria-hidden="true" />
+      </button>
 
       <header className={styles.head}>
         <span className={styles.title}>Room chat</span>
         <PresencePill count={present} />
+        {/* A chevron points at the edge it collapses to, which on a sheet is
+            nowhere — so the sheet gets the app's close key and the docked rail
+            keeps its chevron. Both are rendered and CSS shows one, which is
+            how the shape is matched without a media query in React; the hidden
+            one leaves the accessibility tree with its `display`. */}
         <button
           type="button"
           className={styles.collapse}
           onClick={() => onOpenChange(false)}
           aria-label="Close chat"
         >
-          {/* A chevron points at the edge it collapses to, which on a sheet is
-              nowhere. Both are rendered and CSS shows one, so the icon matches
-              the shape without a media query in React. */}
-          <span className={styles.railIcon}>
-            <Icon name="chevronRight" size={15} />
-          </span>
-          <span className={styles.sheetIcon}>
-            <Icon name="close" size={15} />
-          </span>
+          <Icon name="chevronRight" size={15} />
         </button>
+        <CloseButton
+          className={styles.sheetClose}
+          onClick={() => onOpenChange(false)}
+          label="Close chat"
+        />
       </header>
 
       <div className={styles.body}>{children}</div>

@@ -231,7 +231,8 @@ place and the pair stays distinguishable: "Surprise me" commits to a tile
 already on the board, "Shuffle results" changes what there is to commit to.
 Neither shares the committing bar, which is one control wide.
 
-**That bar's label stopped changing, and it is a live exception to rule 10.**
+**That bar's label stopped changing, and where rule 10's line sits is now
+written down.**
 `RoundPicker` lost `blockedAction` and `ComposeScreen` lost its
 `'Write something first'`; both CTAs now read the same string whether or not
 anything is staged, and stay `blocked` — live, focusable, and visibly
@@ -239,12 +240,20 @@ unavailable — rather than saying what is missing. The argument in both cases i
 that the *screen* already states it: fifty tiles with none of them ringed, or an
 empty field directly above the button. The cost the change bought back is real
 and specific — on a phone the one control on the screen changed width as you
-typed, and the bar it sits in wrapped. This is a departure from
-`design-system.md` §4.7 and `CLAUDE.md` rule 10, not an application of them, and
-the rule still holds where the missing thing is a *count* rather than a state:
-`VoteScreen`'s "Pick 2 more" comes from `lockGateFrom` and is unchanged. Both
-sides of that split are defensible and neither is written down outside a code
-comment, which is the part worth fixing next.
+typed, and the bar it sits in wrapped. It read as a departure from
+`design-system.md` §4.7 and `CLAUDE.md` rule 10 while it was only a pair of
+edits; the ADR that followed files it as a line drawn *inside* those rules
+instead, since the half they exist for — the control stays live and focusable —
+is untouched. The rule still holds where the missing thing is a *count* rather
+than a state:
+`VoteScreen`'s "Pick 2 more" comes from `lockGateFrom` and is unchanged. **Both
+sides of that split are written down now**, which is what this paragraph used to
+say was the part worth fixing next:
+[ADR 0032](./adr/0032-a-blocked-label-counts-what-is-missing.md) draws the line
+inside the rule rather than around it — a blocked label states a *count* the
+screen does not already show, and stays the action where the missing thing is
+only "you have not started yet". `blocked` itself is untouched on all four
+controls.
 
 **Both modes search on one screen.** Picking the round's image and answering
 its prompt with a GIF are the same task — field, chips, shuffle, "Surprise me",
@@ -417,9 +426,10 @@ promise: `components/molecules/Dropzone/` is deleted, `GifPanel` renders
 unconditionally on the brief, the `/host` row is **absent rather than
 disabled**, `MediaRef` lost the `source: 'giphy' | 'upload'` union nothing read
 (it is `{ src, alt }` plus the optional `width`/`height` a card's shape needs),
-`Icon` dropped `upload` and went back to eleven glyphs (it is twelve again
-since, `shuffle` having arrived with "Shuffle results"; the docblock counts
-them), and four `$dropzone-*` metrics left
+`Icon` dropped `upload` and went back to eleven glyphs (it is thirteen since —
+`shuffle` arrived with "Shuffle results" and `toolbox` with the FAB that stopped
+wearing a smiley; `IconName` is the count and the docblock follows it), and four
+`$dropzone-*` metrics left
 `theme/_metrics.scss`. A GIF provider is the only image source, in both modes.
 [ADR 0014](./adr/0014-uploads-are-not-a-feature.md).
 
@@ -623,6 +633,75 @@ its last `t.mq('md')` — a viewport query inside a container-keyed layout, wron
 in exactly the 768–1000px band with the rail docked — with a container query on
 a new `.screen`.
 
+**Since then the way out of anything is a key rather than a mark.**
+`components/atoms/CloseButton/` is one filled disc with a × on it, and it
+replaced five hand-drawn dismissals: `Modal`'s, the chat sheet's,
+`RoomToolbox`'s, `GifPanel`'s popover and `Composer`'s two staged rows. Every
+one of them was a bare 2.2pt × on nothing — the least affordance a control can
+have, and on a phone there is no hover to discover it with. Two sizes, because
+the rows differ rather than the control: `medium` fills the 44px target a header
+already had, `small` is a 26px key where there was never 44 to give
+(`$close-key-small` in `theme/_metrics.scss`, which is `$composer-attach-close`
+renamed off the one row that used to own it). `label` is required with no
+fallback to a bare "Close" — `Modal` is the single exception, because the dialog
+names itself a line above. The weight is the other half: `Icon` gained a
+`weight` prop rather than a second `closeBold` path, since it is the same
+drawing with more body once the mark is on a plate. A **thirteenth glyph**
+landed with it — `toolbox`, traced like `shuffle` because the design draws
+neither — and `RoomToolbox`'s FAB opens behind it now instead of the smiley,
+which DESIGNSYSTEM §4.4 reserves for *reactions*: the one control that is a bar
+of timers, skips and restarts was promising a reaction picker and delivering the
+host's controls.
+
+**Three more refinements rode with it, and each of them is a phone answering as
+a phone.** The lobby's second share key opens the **OS share sheet** where one
+exists and copies where it does not — `lib/useWebShare.ts` over
+`useSyncExternalStore`, `false` on the server so feature detection never reaches
+hydration — and `RoomShare`'s `onShareToSlack` is `onShare` with a caller-set
+`shareLabel` for the same reason: "Share to Slack" is a promise the clipboard
+keeps on a laptop and the sheet never makes, since the sheet lists everything
+installed and Slack is one row of it. A sheet that opened raises no snackbar and
+a cancelled one raises nothing at all. That a *capability* may move a label and
+not only a behaviour is
+[ADR 0033](./adr/0033-a-device-capability-decides-the-label.md).
+
+The chat sheet's grab handle became a
+real button with two detents — `useSheetDrag` in
+`components/molecules/ChatRail/`, 78% and 42%, drag or flick down to shrink and
+again to dismiss, Enter to toggle and the arrows to pick one outright — with the
+heights published as `--sheet-height` / `--sheet-drag` / `--sheet-max` so the
+numbers live in one file rather than once in TypeScript for the gesture maths
+and again in Sass for the paint. **The height you choose sticks for the
+session**, whichever way the sheet was closed: the rail stays mounted while it
+is shut — the collapsed strip is the same component — and "the close key
+remembers and the drag forgets" is a distinction nobody would predict. The
+docked rail sees none of it. And the walkthrough's rail illustrations draw **real
+GIFs**: `HELP_ART` / `HELP_SLUGS` in `lib/gifs/art.ts`, resolved through
+`useResolvedArt` on the same terms as the wall, the waiting backdrop and the
+404, with the committed SVG still painting first and still what a keyless clone
+and the suite keep. They had been house SVGs with an emoji in the middle, on the
+one screen whose whole job is telling somebody the game is about GIFs. The vote
+step went further than new art: it is the **only** illustration that differs by
+mode, and it used to draw four different GIFs in both. That is right for react —
+four answers are four GIFs — and wrong for caption, where the Captionist picks
+one image and everybody writes over that same image, so a grid of four pictures
+told a reader the format was the other one. `VoteIllustration` takes a
+`GameMode` and branches its *values* — four captions over `round`, or the four
+answer slugs — which is the same rule the screens follow and the reason it is
+not a second component.
+
+**The landing page gained a foot, and it is where the licences live.**
+`LandingLegal` is a two-link line — "Licensing and credits", and the source —
+holding `LicenseModal`, which is a configured `Modal` the way `HelpModal` is:
+four steps for the four obligations a production deploy carries (MIT for the
+app, the providers' terms for the GIFs, CC0 for the faces, CC BY for the
+reaction art, OFL for the type). Not a `/legal` route, because three of the four
+are attribution rather than a contract and a page nobody visits is not where
+attribution belongs. It is what widened `ModalStep.body` from `string` to
+`ReactNode` — a licence you cannot open is a licence nobody read — and it is why
+`app/page.tsx` is still a Server Component: the `'use client'` boundary is that
+one line rather than the page.
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -667,7 +746,8 @@ here now*. Where they overlap, this file links rather than repeats.
 | Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the toolbox's react row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
 | Reaction affordance | `ReactionCTA` on all five sites the design names | Caption cards, chat messages, the composer, the reveal bar and the **room toolbox** — DESIGNSYSTEM §4.4's "uniform everywhere", which three of the five did not honour until recently. `ChatMessage` had no affordance at all, so every chat reaction landed on whatever arrived last, and the composer withheld its CTA on an empty log while rendering six quick keys that silently did nothing. The fifth site was the collapsed chat rail and **is now `RoomToolbox`**: reacting to the room is something any player does at any time, not an edge-of-chat control, so `ChatRail` no longer takes `onReact` and `RoomShell`'s `Overlay` union is back to `'toolbox' \| 'help' \| null`. `ChatPanel`'s reaction surface still carries *what it is aimed at* — a message id, or `null` for the composer, which **posts**: an emoji from the composer is a chat message that also fires the room's burst, rather than a chat control that quietly did something else. A *picture* reaction posts as an **attachment**, not as text: an image tile's glyph is a URL and `say`'s body is verbatim, so a Slackmoji used to render `/media/slackmoji-lgtm.svg` in 14px type. And the message CTA is reachable again — it was drawn only on the player row, while `ChatPanel` marked every host line an announcement, so in a host's own room no message had one |
 | Reaction art | `public/media/emoji/` stills · `lib/noto.ts` derives the motion | 584 CC BY 4.0 stills, 2.79MB, written by `scripts/import-noto-emoji.mjs` — run by hand, output committed, **deliberately not wired into `build`**, which has no network. `animatedSrcFor(glyph)` turns a same-origin still into its `fonts.gstatic.com` WebP and returns `null` for anything else; Google publishes these at 512px only, so one animated tile is ~369KB and the whole catalog would be ~57MB committed. [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
-| Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Shared by `HeroWall` and `ReactionGlyph`, which are the two places the decision is *which file to fetch* and therefore the two CSS cannot make |
+| Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Read by `HeroWall`, `SceneBackdrop`, `ReactionGlyph` and the walkthrough's illustrations: every place the decision is *which file to fetch* rather than which rule to apply, and therefore every place CSS cannot make it |
+| Sharing a link | `lib/useWebShare.ts` | `useSyncExternalStore` over `navigator.share`, with **`false` as the server snapshot** — a button whose label came out of feature detection during SSR is a hydration mismatch on every phone, and it settles on the first client commit long before anybody has read the button. `share()` resolves to what happened — `shared` · `copied` · `cancelled` · `failed` — so the caller can confirm a copy, say nothing about a sheet that is already on screen, and treat a dismissal as a decision rather than an error. `AbortError` *is* the dismissal; every other failure falls through to the clipboard, because a sheet that refused to open is exactly when the old behaviour is wanted. The label moves with the capability rather than only the behaviour — [ADR 0033](./adr/0033-a-device-capability-decides-the-label.md) |
 | Recent reactions | `lib/recent-reactions.ts` — `localStorage`, ids not glyphs | The picker's Recent tab, and the one piece of reaction state that never travels: not the event store (whose contract is one event off the wire), not `GameState` (it would bump `rev`), not `sessionStorage` (your emoji should outlive the room). Filtered against `REACTIONS` on read, so a retired tile leaves quietly |
 | Realtime | `AblyTransport` over Ably v2 · `BroadcastTransport` over `BroadcastChannel` | All three `RoomTransport` implementations now exist and **no method changed at the swap** — [ADR 0009](./adr/0009-the-room-crosses-the-network.md). Ably is what a real room takes; the tab transport is what the suite runs on. Who hosts is presence on Ably and a claim probe on the tab bus — [ADR 0007](./adr/0007-the-first-tab-to-ask-owns-the-room.md). Both lanes — intents and events — stamp `from` from the identity the transport authenticated, never from the payload |
 | Realtime auth | `/api/ably/seat` + `/api/ably/token`, `lib/ably/` | `ABLY_API_KEY` is server-only. Two routes because an `authUrl` must answer with the bare `TokenRequest`: the seat (signed, and where the stub answer lives) comes from one, the token from the other. `createTokenRequest` signs locally, so neither route makes a call of its own; the capability is the glob `captionist:<code>:*` |
@@ -809,6 +889,8 @@ graph TD
   HW["HeroWall<br/><i>'use client' · our art first,<br/>then useResolvedArt(WALL_SLUGS)</i>"]
   GP["The GIF provider<br/><i>Klipy, or Giphy — registry.ts picks</i>"]
   LA["LandingActions<br/><i>'use client' · a link and a code field</i>"]
+  LL["LandingLegal<br/><i>'use client' · the foot — one boolean,<br/>so the page above it stays a server component</i>"]
+  LM["LicenseModal<br/><i>four licences, in a configured Modal</i>"]
   HS["HostSetupScreen<br/><i>generateCode · writePendingSettings</i>"]
   JS["JoinScreen<br/><i>normalizeCode · writeIdentity</i>"]
   RP["lib/room/RoomProvider<br/><i>'use client' · claims the code</i>"]
@@ -832,6 +914,8 @@ graph TD
   JS --> HW
   HW -.->|"resolveArt(WALL_SLUGS) — slugs travel, URLs don't"| GP
   P --> LA
+  P --> LL
+  LL -->|"open — the licences, without leaving the page"| LM
   LA -->|"href — 'Start a game'"| H
   LA -->|"router.push → /room/CODE"| R
   H --> HS
@@ -851,19 +935,26 @@ graph TD
   SCR -.->|"joinUrlFor() — QR + copy link"| JC
   SCR -.->|"useGifSearch() → fetchBoard"| GP
   SH -.->|"ChatPanel's GifPanel — same hook,<br/>mounted only while the surface is open"| GP
+  SH -.->|"HelpModal's four illustrations —<br/>resolveArt(HELP_SLUGS), the SVG until it lands"| GP
 ```
 
 **No page reaches a third party from the server render any more**, which is why
 every arrow to the provider is dotted and every one of them leaves a browser.
 That is one rule with two consequences rather than two decisions: a request must
 be made client-side, and a media URL must not be retained. So the picker fetches
-from the browser, and the three surfaces whose pick is *ours* — the wall, the
-waiting backdrop, the 404 — ship the app's own art in the HTML and resolve the
-real thing after the paint. The fallback is never removed, which is what keeps a
-keyless clone and the Playwright suite looking at pictures rather than at holes.
+from the browser, and the four surfaces whose pick is *ours* — the wall, the
+waiting backdrop, the 404 and the walkthrough's four illustrations — ship the
+app's own art in the HTML and resolve the real thing after the paint. The
+fallback is never removed, which is what keeps a keyless clone and the
+Playwright suite looking at pictures rather than at holes. The fourth is the
+only one of them that is not a page: `HelpModal` opens from four different
+places — the landing nav, `/host`, the lobby's key and the room toolbox — so its
+slugs are resolved when somebody opens it rather than at a route's first paint.
 
-**`/` is the landing page from artboard 1a**, and it composes three things:
-`LandingNav`, the hero copy, and `LandingActions`. It holds no markup of its
+**`/` is the landing page from artboard 1a**, and it composes four things:
+`LandingNav`, the hero copy, `LandingActions` and — since the licences arrived —
+`LandingLegal`, whose whole reason to be a component is that the page above it
+stays a Server Component. It holds no markup of its
 own beyond the headline, the lead and the avatar proof row — whose five faces
 now carry the catalogue's first five seeds on the first five seat colours, so
 the row is literally "here are five of the faces you can pick" rather than five
@@ -949,6 +1040,12 @@ a face on it rather than a panel. It is a spare part until something needs a
 QR-and-code pair outside the lobby. The gap in it is the three
 page-shaped landing components: `LandingNav` and `LandingActions` are
 single-use, so `e2e/landing.spec.ts` covers them on the real page instead.
+`LandingLegal` and `LicenseModal` join it on the same argument: they are the
+landing page's own foot, single-use, and `e2e/refinements.spec.ts` covers them
+on the real page. `CloseButton` does **not** get that excuse — it is a shared
+atom serving five surfaces — so it is in the Atoms panel, at both sizes side by
+side, because the whole decision the atom records is that a header's key and a
+staged row's key are one control at two scales.
 `HeroWall` no longer is — `/host` and `/join` render it too — but it is still
 covered on its pages rather than in the gallery, because a wall of twenty tiles inside a
 component grid is a demo of nothing.
@@ -1293,10 +1390,17 @@ named, and why the stills are committed while the animation is fetched.
 `lib/recent-reactions.ts` is the seventh and still the smallest — the picker's
 Recent tab, on `localStorage`, storing ids so a retired tile disappears instead
 of rendering as a dead URL. It is the only reaction state that never touches
-the wire. `lib/useReducedMotion.ts` is the eighth and the only one that is a
-hook: `useSyncExternalStore` over `matchMedia`, answering `true` on the server,
-so `HeroWall` and `ReactionGlyph` read the preference the same way instead of
-each keeping an effect that sets state from a media query.
+the wire. `lib/useReducedMotion.ts` is the eighth, and the first of the three
+plain hooks at `lib/`'s top level: `useSyncExternalStore` over `matchMedia`,
+answering `true` on the server, so every component that has to pick a *file*
+rather than a rule reads the preference the same way instead of each keeping an
+effect that sets state from a media query. `useWideViewport` and `useWebShare`
+are the other two, and they are the same shape over `matchMedia` and
+`navigator.share`: a browser fact, read once, with a server answer picked so the
+wrong first render is the harmless one — stillness before motion, a phone's
+layout before a desk's, and no share sheet before one. None of the three knows
+anything about a room, which is why all three sit at `lib/`'s top level rather
+than in `lib/room/`.
 
 `Avatar` fills its circle three ways in order — a resolved `src`, a rendered
 `avatarSeed`, then the initial — and `avatarSeed` was added to the
@@ -2016,6 +2120,7 @@ graph BT
     Ident["Avatar · RoomCode"]
     Brand["Logo<br/><i>the delivered SVG — header · landing · badge</i>"]
     Feedback["Snackbar · ReactionCTA"]
+    Close["CloseButton<br/><i>the filled key — one drawing at two sizes,<br/>and the only caller of Icon's weight</i>"]
     Glyph["ReactionGlyph<br/><i>'use client' · a character, or the still —<br/>which upgrades to the animation</i>"]
     Dots["WaitingDots"]
     Static["TvStatic<br/><i>a server component · inline-SVG noise and CSS —<br/>no script, no request, no decode</i>"]
@@ -2030,6 +2135,7 @@ graph BT
     Lobby["CodeEntry · RoomShare · Podium"]
     Entry["AvatarPicker · ModeCard · HatPicker"]
     Landing["HeroWall · LandingNav · QuickJoin"]
+    Legal["LandingLegal · LicenseModal<br/><i>the foot, and the four licences —<br/>a configured Modal, like HelpModal</i>"]
     Boot["BootChecklist<br/><i>an ol — the order is the meaning</i>"]
     Mark["Wordmark<br/><i>the mark and the name — a molecule<br/>because it imports Logo, and Icon<br/>is the only atom exemption</i>"]
     Scene["SceneBackdrop<br/><i>'use client' · a dead channel behind a wait —<br/>a molecule for Wordmark's reason: it composes TvStatic</i>"]
@@ -2057,6 +2163,11 @@ graph BT
   Overlay -->|"GifPanel — the board"| Picker
   Picker -->|"BriefScreen picks the image,<br/>ComposeScreen answers the prompt"| Screens
   Icon --> Feedback
+  Icon -->|"close, at a weight the plate can carry"| Close
+  Close -->|"Modal's header key — the one bare 'Close'"| Dialog
+  Close -->|"ChatRail — the sheet's, beside the docked rail's chevron"| Chat
+  Close -->|"RoomToolbox's header · GifPanel's popover"| Overlay
+  Close -->|"Composer's two staged rows — size=small"| Compose
   Layout --> Room
   Ident --> Room
   Ident --> Chat
@@ -2066,6 +2177,8 @@ graph BT
   Controls --> Actions
   Landing -->|"QuickJoin"| Actions
   Landing --> Home
+  Dialog -->|"LicenseModal is a Modal with four steps in it"| Legal
+  Legal -->|"LandingLegal — the page's foot"| Home
   Actions --> Home
   Layout -->|"Stack"| Home
   Ident -->|"Avatar"| Home
@@ -2434,9 +2547,13 @@ up. That is `ChatRail`'s two-glyph trick applied to a whole label.
 permits by omission rather than by intent: it forbids data fetching, realtime
 and routing in a molecule, and says nothing about depth. The alternative was to
 promote one of them to an organism, which would be a tier decided by nesting
-instead of by dependency — the exact thing that table exists to prevent. Worth
-knowing because it is the only one; if a second appears, the rule needs writing
-down rather than inferring.
+instead of by dependency — the exact thing that table exists to prevent. **It is
+no longer the only one**, which is the answer to the "if a second appears" this
+paragraph used to end on: `LandingLegal` holds `LicenseModal`, which holds
+`Modal`, so the depth is three. The rule that came out of the second case is the
+same one the first argued for and is now worth stating rather than inferring —
+*depth is not a tier*: a molecule may hold a molecule, and what decides the tier
+is still whether it fetches, subscribes or routes. None of them does.
 
 **`ReactionToolbar` became controlled so it could leave.** `open` is a prop
 now rather than the caller mounting and unmounting it, because a panel that
@@ -2554,6 +2671,37 @@ which is what a row can spare before it stops being a list. The fifth is a prop
 and belongs to an atom: `Chip` gained `wrap`, off by default, because the
 brief's prompt starters are sentences and every other chip in the app is one or
 two words — a row of short pills that may wrap would break at the wrong places.
+
+**The close key added one atom and deleted five copies of it.** `CloseButton` is
+an atom by the dependency rule — it imports `Icon`, which is the one exemption
+the table grants, and reads nothing. `size` is its only prop that changes the
+drawing, and it is rule 2 rather than two components because the *rows* differ
+rather than the control: a modal header has 44px to give and a staged GIF row
+never had. The five edges above are what it replaced,
+and each was a `<button>` with a bare `Icon name="close"` inside it. `Icon`'s
+new `weight` is the other half and belongs to the atom that owns the drawing:
+the design's rule that each glyph carries its own stroke is the *default*, not a
+ban on a host asking for another, and `CloseButton` is its only caller — the
+same 2.2pt × is still right in `BootChecklist`'s 12px failure row.
+
+**The licences added two molecules and no organism, which is the tier rule doing
+its job.** `LicenseModal` is a configured `Modal` exactly as `HelpModal` is —
+its steps are co-located in `steps.tsx`, kept by hand rather than generated from
+`package.json`, because what carries a condition is the *assets* and a
+dependency list would bury four obligations under sixty MIT runtimes.
+`LandingLegal` is the pair to it and holds the one boolean; it is a molecule
+rather than markup in `app/page.tsx` for a reason the tier table does not state
+but the rendering path does — a Server Component cannot hold `useState`, so the
+`'use client'` boundary goes as far down as it will fit. Neither reaches a room,
+a route or a fetch. **And `ChatRail` grew a hook rather than a sibling
+component**: `useSheetDrag.ts` sits beside it in the same directory, because the
+rail is one component at both sizes and the drag is the half of it that exists
+at one — a `ChatSheet` would be the copy that the CSS branch was chosen to
+avoid. Which means the hook runs at *both* sizes — hooks are counted per render,
+so it is called above the collapsed branch's early return — and costs the other
+one nothing: it subscribes to nothing and fires nothing until the handle is
+pressed, and above `md` the stylesheet overrides height outright so the detent
+it publishes is never read.
 
 ## Token flow
 
@@ -2888,6 +3036,29 @@ there is nothing to wait for. Twenty MP4s are roughly what two GIFs would cost,
 which is why `toWallTile` prefers the `mp4` rendition and falls back to the
 animated image only when a source has none.
 
+**That page ships one more island than the wall, and it is deliberately the
+smallest one in the app.** `LandingLegal` is `'use client'` for a single
+boolean, and `LicenseModal` is not rendered at all until it flips — so the
+headline, the lead, the proof row and the twenty cells are all still server
+output, and what hydration reaches on `/` is the wall, the two actions and one
+button in the foot. Pushing the boundary down to the line that needs it is the
+same move `TunedImage` makes inside `MediaCard`; the difference is only which
+direction the tree is read from.
+
+**A fourth surface takes the wall's road and is not a page at all.**
+`HelpModal`'s four illustrations call `useResolvedArt(HELP_SLUGS)` and match the
+answer on `id` rather than on position — `resolveArt` drops a slug the provider
+no longer has, and an index into the returned list would shift every picture
+after the missing one along by one. Until it lands, and forever where there is
+no key, the picture is the committed `SAMPLE_GIFS` SVG the modal has always
+drawn, which is why the walkthrough is the one place a *stub* slug and a
+*curated* slug are separate arguments: the offline shelf is twelve house
+drawings rather than a parallel catalogue of the curated six, so which of them
+stands in for which step is the modal's business rather than `art.ts`'s. There
+is no `TunedImage` here, and the absence is the rule rather than an omission —
+static fills a hole while a picture is on its way, and this frame already has a
+picture in it.
+
 The fourth path is the only one that leaves the machine at request time, and it
 belongs to the GIF picker rather than to a page.
 
@@ -3189,7 +3360,8 @@ closed by time — the ask was slackmojis.com's directory, and it cannot be take
 their terms forbid compiling it and the art is not theirs to license, so the
 source changed and the goal survived as Noto under CC BY 4.0
 ([ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md);
-attribution is on `/components` and in `public/media/emoji/LICENSE.txt`). What
+attribution is on `/components`, in `public/media/emoji/LICENSE.txt` and, since
+`LicenseModal` landed, one click from the front door). What
 is left out is the part no import can supply — a *workspace's own* custom emoji
 — and it is the same missing storage target, now declined outright
 ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)).
@@ -3207,6 +3379,14 @@ and would be a guess, and `left` is the opposite of a guess: it is the one thing
 on that row the room knows for a fact, straight off the transport's presence
 set. A row reading "still thinking" over a closed tab was the guess.
 [ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md).
+
+**The OS share sheet closed no row either, and the podium's is the one it looks
+like it should have.** `useWebShare` hands a *link* to whatever the device has
+installed, which is a destination the browser already owns; the podium's Slack
+buttons and highlight reel need a destination *of ours* — somewhere to put a
+reel, and a workspace to post it into on the room's behalf — so that row stands
+exactly as it was. What changed is a label that was overpromising: the lobby's
+second key said "Share to Slack" and put a URL on the clipboard.
 
 | Area | What exists | What doesn't |
 | --- | --- | --- |
@@ -3289,18 +3469,19 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-373 unit tests (`lib/**/*.test.ts`, node, over 24 files) and 536 Playwright
-tests across the two viewports — 268 per project, over 30 spec files. Not all of
-them run: 21 skip on viewport (a docked rail exists only above `md`, a
+373 unit tests (`lib/**/*.test.ts`, node, over 24 files) and 554 Playwright
+tests across the two viewports — 277 per project, over 31 spec files. Not all of
+them run: 23 skip on viewport (a docked rail exists only above `md`, a
 floating dock only below it), which is a branch of the layout rather than a hole
-in the coverage. 21 *tests* out of fifteen viewport `test.skip` call sites —
-sixteen in the tree, one of which is `design-review.spec.ts`'s `SHOTS` gate and
+in the coverage. 23 *tests* out of sixteen viewport `test.skip` call sites —
+seventeen in the tree, one of which is `design-review.spec.ts`'s `SHOTS` gate and
 not a viewport question at all. The two counts differ because
 `responsive.spec.ts` skips at the describe level and takes all of its own with
-it: 12 of the 21 skip on the phone (the width sweep's three, and nine that need
-a docked rail or an `xl` split), and 9 on the desk (the floating keys' two, the
-boards' four, and three that are about a phone specifically). Both projects
-would otherwise sweep the same widths through the same browser.
+it: 12 of the 23 skip on the phone (the width sweep's three, and nine that need
+a docked rail or an `xl` split), and 11 on the desk (the floating keys' two, the
+boards' four, three that are about a phone specifically, and the sheet handle's
+two, which are the newest — a docked column is not dragged anywhere). Both
+projects would otherwise sweep the same widths through the same browser.
 
 **The avatar change's share is 12 unit tests and five specs.**
 `lib/avatar.test.ts` is the 12, and it is aimed at the two things a style swap
@@ -3566,6 +3747,28 @@ next room spec: the header's settings line and the share card's `meta` are
 taking `.first()`, which in DOM order is the header's and on a phone is the
 hidden one.
 
+**The refinements' share is `e2e/refinements.spec.ts`, 9 tests per project and
+no unit test, because none of the six changes is pure.** They share no feature,
+which is why they share a file: what they have in common is a control that did
+not look like one, or a laptop's answer given on a phone. Two hold the close key
+to being an *affordance* rather than a mark — a 44px box, a `border-radius` of
+50%, a background that is not transparent, and a stroke heavier than the
+design's own 2.2 — all read off computed style, because the class names are
+hashed. One walks the walkthrough's four steps and asserts each rail picture has
+actually **decoded** (`complete`), which under the suite's blocked resolver is
+the committed SVG, so what is guarded is the fallback rather than the feature.
+One counts paths on the toolbox FAB, since a smiley is a circle and a path while
+a toolbox is four strokes and no circle. Two cover the share key from both
+sides: with a stubbed `navigator.share` the label reads "Share link", the sheet
+is handed the room's own `/join/C-…` URL, and **no snackbar appears**; with
+`share` deleted the label is "Share to Slack" and the copy confirms — which is
+the one case in the file that needs `grantPermissions(['clipboard-write'])`,
+because the write is awaited now and a room that says "copied" over a rejected
+one is lying. One opens the licences from the landing page and reads all four
+steps, checking that KLIPY's link goes to its *terms* rather than its home page.
+The last two need a phone and skip above `md`: a tap on the handle shrinks the
+sheet and a second closes it, and a drag does the same two things by distance.
+
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a
 guest closing its tab turned into a held seat through Ably presence. Two bugs
@@ -3643,8 +3846,9 @@ rather than code:
    this by construction rather than by discipline:** the still is not a
    companion somebody has to remember to draw, it is the thing on the wire, and
    the animation is the departure from it. The preference itself is read in one
-   place, `lib/useReducedMotion.ts`, by both components that have to choose a
-   file rather than a CSS rule. Playback is enabled only inside the effect that
+   place, `lib/useReducedMotion.ts`, by every component that has to choose a
+   file rather than a CSS rule — the wall, the backdrop, a reaction glyph and
+   the walkthrough's illustrations. Playback is enabled only inside the effect that
    reads `prefers-reduced-motion`, so it never starts and then
    gets cancelled. This is a rule rather than a preference because CSS cannot
    reach inside an animated image to stop it, and an SVG used as an `<img>` does

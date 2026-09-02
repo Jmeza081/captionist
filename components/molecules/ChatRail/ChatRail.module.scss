@@ -13,8 +13,14 @@
   z-index: t.$z-rail;
   // Never the full height: the header carries the phase and the clock, and a
   // sheet that covered the countdown would make chat cost you the round.
-  height: 78%;
-  max-height: 78dvh;
+  //
+  // The detent and the live finger both arrive as custom properties, set by
+  // the component off `useSheetDrag` — so the two heights are stated once, in
+  // TypeScript, rather than once there for the gesture maths and again here
+  // for the paint. The fallbacks are the tall detent, which is what an
+  // unhydrated sheet and the gallery both get.
+  height: clamp(0px, calc(var(--sheet-height, 78dvh) - var(--sheet-drag, 0px)), var(--sheet-max, 78dvh));
+  transition: height 220ms cubic-bezier(0.32, 0.72, 0, 1);
   display: flex;
   flex-direction: column;
   background-color: t.$surface-header;
@@ -31,6 +37,7 @@
     position: static;
     height: auto;
     max-height: none;
+    transition: none;
     align-self: stretch;
     width: t.$rail-width;
     max-width: 100%;
@@ -43,31 +50,56 @@
 
 // The sheet's drag handle. Only the sheet has one — a docked rail is not
 // dragged anywhere.
+//
+// The bar is 4px and the control around it is a full row, because a 4px target
+// is a 4px target however tall the thing it resizes is. `touch-action: none`
+// so a drag down the handle resizes the sheet instead of pulling the page into
+// a scroll or a browser refresh.
 .grabber {
+  @include t.focusRing;
+
   flex: none;
-  width: t.$space-34;
-  height: 4px;
-  margin: t.$space-8 auto t.$space-2;
-  border-radius: t.$radius-pip;
-  background-color: t.$line-outline;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: t.$space-26;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover .grabberBar,
+  &:active .grabberBar {
+    background-color: t.$text-label;
+  }
 
   @include t.mq('md') {
     display: none;
   }
 }
 
-// One close key, two glyphs: a chevron points at the edge the rail collapses
-// to, which for a sheet is nowhere.
-.railIcon {
-  display: none;
-
-  @include t.mq('md') {
-    display: flex;
-  }
+.grabberBar {
+  width: t.$space-34;
+  height: 4px;
+  border-radius: t.$radius-pip;
+  background-color: t.$line-outline;
+  transition: background-color 140ms ease;
 }
 
-.sheetIcon {
-  display: flex;
+// The finger is the animation while it is down; a transition on top of it
+// lags the sheet behind the drag by a frame and reads as a stutter.
+.dragging {
+  transition: none;
+}
+
+.sheetClose {
+  margin-left: auto;
 
   @include t.mq('md') {
     display: none;
@@ -91,11 +123,15 @@
   color: t.$text-primary;
 }
 
+// The docked rail's own key. One key each and CSS picks between them: a
+// chevron points at the edge the rail collapses to, which for a sheet is
+// nowhere. Whichever is hidden leaves the accessibility tree with its
+// `display`, so only ever one "Close chat" is announced.
 .collapse {
   @include t.focusRing;
 
+  display: none;
   margin-left: auto;
-  display: flex;
   align-items: center;
   justify-content: center;
   width: t.$tap-target-min;
@@ -108,6 +144,10 @@
 
   &:hover {
     color: t.$text-primary;
+  }
+
+  @include t.mq('md') {
+    display: flex;
   }
 }
 
@@ -258,5 +298,12 @@
 
   @include t.mq('md') {
     display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail,
+  .grabberBar {
+    transition: none;
   }
 }

@@ -1,0 +1,49 @@
+@use 'theme' as t;
+
+// Sits under the hero rather than pinned to the viewport: the page is one
+// screen tall and a fixed foot over a full-bleed wall of GIFs is a bar the
+// wall has to make room for. This one is simply the last thing on the column.
+.foot {
+  display: flex;
+  justify-content: center;
+  padding: 0 t.$space-20 t.$space-26;
+
+  @include t.mq('md') {
+    padding: 0 t.$landing-pad-h t.$space-26;
+  }
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: t.$space-8;
+}
+
+// One of the two is a button — it opens the modal rather than navigating — so
+// the reset lives here and both read identically. The same arrangement
+// `LandingNav` makes for the same reason.
+.link {
+  @include t.focusRing;
+
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: t.$text-timestamp;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$text-caption;
+  }
+}
+
+.dot {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  color: t.$text-timestamp;
+}

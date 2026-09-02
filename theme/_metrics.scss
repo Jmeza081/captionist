@@ -265,6 +265,14 @@ $help-podium-first: 68px;
 $help-podium-second: 44px;
 $help-podium-third: 32px;
 $help-meme-size: 20px;
+/**
+ * The same caption inside a vote tile, which is a quarter of the frame.
+ *
+ * Caption mode ranks four captions over one image, so the vote step draws the
+ * meme text four times at tile scale. `$help-meme-size` there would be four
+ * lines of it in a 169px cell.
+ */
+$help-tile-meme-size: 11px;
 
 $interstitial-width: 560px;
 
@@ -293,7 +301,18 @@ $composer-key: 28px;
 $composer-send: 34px;
 $composer-attach-preview-w: 52px;
 $composer-attach-preview-h: 40px;
-$composer-attach-close: 26px;
+
+// --- Close key ------------------------------------------------------------
+
+/**
+ * The small `CloseButton`, for a row that never had 44px to give — a staged
+ * GIF, a popover's title bar. The medium one is `$tap-target-min` itself and
+ * needs no name of its own.
+ *
+ * Was `$composer-attach-close`: the same 26px, named for the one row that used
+ * it, back when every surface drew its own × from scratch.
+ */
+$close-key-small: 26px;
 
 // --- GIF panel ------------------------------------------------------------
 

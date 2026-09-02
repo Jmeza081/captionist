@@ -26,9 +26,12 @@
 // The stand-in art carries its own title (`lib/gifs/samples` draws one, which
 // is right in a picker and wrong here). Where a rail treats the image as the
 // round's shared GIF, crop the title out so the only words on it are the ones
-// the step is demonstrating. Delete this when the real artwork lands — the
-// grid keeps its titles, where they read as the entries' labels.
-.frame .art {
+// the step is demonstrating.
+//
+// Scoped to `.stub` rather than to every `.art`: the real GIF resolved from
+// Klipy has no title burnt into it, so zooming it 1.6x would crop a picture
+// that was already the right size for nothing.
+.frame .stub {
   transform: scale(1.6);
   transform-origin: 50% 15%;
 }
@@ -205,6 +208,36 @@
 // Not yet ranked, and reading as such.
 .unranked {
   opacity: 0.72;
+}
+
+/**
+ * A caption inside a vote tile — caption mode only.
+ *
+ * The same drawing `.meme` makes, at a quarter of the frame: `.meme`'s own
+ * four-way black shadow, which is what `MediaCard` puts under caption text, so
+ * a white line stays legible over whatever the round's image happens to be.
+ * Bottom-anchored and clamped to two lines, because a tile is 169px wide and
+ * "The retro will fix this" is not one line at any size worth reading.
+ */
+.tileMeme {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: t.$space-8;
+  padding: 0 t.$space-6;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-align: center;
+  font-family: t.$font-sans;
+  font-size: t.$help-tile-meme-size;
+  font-weight: 800;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: t.$text-primary;
+  text-shadow: 0 1.5px 0 #000, 0 -1.5px 0 #000, 1.5px 0 0 #000,
+    -1.5px 0 0 #000;
 }
 
 .rank {

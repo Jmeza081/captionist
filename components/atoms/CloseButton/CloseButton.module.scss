@@ -1,0 +1,48 @@
+@use 'theme' as t;
+
+.key {
+  @include t.focusRing;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: 1px solid t.$line-hairline-strong;
+  border-radius: t.$radius-avatar;
+  background-color: t.$fill-field;
+  color: t.$text-label;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+
+  &:hover {
+    background-color: t.$fill-secondary-hover;
+    color: t.$text-primary;
+  }
+
+  &:active {
+    background-color: t.$fill-field;
+  }
+}
+
+// A header's key. The disc fills the 44px target rather than floating inside
+// it — a 32px plate in a 44px box leaves 6px of dead margin that still takes
+// the tap, which is the "it did nothing" bug from the other side.
+.medium {
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+}
+
+// A row that never had 44 to give: a staged GIF, a popover title bar. The
+// target is short of the minimum here as it was before — this makes it *look*
+// like the control it already was, and the surfaces it dismisses all close by
+// Escape and by a click outside as well.
+.small {
+  width: t.$close-key-small;
+  height: t.$close-key-small;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .key {
+    transition: none;
+  }
+}

@@ -6,7 +6,7 @@ import styles from './Icon.module.scss'
  * These are the design's own paths rather than `@phosphor-icons/react` — the
  * smiley in particular is specific (the reaction affordance is always this
  * face plus a plus, never a bare `+`), and matching stroke weights across a
- * mixed set is harder than carrying twelve paths.
+ * mixed set is harder than carrying thirteen paths.
  */
 export type IconName =
   | 'search'
@@ -21,6 +21,7 @@ export type IconName =
   | 'star'
   | 'wifiOff'
   | 'shuffle'
+  | 'toolbox'
 
 interface PathSpec {
   d: string[]
@@ -87,6 +88,26 @@ const PATHS: Record<IconName, PathSpec> = {
     width: 0,
     filled: true,
   },
+  /**
+   * Not in the design either, and traced for the same reason `shuffle` was.
+   *
+   * The room's floating controls opened behind a smiley, which is the app's
+   * *reaction* affordance — rule 4 says that face means "add a reaction",
+   * everywhere — so the one control that is a bar of tools said "react" and
+   * then opened a panel of timers and skips. A box with a handle says tools.
+   *
+   * Four strokes: the case, the handle over it, the band across the middle and
+   * the latch on the band.
+   */
+  toolbox: {
+    d: [
+      'M3 8.6h18a1.6 1.6 0 0 1 1.6 1.6v8.2a1.6 1.6 0 0 1-1.6 1.6H3a1.6 1.6 0 0 1-1.6-1.6v-8.2A1.6 1.6 0 0 1 3 8.6z',
+      'M8.9 8.6V6.9A1.9 1.9 0 0 1 10.8 5h2.4a1.9 1.9 0 0 1 1.9 1.9v1.7',
+      'M1.4 13.4h21.2',
+      'M9.8 13.4v2.3h4.4v-2.3',
+    ],
+    width: 2.1,
+  },
   // Not in the design — it draws "Shuffle" as bare text — so it is traced to
   // match the set rather than copied: two crossed paths at the `help` weight,
   // both landing on the same arrowhead the chevron uses.
@@ -112,6 +133,19 @@ export interface IconProps {
   color?: string
   /** Set when the icon is the only content of its control. */
   label?: string
+  /**
+   * Overrides the glyph's own stroke weight.
+   *
+   * A prop rather than a second `closeBold` path, because it is the same
+   * drawing at a different weight — the design's rule that each glyph carries
+   * its own weight is the *default*, not a ban on a host asking for another.
+   * `CloseButton` is the only caller: an × wants more body once it is a filled
+   * key rather than a bare mark, and the same 2.2pt × is still the right one
+   * inside `BootChecklist`'s 12px failure row.
+   *
+   * Ignored by a filled glyph, which has no stroke to weight.
+   */
+  weight?: number
 }
 
 /**
@@ -120,7 +154,7 @@ export interface IconProps {
  * Decorative by default (`aria-hidden`); pass `label` when the icon carries
  * meaning no adjacent text repeats.
  */
-export function Icon({ name, size = 16, color, label }: IconProps) {
+export function Icon({ name, size = 16, color, label, weight }: IconProps) {
   const spec = PATHS[name]
 
   return (
@@ -131,7 +165,7 @@ export function Icon({ name, size = 16, color, label }: IconProps) {
       viewBox="0 0 24 24"
       fill={spec.filled ? (color ?? 'currentColor') : 'none'}
       stroke={spec.filled ? 'none' : (color ?? 'currentColor')}
-      strokeWidth={spec.filled ? undefined : spec.width}
+      strokeWidth={spec.filled ? undefined : (weight ?? spec.width)}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={label ? undefined : true}

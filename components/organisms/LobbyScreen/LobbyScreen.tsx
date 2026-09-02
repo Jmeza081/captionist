@@ -25,6 +25,7 @@ import {
 } from '@/lib/game/selectors'
 import type { GameMode, GameState, PlayerId } from '@/lib/game/types'
 import { useRoom } from '@/lib/room/useRoom'
+import { useWebShare } from '@/lib/useWebShare'
 import styles from './LobbyScreen.module.scss'
 
 /**
@@ -218,6 +219,7 @@ function HostLobby({
   const gate = canStart(state)
   const joinUrl = joinUrlFor(state.roomCode)
   const roster = rosterCopy(state, selfId, useSecondHand())
+  const web = useWebShare()
 
   const setMode = (mode: GameMode) => {
     if (mode === state.settings.mode) return
@@ -247,9 +249,26 @@ function HostLobby({
                 void navigator.clipboard?.writeText(joinUrl)
                 notify('Room link copied')
               }}
-              onShareToSlack={() => {
-                void navigator.clipboard?.writeText(joinUrl)
-                notify('Link copied — paste it into Slack')
+              /*
+                The OS sheet on a phone, the clipboard everywhere else.
+
+                Nothing is announced when the sheet opens: the sheet is the
+                result, and confirming it under itself would be the room
+                telling you about the thing covering the room. A cancel says
+                nothing either — that was a decision, not a failure.
+              */
+              shareLabel={web.supported ? 'Share link' : 'Share to Slack'}
+              onShare={() => {
+                void web
+                  .share({
+                    title: 'Captionist',
+                    text: `Join room ${state.roomCode} on Captionist.`,
+                    url: joinUrl,
+                  })
+                  .then((outcome) => {
+                    if (outcome === 'copied') notify('Link copied — paste it into Slack')
+                    else if (outcome === 'failed') notify('Couldn’t share the link. Read the code out instead.')
+                  })
               }}
             />
           </Stack>

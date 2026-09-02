@@ -1,0 +1,16 @@
+@use 'theme' as t;
+
+// A link inside the card's body copy, which is `$text-body`. Accent text
+// rather than an underline alone: the body is already at 55% white and an
+// underlined grey link on a grey paragraph is a link you find by accident.
+.link {
+  @include t.focusRing;
+
+  color: t.$accent-text;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Button } from '@/components/atoms/Button'
+import { CloseButton } from '@/components/atoms/CloseButton'
 import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
@@ -347,14 +348,12 @@ export function GifPanel({
         {/* Same rule as the board's mark: never over the offline shelf. */}
         {provider && <span className={styles.via}>{provider.attributionCompact}</span>}
         {onClose && (
-          <button
-            type="button"
+          <CloseButton
             className={styles.close}
+            size="small"
             onClick={onClose}
-            aria-label="Close GIF panel"
-          >
-            <Icon name="close" size={13} />
-          </button>
+            label="Close GIF panel"
+          />
         )}
       </div>
 

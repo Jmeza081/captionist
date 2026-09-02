@@ -36,24 +36,11 @@
   color: t.$text-timestamp;
 }
 
+// Same as the toolbox's: `CloseButton` draws it, this only places it. The
+// small size matches `$composer-key` closely enough that the title row keeps
+// its height.
 .close {
-  @include t.focusRing;
-
   margin-left: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: t.$composer-key;
-  height: t.$composer-key;
-  border: 0;
-  border-radius: t.$radius-media;
-  background: none;
-  color: t.$text-label;
-  cursor: pointer;
-
-  &:hover {
-    color: t.$text-primary;
-  }
 }
 
 /**

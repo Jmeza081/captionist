@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/atoms/Button'
+import { CloseButton } from '@/components/atoms/CloseButton'
 import { Icon } from '@/components/atoms/Icon'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
@@ -145,8 +146,14 @@ export function RoomToolbox({
           between its two collapse glyphs.
         */}
         <span className={styles.fabLabel}>{label}</span>
+        {/*
+          A toolbox, not a smiley. The face is the app's *reaction*
+          affordance — interaction rule 4 says so on every surface that has
+          one — so the key that opened a bar of timers, skips and restarts was
+          promising a reaction picker and delivering the host's controls.
+        */}
         <span className={styles.fabIcon} aria-hidden="true">
-          <Icon name="smiley" size={19} />
+          <Icon name="toolbox" size={19} />
         </span>
       </button>
     )
@@ -161,17 +168,14 @@ export function RoomToolbox({
     >
       <header className={styles.head}>
         <span className={styles.title}>{label}</span>
-        <button
-          type="button"
+        <CloseButton
           className={styles.close}
           onClick={() => {
             setPicking(false)
             onOpenChange(false)
           }}
-          aria-label={`Close ${label.toLowerCase()}`}
-        >
-          <Icon name="close" size={15} />
-        </button>
+          label={`Close ${label.toLowerCase()}`}
+        />
       </header>
 
       <div className={styles.body}>

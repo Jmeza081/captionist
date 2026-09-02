@@ -12,6 +12,7 @@ import { RankSlot } from '@/components/atoms/RankSlot'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
 import { SegmentedControl } from '@/components/atoms/SegmentedControl'
+import { CloseButton } from '@/components/atoms/CloseButton'
 import { Snackbar } from '@/components/atoms/Snackbar'
 import { Stack } from '@/components/atoms/Stack'
 import { StatusPill } from '@/components/atoms/StatusPill'
@@ -210,6 +211,15 @@ export function AtomsPanel() {
             <ReactionCTA />
             <ReactionCTA active />
             <ReactionCTA size="rail" />
+          </Inline>
+        </Case>
+        {/* Shown at both sizes side by side, because the whole decision this
+            atom records is that a header's key and a staged row's key are the
+            same control at two scales rather than two controls. */}
+        <Case label="Close key — a plate, not a bare mark">
+          <Inline gap={14} align="center">
+            <CloseButton label="Close the demo" onClick={() => undefined} />
+            <CloseButton label="Clear the demo" size="small" onClick={() => undefined} />
           </Inline>
         </Case>
         <Case label="Snackbar — confirms an action with no visible result">

@@ -82,29 +82,13 @@
 }
 
 .close {
-  @include t.focusRing;
-
+  // Optical, not geometric. The disc is 44px and the copy is inset 26px, so
+  // squaring the *box* with the copy would sit the × further in than every
+  // line of text beside it. Pull it out by the difference and the glyph lands
+  // on the same edge as the words; the target keeps its full 44px and stays
+  // inside the card. The plate itself is `CloseButton`'s.
   margin-left: auto;
-  // Optical, not geometric. The glyph is 16px centred in a 44px target, so
-  // squaring the *box* with the copy's 26px inset would sit the × 14px
-  // further in than every line of text beside it. Pull the box out by that
-  // 14px and the glyph lands on the same edge as the words; the target keeps
-  // its full 44px and stays inside the card.
-  margin-right: -(t.$space-14);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: t.$tap-target-min;
-  height: t.$tap-target-min;
-  border: 0;
-  border-radius: t.$radius-media-lg;
-  background: none;
-  color: t.$text-meta;
-  cursor: pointer;
-
-  &:hover {
-    color: t.$text-primary;
-  }
+  margin-right: -(t.$space-5);
 }
 
 .eyebrow {
