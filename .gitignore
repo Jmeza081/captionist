@@ -56,3 +56,6 @@ docs/repomix-output.xml
 # `next dev` or `next build` ran last, so a tracked copy is dirty half the time.
 # Next's own TypeScript guide says to ignore it and untrack it if tracked.
 next-env.d.ts
+
+# design review contact sheet (derived — regenerate with SHOTS=1 npm run test:e2e)
+/design-review/

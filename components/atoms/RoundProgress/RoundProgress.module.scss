@@ -6,10 +6,20 @@
   gap: t.$space-8;
 }
 
+// Decoration, and the first thing to go when the bar is full.
+//
+// Five pips and their gaps are 162px of a phone's 393, beside a wordmark, a
+// host chip and the sentence below — which is the same count in words, and is
+// what a screen reader has always been given. So the pips draw from `md` up and
+// the sentence carries the phone.
 .pips {
-  display: flex;
+  display: none;
   align-items: center;
   gap: t.$space-8;
+
+  @include t.mq('md') {
+    display: flex;
+  }
 }
 
 .pip {

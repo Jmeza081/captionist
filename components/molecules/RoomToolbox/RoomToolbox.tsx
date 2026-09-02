@@ -127,7 +127,10 @@ export function RoomToolbox({
       <button
         type="button"
         className={styles.fab}
-        style={{ right: `calc(${railOffset} + var(--space-20))` }}
+        // `--room-dock-right` is the room's one statement of where a floating
+        // key sits, so this and the collapsed chat key above it cannot drift
+        // apart. The literal is the fallback for anywhere outside a room.
+        style={{ right: `calc(${railOffset} + var(--room-dock-right, var(--space-20)))` }}
         onClick={() => onOpenChange(true)}
         // Named whichever shape it is in. Below `md` the label is a glyph, and
         // "Host toolbox" is still what it is.

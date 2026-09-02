@@ -191,7 +191,7 @@ function HostLobby({
   return (
     <Inline gap={44} align="start" className={styles.lobby}>
       <Stack gap={26} className={styles.share}>
-        <Stack gap={12}>
+        <Stack gap={12} className={styles.shareHead}>
           <Eyebrow>Scan or type the code</Eyebrow>
           <RoomShare
             code={state.roomCode}
@@ -207,7 +207,7 @@ function HostLobby({
           />
         </Stack>
 
-        <Inline gap={10} wrap={false}>
+        <Inline gap={10} wrap={false} className={styles.modeRow}>
           <SegmentedControl
             label="Game mode"
             value={state.settings.mode}

@@ -99,20 +99,25 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
-  // Below `md` the collapsed chat key floats in this corner, and a full-width
-  // button ran under it — the right end of "Lock my ranking" opened chat
-  // instead. The room raises the key past the host toolbox with
-  // `--room-dock-bottom`; nothing was reserving room *beside* it, so the dock
-  // does that itself.
-  padding-right: calc(#{t.$tap-target-min} + #{t.$space-12});
+  // The keys float in this corner below `md`, and a full-width button used to
+  // run under them — the right end of "Lock my ranking" opened chat instead.
+  // The room now reserves that band at the bottom of the column
+  // (`--room-dock-clearance`), so the dock sits above the keys rather than
+  // beside them, and the button gets the full measure back.
+  bottom: var(--room-dock-clearance, 0px);
   // The button sits over a scrolling grid, so it needs real ground under it —
   // a gradient that only fades would leave caption text legible through it.
-  padding-top: t.$space-34;
+  //
+  // The fade has to be longer than the text passing through it. At 34px a
+  // caption met the gradient at roughly its own height and was cut across the
+  // middle: the top half legible, the bottom half gone, which reads as
+  // clipping rather than as depth. `$space-52` clears a line and a half.
+  padding-top: t.$space-52;
   padding-bottom: t.$space-14;
   background: linear-gradient(
     to top,
     t.$surface-canvas 0%,
-    t.$surface-canvas 62%,
+    t.$surface-canvas 55%,
     rgba(10, 10, 11, 0) 100%
   );
 
@@ -122,6 +127,7 @@
     // toolbox FAB is a labelled pill rather than a 44px key, and everyone has
     // one now — so the widest thing in this corner is no longer chat's.
     padding-right: t.$toolbox-fab-clear;
+    padding-top: t.$space-34;
     background: none;
   }
 }

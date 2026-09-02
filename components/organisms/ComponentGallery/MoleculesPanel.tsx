@@ -306,7 +306,8 @@ export function MoleculesPanel() {
       <Section id="chrome">
         <Case label="In-round — phase left, clock right">
           <AppHeader
-            phase="Round 2 of 5 · Vote"
+            phase="Round 2 of 5"
+            step="Vote"
             trailing={<TimerPill seconds={31} />}
           />
         </Case>

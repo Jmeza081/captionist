@@ -147,3 +147,123 @@ test.describe('responsiveness across the middle widths', () => {
     await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
   })
 })
+
+/**
+ * The header, at the width the design never drew it.
+ *
+ * `AppHeader` is specified at 1440×900 only. At 393 the joined phase label
+ * clipped mid-word on eight of the thirty-two host/guest × mode × phase
+ * headers — "Round 1 of 5 · Wr…" — and on the scoreboard the round pips
+ * squeezed the wordmark to 9px, leaving a 26px mark drawn on top of the text.
+ *
+ * Runs on both projects deliberately, unlike the sweep above: the failure is a
+ * phone failure and the fix is a `md` breakpoint, so the desktop pass is what
+ * proves the step comes back rather than being dropped everywhere.
+ */
+test.describe('the room header holds its line', () => {
+  test.setTimeout(180_000)
+
+  const PHASES = ['brief', 'compose', 'waiting', 'vote', 'tiebreak', 'reveal', 'score', 'podium']
+
+  test('never truncates its text and never overdraws its own mark', async ({ page }) => {
+    for (const mode of ['caption', 'react']) {
+      for (const [seat, query] of [
+        ['host', ''],
+        ['guest', '&as=p2'],
+      ] as const) {
+        for (const phase of PHASES) {
+          const where = `${mode} ${seat} ${phase}`
+          await page.goto(`/room/DEV?seed=42&gifs=stub&mode=${mode}&phase=${phase}${query}`)
+          await expect(page.locator('main[data-phase]')).toBeVisible()
+
+          const header = await page.evaluate(() => {
+            const bar = document.querySelector('header')
+            if (!bar) return null
+            const visible = Array.from(bar.querySelectorAll('span')).filter(
+              (s) => s.getBoundingClientRect().width > 0,
+            )
+            const mark = bar.querySelector('img')
+            const label = visible.find((s) => (s.textContent ?? '').startsWith('Round'))
+            return {
+              clipped: visible
+                .filter((s) => s.scrollWidth > s.clientWidth + 1)
+                .map((s) => s.textContent ?? ''),
+              // The mark's right edge against the first thing laid out after it.
+              markRight: mark ? mark.getBoundingClientRect().right : null,
+              labelLeft: label ? label.getBoundingClientRect().left : null,
+            }
+          })
+
+          expect(header, `${where}: no header`).not.toBeNull()
+          expect(header?.clipped ?? [], `${where}: header text is cut off`).toEqual([])
+
+          if (header?.markRight != null && header.labelLeft != null) {
+            expect(
+              header.labelLeft,
+              `${where}: the phase label starts underneath the wordmark`,
+            ).toBeGreaterThanOrEqual(header.markRight)
+          }
+        }
+      }
+    }
+  })
+})
+
+/**
+ * The floating keys own a band, and the column reserves it.
+ *
+ * The content column used to dodge them sideways: `$screen-pad-h` on the left,
+ * the keys' 64px column on the right. On a 393px phone that spent a quarter of
+ * the screen on margin and was visibly lopsided in every frame. The column is
+ * even now, and what it reserves instead is the height of the band the keys sit
+ * in — so a screen scrolled to its end has nothing hiding underneath them.
+ *
+ * Mid-scroll they float over content, which is what a floating key is for. The
+ * claim here is only about where the content comes to rest.
+ */
+test.describe('the floating keys never cover the end of a screen', () => {
+  test.skip(
+    ({ viewport }) => (viewport?.width ?? 0) >= 768,
+    'above md chat docks into the rail and only the toolbox pill floats',
+  )
+  test.setTimeout(180_000)
+
+  const PHASES = ['lobby', 'brief', 'compose', 'waiting', 'vote', 'tiebreak', 'reveal', 'score', 'podium']
+
+  test('nothing sits under them once a screen is scrolled to its end', async ({ page }) => {
+    for (const mode of ['caption', 'react']) {
+      for (const [seat, query] of [
+        ['host', ''],
+        ['guest', '&as=p2'],
+      ] as const) {
+        for (const phase of PHASES) {
+          await page.goto(`/room/DEV?seed=42&gifs=stub&mode=${mode}&phase=${phase}${query}`)
+          await expect(page.locator('main[data-phase]')).toBeVisible()
+          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+
+          const covered = await page.evaluate(() => {
+            const keys = Array.from(document.querySelectorAll('button, aside')).filter((el) => {
+              const cs = getComputedStyle(el)
+              return cs.position === 'fixed' && el.getBoundingClientRect().width <= 60
+            })
+            const boxes = keys.map((k) => k.getBoundingClientRect())
+            const hits: string[] = []
+            document.querySelectorAll('main *').forEach((el) => {
+              if (el.children.length > 0) return
+              const text = (el.textContent ?? '').trim()
+              if (!text) return
+              const r = el.getBoundingClientRect()
+              const clash = boxes.some(
+                (b) => r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top,
+              )
+              if (clash) hits.push(text.slice(0, 24))
+            })
+            return [...new Set(hits)]
+          })
+
+          expect(covered, `${mode} ${seat} ${phase}: content under the floating keys`).toEqual([])
+        }
+      }
+    }
+  })
+})

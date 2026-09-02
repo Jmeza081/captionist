@@ -13,18 +13,21 @@
   // there stacks above it rather than fighting it for the same 44px.
   --room-dock-bottom: #{t.$space-20};
 
-  // The horizontal counterpart. Two things float in that corner and they are
-  // not flush with each other: chat's key sits `right: $space-14`, the toolbox
-  // key `right: $space-20`, and both are a 44px tap target wide — so the
-  // column they own together runs 64px in from the edge, not 58. It was 58,
-  // which reserved the chat key exactly and left 6px of every control sitting
-  // under the toolbox. Meanwhile the column is padded to `$screen-pad-h`
-  // (40px) and therefore runs 24px *underneath* them: any control reaching the
-  // column's right edge loses that much of itself to whatever floats there. On
-  // the vote screen the right end of "Rank this" opened chat instead of
-  // ranking. Reserved, not hoped for — the same reason `.hasToolbox .content`
-  // reserves the bottom.
-  --room-dock-gutter: calc(#{t.$space-20} + #{t.$tap-target-min});
+  // Where the keys sit, stated once and consumed by both of them.
+  //
+  // They used to pick their own: chat's key at `right: $space-14`, the toolbox
+  // key at `right: $space-20`. Two 44px circles a stone's throw apart, on
+  // different right edges — visibly out of line on every phone screen, and the
+  // reason the reserved column had to be 64px rather than either number.
+  --room-dock-right: #{t.$space-20};
+
+  // The vertical band the pair owns, bottom edge to top of the upper key.
+  // Screens clear this instead of shrinking away from a full-height gutter —
+  // see `.content`.
+  --room-dock-clearance: calc(
+    #{t.$space-20} + #{t.$tap-target-min} + #{t.$space-12} + #{t.$tap-target-min} +
+      #{t.$space-20}
+  );
 
   display: flex;
   flex-direction: column;
@@ -69,9 +72,15 @@
   // Without this a wide grid inside the column pushes the rail off-screen
   // instead of scrolling itself.
   min-width: 0;
+  // **Even gutters.** The right edge used to be padded to the floating keys'
+  // 64px column while the left stayed at `$screen-pad-h`'s 40 — a 24px
+  // difference on a 393px phone, which is a quarter of the screen spent on
+  // margin and visibly lopsided in every frame. The keys occupy a band at the
+  // bottom, not a full-height strip, so what they need reserving is height.
+  // `--room-dock-clearance` below does that, and anything that pins itself to
+  // the bottom of the viewport clears the same band rather than dodging
+  // sideways.
   padding: t.$screen-pad-v t.$screen-pad-h;
-  // Only the right edge — the keys stack in that one corner.
-  padding-right: var(--room-dock-gutter);
 
   @include t.mq('md') {
     // The rail is docked beside the column from here up and nothing floats
@@ -82,11 +91,18 @@
   }
 }
 
-// The toolbox is fixed, so the column has to reserve room for it or it lands
+// The keys are fixed, so the column reserves the band they sit in or they land
 // on top of whatever the screen's primary action is — which on a phone is
-// exactly where both of them want to be.
+// exactly where all of them want to be. The whole stack now, not most of it:
+// reserving 78px under a 122px column of keys left the top one overlapping.
 .hasToolbox .content {
-  padding-bottom: t.$space-52 + t.$space-26;
+  padding-bottom: var(--room-dock-clearance);
+
+  // Above `md` chat has docked into the rail and only the toolbox pill floats,
+  // so there is one control's worth to clear rather than a column.
+  @include t.mq('md') {
+    padding-bottom: t.$space-52 + t.$space-26;
+  }
 }
 
 .shell.hasToolbox {

@@ -24,8 +24,7 @@
   // the fade off mid-gradient and drew a hard line across the canvas. The
   // vertical spill has nowhere bad to go: `RoomShell` clips the viewport, and
   // the header paints over it.
-  overflow-x: clip;
-  overflow-y: visible;
+  @include t.screenClip;
 }
 
 .headline {

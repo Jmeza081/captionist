@@ -103,8 +103,7 @@
   // The circle rides up past this box's top edge and `AppHeader` paints over
   // the cut; horizontally it is wider than a phone, so clip, or the page itself
   // widens. Same split the guest lobby makes, for the same reasons.
-  overflow-x: clip;
-  overflow-y: visible;
+  @include t.screenClip;
 }
 
 // A waiting column starts below the header rather than tight under it, which

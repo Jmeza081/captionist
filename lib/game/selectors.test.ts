@@ -66,18 +66,40 @@ const HOLDER = 'p0'
 const RIVAL = 'p1'
 
 describe('the header', () => {
+  const ROUND = `Round 1 of ${DEFAULT_SETTINGS.totalRounds}`
+
   it('names the step you are on, not the phase the room is in', () => {
-    expect(phaseLabel(brief('caption'), HOLDER)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds}`)
-    expect(phaseLabel(brief('react'), HOLDER)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Write the prompt`)
-    expect(phaseLabel(compose('caption'), RIVAL)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Caption this`)
-    expect(phaseLabel(compose('react'), RIVAL)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Answer the prompt`)
+    expect(phaseLabel(brief('caption'), HOLDER)).toEqual({ anchor: ROUND })
+    expect(phaseLabel(brief('react'), HOLDER)).toEqual({ anchor: ROUND, step: 'Write the prompt' })
+    expect(phaseLabel(compose('caption'), RIVAL)).toEqual({ anchor: ROUND, step: 'Caption this' })
+    expect(phaseLabel(compose('react'), RIVAL)).toEqual({ anchor: ROUND, step: 'Answer the prompt' })
   })
 
   it('gives one phase two headers, depending on who is looking', () => {
     const state = compose('caption')
     // The same room, the same instant: one player writes, the other watches.
-    expect(phaseLabel(state, RIVAL)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds} · Caption this`)
-    expect(phaseLabel(state, HOLDER)).toBe(`Round 1 of ${DEFAULT_SETTINGS.totalRounds}`)
+    expect(phaseLabel(state, RIVAL)).toEqual({ anchor: ROUND, step: 'Caption this' })
+    expect(phaseLabel(state, HOLDER)).toEqual({ anchor: ROUND })
+  })
+
+  it('keeps the round out of the step, so a phone can drop one and keep the other', () => {
+    // The bug this shape exists for: joined, these clipped to "Round 1 of 5 ·
+    // Wr…" at 393px. The anchor has to be readable with the step gone.
+    const label = phaseLabel(brief('react'), HOLDER)
+    expect(label?.anchor).toBe(ROUND)
+    expect(label?.anchor).not.toContain('·')
+  })
+
+  it('makes Podium the anchor, since a podium has no round to be in', () => {
+    const state = fixtureFor('podium')
+    expect(phaseLabel(state, HOLDER)).toEqual({ anchor: 'Podium' })
+  })
+
+  it('leaves the round to the pips on the scoreboard, rather than saying it twice', () => {
+    // `showsRoundProgress` puts "1 of 5 rounds" in the same bar's other end.
+    const state = fixtureFor('score')
+    expect(showsRoundProgress(state)).toBe(true)
+    expect(phaseLabel(state, HOLDER)).toEqual({ step: 'Scoreboard' })
   })
 
   it('has no phase label in the lobby, where the settings line goes instead', () => {

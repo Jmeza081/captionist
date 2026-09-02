@@ -102,6 +102,9 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const room = useRoom()
   const { state, status, error, selfId, isHost, boot, send } = room
   const countdown = useCountdown(state?.clock)
+  // Two halves rather than one string: the header drops the step on a phone
+  // rather than clipping the round. See `phaseLabel`.
+  const label = state ? phaseLabel(state, selfId) : undefined
 
   // The boot, and the pacing that makes it readable. Above every early return,
   // because the interstitial *is* one of them — see the hand-off below.
@@ -303,7 +306,8 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
         .join(' ')}
     >
       <AppHeader
-        phase={phaseLabel(state, selfId)}
+        phase={label?.anchor}
+        step={label?.step}
         settings={settingsLine(state)}
         host={isHost}
         surface={state.phase === 'vote' ? 'vote' : 'default'}

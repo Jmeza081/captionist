@@ -1,4 +1,5 @@
 @use 'colors';
+@use 'metrics';
 
 // Elevation and effects — taken verbatim from DESIGNSYSTEM.md §2.
 //
@@ -124,6 +125,27 @@ $z-snackbar: 95;
  * height, so a narrower circle rides up by proportionally less and keeps its
  * bright half behind the headline rather than above the fold.
  */
+/**
+ * The horizontal clip every glowing screen needs, with room for what its
+ * children draw outside themselves.
+ *
+ * The glow is wider than a phone, so it has to be cut on the inline axis or it
+ * widens the page. Cutting it at the column's exact edge also cut anything a
+ * full-width child painted outside its own box — the reveal's winner card is a
+ * `box-shadow` ring on a card exactly as wide as the column, so the clip took
+ * both vertical sides of the ring and left a gold bar above and below it.
+ *
+ * `overflow-clip-margin` is the property for precisely this: clip, but not
+ * until N further out. It cannot reintroduce the scrollbar the clip exists to
+ * prevent — `clip` never scrolls — and where it is unsupported the result is
+ * today's behaviour rather than a broken one.
+ */
+@mixin screenClip($bleed: metrics.$media-ring-winner) {
+  overflow-x: clip;
+  overflow-y: visible;
+  overflow-clip-margin: $bleed;
+}
+
 @mixin screenGlow(
   $width: 900px,
   $color: colors.$accent,

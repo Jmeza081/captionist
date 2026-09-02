@@ -209,24 +209,55 @@ const VIEW_STEPS: Partial<Record<ViewKey, string>> = {
 }
 
 /**
- * `AppHeader.phase` — "Round 2 of 5 · Caption this".
+ * `AppHeader.phase` / `AppHeader.step` — "Round 2 of 5" and "Caption this".
  *
  * Per-viewer, because the design names the step *you* are on rather than the
  * phase the room is in: the Captionist picking and everyone watching them are
  * one phase with two headers. Follows the prototype, which drops the Screens
  * doc's "Step N — " prefix.
+ *
+ * Two fields rather than one joined string, because a phone cannot hold both
+ * and the header has to know which half to drop. The design only ever draws
+ * this bar at 1440 — at 393 the joined string clipped mid-word on eight of the
+ * thirty-two headers, worst as "Round 1 of 5 · Wr…".
+ *
+ * `anchor` survives every width; `step` joins it from `md` up. That way round,
+ * because every screen's own headline already announces the step and nothing
+ * else on the screen announces the round.
  */
-export function phaseLabel(state: GameState, viewerId: PlayerId): string | undefined {
-  if (state.phase === 'lobby') return undefined
-  if (state.phase === 'podium') return 'Podium'
+export interface PhaseLabel {
+  /**
+   * Never dropped, never truncated. Absent only where something else in the
+   * same bar already states the round — see `score` below.
+   */
+  anchor?: string
+  /** Shown beside the anchor where there is room for it. */
+  step?: string
+}
 
-  const round = `Round ${state.roundNumber} of ${state.settings.totalRounds}`
+export function phaseLabel(state: GameState, viewerId: PlayerId): PhaseLabel | undefined {
+  if (state.phase === 'lobby') return undefined
+  // `Podium` is the whole statement rather than a step beside a round, so it
+  // is the anchor — a podium has no round left to be in.
+  if (state.phase === 'podium') return { anchor: 'Podium' }
+  /**
+   * The scoreboard says the round once, and the pips say it better.
+   *
+   * `showsRoundProgress` puts `RoundProgress` in this header's trailing slot,
+   * and it reads "1 of 5 rounds" beside a row of pips. Printing "Round 1 of 5"
+   * at the other end of the same 72px bar said it twice — and on a phone the
+   * pair did not fit, so the half that carried less lost the argument by being
+   * truncated to "Rou…".
+   */
+  if (state.phase === 'score') return { step: PHASE_STEPS.score }
+
+  const anchor = `Round ${state.roundNumber} of ${state.settings.totalRounds}`
   const step =
     state.phase === 'brief' || state.phase === 'compose'
       ? VIEW_STEPS[viewKey(state, viewerId)]
       : PHASE_STEPS[state.phase]
 
-  return step ? `${round} · ${step}` : round
+  return step ? { anchor, step } : { anchor }
 }
 
 /**

@@ -127,7 +127,10 @@
 
 .strip {
   position: fixed;
-  right: t.$space-14;
+  // The room states this once for every key that floats in the corner, so the
+  // pair cannot drift out of line with each other again. The fallback keeps
+  // the rail usable anywhere else it is rendered.
+  right: var(--room-dock-right, #{t.$space-20});
   // Set by the room when something else already floats in this corner. The
   // fallback keeps the rail usable anywhere else it is rendered.
   bottom: var(--room-dock-bottom, #{t.$space-20});
@@ -158,7 +161,7 @@
 // at 40, so a toast has to escape its stacking context to sit over the room.
 .toastDock {
   position: fixed;
-  right: t.$space-14;
+  right: var(--room-dock-right, #{t.$space-20});
   bottom: calc(var(--room-dock-bottom, #{t.$space-20}) + #{t.$tap-target-min} + #{t.$space-14});
   z-index: t.$z-toast;
   display: flex;

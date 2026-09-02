@@ -38,6 +38,16 @@
   min-width: 0;
 }
 
+// See `AppHeader` — the host chip yields to the settings line on a phone, and
+// only where that line is the bar's primary content.
+.roleTag {
+  display: none;
+
+  @include t.mq('md') {
+    display: inline-flex;
+  }
+}
+
 .phase {
   font-family: t.$font-sans;
   font-size: 13px;
@@ -48,8 +58,35 @@
   text-overflow: ellipsis;
 }
 
-.settings {
+// The step yields to the round rather than clipping it. See `phaseLabel`:
+// every screen's headline already says which step you are on, and nothing but
+// this bar says which round you are in — so on a phone the round is what stays.
+.step {
+  display: none;
+
+  @include t.mq('md') {
+    display: inline;
+  }
+}
+
+// Everything that sits at the right end, as one group.
+//
+// It used to be two siblings with `margin-left: auto` on each and a
+// `.settings + .trailing` override to stop them both claiming the free space.
+// That override matched on the *presence* of the settings line, not on whether
+// it was displayed — and in-round on a phone it is `display: none`. So the
+// clock inherited a 12px margin from a sibling that was not there, and sat
+// against the phase label with 148px of empty bar to its right. One group with
+// one auto margin cannot get that wrong.
+.right {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
   margin-left: auto;
+  min-width: 0;
+}
+
+.settings {
   flex: 0 1 auto;
   min-width: 0;
   font-family: t.$font-sans;
@@ -70,15 +107,8 @@
 }
 
 .trailing {
-  margin-left: auto;
   flex: none;
   display: flex;
   align-items: center;
   gap: t.$space-8;
-}
-
-// When both are present the settings line keeps its auto margin and the
-// trailing slot sits after it.
-.settings + .trailing {
-  margin-left: t.$space-12;
 }

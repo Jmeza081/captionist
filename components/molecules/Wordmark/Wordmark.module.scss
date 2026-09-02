@@ -5,6 +5,12 @@
   align-items: center;
   gap: t.$space-12;
   min-width: 0;
+  // Never a shrink target. The mark is a fixed asset, so a squeezed lockup
+  // does not scale it — it overflows its own box and whatever is laid out
+  // next gets drawn over the top. That is what the scoreboard header did on a
+  // phone: the round pips took 254 of 393px, the lockup collapsed to 9px, and
+  // the 26px mark ended up underneath the phase label.
+  flex: none;
 }
 
 .name {

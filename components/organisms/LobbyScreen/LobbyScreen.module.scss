@@ -21,8 +21,7 @@
   width: 100%;
   max-width: t.$lobby-max;
   margin-inline: auto;
-  overflow-x: clip;
-  overflow-y: visible;
+  @include t.screenClip;
 }
 
 /**
@@ -43,6 +42,28 @@
   // Without this the card refuses to shrink below its content and pushes the
   // column off a phone.
   min-width: 0;
+}
+
+/**
+ * Stacked, the share block is one centred object; in two columns it is the
+ * left-hand one.
+ *
+ * The QR, the code, the link and its two buttons were already centred, so the
+ * eyebrow above them and the mode row below were the two things breaking the
+ * line — a left-aligned label over a centred block reads as a mistake at the
+ * width where the block *is* the column. Keyed to the same container measure
+ * the layout itself uses, so the design's two-column artboard is untouched:
+ * there the share block is a column among columns and starts at its own edge.
+ */
+.shareHead,
+.modeRow {
+  justify-content: center;
+  text-align: center;
+
+  @container (min-width: #{t.$lobby-columns}) {
+    justify-content: flex-start;
+    text-align: left;
+  }
 }
 
 // A round key beside the mode toggle. Both sit on one row, which is also what
@@ -108,8 +129,7 @@
   // spill: `AppHeader` is opaque and paints over it, and `RoomShell` clips the
   // viewport. Horizontally it is still clipped, because the circle is wider
   // than a phone and `visible` there would widen the page itself.
-  overflow-x: clip;
-  overflow-y: visible;
+  @include t.screenClip;
 }
 
 // The design starts the column 96px down from the header, which is what puts
@@ -172,7 +192,12 @@
  */
 .roster {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(t.$lobby-player-min, 1fr));
+  // `min()` on the track floor, not the bare token. `minmax(276px, 1fr)` is a
+  // *hard* floor: where the card is narrower than 276 — a phone's is 249 — the
+  // track stays 276 and every row overflows the card and is cut off by it, so
+  // a five-player room read as five truncated pills. `min(…, 100%)` lets the
+  // floor collapse to the card when the card is the smaller of the two.
+  grid-template-columns: repeat(auto-fill, minmax(min(t.$lobby-player-min, 100%), 1fr));
   gap: t.$space-10;
   margin: 0;
   padding: 0;
