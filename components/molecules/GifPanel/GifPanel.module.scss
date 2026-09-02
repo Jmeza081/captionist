@@ -145,12 +145,11 @@
   width: 100%;
 }
 
-.searchRow {
-  width: 100%;
-}
-
+// The field is the whole row now, not a flex child sharing it with two
+// buttons. `min-width: 0` stays: the panel is a flex column and the input has
+// its own intrinsic width to be talked out of.
 .searchField {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
@@ -171,8 +170,21 @@
 // screen-share without a breakpoint for each. The browser fits as many
 // `$gif-board-min` columns as there is room for.
 .board {
-  columns: t.$gif-board-min;
+  // **A count on a phone, a width above it.**
+  //
+  // `columns: 240px` is a floor, and a phone's content column is 313 — so it
+  // could only ever fit one tile per row, and a wall of GIFs you scan one at a
+  // time is not a wall you can scan. Two is the point of the board.
+  //
+  // Above `md` the width is right again and the browser fits as many as the
+  // page can hold, which is what lets one rule serve a phone and a 1440px
+  // screen-share without a breakpoint for each.
+  columns: 2;
   column-gap: t.$space-12;
+
+  @include t.mq('md') {
+    columns: t.$gif-board-min;
+  }
 }
 
 .board .tile {

@@ -267,3 +267,80 @@ test.describe('the floating keys never cover the end of a screen', () => {
     }
   })
 })
+
+/**
+ * A foot is at the foot, and a board of pictures is scannable.
+ *
+ * Both of these shipped wrong and neither had a test. The vote screen's lock
+ * button was offset by the floating keys' clearance, which sticks a bar that
+ * far *above* the fold — it drew in the middle of the board with cards either
+ * side of it. And the GIF board asked for 240px columns inside a 313px phone
+ * column, so it could only ever fit one tile per row, which is not a wall
+ * anyone can scan.
+ */
+test.describe('the boards and their feet', () => {
+  test.skip(
+    ({ viewport }) => (viewport?.width ?? 0) >= 768,
+    'both claims are about the phone layout',
+  )
+
+  /** How far above the bottom of the viewport a resting dock may sit. */
+  const FOOT_SLACK = 40
+
+  for (const [name, url] of [
+    ['the picker', '/room/DEV?seed=42&gifs=stub&phase=brief'],
+    ['the vote', '/room/DEV?seed=42&gifs=stub&phase=vote&as=p2'],
+  ] as const) {
+    test(`${name} rests its action at the foot of the screen`, async ({ page }) => {
+      await page.goto(url)
+      await expect(page.locator('main[data-phase]')).toBeVisible()
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+
+      const rest = await page.evaluate(() => {
+        const dock = document.querySelector('[class*=actionDock], [class*=lockDock]')
+        if (!dock) return null
+        const r = dock.getBoundingClientRect()
+        return { gap: innerHeight - r.bottom, sticky: getComputedStyle(dock).position }
+      })
+
+      expect(rest, `${name}: no dock`).not.toBeNull()
+      expect(rest?.sticky).toBe('sticky')
+      expect(
+        rest?.gap ?? Infinity,
+        `${name}: the dock rests ${Math.round(rest?.gap ?? 0)}px above the bottom`,
+      ).toBeLessThanOrEqual(FOOT_SLACK)
+    })
+  }
+
+  test('the picker keeps two tiles to a row', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&gifs=stub&phase=brief')
+    await expect(page.locator('main[data-phase]')).toBeVisible()
+
+    const perRow = await page.evaluate(() => {
+      const tiles = Array.from(document.querySelectorAll('main button')).filter((b) =>
+        b.querySelector('img'),
+      )
+      if (tiles.length < 2) return 0
+      // How many share the topmost row — a multicol board lays tiles out in
+      // columns, so "a row" is every tile whose top matches the first one's.
+      const top = Math.round(tiles[0]!.getBoundingClientRect().top)
+      return tiles.filter((t) => Math.abs(Math.round(t.getBoundingClientRect().top) - top) < 4)
+        .length
+    })
+
+    expect(perRow, 'the board fell back to one tile per row').toBeGreaterThanOrEqual(2)
+  })
+
+  test('the search field has the row to itself', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&gifs=stub&phase=brief')
+    await expect(page.locator('main[data-phase]')).toBeVisible()
+
+    // Squeezed into a row beside two buttons, the input collapsed to its
+    // magnifier and the placeholder was unreadable.
+    const width = await page.evaluate(() => {
+      const input = document.querySelector('main input')
+      return input ? input.getBoundingClientRect().width : 0
+    })
+    expect(width, 'the search field is sharing its row again').toBeGreaterThan(200)
+  })
+})

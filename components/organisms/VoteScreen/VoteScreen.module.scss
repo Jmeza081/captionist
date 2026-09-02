@@ -96,30 +96,11 @@
 // The lock button follows the grid on desktop, but a phone voter scrolls a
 // long way down the cards — so it sticks to the bottom of the viewport there.
 .lockDock {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  // The keys float in this corner below `md`, and a full-width button used to
-  // run under them — the right end of "Lock my ranking" opened chat instead.
-  // The room now reserves that band at the bottom of the column
-  // (`--room-dock-clearance`), so the dock sits above the keys rather than
-  // beside them, and the button gets the full measure back.
-  bottom: var(--room-dock-clearance, 0px);
-  // The button sits over a scrolling grid, so it needs real ground under it —
-  // a gradient that only fades would leave caption text legible through it.
-  //
-  // The fade has to be longer than the text passing through it. At 34px a
-  // caption met the gradient at roughly its own height and was cut across the
-  // middle: the top half legible, the bottom half gone, which reads as
-  // clipping rather than as depth. `$space-52` clears a line and a half.
-  padding-top: t.$space-52;
-  padding-bottom: t.$space-14;
-  background: linear-gradient(
-    to top,
-    t.$surface-canvas 0%,
-    t.$surface-canvas 55%,
-    rgba(10, 10, 11, 0) 100%
-  );
+  // `bottom: var(--room-dock-clearance)` was wrong and shipped: offsetting a
+  // sticky bar so it clears the floating keys sticks it that far *above* the
+  // fold, and the button sat in the middle of the board with cards either side
+  // of it. The keys are cleared with padding; the offset stays 0.
+  @include t.stickyActionDock;
 
   @container (min-width: #{t.$vote-bar-columns}) {
     position: static;
@@ -128,6 +109,7 @@
     // one now — so the widest thing in this corner is no longer chat's.
     padding-right: t.$toolbox-fab-clear;
     padding-top: t.$space-34;
+    padding-bottom: 0;
     background: none;
   }
 }

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { Button } from '@/components/atoms/Button'
+import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { GifPanel } from '@/components/molecules/GifPanel'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
@@ -95,36 +96,45 @@ export function RoundPicker({
         provider={search.descriptor}
         ads={search.ads}
         onPick={onPick}
-        // Both controls sit with the search field: everything that changes what
-        // the board shows, and then the one thing that ends the phase. It keeps
-        // the action in reach at the top of a board that scrolls a long way,
-        // which is what a foot row underneath it could not do.
-        tools={
-          <>
-            {/*
-              Free, and instant: it reads off the fifty tiles already on the
-              board rather than fetching a page of its own. Distinct from
-              "Shuffle results" beside the search field, which does go and get
-              another board — this one commits to a tile, that one changes what
-              there is to commit to.
-            */}
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const gif = search.surprise()
-                if (!gif) return
-                onPick(gif)
-                notify('Picked one for you — our taste is questionable')
-              }}
-            >
-              Surprise me
-            </Button>
-            <Button blocked={!picked} onClick={() => picked && onLock(picked)}>
-              {picked ? action : blockedAction}
-            </Button>
-          </>
-        }
       />
+
+      {/**
+        * The two controls that act, at the foot of the board rather than beside
+        * the field.
+        *
+        * They used to share the search row, on the reasoning that a board which
+        * scrolls a long way should keep its action in reach at the top. The
+        * reach was right and the place was wrong: on a phone three controls in
+        * one row squeezed the search field down to its magnifier, so the one
+        * input on the screen became unusable to keep two buttons visible.
+        *
+        * Sticky at the foot keeps them in reach at every scroll position *and*
+        * gives the field the row to itself — the same treatment the vote
+        * screen's lock button already uses, and the same mixin.
+        */}
+      <Inline gap={10} className={styles.actionDock}>
+        {/*
+          Free, and instant: it reads off the fifty tiles already on the board
+          rather than fetching a page of its own. Distinct from "Shuffle
+          results" beside the search field, which does go and get another board
+          — this one commits to a tile, that one changes what there is to commit
+          to.
+        */}
+        <Button
+          variant="secondary"
+          onClick={() => {
+            const gif = search.surprise()
+            if (!gif) return
+            onPick(gif)
+            notify('Picked one for you — our taste is questionable')
+          }}
+        >
+          Surprise me
+        </Button>
+        <Button blocked={!picked} onClick={() => picked && onLock(picked)}>
+          {picked ? action : blockedAction}
+        </Button>
+      </Inline>
     </Stack>
   )
 }

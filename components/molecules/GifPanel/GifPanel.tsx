@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Button } from '@/components/atoms/Button'
 import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
@@ -60,8 +60,6 @@ export interface GifPanelProps {
   status?: 'loading' | 'ready' | 'error'
   /** Shown under the field — an error, or a note that these are samples. */
   message?: string
-  /** Extra control beside the field. "Surprise me" lives here. */
-  tools?: ReactNode
   /** The badge on the chosen tile: "Selected" when picking, "Your answer" when answering. */
   selectionLabel?: string
   /**
@@ -98,7 +96,6 @@ export function GifPanel({
   onMore,
   status = 'ready',
   message,
-  tools,
   selectionLabel = 'Selected',
   provider,
   ads,
@@ -266,10 +263,10 @@ export function GifPanel({
   if (board) {
     return (
       <div className={styles.boardPanel}>
-        <Inline gap={12} align="stretch" className={styles.searchRow}>
-          <div className={styles.searchField}>{field}</div>
-          {tools}
-        </Inline>
+        {/* The field has the row to itself. The two controls that act moved to
+            a sticky foot — see `RoundPicker` — because sharing this row with
+            them squeezed the input down to its magnifier on a phone. */}
+        <div className={styles.searchField}>{field}</div>
 
         {((suggestions && suggestions.length > 0) || onMore) && (
           <Inline gap={8}>

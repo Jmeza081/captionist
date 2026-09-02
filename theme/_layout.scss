@@ -5,6 +5,9 @@
 // class names are literal in the compiled output, so `styles.alignCenter`
 // still resolves inside a CSS module.
 
+@use 'colors';
+@use 'spacing';
+
 @mixin alignClasses {
   .alignStart {
     align-items: flex-start;
@@ -35,5 +38,69 @@
   }
   .justifyBetween {
     justify-content: space-between;
+  }
+}
+
+/**
+ * A screen's committing action, pinned to the foot of a long board.
+ *
+ * Two screens have the same problem: a grid you scroll a long way, and one
+ * control that ends the phase. Anchored at the top the control leaves the
+ * screen; in the flow underneath it you have to reach the bottom to find it.
+ * Sticky at the foot is the answer, and it wants three things that are easy to
+ * get individually wrong.
+ *
+ * **`bottom: 0`, and only ever 0.** Any other value sticks the bar that far
+ * *above* the fold, where it reads as a stray control floating in the middle of
+ * the page rather than as a foot. Clearing the floating keys is the padding's
+ * job below, never the offset's.
+ *
+ * **Ground, not a veil.** The bar sits over scrolling media, so it needs real
+ * colour under it — and the fade above has to be longer than the text passing
+ * through it, or a caption meets the gradient at its own height and loses its
+ * bottom half cleanly, which reads as clipping rather than depth.
+ *
+ * **Room on the right.** The floating keys own that corner, and a full-width
+ * control ran underneath them — the right end of "Lock my ranking" opened chat
+ * instead of ranking.
+ */
+@mixin stickyActionDock($fade: spacing.$space-52) {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+
+  /**
+   * The column reserves a band at its foot for the floating keys
+   * (`--room-dock-clearance`), and that padding sits *after* this element — so
+   * a sticky bar stops sticking with the whole band still below it, and comes
+   * to rest a key's height above the bottom of the page.
+   *
+   * This dock does not need that band: it clears the keys sideways, on the
+   * right, so it can have the space back and end where the screen ends. The
+   * margin gives it back everything but a screen's own bottom padding.
+   */
+  margin-bottom: calc(#{spacing.$space-20} - var(--room-dock-clearance, #{spacing.$space-20}));
+  padding-top: $fade;
+  padding-bottom: spacing.$space-14;
+  padding-right: calc(#{spacing.$tap-target-min} + #{spacing.$space-20});
+  background: linear-gradient(
+    to top,
+    colors.$surface-canvas 0%,
+    colors.$surface-canvas 55%,
+    rgba(10, 10, 11, 0) 100%
+  );
+
+  /**
+   * Only the control takes the tap; the ground it sits on does not.
+   *
+   * The dock is as wide as the column and its fade is a line and a half tall,
+   * so without this it steals every tap in a band across the board — including
+   * taps on the card directly beneath it, which on the vote screen *is* how you
+   * rank one. The gradient is there to be read past, not pressed.
+   */
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
   }
 }
