@@ -114,6 +114,23 @@ export default defineConfig({
       // no key falls through to the offline shelf, so a call-counting test
       // would assert nothing at all while looking green.
       NEXT_PUBLIC_KLIPY_API_KEY: 'e2e-not-a-real-key',
+      /**
+       * Bots play with written-in jokes, so no spec spends a token.
+       *
+       * The suite would land here anyway — `--host-resolver-rules` resolves
+       * every host but the dev server to nothing — but "anyway" is not a
+       * guarantee: the model is reached through *our own* route, which is on
+       * the dev server and therefore reachable. This is the thing that stops
+       * a full run from being a bill.
+       */
+      NEXT_PUBLIC_BOTS_STUB: '1',
+      /**
+       * And a key that is not a key, for the reason the GIF ones are here:
+       * `?brain=live` opts `e2e/bots.spec.ts` onto the route so it can
+       * intercept and *count* calls, and with no key at all the route reports
+       * `stub` and the counting would assert nothing while looking green.
+       */
+      ANTHROPIC_API_KEY: 'e2e-not-a-real-key',
     },
   },
 })

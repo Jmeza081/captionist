@@ -17,6 +17,7 @@
     "test:unit:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "@dicebear/core": "^10.7.0",
     "@dicebear/styles": "^10.6.0",
     "@phosphor-icons/react": "^2.1.10",

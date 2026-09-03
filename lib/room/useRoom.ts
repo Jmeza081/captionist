@@ -10,7 +10,7 @@ import {
   useSyncExternalStore,
 } from 'react'
 import type { ActionInput } from '@/lib/game/actions'
-import type { RoomCode } from '@/lib/game/types'
+import type { BotDifficulty, PlayerId, RoomCode } from '@/lib/game/types'
 import type { EventSnapshot, EventStore, LogEntry, Tally } from './events'
 import type { Identity } from './identity'
 import { tallyKey } from './events'
@@ -61,6 +61,19 @@ export interface RoomBinding {
   /** Chat and reactions, which are never room state. */
   events: EventStore
   publish: (event: RoomEvent) => void
+  /**
+   * Seat a bot, and remove one.
+   *
+   * Only the host's tab holds a pool, so on a guest's these do nothing — which
+   * is the right shape rather than a missing capability: the lobby only offers
+   * the control to the host, and `authorize` refuses a bot join from anyone
+   * else even if a guest found a way to ask.
+   *
+   * Returns the seat it took, or `undefined` when the room refused it — a full
+   * room, or a nickname collision.
+   */
+  hireBot: (difficulty: BotDifficulty) => PlayerId | undefined
+  fireBot: (id: PlayerId) => void
 }
 
 export const RoomContext = createContext<RoomBinding | undefined>(undefined)
@@ -104,6 +117,15 @@ export function usePacedBoot(): boolean {
 
 export function useRoomSend(): (action: ActionInput) => void {
   return useBinding().send
+}
+
+/** What the lobby's bot controls call. Host-only in practice. */
+export function useBots(): Pick<RoomBinding, 'hireBot' | 'fireBot'> {
+  const binding = useBinding()
+  return useMemo(
+    () => ({ hireBot: binding.hireBot, fireBot: binding.fireBot }),
+    [binding],
+  )
 }
 
 export function useRoomNow(): () => number {

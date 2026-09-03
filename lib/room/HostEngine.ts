@@ -217,6 +217,15 @@ export class HostEngine {
       // report — the room would be gone with it.
       if (player.id === this.state.hostId) continue
 
+      // **A bot has no presence entry, so absence means nothing about it.**
+      // It reaches the engine directly rather than over the transport
+      // (ADR 0034), so it never appears in `attached` and never will. Without
+      // this it survives only by accident — via the `everAttached` guard
+      // below, which exists for fixture players — and a later tightening of
+      // that guard would drop every bot out of every phase gate at once, with
+      // no obvious cause. Firing one is `host/botRemoved`, never a drop.
+      if (player.bot) continue
+
       // **Only a seat that was ever attached can be reported as dropping.**
       // Absence proves nothing on its own: a fixture room's players are in
       // `state.players` and were never connections at all, and a real guest is

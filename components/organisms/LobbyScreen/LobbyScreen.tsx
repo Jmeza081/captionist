@@ -10,9 +10,11 @@ import { SegmentedControl } from '@/components/atoms/SegmentedControl'
 import { Stack } from '@/components/atoms/Stack'
 import { StatusPill } from '@/components/atoms/StatusPill'
 import { WaitingDots } from '@/components/atoms/WaitingDots'
+import { BotPicker } from '@/components/molecules/BotPicker'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { RoomShare } from '@/components/molecules/RoomShare'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
+import { budgetSpent } from '@/lib/bots/budget'
 import {
   WAITING_LINE,
   canStart,
@@ -24,7 +26,7 @@ import {
   toAvatarProps,
 } from '@/lib/game/selectors'
 import type { GameMode, GameState, PlayerId } from '@/lib/game/types'
-import { useRoom } from '@/lib/room/useRoom'
+import { useBots, useRoom } from '@/lib/room/useRoom'
 import { useWebShare } from '@/lib/useWebShare'
 import styles from './LobbyScreen.module.scss'
 
@@ -220,6 +222,11 @@ function HostLobby({
   const joinUrl = joinUrlFor(state.roomCode)
   const roster = rosterCopy(state, selfId, useSecondHand())
   const web = useWebShare()
+  const { hireBot } = useBots()
+  // Lobby-only, so `useState` here rather than `RoomShell`'s `overlay` — the
+  // same call `HostSetupScreen` makes for its own help modal.
+  const [hiring, setHiring] = useState(false)
+  const full = state.players.length >= state.settings.maxPlayers
 
   const setMode = (mode: GameMode) => {
     if (mode === state.settings.mode) return
@@ -344,9 +351,46 @@ function HostLobby({
                 {roster.arrival}
               </p>
             )}
+
+            {/* On the roster it fills, not in the foot — that dock holds the
+                one control that starts the room. Blocked rather than
+                disabled, naming what is missing (ADR 0032). */}
+            <Button
+              variant="secondary"
+              fullWidth
+              blocked={full}
+              onClick={() => {
+                if (full) {
+                  notify(`This room is full — ${state.settings.maxPlayers} players is the limit.`)
+                  return
+                }
+                setHiring(true)
+              }}
+            >
+              {full ? 'Add a bot — room is full' : 'Add a bot'}
+            </Button>
           </Stack>
         </div>
       </div>
+
+      {/**
+        * A sibling of `.columns`, never a child. That box is a query container
+        * and therefore the containing block for `position: fixed`, so a
+        * backdrop nested inside it would cover the column rather than the room.
+        */}
+      <BotPicker
+        open={hiring}
+        onClose={() => setHiring(false)}
+        onHire={(difficulty) => {
+          // No `notify` on success: the host engine announces a bot arriving
+          // in the room's own lane, and this tab hears that line too. Saying
+          // it twice is what ADR 0028 exists to stop.
+          if (!hireBot(difficulty)) {
+            notify('That bot could not be seated. Try again.')
+          }
+        }}
+        spent={budgetSpent()}
+      />
 
       {/**
         * The one control that starts the room — across the foot of the glass on

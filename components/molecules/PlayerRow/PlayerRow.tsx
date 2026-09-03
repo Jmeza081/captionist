@@ -87,6 +87,10 @@ export function PlayerRow({
 
       {host && <Tag>Host</Tag>}
       {you && <Tag tone="neutral">You</Tag>}
+      {/* Never optional, and never a caller's decision. Nobody should believe
+          a bot is a colleague, so the badge follows the face rather than a
+          prop a screen could forget to pass. */}
+      {player.bot && <Tag tone="neutral">Bot</Tag>}
 
       {status && (
         <span className={`${styles.status} ${done ? styles.done : ''}`}>

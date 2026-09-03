@@ -333,6 +333,12 @@ $help-tile-meme-size: 11px;
 
 $interstitial-width: 560px;
 
+// A dialog that is a *form* rather than a walkthrough: the bot picker's three
+// stacked choices and one button. Narrower than `$modal-width`, which is the
+// help modal's two-column card and reads as a spread; a column of choices at
+// 880px puts a lot of air beside three short sentences.
+$picker-width: 520px;
+
 $toolbox-width: 340px;
 $toolbox-radius: 20px;
 

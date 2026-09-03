@@ -111,6 +111,11 @@ export function toAvatarProps(state: GameState, player: Player): PlayerFace {
     // stored anywhere: lose the lead and your own hat is simply back.
     hat: leaderIds(state).has(player.id) ? CROWN : player.hat,
     avatarSeed: player.avatarSeed,
+    // Carried so every row that draws a face can also say it is a bot. Not a
+    // separate prop on `PlayerRow`, because a badge that had to be passed
+    // could be forgotten — and a bot nobody labelled is a person as far as
+    // the room can tell.
+    bot: player.bot,
   }
 }
 

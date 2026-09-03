@@ -1,0 +1,105 @@
+@use 'theme' as t;
+
+/**
+ * The backdrop is `fixed`, so this must never be rendered inside a query
+ * container — a container is the containing block for `position: fixed`, and
+ * the overlay would be trapped in the column instead of covering the room.
+ * `BotPicker.tsx` says the same thing where a caller will read it.
+ */
+.backdrop {
+  @include t.backdrop;
+
+  position: fixed;
+  inset: 0;
+  z-index: t.$z-help-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$space-20;
+}
+
+.card {
+  width: 100%;
+  // Narrower than `$modal-width`: that one is the walkthrough's two-column
+  // card, and a form of three stacked choices reads as a column, not a spread.
+  max-width: t.$picker-width;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: t.$modal-pad;
+  border: 1px solid t.$accent-border-weak;
+  border-radius: t.$radius-modal;
+  background-color: t.$surface-modal;
+  box-shadow: t.$shadow-modal;
+
+  // Focus is moved here on open so the dialog is announced; the ring would be
+  // noise on a container nobody tabbed to. Same choice `Modal` makes.
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+}
+
+.heading {
+  @include t.cardTitleText;
+
+  flex: 1;
+  margin: 0;
+}
+
+.blurb {
+  @include t.bodyText;
+
+  margin: 0;
+  color: t.$text-body;
+}
+
+.levels {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-8;
+}
+
+/**
+ * What the room has spent.
+ *
+ * A **host** surface: no guest ever sees a dollar figure, because what a room
+ * costs is not part of anybody else's game.
+ */
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-6;
+}
+
+.meterTop {
+  @include t.labelText;
+  @include t.tabularFigures;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: t.$text-meta;
+}
+
+.bar {
+  height: t.$space-5;
+  border-radius: t.$radius-pip;
+  background: t.$surface-track;
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: t.$radius-pip;
+    background: t.$accent;
+  }
+}
+
+.barOut span {
+  background: t.$urgent;
+}

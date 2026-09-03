@@ -618,6 +618,16 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
       publish: (event) => {
         selfTransportRef.current?.publishEvent(event)
       },
+      /**
+       * Hire and fire bots.
+       *
+       * Straight into the pool rather than through `send`, because a bot is
+       * not this tab asking the room for something — it is the host's own tab
+       * seating a player it will then play. A guest's tab has no pool, so
+       * these are no-ops there; the controls are host-only anyway.
+       */
+      hireBot: (difficulty) => poolRef.current?.add(difficulty),
+      fireBot: (id) => poolRef.current?.remove(id),
     }),
     [store, events, seat.identity, seat.declared, levers.fast, roomCode],
   )

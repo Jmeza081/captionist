@@ -644,10 +644,22 @@ describe('the crown, on a face', () => {
     expect(hatOf(behind, 'p2')).toBe('crown')
   })
 
-  it('carries the five fields a face is, and nothing that could be art', () => {
+  it('carries the six fields a face is, and nothing that could be art', () => {
     const state = lobbyFixture({ players: 3 })
     const face = toAvatarProps(state, state.players[0]!)
-    expect(Object.keys(face).sort()).toEqual(['avatarSeed', 'color', 'hat', 'name', 'src'])
+    // `bot` joined the list when bots became hireable. It belongs here for the
+    // same reason `hat` does: it is a token the renderer resolves, not art, and
+    // the roster's badge has to follow the face rather than a prop a screen
+    // could forget to pass. The point of this test is unchanged — no `src`
+    // beyond the resolved one, no id, no connection, nothing a URL.
+    expect(Object.keys(face).sort()).toEqual([
+      'avatarSeed',
+      'bot',
+      'color',
+      'hat',
+      'name',
+      'src',
+    ])
   })
 })
 

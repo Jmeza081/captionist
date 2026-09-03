@@ -190,6 +190,27 @@ export class LocalBus {
     })
   }
 
+  /**
+   * An endpoint leaves the room.
+   *
+   * `setPresence` only ever *adds*, because a real presence set is what the
+   * service reports and a local one had no way to say "gone". Without this a
+   * drop cannot be exercised at all on this transport, which is why the seat
+   * grace and the phase gates were only ever tested through Ably's stub.
+   */
+  dropPresence(id: PlayerId): void {
+    if (!this.presence.delete(id)) return
+    const entries: readonly PresenceEntry[] = [...this.presence].map(([pid, s]) => ({
+      id: pid,
+      state: s,
+    }))
+    this.deliver(() => {
+      for (const set of [...this.presenceHandlers.values()]) {
+        for (const handler of [...set]) handler(entries)
+      }
+    })
+  }
+
   /** Ids currently attached — the host's roster of who to address state to. */
   members(): readonly PlayerId[] {
     return [...this.stateHandlers.keys()]

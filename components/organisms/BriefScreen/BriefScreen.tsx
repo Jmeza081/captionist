@@ -110,13 +110,13 @@ export function BriefScreen() {
    * own staged pick wins; failing that, a random tile off the board you were
    * looking at.
    */
-  const armed = useRef({ picked, results: gifs.results, send, chose: gifs.chose })
+  const armed = useRef({ picked, results: gifs.results, send, chose: gifs.chose, query: gifs.query })
   // Every render, deliberately: the timer must see the board as it is when it
   // fires, not as it was when it was set. Writing a ref during render is what
   // `react-hooks/refs` forbids, and it is right to — the compiler may not run
   // the render that wrote it.
   useEffect(() => {
-    armed.current = { picked, results: gifs.results, send, chose: gifs.chose }
+    armed.current = { picked, results: gifs.results, send, chose: gifs.chose, query: gifs.query }
   })
   const fired = useRef(false)
 
@@ -131,7 +131,7 @@ export function BriefScreen() {
     const id = setTimeout(
       () => {
         if (fired.current) return
-        const { picked, results, send, chose } = armed.current
+        const { picked, results, send, chose, query } = armed.current
         const gif = picked ?? results[Math.floor(Math.random() * results.length)]
         if (!gif) return
         fired.current = true
@@ -140,7 +140,7 @@ export function BriefScreen() {
         chose(gif)
         send({
           type: 'round/subjectLocked',
-          subject: { kind: 'media', media: toMediaRef(gif) },
+          subject: { kind: 'media', media: toMediaRef(gif), ...(query ? { query } : {}) },
         })
       },
       Math.max(0, deadline - AUTO_PICK_LEAD_MS - Date.now()),
@@ -274,7 +274,14 @@ export function BriefScreen() {
   const lockIn = (gif: GifResult) => {
     // Before `toMediaRef`, which drops the id the trigger needs.
     gifs.chose(gif)
-    send({ type: 'round/subjectLocked', subject: { kind: 'media', media: toMediaRef(gif) } })
+    send({
+      type: 'round/subjectLocked',
+      // The search that found it rides along. It is the closest thing anyone
+      // will ever have to a statement of the joke intended, it used to be
+      // handed to the provider and thrown away, and it is what a bot reads
+      // when it captions this picture. Not a secret: the GIF is on screen.
+      subject: { kind: 'media', media: toMediaRef(gif), ...(gifs.query ? { query: gifs.query } : {}) },
+    })
   }
 
   return (
