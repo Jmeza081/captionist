@@ -1,0 +1,63 @@
+@use 'theme' as t;
+
+.key {
+  @include t.focusRing;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: t.$radius-avatar;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+// The room's key. The plate is 36 so it matches the × directly under it on a
+// phone; the target is the full 44 and absolutely positioned, so it never
+// widens the box its neighbours are laid out against. Same trick as
+// `CloseButton.medium`, and deliberately the same measurements.
+.accent {
+  width: t.$lobby-help-key;
+  height: t.$lobby-help-key;
+  background-color: t.$fill-subtle;
+  color: t.$accent-text;
+
+  &:hover {
+    background-color: t.$accent-fill;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: t.$tap-target-min;
+    height: t.$tap-target-min;
+    transform: translate(-50%, -50%);
+  }
+}
+
+// The nav's key, drawn as the outline button's round sibling: same hairline,
+// same hover fill, and the same height — `Button` sets its floor to the touch
+// minimum too, so the two line up by reading one token rather than by a number
+// copied from the other's rendered box.
+.outline {
+  width: t.$tap-target-min;
+  height: t.$tap-target-min;
+  background-color: transparent;
+  border-color: t.$line-outline;
+  color: t.$text-primary;
+
+  &:hover {
+    background-color: t.$fill-secondary;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .key {
+    transition: none;
+  }
+}

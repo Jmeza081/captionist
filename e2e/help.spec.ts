@@ -24,6 +24,26 @@ test.describe('the walkthrough', () => {
     await expect(dialog.getByText('Someone picks the image')).toBeVisible()
   })
 
+  test('keeps the same door on a phone, as the nav’s round key', async ({ page }) => {
+    await page.goto('/')
+
+    const key = page.getByRole('button', { name: 'How Captionist works' })
+    const words = page.getByRole('button', { name: 'How it works' })
+
+    // Exactly one of the two is ever in the bar: the words above `md`, the key
+    // below it. What stands down on a phone is the wording, not the way in.
+    if (page.viewportSize()!.width < 768) {
+      await expect(key).toBeVisible()
+      await expect(words).toBeHidden()
+
+      await key.click()
+      await expect(page.getByRole('dialog', { name: 'How Captionist works' })).toBeVisible()
+    } else {
+      await expect(words).toBeVisible()
+      await expect(key).toBeHidden()
+    }
+  })
+
   test('shows an illustration beside the copy, and above it on a phone', async ({
     page,
   }) => {

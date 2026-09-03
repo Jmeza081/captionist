@@ -307,30 +307,11 @@
   }
 }
 
-/**
- * The walkthrough key, in the header's trailing slot on the lobby.
- *
- * Drawn here rather than by `LobbyScreen` because the bar is the shell's, and
- * a screen reaching into the header to hang a control off it is the shape that
- * ends with three screens each hanging a different one. The lobby asks for it
- * through `openHelp`, which it already had.
+/*
+ * The walkthrough key that used to be drawn here is `HelpKey` now — the
+ * landing nav wanted the same control on a phone, and two copies of one round
+ * key is the shape the component rules exist to prevent. The shell still owns
+ * *where* it goes: the bar is the shell's, and a screen reaching into the
+ * header to hang a control off it ends with three screens each hanging a
+ * different one. The lobby asks for it through `openHelp`, which it had.
  */
-.helpKey {
-  @include t.focusRing;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: t.$lobby-help-key;
-  height: t.$lobby-help-key;
-  padding: 0;
-  border: 0;
-  border-radius: t.$radius-avatar;
-  background-color: t.$fill-subtle;
-  cursor: pointer;
-  transition: background-color 120ms ease;
-
-  &:hover {
-    background-color: t.$accent-fill;
-  }
-}

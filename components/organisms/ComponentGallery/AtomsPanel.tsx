@@ -13,6 +13,7 @@ import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
 import { SegmentedControl } from '@/components/atoms/SegmentedControl'
 import { CloseButton } from '@/components/atoms/CloseButton'
+import { HelpKey } from '@/components/atoms/HelpKey'
 import { Snackbar } from '@/components/atoms/Snackbar'
 import { Stack } from '@/components/atoms/Stack'
 import { StatusPill } from '@/components/atoms/StatusPill'
@@ -220,6 +221,15 @@ export function AtomsPanel() {
           <Inline gap={14} align="center">
             <CloseButton label="Close the demo" onClick={() => undefined} />
             <CloseButton label="Clear the demo" size="small" onClick={() => undefined} />
+          </Inline>
+        </Case>
+        {/* Both tones together, because the pair is the point: the room's key
+            sits on a header and the nav's sits beside an outline button, and
+            one control at two weights beats two round keys that drift. */}
+        <Case label="Help key — the walkthrough, in the space a phone has">
+          <Inline gap={14} align="center">
+            <HelpKey onClick={() => undefined} />
+            <HelpKey tone="outline" onClick={() => undefined} />
           </Inline>
         </Case>
         <Case label="Snackbar — confirms an action with no visible result">

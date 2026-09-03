@@ -25,8 +25,9 @@
   }
 }
 
-// The two text links stand down on a phone: the bar has room for the wordmark
-// and the way in, and nothing else worth crowding them.
+// The two text links stand down on a phone: the bar has room for the wordmark,
+// the way in, and the round `?` key that replaces "How it works" there.
+// GitHub has no phone-sized stand-in and is simply gone until `md`.
 // One of the two is a button — "How it works" opens the walkthrough rather
 // than navigating — so the reset lives here and both read identically.
 .link {
@@ -49,5 +50,13 @@
 
   @include t.mq('md') {
     display: inline;
+  }
+}
+
+// The inverse of `.link`: the round key carries the walkthrough on a phone,
+// and hands it back to the words once there is room for them.
+.helpKey {
+  @include t.mq('md') {
+    display: none;
   }
 }

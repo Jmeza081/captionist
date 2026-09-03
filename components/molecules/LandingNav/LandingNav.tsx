@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/atoms/Button'
+import { HelpKey } from '@/components/atoms/HelpKey'
 import { Wordmark } from '@/components/molecules/Wordmark'
 import { HelpModal } from '@/components/molecules/HelpModal'
 import styles from './LandingNav.module.scss'
@@ -41,6 +42,16 @@ export function LandingNav({ joinHref, repoHref }: LandingNavProps) {
         <a className={styles.link} href={repoHref} target="_blank" rel="noreferrer noopener">
           GitHub
         </a>
+
+        {/* The same walkthrough, in the space a phone has for it. The words
+            stand down above; the key stands down below, so exactly one of the
+            two is ever in the bar. */}
+        <HelpKey
+          tone="outline"
+          onClick={() => setHelpOpen(true)}
+          className={styles.helpKey}
+        />
+
         <Button href={joinHref} variant="outline" size="small">
           Join a room
         </Button>

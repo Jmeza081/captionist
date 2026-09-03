@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
-import { Icon } from '@/components/atoms/Icon'
+import { HelpKey } from '@/components/atoms/HelpKey'
 import { ProgressRail } from '@/components/atoms/ProgressRail'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
 import { Snackbar, type SnackbarTone } from '@/components/atoms/Snackbar'
@@ -347,14 +347,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
             phone has for two mode names.
           */
           state.phase === 'lobby' ? (
-            <button
-              type="button"
-              className={styles.helpKey}
-              onClick={openHelp}
-              aria-label="How Captionist works"
-            >
-              <Icon name="help" size={17} color="#A18FFF" />
-            </button>
+            <HelpKey onClick={openHelp} />
           ) : showsRoundProgress(state) ? (
             <RoundProgress
               played={state.roundNumber}
