@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { createRoom } from '@/lib/game/create'
-import { scoresFrom } from '@/lib/game/selectors'
-import type { GameMode, GameState } from '@/lib/game/types'
-import { BotDriver } from './BotDriver'
+import {
+  hasSubmitted,
+  hasVoted,
+  isRoleHolder,
+  scoresFrom,
+  voteCards,
+} from '@/lib/game/selectors'
+import type { GameMode, GameState, PublicState } from '@/lib/game/types'
+import { DEFAULT_SETTINGS, RANK_POINTS } from '@/lib/game/constants'
+import { stubBrain } from '@/lib/bots/stub'
+import type { SeatedBot } from '@/lib/bots/types'
+import { BotPool } from './BotPool'
 import { GuestClient } from './GuestClient'
 import { HostEngine, type TimerHandle } from './HostEngine'
 import { LocalBus, createLocalTransport } from './LocalTransport'
 import { createAutopilot } from './autopilot'
 import type { Intent } from './transport'
-import { DEFAULT_SETTINGS } from '@/lib/game/constants'
 
 /**
  * The phase-1 gate: a full game plays over the transport, driven only by
@@ -53,12 +61,17 @@ function harness(mode: GameMode, bots: number, seed = 42): Harness {
     at: now,
   })
 
+  // Held in an object so `onChange` can close over it before the pool exists —
+  // the pool needs `engine.apply`, so one of the two has to come second.
+  const seated: { pool?: BotPool } = {}
+
   const engine = new HostEngine({
     transport: hostTransport,
     initial,
     now: () => now,
     setTimer,
     clearTimer,
+    onChange: (state) => seated.pool?.observe(state),
     onRefused: (intent, reason) => refusals.push({ intent, reason }),
   })
 
@@ -66,22 +79,82 @@ function harness(mode: GameMode, bots: number, seed = 42): Harness {
   // product beat for a room someone is watching, not part of the protocol.
   const autopilot = createAutopilot({ engine, waitFor: bots + 1, dwellMs: 0 })
 
-  // The host plays too, so it needs a bot brain of its own for compose/vote.
-  const hostBot = new BotDriver({ id: 'p0', name: 'Jesse', index: 0, send: (a) => engine.apply(a, 'p0') })
+  // **The host plays too**, and it is a person — so it gets no pool seat and
+  // no `bot` flag. It is driven straight off the written-in corpus over its
+  // real transport, which keeps one player in this harness travelling the wire
+  // exactly as a guest does.
+  const hostSeat: SeatedBot = { id: 'p0', name: 'Jesse', difficulty: 'senior', index: 0 }
   const hostClient = new GuestClient({
     transport: hostTransport,
     now: () => now,
-    onState: (state) => hostBot.observe(state),
+    onState: (state) => {
+      void playHostSeat(state)
+    },
   })
   hostClient.start()
 
-  for (let i = 1; i <= bots; i++) {
-    const id = `p${i}`
-    const transport = createLocalTransport({ bus, selfId: id, isHost: false })
-    const bot = new BotDriver({ id, name: `Bot ${i}`, index: i, send: (a) => transport.sendIntent(a) })
-    const client = new GuestClient({ transport, now: () => now, onState: (s) => bot.observe(s) })
-    client.start()
+  const hostDone = new Set<string>()
+  async function playHostSeat(state: PublicState): Promise<void> {
+    const key = `${state.roundNumber}:${state.phase}`
+    if (hostDone.has(key)) return
+    const ctx = {
+      mode: state.settings.mode,
+      format: state.settings.format,
+      roundNumber: state.roundNumber,
+    }
+    if (state.phase === 'brief' && isRoleHolder(state, 'p0')) {
+      hostDone.add(key)
+      const subject = await stubBrain.subject({ ...ctx, bot: hostSeat })
+      hostTransport.sendIntent({ type: 'round/subjectLocked', subject })
+      return
+    }
+    if (state.phase === 'compose' && !isRoleHolder(state, 'p0') && !hasSubmitted(state, 'p0')) {
+      const subject = state.round?.subject
+      if (!subject) return
+      hostDone.add(key)
+      const answers = await stubBrain.answers({ ...ctx, bots: [hostSeat], subject })
+      const answer = answers.get('p0')
+      if (answer) hostTransport.sendIntent({ type: 'round/entrySubmitted', answer })
+      return
+    }
+    if (state.phase === 'vote' && !hasVoted(state, 'p0')) {
+      const cards = voteCards(state, 'p0')
+        .filter((c) => !c.own)
+        .map((c) => ({ entryId: c.entryId, text: c.lines?.join(' / ') ?? c.media?.alt ?? '' }))
+      if (cards.length === 0) return
+      hostDone.add(key)
+      const ballots = await stubBrain.ballots({
+        ...ctx,
+        bots: [hostSeat],
+        voting: state.settings.voting,
+        places: RANK_POINTS.length,
+        cards,
+      })
+      const ballot = ballots.get('p0')
+      if (ballot) hostTransport.sendIntent({ type: 'round/ballotCast', ballot })
+      return
+    }
+    if (state.phase === 'tiebreak') {
+      const tiebreak = state.round?.tiebreak
+      if (!tiebreak || tiebreak.votes.p0 !== undefined) return
+      hostDone.add(key)
+      const choice = tiebreak.contenders[0]
+      if (choice) hostTransport.sendIntent({ type: 'round/tiebreakVoted', choice })
+    }
   }
+
+  // The bots the host hired. Host-local, so no transport and no client each —
+  // they reach the engine directly, which is what ADR 0034 records.
+  const pool = new BotPool({
+    apply: (action, actor) => engine.apply(action, actor),
+    snapshot: () => engine.snapshot(),
+    now: () => now,
+    // No dwell: this harness runs on a virtual clock, and the pause is a
+    // product beat for a room someone is watching, not part of the protocol.
+    wait: () => Promise.resolve(),
+  })
+  seated.pool = pool
+  for (let i = 0; i < bots; i += 1) pool.add('senior')
 
   engine.start()
 

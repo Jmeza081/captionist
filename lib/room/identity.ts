@@ -115,6 +115,21 @@ export function readSeatSignature(): string | undefined {
   }
 }
 
+/**
+ * The seat this tab holds, if the server has signed one.
+ *
+ * Paired with `readSeatSignature()`: neither is worth anything alone, because
+ * the signature is what proves the seat is ours. The bot route asks for both.
+ */
+export function readSeat(): PlayerId | undefined {
+  if (typeof window === 'undefined') return undefined
+  try {
+    return window.sessionStorage.getItem(SEAT_KEY) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** Adopt the seat the server signed, which may not be the one we asked for. */
 export function writeSeat(seat: PlayerId, signature: string): void {
   if (typeof window === 'undefined') return

@@ -6,7 +6,8 @@ import { HOST_FALLBACK_NAME } from '@/lib/game/constants'
 import { createRoom } from '@/lib/game/create'
 import { fixtureFor } from '@/lib/game/fixtures'
 import type { GameState, RoomCode, RoomSettings } from '@/lib/game/types'
-import { BotDriver } from './BotDriver'
+import { DEFAULT_DIFFICULTY } from '@/lib/bots/personas'
+import { BotPool } from './BotPool'
 import { connectRoom, probeRealtime, RoomUnavailable } from './connect'
 import { GuestClient } from './GuestClient'
 import { HostEngine } from './HostEngine'
@@ -197,6 +198,14 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
   )
   const engineRef = useRef<HostEngine | undefined>(undefined)
   const guestRef = useRef<GuestClient | undefined>(undefined)
+  /**
+   * The bots this room has hired, so a screen can hire another.
+   *
+   * A ref rather than state: nothing re-renders when a bot is seated — the
+   * roster updates because the engine broadcast a new state, which is the same
+   * road a person joining takes.
+   */
+  const poolRef = useRef<BotPool | undefined>(undefined)
   /** The endpoint events are published from — this player's own, host or guest. */
   const selfTransportRef = useRef<RoomTransport | undefined>(undefined)
   const refusalListeners = useRef(new Set<(reason: string) => void>())
@@ -340,7 +349,14 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         transport: hostTransport,
         initial,
         fast: levers.fast,
-        onChange: (state) => saveSnapshot(roomCode, state),
+        onChange: (state) => {
+          saveSnapshot(roomCode, state)
+          // Bots watch the engine, not the wire. Every accepted transition
+          // passes through here, which is the same set `announce` fires on.
+          // Read off the ref rather than a local, because the pool needs
+          // `engine.apply` and so cannot exist until the engine does.
+          poolRef.current?.observe(state)
+        },
         // Only *our* refusals are worth a snackbar. A bot being told to sit a
         // round out is the harness working, not something to interrupt over.
         // Everyone else's travel the transport instead — see `HostEngine.refuse`.
@@ -371,33 +387,23 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
 
       attachSelf(selfTransport)
 
-      for (let i = 1; i <= (levers.bots ?? 0); i++) {
-        const id = `p${i}`
-        // Two drivers in one chair would submit twice and vote against itself.
-        if (id === activeId) continue
-        const transport = await connectRoom({
-          roomCode,
-          selfId: id,
-          role: 'guest',
-          levers: roomLevers,
-          stubbed,
-        })
-        if (cancelled) {
-          transport.close()
-          return
-        }
-        const bot = new BotDriver({
-          id,
-          name: `Bot ${i}`,
-          index: i,
-          send: (action) => transport.sendIntent(action),
-        })
-        const client = new GuestClient({ transport, onState: (s) => bot.observe(s) })
-        client.start()
-        cleanups.push(() => {
-          client.stop()
-          transport.close()
-        })
+      // **One pool, however bots arrive.** `?bots=N` seats them up front and
+      // the lobby's control seats them later; both go through the same object,
+      // so the dev lever exercises the shipped road rather than a parallel one.
+      const pool = new BotPool({
+        apply: (action, actor) => engine.apply(action, actor),
+        snapshot: () => engine.snapshot(),
+        now: () => engine.now(),
+        rate: levers.fast,
+      })
+      poolRef.current = pool
+      cleanups.push(() => {
+        poolRef.current = undefined
+        pool.close()
+      })
+
+      for (let i = 0; i < (levers.bots ?? 0); i += 1) {
+        pool.add(DEFAULT_DIFFICULTY)
       }
 
       // Only autopilot a room that has bots in it: with real people, those taps

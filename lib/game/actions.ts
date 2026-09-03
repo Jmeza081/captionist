@@ -1,5 +1,6 @@
 import type {
   Ballot,
+  BotDifficulty,
   EntryAnswer,
   GameMode,
   HatId,
@@ -47,6 +48,15 @@ export type GameAction = ActionMeta &
     | { type: 'host/restarted' }
     | { type: 'host/left' }
     /**
+     * The host fires a bot.
+     *
+     * Its own action rather than reusing `player/left`, because a bot has no
+     * presence entry to lose and so can never "drop" — and because a held seat
+     * is exactly wrong here: `player/left` keeps the chair for
+     * `SEAT_GRACE_MS` against a reconnect that is never coming.
+     */
+    | { type: 'host/botRemoved'; id: PlayerId }
+    /**
      * The GIF provider's hourly allowance is spent, so the room stops.
      *
      * Deliberately **not** host-only. Only the client that got the 429 can
@@ -68,6 +78,15 @@ export interface NewPlayer {
   avatarSeed: string
   /** Optional because bare-headed is the default. Narrowed by the reducer. */
   hat?: HatId
+  /**
+   * Set when the host is seating a bot, and to which level.
+   *
+   * **`authorize` refuses this from anyone but the host.** `player/joined` is
+   * deliberately not host-only and has no phase guard — joining is legal in
+   * any phase, from any client — so without that check any browser could stuff
+   * a room with bots it did not pay for.
+   */
+  bot?: BotDifficulty
 }
 
 export type ActionType = GameAction['type']
@@ -89,6 +108,7 @@ export const HOST_ONLY: ReadonlySet<ActionType> = new Set<ActionType>([
   'host/jumpedToPodium',
   'host/restarted',
   'host/left',
+  'host/botRemoved',
 ])
 
 /** Which phases each action is legal in. Absent means "any phase". */

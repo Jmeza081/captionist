@@ -33,6 +33,15 @@ export function authorize(state: GameState, action: GameAction): true | string {
 
   switch (action.type) {
     case 'player/joined': {
+      // **Only the host seats bots.** `player/joined` is deliberately absent
+      // from `HOST_ONLY` and from `PHASE_GUARDS` — joining is legal in any
+      // phase, from any client, which is what lets a late arrival hop in
+      // between rounds. That openness is exactly why this check has to exist:
+      // without it any browser could seat twenty bots in someone else's room
+      // and spend a budget it does not pay for.
+      if (action.player.bot !== undefined && action.actor !== state.hostId) {
+        return 'Only the host can add a bot.'
+      }
       // The room's own size, which the host chose, not the global ceiling.
       if (state.players.length >= state.settings.maxPlayers) {
         return `This room is full — ${state.settings.maxPlayers} players is the limit.`
@@ -43,6 +52,15 @@ export function authorize(state: GameState, action: GameAction): true | string {
       ) {
         return 'Someone already has that name. Pick another.'
       }
+      return true
+    }
+
+    case 'host/botRemoved': {
+      const target = state.players.find((p) => p.id === action.id)
+      if (!target) return 'That player has already left.'
+      // A host who could remove *people* is a different feature with a
+      // different conversation attached to it. This one only fires bots.
+      if (!target.bot) return 'You can only remove a bot.'
       return true
     }
 

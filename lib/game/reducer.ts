@@ -13,6 +13,7 @@ import {
   durationFor,
 } from './constants'
 import { pick, shuffle } from './rng'
+import { asBotDifficulty } from '@/lib/bots/types'
 import { asHatId } from '@/lib/hats'
 import { SAMPLE_GIFS, sampleAt } from '@/lib/gifs/samples'
 import { toMediaRef } from '@/lib/gifs/types'
@@ -81,6 +82,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
         // `asHatId` rejects `'crown'` too: it is the room's to award, not
         // anybody's to claim.
         hat: asHatId(action.player.hat),
+        // Narrowed the same way a hat is, and for the same reason: this
+        // arrives from a browser and selects a persona. `authorize` has
+        // already refused it from anyone but the host.
+        ...(asBotDifficulty(action.player.bot) ? { bot: asBotDifficulty(action.player.bot) } : {}),
         isHost: state.players.length === 0,
         connection: 'online',
         joinedAt: action.at,
@@ -118,6 +123,17 @@ export function reduce(state: GameState, action: GameAction): GameState {
 
     case 'host/left':
       return bump({ ...state, phase: 'podium', clock: { status: 'idle' } })
+
+    case 'host/botRemoved': {
+      const target = state.players.find((p) => p.id === action.id)
+      // Only ever a bot. A host who could remove *people* is a different
+      // feature with a different conversation attached to it.
+      if (!target?.bot) return state
+      // Removed outright, not held. A held seat exists to survive a reconnect,
+      // and nothing is coming back — leaving it would keep a phantom in every
+      // phase gate for `SEAT_GRACE_MS` and in the roster forever.
+      return bump({ ...state, players: state.players.filter((p) => p.id !== action.id) })
+    }
 
     case 'game/started': {
       if (state.players.length < MIN_PLAYERS) return state

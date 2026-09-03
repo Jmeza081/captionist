@@ -87,6 +87,17 @@ export type HatId =
  */
 export type FaceHat = HatId | 'crown'
 
+/**
+ * How ruthless a hired bot is.
+ *
+ * Wire vocabulary, so it lives here rather than in `lib/bots/` — a union of
+ * literals for the same reason `HatId` is one: it arrives from the host's
+ * browser and decides which persona a prompt is built from, and
+ * `Record<BotDifficulty, BotPersona>` turns "a level with no persona" into a
+ * compile error. `lib/bots/types.ts` re-exports it so the seam reads whole.
+ */
+export type BotDifficulty = 'intern' | 'senior' | 'principal'
+
 export interface Player {
   id: PlayerId
   /** Drives the initial and the accessible label. */
@@ -107,6 +118,15 @@ export interface Player {
    * hold one of the sixteen.
    */
   hat?: HatId
+  /**
+   * Set when this seat is a bot, and to which level.
+   *
+   * Absent means a person. Additive on purpose: `Player` stays structurally
+   * assignable to `PlayerFace` (invariant 2), and the roster reads this to
+   * label a bot — which is not decoration. Nobody should believe a bot is a
+   * colleague, so the badge is the one thing that must never be optional.
+   */
+  bot?: BotDifficulty
   isHost: boolean
   connection: ConnectionState
   joinedAt: number
@@ -128,7 +148,7 @@ export interface Player {
  * may not import from `components/` — the dependency runs the other way, and
  * the atom's props are what have to stay assignable from this.
  */
-export type PlayerFace = Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'> & {
+export type PlayerFace = Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed' | 'bot'> & {
   /** Their hat, or the crown while they lead. See `FaceHat`. */
   hat?: FaceHat
 }
@@ -145,7 +165,22 @@ export type PlayerFace = Pick<Player, 'name' | 'color' | 'src' | 'avatarSeed'> &
  * react mode.
  */
 export type RoundSubject =
-  | { kind: 'media'; media: MediaRef }
+  | {
+      kind: 'media'
+      media: MediaRef
+      /**
+       * What the picker searched to find this GIF.
+       *
+       * A human-authored description of the joke intended, which used to be
+       * handed to the provider by `reportPick` and then thrown away. It costs
+       * nothing to keep and it is the best grounding a bot gets for a picture
+       * it is captioning. Not a secret: every player can already see the GIF.
+       *
+       * Optional because a fixture, the offline shelf and a bot's own pick all
+       * arrive without one.
+       */
+      query?: string
+    }
   | { kind: 'prompt'; text: string }
 
 /** What a player submitted. Same leaf-union reasoning as `RoundSubject`. */

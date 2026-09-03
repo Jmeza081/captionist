@@ -57,6 +57,14 @@ export interface Levers {
    */
   gifs?: 'stub' | 'live' | 'giphy' | 'klipy'
   /**
+   * Where a bot's jokes come from.
+   *
+   * `stub` is the written-in corpus — offline, free and the same every time,
+   * which is the road the whole suite takes. `live` calls the model. Named
+   * `brain` rather than `bots` because that one is taken by the count.
+   */
+  brain?: 'stub' | 'live'
+  /**
    * Which transport the room runs on.
    *
    * A real room is Ably — that is the only way two devices reach each other,
@@ -132,6 +140,9 @@ export function readLevers(
   if (gifs === 'stub' || gifs === 'live' || gifs === 'giphy' || gifs === 'klipy') {
     levers.gifs = gifs
   }
+
+  const brain = search.get('brain')
+  if (brain === 'stub' || brain === 'live') levers.brain = brain
 
   // `> 0` rather than `>= 0`: zero guests and no guests are the same room, and
   // `Number(null)` is 0 — so a bare `>= 0` would set the lever on every URL
