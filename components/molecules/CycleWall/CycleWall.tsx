@@ -199,10 +199,11 @@ export function CycleWall({
         prop a caller can forget. It appears only once real art has resolved,
         because until then there is nothing of theirs on screen.
       */}
-        {art && (
-          <span className={styles.credit}>GIFs via {intendedProvider().descriptor.name}</span>
-        )}
       </div>
+
+      {art && (
+        <span className={styles.credit}>GIFs via {intendedProvider().descriptor.name}</span>
+      )}
     </div>
   )
 }

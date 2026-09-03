@@ -13,6 +13,13 @@
 .bounds {
   container-type: inline-size;
   width: 100%;
+  // A column, so the credit is a line centred *under* the row rather than an
+  // absolute corner of it — which is what let it read as belonging to whichever
+  // frame it happened to sit beside.
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-8;
 }
 
 /**
@@ -28,15 +35,12 @@
   --cycle-duration: #{t.$cycle-duration};
   --cycle-offset: #{t.$cycle-frame-offset};
 
-  position: relative;
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
   gap: t.$space-10;
   max-width: 100%;
   overflow: hidden;
-  // Room for the credit under the frames.
-  padding-bottom: t.$space-20;
 }
 
 .frame {
@@ -126,25 +130,18 @@
 }
 
 /**
- * Left on a phone, right where there is room.
+ * Centred under the row, on the row's own axis.
  *
- * The chat key is fixed to the bottom-right corner of the viewport, and on a
- * narrow screen the wall's own bottom-right is exactly under it — a credit with
- * a button on top of it is not a credit.
+ * It hung off one end before, which read as a label for the frame nearest it
+ * rather than for the wall — and on a phone that end was under the chat key.
+ * Centred it is neither, and it needs no breakpoint to stay out of the way.
  */
 .credit {
-  position: absolute;
-  left: 0;
-  bottom: 0;
   font-family: t.$font-sans;
   font-size: 11px;
   font-weight: 500;
   color: t.$text-timestamp;
-
-  @include t.mq('md') {
-    left: auto;
-    right: 0;
-  }
+  text-align: center;
 }
 
 /**
