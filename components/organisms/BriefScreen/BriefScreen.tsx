@@ -2,21 +2,18 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
-import { SceneBackdrop } from '@/components/molecules/SceneBackdrop'
 import { Button } from '@/components/atoms/Button'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { TextField } from '@/components/atoms/TextField'
+import { CycleWall } from '@/components/molecules/CycleWall'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
+import { UpNext } from '@/components/molecules/UpNext'
 import { RoundPicker } from '@/components/organisms/RoundPicker'
 import { PROMPT_MAX, PROMPT_STARTERS } from '@/lib/game/constants'
-import { briefCopy, roleHolder, toAvatarProps } from '@/lib/game/selectors'
-import { BACKDROP_SLUG } from '@/lib/gifs/art'
-import { toBackdrop } from '@/lib/gifs/backdrop'
-import { intendedProvider } from '@/lib/gifs/registry'
-import { useResolvedOne } from '@/lib/gifs/useArt'
+import { briefCopy, roleHolder, toAvatarProps, upNextRoleHolders } from '@/lib/game/selectors'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
 import { toMediaRef, type GifResult } from '@/lib/gifs/types'
 import { useRoom } from '@/lib/room/useRoom'
@@ -40,6 +37,26 @@ import styles from './BriefScreen.module.scss'
  * was actually looking at rather than one off the offline shelf.
  */
 const AUTO_PICK_LEAD_MS = 1_200
+
+/**
+ * How many faces the queue shows.
+ *
+ * Three is the design's, and it is about as many as a pill can hold before the
+ * stack stops reading as an order. `upNextRoleHolders` caps it again by the
+ * rounds actually left, so a room near the end shows fewer or none.
+ */
+const UP_NEXT_SHOWN = 3
+
+/**
+ * What the queue means.
+ *
+ * The design's artboard says "order is randomised each round". It is not: the
+ * rotation is `roleHolderIndex` modulo a roster kept in join order, so the
+ * queue is fixed and a room could catch the claim out by round three. This says
+ * the true thing instead, which is also the more useful one — those three faces
+ * are a schedule, not a shuffle.
+ */
+const UP_NEXT_NOTE = 'in the order they joined'
 
 export function BriefScreen() {
   const { state, selfId, send } = useRoom()
@@ -93,16 +110,6 @@ export function BriefScreen() {
    * own staged pick wins; failing that, a random tile off the board you were
    * looking at.
    */
-  /**
-   * Resolved in the browser, so there is a beat with no clip.
-   *
-   * The screen used to render nothing at all for it. It tunes static instead —
-   * `SceneBackdrop` draws the state rather than the absence — and settles to a
-   * plain background if the lookup comes back with nothing.
-   */
-  const waiting = useResolvedOne(BACKDROP_SLUG)
-  const backdrop = waiting.gif ? toBackdrop(waiting.gif) : undefined
-
   const armed = useRef({ picked, results: gifs.results, send, chose: gifs.chose })
   // Every render, deliberately: the timer must see the board as it is when it
   // fires, not as it was when it was set. Writing a ref during render is what
@@ -147,50 +154,41 @@ export function BriefScreen() {
 
   if (copy.view === 'pickwait' || copy.view === 'promptwait') {
     return (
-      <>
-        {/* The barest screen in the app — an avatar, a headline and a lot of
-            canvas — so it gets something to look at while somebody else works.
-            Behind the content and inert; the clip is nearly black with one
-            warm ember, which is why a soft scrim is enough.
-
-            A *sibling* of the column, not a child of it: the backdrop is
-            positioned and the headline is not, so inside the same stacking
-            context the backdrop would paint over the words it is supposed to
-            sit behind. Out here it is the column that takes the layer. */}
-        {/* Static while the clip is still coming, the clip once it lands, and
-            nothing at all if it never does. */}
-        <SceneBackdrop
-          mp4={backdrop?.mp4}
-          still={backdrop?.still}
-          tuning={waiting.pending}
-          scrim="full"
-        />
-
-        <Stack gap={20} align="center" className={styles.waiting}>
+      <Stack gap={34} align="center" className={styles.waiting}>
+        <Stack gap={26} align="center">
           {holder && (
             <div className={styles.halo}>
               <Avatar {...toAvatarProps(state, holder)} size={88} />
               <span className={styles.badge}>{copy.eyebrow}</span>
             </div>
           )}
-          <Stack gap={8} align="center">
-            <h1 className={styles.waitHeadline}>{copy.headline}</h1>
-            {copy.headlineSecond && (
-              <p className={styles.waitSecond}>{copy.headlineSecond}</p>
-            )}
+          <Stack gap={14} align="center">
+            <Stack gap={8} align="center">
+              <h1 className={styles.waitHeadline}>{copy.headline}</h1>
+              {copy.headlineSecond && (
+                <p className={styles.waitSecond}>{copy.headlineSecond}</p>
+              )}
+            </Stack>
+            {copy.body && <p className={styles.waitBody}>{copy.body}</p>}
           </Stack>
-          {copy.body && <p className={styles.waitBody}>{copy.body}</p>}
-
-          {/* Somebody's work, not our chrome. Small, last, and out of the way —
-              but present, because the alternative is using it uncredited. No
-              link: the provider publishes a title, not an uploader page. */}
-          {backdrop && (
-            <span className={styles.credit}>
-              Backdrop “{backdrop.credit}” via {intendedProvider().descriptor.name}
-            </span>
-          )}
         </Stack>
-      </>
+
+        {/* The design's answer to dead time, and its own note is the brief:
+            anticipation rather than an empty spinner. It is also the only thing
+            on this screen that moves, now that the full-bleed clip behind the
+            words is gone — one wall of GIFs beats a blurred one underneath. */}
+        <CycleWall />
+
+        {/* Who takes the role next, in the order they actually will. Renders
+            nothing on the last round, when there is no next. */}
+        <UpNext
+          after={holder?.name ?? 'them'}
+          players={upNextRoleHolders(state, UP_NEXT_SHOWN).map((player) =>
+            toAvatarProps(state, player),
+          )}
+          note={UP_NEXT_NOTE}
+        />
+      </Stack>
     )
   }
 

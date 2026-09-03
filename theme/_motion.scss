@@ -145,3 +145,29 @@ $duration-genie-out: 170ms;
 // Auto-dismiss timings the logic layer needs to match.
 $dismiss-snackbar: 2800ms;
 $dismiss-interstitial: 3800ms;
+
+/**
+ * The waiting wall's cross-fade — `gcy` in the design.
+ *
+ * Every frame stacks the same number of GIFs and runs this on all of them at
+ * one duration, staggered by even fractions of it, so exactly one is opaque at
+ * a time and the swap is a dissolve rather than a cut. Each layer holds for 22%
+ * of the cycle, fades out over the next 4%, waits its turn, and fades back in
+ * over the last 4% — which is why the visible window is a little under a
+ * quarter for four layers rather than exactly one.
+ */
+@mixin gifCycleKeyframes {
+  @keyframes gifCycle {
+    0%,
+    22% {
+      opacity: 1;
+    }
+    26%,
+    96% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+}

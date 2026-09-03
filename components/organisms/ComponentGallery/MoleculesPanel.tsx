@@ -12,6 +12,7 @@ import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { AppHeader } from '@/components/molecules/AppHeader'
 import { AvatarPicker } from '@/components/molecules/AvatarPicker'
 import { ChatMessage } from '@/components/molecules/ChatMessage'
+import { CycleWall } from '@/components/molecules/CycleWall'
 import { ChatRail } from '@/components/molecules/ChatRail'
 import { CodeEntry } from '@/components/molecules/CodeEntry'
 import { Composer } from '@/components/molecules/Composer'
@@ -32,6 +33,7 @@ import { RoomToolbox } from '@/components/molecules/RoomToolbox'
 import { RoundOpener } from '@/components/molecules/RoundOpener'
 import { TunedImage } from '@/components/molecules/TunedImage'
 import { UnreadDivider } from '@/components/molecules/UnreadDivider'
+import { UpNext } from '@/components/molecules/UpNext'
 import { formatClock } from '@/components/atoms/TimerPill'
 import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
 import { ROOM_FACE } from '@/lib/room/announce'
@@ -181,6 +183,22 @@ export function MoleculesPanel() {
             caption="Winner — 4px ring"
           />
         </Grid>
+      </Section>
+
+      <Section id="cycle-wall">
+        <Case label="Cycling wall — dead channels here, the provider's art in a room">
+          <CycleWall />
+        </Case>
+      </Section>
+
+      <Section id="up-next">
+        <Case label="Up next — the role rotation, capped by the rounds left">
+          <UpNext
+            after="Vic"
+            players={[PLAYERS.jesse, PLAYERS.jesska, PLAYERS.lukasz]}
+            note="in the order they joined"
+          />
+        </Case>
       </Section>
 
       <Section id="tuned-image">

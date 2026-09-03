@@ -84,29 +84,34 @@
 
 /* ---------------- Waiting on the role holder ---------------- */
 
+/**
+ * The wait, under the room's own glow.
+ *
+ * A full-bleed clip used to sit back here, veiled — the answer to a screen that
+ * was an avatar, a headline and a lot of empty canvas. The canvas has a wall of
+ * GIFs on it now, and a blurred copy of the same idea underneath was the worse
+ * of the two. So: the glow every other screen uses, and the wall to look at.
+ *
+ * Same pair of includes `WaitingScreen`'s own role-holder face takes, for the
+ * same reasons — the circle rides up past this box's top edge and `AppHeader`
+ * paints over the cut, and horizontally it is wider than a phone, so clip or
+ * the page itself widens.
+ */
 .waiting {
-  padding-top: t.$space-44;
+  @include t.screenGlow;
+  @include t.screenClip;
+
+  // A phone has no room to open on 44px of nothing above a 112px avatar; a
+  // desktop does, and the design's board is drawn with it.
+  padding-top: t.$space-20;
+  // Clear of the chat and toolbox keys, which float over the bottom of a phone
+  // and would otherwise land on the queue.
+  padding-bottom: t.$space-52;
   text-align: center;
-  // Above the fixed backdrop, which sits at `z-index: 0` — see `SceneBackdrop`.
-  position: relative;
-  z-index: 1;
-}
 
-// Attribution, quiet enough to be furniture. It is the only thing on this
-// screen you can click, so it keeps a real focus ring.
-.credit {
-  @include t.focusRing;
-
-  margin-top: t.$space-26;
-  font-family: t.$font-sans;
-  font-size: 12px;
-  font-weight: 500;
-  color: t.$text-timestamp;
-  text-decoration: none;
-  border-radius: t.$radius-pill;
-
-  &:hover {
-    color: t.$text-meta;
+  @include t.mq('md') {
+    padding-top: t.$space-44;
+    padding-bottom: 0;
   }
 }
 
@@ -137,9 +142,17 @@
   white-space: nowrap;
 }
 
+/**
+ * The design's second display ramp, not the hero's.
+ *
+ * Artboard 1h sets this at 60px on a 1440 board. `displayText` is the front
+ * door's ramp and reaches 98px there — which is what this screen used to wear,
+ * back when the headline was nearly the only thing on it. With a wall and a
+ * queue under it, 98px is a shout with no room left to land in.
+ */
 .waitHeadline {
   margin: 0;
-  @include t.displayText;
+  @include t.displaySmallText;
 }
 
 .waitSecond {

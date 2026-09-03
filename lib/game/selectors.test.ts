@@ -28,6 +28,7 @@ import {
   promptRemaining,
   rankSlotCount,
   revealCopy,
+  upNextRoleHolders,
   roundsHint,
   scoreCopy,
   seatSecondsLeft,
@@ -223,6 +224,34 @@ describe('the waiting screen', () => {
 
     const two = fixtureFor('waiting', { players: 5, out: 2 })
     expect(waitingCopy(two).action).toBe('Start voting without 2 players')
+  })
+})
+
+describe('the queue on the waiting screen', () => {
+  it('reads off the rotation rather than guessing at it', () => {
+    const state = fixtureFor('brief', { players: 5 })
+    const names = upNextRoleHolders(state, 3).map((player) => player.name)
+
+    // `roleHolderIndex + 1 …`, modulo a roster held in join order — so this is
+    // the schedule, and the design's "randomised each round" was not.
+    expect(names).toEqual(
+      [1, 2, 3].map((i) => state.players[(state.roleHolderIndex + i) % 5]?.name),
+    )
+  })
+
+  it('promises no more holders than there are rounds left', () => {
+    // Three faces under "up next" in a room with one round to go would be two
+    // promises the game never keeps.
+    const state = fixtureFor('brief', { players: 5, settings: { totalRounds: 2 } })
+    expect(upNextRoleHolders({ ...state, roundNumber: 1 }, 3)).toHaveLength(1)
+    expect(upNextRoleHolders({ ...state, roundNumber: 2 }, 3)).toEqual([])
+  })
+
+  it('wraps rather than running off the end of the roster', () => {
+    const state = fixtureFor('brief', { players: 3, settings: { totalRounds: 5 } })
+    const names = upNextRoleHolders({ ...state, roleHolderIndex: 2 }, 3).map((p) => p.name)
+    expect(names).toHaveLength(3)
+    expect(new Set(names).size).toBe(3)
   })
 })
 

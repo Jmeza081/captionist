@@ -80,7 +80,12 @@ export function SceneBackdrop({
     if (!el) return
     if (stillPreferred) el.pause()
     else void el.play().catch(() => undefined)
-  }, [stillPreferred])
+    // `mp4` is not read here. It is the dependency that says *the element may
+    // be a different one now*: the clip is resolved over the network, so the
+    // `<video>` mounts a beat after the preference has settled — and without
+    // this the effect had already run for the last time before the element
+    // existed, leaving the clip paused on its poster forever.
+  }, [stillPreferred, mp4])
 
   // Settled on nothing: no clip, and none coming. The screen keeps its own
   // background, which is exactly what it had before any of this was fetched.

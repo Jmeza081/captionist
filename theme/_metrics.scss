@@ -191,6 +191,47 @@ $media-rank-badge: 28px;
 $media-ring: 3px;
 $media-ring-winner: 4px;
 
+/**
+ * The waiting wall — `Captionist Screens.dc.html` 1h.
+ *
+ * Four frames of a fixed size rather than a fluid grid: the design's note calls
+ * this "a live cycling GIF wall", and what makes it read as a wall rather than
+ * a gallery is that every frame is the same landscape rectangle whatever is in
+ * it. Below the breakpoint the row scrolls rather than shrinking, because a
+ * 214px frame is already the smallest a GIF is worth showing at.
+ */
+$cycle-frame-width: 214px;
+$cycle-frame-height: 150px;
+// A phone gets a smaller frame, not fewer of them: the wall is a texture, and
+// two big rectangles read as a gallery that lost most of itself. At this size
+// three fit across a 393px screen with the fourth showing its edge, which is
+// what says "keep going" without a control that says it.
+$cycle-frame-width-sm: 150px;
+$cycle-frame-height-sm: 105px;
+/**
+ * How long one frame takes to walk its whole set.
+ *
+ * Not a motion token, because it is not an easing or a transition: it is the
+ * length of the loop, and `CycleWall` divides it by the number of layers to get
+ * each one's offset. 12s over four layers is three seconds a GIF — long enough
+ * to register a joke, short enough that a 90-second wait is not four pictures.
+ */
+$cycle-duration: 12s;
+// How far each frame's cycle is nudged from its neighbour's, so the four do not
+// all change at the same instant — which reads as one flicker rather than a
+// wall that is alive.
+$cycle-frame-offset: 0.6s;
+
+// --- Up next --------------------------------------------------------------
+
+$upnext-pad-y: 14px;
+$upnext-pad-x: 24px;
+// The faces overlap, and the ring is the page behind them rather than a border
+// colour — so a stack reads as a stack at any background.
+$upnext-overlap: -9px;
+$upnext-ring: 2px;
+$upnext-divider-height: 18px;
+
 // --- Chat -----------------------------------------------------------------
 
 $chat-avatar: 30px;

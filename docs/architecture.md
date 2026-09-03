@@ -215,6 +215,36 @@ random tile off the board they were looking at, so the room normally gets a GIF
 somebody was actually browsing. The shelf is for a role holder whose tab is
 gone.
 
+**The pick wait is the design's screen now — a wall, not a backdrop.** A guest
+watching somebody else choose used to get a headline over a full-bleed clip,
+veiled at the landing hero's weight. `Captionist Screens.dc.html` artboard 1h
+draws it differently and says why: *"turns unavoidable dead time into
+anticipation with a live cycling GIF wall … rather than an empty spinner. Also
+the moment the room learns who to blame for the image."* So the canvas is the
+room's own `screenGlow`, and under the copy sit `CycleWall` — four frames
+dissolving through sixteen GIFs on a pure-CSS schedule — and `UpNext`, the
+rotation as a pill.
+
+**Neither costs a lookup.** `CycleWall` resolves `WALL_SLUGS`, the landing
+wall's own set, and `resolveArt` holds one answer per slug set for the life of
+the page — so a player who came through the front door has already paid for
+them, and a ten-round room resolves them once rather than once a round. That is
+the constraint ADR-0021 wrote down, met by sharing rather than by fetching less.
+
+**The queue tells the truth the artboard does not.** The design captions it
+"order is randomised each round"; `roleHolderIndex` is a modulo over a roster
+kept in join order, so the rotation is fixed and a room would catch the claim
+out by round three. `upNextRoleHolders` reads the real schedule and **caps it by
+the rounds remaining** — three faces in a room with one round left would be two
+promises the game never keeps — and the pill says "in the order they joined".
+
+**`SceneBackdrop` has no caller left.** It is kept rather than deleted, and it
+kept its bug fix on the way past: the play effect takes the clip's URL as a
+dependency, because the clip resolves over the network and the `<video>` mounts
+a beat after the motion preference settles — without it the effect had already
+run for the last time before the element existed, and the backdrop sat on its
+poster forever. `HeroWall` had always had that dependency; this is why.
+
 **The pick screen lost its bottom row, and the search field started working.**
 `useGifSearch` exposes `setQuery`; both boards were passing
 `onQueryChange={() => {}}` against a `query`-controlled field, which meant the

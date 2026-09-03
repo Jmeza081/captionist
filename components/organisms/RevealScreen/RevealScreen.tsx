@@ -126,7 +126,7 @@ export function RevealScreen() {
               <Eyebrow tone="muted">{copy.runnersUpLabel}</Eyebrow>
               <Stack gap={8}>
                 {others.map((entry, i) => (
-                  <Inline key={entry.entryId} gap={12} className={styles.runner}>
+                  <Inline key={entry.entryId} gap={14} className={styles.runner}>
                     <span className={styles.runnerRank}>{i + 2}</span>
                     {entry.author && <Avatar {...entry.author} size={34} />}
                     <Stack gap={2} className={styles.who}>

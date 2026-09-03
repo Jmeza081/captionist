@@ -967,6 +967,26 @@ export function nextRoleHolder(state: GameState): Player | undefined {
   return state.players[(state.roleHolderIndex + 1) % state.players.length]
 }
 
+/**
+ * Who holds the role after this one, in the order they actually will.
+ *
+ * The rotation is `roleHolderIndex` modulo the roster, and the roster is join
+ * order — so this is not a guess, it is the schedule. **Capped by the rounds
+ * that are left**, which is the part worth getting right: a five-player room
+ * playing two rounds has exactly one more role holder, and three faces under
+ * "up next" would be two promises the game will not keep.
+ *
+ * Empty on the last round, and the pill that reads this renders nothing then.
+ */
+export function upNextRoleHolders(state: GameState, limit: number): Player[] {
+  const roster = state.players.length
+  if (roster === 0) return []
+  const remaining = state.settings.totalRounds - state.roundNumber
+  return Array.from({ length: Math.max(0, Math.min(limit, remaining)) }, (_, i) => {
+    return state.players[(state.roleHolderIndex + 1 + i) % roster] as Player
+  })
+}
+
 /** Narrows the round subject once, so nothing downstream has to. */
 export function requireSubject(state: GameState): RoundSubject | undefined {
   return state.round?.subject ?? undefined

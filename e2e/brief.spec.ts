@@ -88,135 +88,101 @@ test.describe('the brief', () => {
     await expect(page.locator('main[data-phase]')).toHaveAttribute('data-phase', 'compose')
   })
 
-  test('gives the wait something to look at, without losing the words', async ({
-    page,
-  }) => {
+  test('waits behind a wall of GIFs, under the room glow', async ({ page }) => {
     /**
-     * The backdrop is resolved in the browser now, from a slug.
-     *
-     * A server may not fetch it and its URL may not be committed, so there is
-     * nothing on screen until a client has asked — and this suite resolves every
-     * host but the dev server to nothing. Routing the lookup is what keeps the
-     * layering contract below checkable at all.
+     * The design's own note on artboard 1h is what this guards: dead time
+     * turned into anticipation with a live cycling wall, *"rather than an empty
+     * spinner"*. A full-bleed clip used to be veiled behind the words instead,
+     * which was the same idea drawn worse — so nothing sits behind the copy now
+     * but the room's glow.
      */
-    await page.route('**api.klipy.com/**', (route) =>
-      route.fulfill({
+    await page.route('**api.klipy.com/**', (route) => {
+      // The adapter maps answers back onto the slugs it asked for, so a stub
+      // has to echo them — invented ids resolve to an empty wall.
+      const asked =
+        new URL(route.request().url()).searchParams.get('slugs')?.split(',') ?? []
+      return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           result: true,
           data: {
-            data: [
-              {
-                slug: 'gunna-fire',
-                title: 'Gunna: Fire and Writing',
-                type: 'gif',
-                tags: [],
-                file: {
-                  md: {
-                    gif: { url: 'https://static.klipy.com/b.gif', width: 640, height: 454 },
-                    mp4: { url: 'https://static.klipy.com/b.mp4', width: 640, height: 454 },
-                  },
-                  xs: { jpg: { url: 'https://static.klipy.com/b.jpg', width: 90, height: 64 } },
+            data: asked.map((slug, i) => ({
+              slug,
+              title: `Art ${i}`,
+              type: 'gif',
+              tags: [],
+              file: {
+                md: {
+                  gif: { url: `https://static.klipy.com/a${i}.gif`, width: 480, height: 360 },
+                  mp4: { url: `https://static.klipy.com/a${i}.mp4`, width: 480, height: 360 },
+                },
+                xs: {
+                  jpg: { url: `https://static.klipy.com/a${i}.jpg`, width: 90, height: 64 },
                 },
               },
-            ],
+            })),
             current_page: 1,
             per_page: 50,
             has_next: false,
           },
         }),
-      }),
-    )
+      })
+    })
 
-    // `?gifs=klipy`, not `stub`: the shelf switch now keeps every surface off a
-    // provider, backdrop included, which is what the sibling test below checks.
     await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=klipy')
     await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
 
-    const backdrop = page.locator('[data-testid="scene-backdrop"]')
-    // The clip hangs off a `<source>`, which is what lets the element carry a
-    // poster the browser shows without fetching a byte of video.
-    await expect(backdrop.locator('source')).toHaveAttribute('src', /\.mp4$/)
-
+    const wall = page.getByRole('img', { name: /wall of looping/ })
+    await expect(wall).toBeVisible()
+    // Four frames, each holding the four clips it dissolves between.
+    await expect(wall.locator('video')).toHaveCount(16)
     // Playback starts off and a client island turns it on — ADR 0005. The
-    // suite resolves every host but the dev server to nothing, so the clip
-    // never loads here; what is checkable is the contract around it.
-    await expect(backdrop).not.toHaveAttribute('autoplay', /.*/)
-    await expect(backdrop).toHaveAttribute('poster', /\.jpg$/)
+    // clips never load here, so what is checkable is the contract around them.
+    await expect(wall.locator('video').first()).not.toHaveAttribute('autoplay', /.*/)
+    await expect(wall.locator('video').first()).toHaveAttribute('poster', /\.jpg$/)
 
-    // Inert, and behind the words rather than over them: the headline used to
-    // sit *under* the scrim, which is what a positioned child inside the same
-    // stacking context does to an unpositioned sibling.
-    const layers = await page.evaluate(() => {
-      const media = document.querySelector('[data-testid="scene-backdrop"]')!
-      const shell = media.closest('div')!
-      const headline = document.querySelector('h1')!
-      // `compareDocumentPosition` gives paint order for siblings in one context.
-      return {
-        hidden: shell.getAttribute('aria-hidden'),
-        headlineAfter: Boolean(
-          shell.compareDocumentPosition(headline) & Node.DOCUMENT_POSITION_FOLLOWING,
-        ),
-      }
-    })
-    expect(layers.hidden).toBe('true')
-    expect(layers.headlineAfter).toBe(true)
+    // Somebody else's art, credited once for the wall.
+    await expect(page.getByText('GIFs via KLIPY')).toBeVisible()
 
-    // The clip is somebody's work and says so. No link any more — the provider
-    // publishes a title, not an uploader page.
-    await expect(page.getByText(/Backdrop .* via KLIPY/)).toBeVisible()
-  })
-
-  test('waits without a backdrop rather than breaking when none resolves', async ({
-    page,
-  }) => {
-    // The ordinary offline case, and the one the rest of this suite runs in: no
-    // key, no network, no lookup. A decoration that has not arrived is simply a
-    // decoration that has not arrived, and the wait still reads without it.
-    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
-
-    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
+    // Nothing behind the words any more.
     await expect(page.locator('[data-testid="scene-backdrop"]')).toHaveCount(0)
-    await expect(page.getByText(/Backdrop/)).toHaveCount(0)
-
-    // Settled on nothing is not the same as still looking: a dead channel
-    // hissing behind the words forever would be a distraction, not a flourish.
     await expect(page.locator('[data-testid="scene-backdrop-tuning"]')).toHaveCount(0)
   })
 
-  test('tunes a dead channel while the backdrop is still coming', async ({ page }) => {
+  test('tunes dead channels in the wall when no art resolves', async ({ page }) => {
+    // The ordinary offline case, and the one the rest of this suite runs in: no
+    // key, no network, no lookup. The wall is the same four frames either way —
+    // it is sized in CSS, not by its contents — so nothing on the screen moves
+    // when the art does or does not arrive.
+    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
+
+    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
+
+    const wall = page.getByRole('img', { name: /wall of looping/ })
+    await expect(wall).toBeVisible()
+    await expect(wall.getByTestId('tv-static')).toHaveCount(4)
+    await expect(wall.locator('video')).toHaveCount(0)
+    // Ours, not theirs — there is nothing of the provider's on screen to credit.
+    await expect(page.getByText(/via KLIPY/)).toHaveCount(0)
+  })
+
+  test('names who takes the role next, and does not promise a round that is left', async ({
+    page,
+  }) => {
     /**
-     * The clip is fetched in the browser, so there is a beat with nothing to
-     * show. It used to be blank, which read as a screen that had forgotten its
-     * own design; it draws static now.
-     *
-     * The lookup is held open rather than mocked away — the state under test is
-     * *pending*, and a route that answered instantly would skip straight past it.
+     * The rotation is `roleHolderIndex` modulo a roster held in join order, so
+     * the queue is a schedule rather than the shuffle the artboard's caption
+     * claims — and it is capped by the rounds actually remaining, which is the
+     * part a five-player room playing its last round would otherwise get wrong.
      */
-    let release = () => {}
-    const held = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    await page.route('**api.klipy.com/**/gifs/items**', async (route) => {
-      await held
-      await route.abort()
-    })
+    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
 
-    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=klipy')
-    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
-
-    const tuning = page.locator('[data-testid="scene-backdrop-tuning"]')
-    await expect(tuning).toBeVisible()
-    // Static, not a half-built video element.
-    await expect(page.locator('[data-testid="scene-backdrop"]')).toHaveCount(0)
-
-    // The words are what the screen is for, and they still win over the grain.
-    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
-
-    // And it clears itself once the lookup settles, however it settles.
-    release()
-    await expect(tuning).toHaveCount(0)
+    const queue = page.getByText(/^Up next after/)
+    await expect(queue).toHaveText('Up next after Jesse')
+    await expect(page.getByText('in the order they joined')).toBeVisible()
+    // The claim the design made and the code does not keep.
+    await expect(page.getByText(/randomised/)).toHaveCount(0)
   })
 
   test('turns the wait into something to read', async ({ page }) => {

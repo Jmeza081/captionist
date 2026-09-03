@@ -149,8 +149,12 @@
   }
 }
 
+// Roomier than the design's `13px 16px`, which the scale cannot say — it runs
+// 12 · 14 · 20, so both numbers round, and rounding both *down* is what left
+// the rank against one edge and the score against the other under an
+// attribution box padded at 20. Up on both, then: a stated +1 / +4.
 .runner {
-  padding: t.$space-12 t.$space-14;
+  padding: t.$space-14 t.$space-20;
   border-radius: t.$radius-field;
   background-color: t.$fill-subtle;
 }

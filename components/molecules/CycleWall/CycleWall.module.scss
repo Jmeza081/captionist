@@ -1,0 +1,127 @@
+@use 'theme' as t;
+
+@include t.gifCycleKeyframes;
+
+/**
+ * Four frames in a row, and it scrolls rather than shrinks.
+ *
+ * A 214px frame is already the smallest a GIF is worth showing at, so on a
+ * phone the row runs off the edge and can be pushed sideways — which is also
+ * the honest thing for a wall: you are meant to be looking at it, not reading
+ * it, and four postage stamps would be neither.
+ */
+.wall {
+  --cycle-duration: #{t.$cycle-duration};
+  --cycle-offset: #{t.$cycle-frame-offset};
+
+  position: relative;
+  display: flex;
+  gap: t.$space-10;
+
+  @include t.mq('md') {
+    gap: t.$space-14;
+  }
+  // Its own scroller, so the room's page never gains a sideways scrollbar.
+  max-width: 100%;
+  overflow-x: auto;
+  // Room for the credit under the frames.
+  padding-bottom: t.$space-20;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.frame {
+  position: relative;
+  flex: none;
+  width: t.$cycle-frame-width-sm;
+  height: t.$cycle-frame-height-sm;
+
+  @include t.mq('md') {
+    width: t.$cycle-frame-width;
+    height: t.$cycle-frame-height;
+  }
+  overflow: hidden;
+  border: 1px solid t.$line-hairline-strong;
+  border-radius: t.$radius-toolbox;
+  // The frame is what is sized; the layers inside it are all absolute, so an
+  // empty one is still exactly this rectangle.
+  background-color: t.$surface-header;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+/**
+ * One GIF in a stack of them, opaque for its share of the cycle.
+ *
+ * Every cycling layer carries the same animation and differs only by
+ * `--cycle-delay`, which the component computes from its position — that is
+ * what makes exactly one of them visible at a time without anything in
+ * JavaScript keeping score. A frame holding a single layer never gets this
+ * class, because `gifCycle` is three quarters silence.
+ */
+.cycling {
+  opacity: 0;
+  animation: gifCycle var(--cycle-duration) linear var(--cycle-delay) infinite;
+}
+
+.staticVeil {
+  position: absolute;
+  inset: 0;
+  background-color: t.$scrim-static;
+}
+
+.media {
+  width: 100%;
+  height: 100%;
+  // The frames are 214×150 and a GIF is any shape at all, so fill and crop
+  // rather than letterboxing onto the frame's own fill.
+  object-fit: cover;
+  object-position: center;
+}
+
+/**
+ * Left on a phone, right where there is room.
+ *
+ * The chat key is fixed to the bottom-right corner of the viewport, and on a
+ * narrow screen the wall's own bottom-right is exactly under it — a credit with
+ * a button on top of it is not a credit.
+ */
+.credit {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+
+  @include t.mq('md') {
+    left: auto;
+    right: 0;
+  }
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 500;
+  color: t.$text-timestamp;
+}
+
+/**
+ * Stillness stops the cycle, not just the clips.
+ *
+ * The component already swaps each layer's file for its still frame; without
+ * this the wall would still dissolve between four motionless pictures, which is
+ * the motion somebody asked not to see. The first layer of each frame is the
+ * one left showing.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .cycling {
+    animation: none;
+    opacity: 0;
+  }
+
+  .cycling:first-child {
+    opacity: 1;
+  }
+}

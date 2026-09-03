@@ -1,0 +1,57 @@
+@use 'theme' as t;
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: t.$space-12;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: t.$upnext-pad-y t.$upnext-pad-x;
+  border-radius: t.$radius-pill;
+  background-color: t.$fill-subtle;
+}
+
+.label {
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 600;
+  color: t.$text-caption;
+}
+
+// Hidden when the pill wraps onto two lines on a phone, where a vertical rule
+// between stacked rows separates nothing.
+.divider {
+  flex: none;
+  width: 1px;
+  height: t.$upnext-divider-height;
+  background-color: t.$line-hairline-strong;
+}
+
+.stack {
+  display: flex;
+  flex: none;
+}
+
+/**
+ * Each face overlaps the one before it, ringed in the page's own colour.
+ *
+ * A ring rather than a border: a border would darken the avatar's own edge, and
+ * what this needs is a gap between neighbours so three circles read as three.
+ */
+.face {
+  position: relative;
+  display: flex;
+  border-radius: t.$radius-avatar;
+  box-shadow: 0 0 0 t.$upnext-ring t.$surface-canvas;
+
+  & + & {
+    margin-left: t.$upnext-overlap;
+  }
+}
+
+.note {
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 500;
+  color: t.$text-meta;
+}

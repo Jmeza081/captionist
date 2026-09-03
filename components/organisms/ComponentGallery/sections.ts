@@ -90,6 +90,12 @@ export const SECTIONS = {
     spec: 'a face to play as, a format to play',
   },
   media: { tab: 'molecules', title: 'Media card', spec: '6 states · both modes' },
+  'cycle-wall': {
+    tab: 'molecules',
+    title: 'Cycling wall',
+    spec: '4 frames · dissolving through 16',
+  },
+  'up-next': { tab: 'molecules', title: 'Up next', spec: 'the rotation, as a pill' },
   'tuned-image': {
     tab: 'molecules',
     title: 'Tuned image',
