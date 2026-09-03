@@ -167,6 +167,54 @@ test.describe('the brief', () => {
     await expect(page.getByText(/via KLIPY/)).toHaveCount(0)
   })
 
+  test('keeps the wall to one row that never scrolls, at every width', async ({
+    page,
+  }) => {
+    /**
+     * Frames drop off the end as the column narrows and what is left is
+     * centred — the wall is a complete picture at every width rather than a
+     * cropped one with the rest hidden off the edge. It was a sideways scroller
+     * first, which is the thing this guards against coming back.
+     *
+     * The widths are walked on one page rather than across projects because the
+     * measure is the *container*: the docked chat rail takes 360px out of the
+     * column that no window query can see, so a wall that looked right at 1440
+     * could still spill at 1024.
+     */
+    await page.goto('/room/DEV?seed=42&phase=brief&as=p2&gifs=stub')
+    await expect(page.getByText('Jesse is scrolling for a GIF.')).toBeVisible()
+
+    const wall = page.getByRole('img', { name: /wall of looping/ })
+
+    for (const width of [360, 480, 768, 1024, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+
+      const shape = await wall.evaluate((el) => {
+        const frames = [...el.children].filter((child) =>
+          child.hasAttribute('data-frame'),
+        )
+        const shown = frames.filter((f) => (f as HTMLElement).offsetParent !== null)
+        const boxes = shown.map((f) => f.getBoundingClientRect())
+        return {
+          shown: shown.length,
+          scrolls: el.scrollWidth > el.clientWidth + 1,
+          // One row: every visible frame shares a top edge.
+          tops: new Set(boxes.map((b) => Math.round(b.top))).size,
+        }
+      })
+
+      expect(shape.scrolls, `wall scrolls at ${width}px`).toBe(false)
+      expect(shape.tops, `wall wrapped at ${width}px`).toBeLessThanOrEqual(1)
+      expect(shape.shown, `no frames at ${width}px`).toBeGreaterThan(0)
+    }
+
+    // And the page itself never gains a sideways scrollbar on the way through.
+    const spills = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    )
+    expect(spills).toBe(false)
+  })
+
   test('names who takes the role next, and does not promise a round that is left', async ({
     page,
   }) => {

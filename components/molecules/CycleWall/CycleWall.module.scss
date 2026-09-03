@@ -3,12 +3,26 @@
 @include t.gifCycleKeyframes;
 
 /**
- * Four frames in a row, and it scrolls rather than shrinks.
+ * The measured box, and the reason there is one.
  *
- * A 214px frame is already the smallest a GIF is worth showing at, so on a
- * phone the row runs off the edge and can be pushed sideways — which is also
- * the honest thing for a wall: you are meant to be looking at it, not reading
- * it, and four postage stamps would be neither.
+ * `container-type: inline-size` needs a real box to measure, and it cannot be
+ * the row itself — the row is as wide as the frames it decided to show, so
+ * asking it how much room there is would be circular. This spans the column and
+ * the row inside it reads the answer.
+ */
+.bounds {
+  container-type: inline-size;
+  width: 100%;
+}
+
+/**
+ * One row, always. Never a scroller, never two lines.
+ *
+ * Frames drop off the end as the column narrows and whatever is left is
+ * centred, so the wall is a complete picture at every width rather than a
+ * cropped one with more of itself hidden off the edge. `overflow: hidden` is a
+ * net for a column narrower than a single frame — around a 190px viewport,
+ * which nothing real is — not a scroll container.
  */
 .wall {
   --cycle-duration: #{t.$cycle-duration};
@@ -16,21 +30,13 @@
 
   position: relative;
   display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
   gap: t.$space-10;
-
-  @include t.mq('md') {
-    gap: t.$space-14;
-  }
-  // Its own scroller, so the room's page never gains a sideways scrollbar.
   max-width: 100%;
-  overflow-x: auto;
+  overflow: hidden;
   // Room for the credit under the frames.
   padding-bottom: t.$space-20;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 }
 
 .frame {
@@ -38,17 +44,57 @@
   flex: none;
   width: t.$cycle-frame-width-sm;
   height: t.$cycle-frame-height-sm;
-
-  @include t.mq('md') {
-    width: t.$cycle-frame-width;
-    height: t.$cycle-frame-height;
-  }
   overflow: hidden;
   border: 1px solid t.$line-hairline-strong;
   border-radius: t.$radius-toolbox;
   // The frame is what is sized; the layers inside it are all absolute, so an
   // empty one is still exactly this rectangle.
   background-color: t.$surface-header;
+}
+
+/**
+ * Mobile-first, counting up: one frame is the floor, and each threshold buys
+ * the next one. Hidden rather than absent, because how many fit is a question
+ * only the browser can answer and the server has to render *something*.
+ */
+.frame:nth-child(n + 2) {
+  display: none;
+}
+
+@container (min-width: #{t.$cycle-two-up}) {
+  .frame:nth-child(2) {
+    display: block;
+  }
+}
+
+@container (min-width: #{t.$cycle-three-up}) {
+  .frame:nth-child(3) {
+    display: block;
+  }
+}
+
+@container (min-width: #{t.$cycle-four-up}) {
+  .frame:nth-child(4) {
+    display: block;
+  }
+}
+
+// Four frames at the design's own size, which needs the room for all of it.
+@container (min-width: #{t.$cycle-four-up-lg}) {
+  .wall {
+    gap: t.$space-14;
+  }
+
+  .frame {
+    width: t.$cycle-frame-width;
+    height: t.$cycle-frame-height;
+  }
+}
+
+.staticVeil {
+  position: absolute;
+  inset: 0;
+  background-color: t.$scrim-static;
 }
 
 .layer {
@@ -70,17 +116,11 @@
   animation: gifCycle var(--cycle-duration) linear var(--cycle-delay) infinite;
 }
 
-.staticVeil {
-  position: absolute;
-  inset: 0;
-  background-color: t.$scrim-static;
-}
-
 .media {
   width: 100%;
   height: 100%;
-  // The frames are 214×150 and a GIF is any shape at all, so fill and crop
-  // rather than letterboxing onto the frame's own fill.
+  // The frames are a fixed rectangle and a GIF is any shape at all, so fill and
+  // crop rather than letterboxing onto the frame's own fill.
   object-fit: cover;
   object-position: center;
 }
@@ -96,15 +136,15 @@
   position: absolute;
   left: 0;
   bottom: 0;
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 500;
+  color: t.$text-timestamp;
 
   @include t.mq('md') {
     left: auto;
     right: 0;
   }
-  font-family: t.$font-sans;
-  font-size: 11px;
-  font-weight: 500;
-  color: t.$text-timestamp;
 }
 
 /**

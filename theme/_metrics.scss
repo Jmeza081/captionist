@@ -202,12 +202,28 @@ $media-ring-winner: 4px;
  */
 $cycle-frame-width: 214px;
 $cycle-frame-height: 150px;
-// A phone gets a smaller frame, not fewer of them: the wall is a texture, and
-// two big rectangles read as a gallery that lost most of itself. At this size
-// three fit across a 393px screen with the fourth showing its edge, which is
-// what says "keep going" without a control that says it.
+// The narrow frame. A phone gets a smaller one *and* fewer of them, which is
+// the whole trick: the row never scrolls and never wraps, so whatever fits is
+// centred and the rest is simply not shown.
 $cycle-frame-width-sm: 150px;
 $cycle-frame-height-sm: 105px;
+
+/**
+ * How wide the wall's container has to be for each frame to earn its place.
+ *
+ * **Container measures, not window ones.** A wall that asked the window would
+ * be wrong by exactly the width of the docked chat rail — 360px it cannot see —
+ * so at a 1024px window it would lay out four frames in a 584px column and
+ * either scroll or spill. Same trap `$compose-columns` and `$reveal-columns`
+ * are already the answer to.
+ *
+ * Each figure is the arithmetic, not a guess: frames times their width plus the
+ * gaps between them. Change a frame size or a gap and these move with it.
+ */
+$cycle-two-up: 310px; //    2 × 150 + 1 × 10
+$cycle-three-up: 470px; //  3 × 150 + 2 × 10
+$cycle-four-up: 630px; //   4 × 150 + 3 × 10
+$cycle-four-up-lg: 898px; // 4 × 214 + 3 × 14 — and where the frames go big
 /**
  * How long one frame takes to walk its whole set.
  *
