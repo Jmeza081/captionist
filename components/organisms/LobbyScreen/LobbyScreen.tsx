@@ -382,9 +382,11 @@ function HostLobby({
         open={hiring}
         onClose={() => setHiring(false)}
         onHire={(difficulty) => {
-          // No `notify` on success: the host engine announces a bot arriving
-          // in the room's own lane, and this tab hears that line too. Saying
-          // it twice is what ADR 0028 exists to stop.
+          // **No `notify` on success, and no announcement either.** A hire is
+          // a join, and ADR 0028 settled that a join gets no line because the
+          // roster already draws it — which is exactly as true when the host
+          // is the one who seated it. A refusal is different: nothing on
+          // screen would otherwise say why the roster did not change.
           if (!hireBot(difficulty)) {
             notify('That bot could not be seated. Try again.')
           }

@@ -11,8 +11,8 @@ The event lane's `chat` variant now takes an optional `attachment` and a
 `replyTo` quote, the reaction picker put its 32 reactions behind pack tabs
 with the design's four Slackmoji tiles among them, and the two `/host` settings
 that no screen read — `voting: 'single'` and `format: 'one'` — are read. Still
-nine routes and ten phases; nothing about the shape of a room moved. (A tenth
-route has landed since: the 404 page below.)
+nine routes and ten phases; nothing about the shape of a room moved. (Two have
+landed since: the 404 page below, and `/api/bots/turn`.)
 
 **Since then the reaction catalog grew from 32 to 616, and the wire did not
 change.** 584 emoji were imported from Google's Noto Animated Emoji under CC BY
@@ -843,7 +843,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | GIF search | A **provider seam**, called from the browser — Klipy by default, Giphy as the second adapter | `lib/gifs/provider.ts` is the contract (`search`, optional `share`, optional `items`) and `descriptors.ts` is the data — the brand, the placeholder, the attribution mark, the board ceiling and the media hosts, so nothing downstream hard-codes a vendor. `registry.ts` resolves who answers: `?gifs=klipy\|giphy` pins one for a page load, then `NEXT_PUBLIC_GIF_PROVIDER`, then the preference order `klipy → giphy`, and a named provider with no key falls through rather than erroring. Both keys are public by necessity — `NEXT_PUBLIC_KLIPY_API_KEY`, `NEXT_PUBLIC_GIPHY_API_KEY` — because both providers require the call to come from the client and forbid proxying and caching alike ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md) · [ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). Errors are provider-neutral too: `GifProviderError`, with `GifQuotaError` for a spent allowance, the one failure the room ends the game over. **Searching is unmetered** — a Klipy production key does not charge for boards, so the per-round budget is gone ([ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md)) |
 | GIF renditions | GIF · MP4 · WebP · a still — Giphy's `fixed_width` family, Klipy's `file.md` (with `file.xs.jpg` for the still it has no format for) | `GifResult` carries all four whichever adapter filled it, **and the rendition's own `width`/`height`** — read off the same rendition `src` came from, so the ratio describes the image actually rendered. It is a rendering hint and nothing depends on it: the picker reserves each tile's shape from it before the image lands, `SAMPLE_GIFS` states its artwork's 320×200, and `toMediaRef()` drops it with `id` and `keywords`. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
 | Bots | A **brain seam**, `lib/bots/` — `stub` written in, `claude` through our own route | `types.ts` is the contract and holds nothing that fetches: `subject`, `answers`, `ballots` — the last two **plural**, because one model call serves every bot in a phase. `personas.ts` is data only, three levels each carrying a voice, a dwell before acting and how it ranks without a model, so `BotPicker` can import it without importing a client. `source.ts` resolves the road exactly as `lib/gifs/source.ts` does — `?brain=stub\|live` beats `NEXT_PUBLIC_BOTS_STUB` **in both directions**, and no browser means no route at all. `prompt.ts` is server-side, so nothing in the bundle knows what a bot is told; `budget.ts` is a per-room tally of what the model cost, read off each response's own `usage`, local to the host's tab and never on the wire — the shape `lib/gifs/usage.ts` established. **A bot never receives a player's name**, and the cards it ranks carry no authorship because `project()` already stripped it. [ADR 0035](./adr/0035-the-comedy-is-a-seam-and-its-key-cannot-be-public.md) |
-| Bot runtime | `lib/room/BotPool.ts` — host-local, one call per phase | **The pool acts, not the seat.** It calls `engine.apply(action, botId)` directly rather than sending an intent over the transport, and reads `project(state, botId)`. Seating one is the *host's* `player/joined` carrying `bot`, which `authorize` refuses from anyone else — `player/joined` has no phase guard and is deliberately not host-only, and that openness is exactly why the check has to exist. Firing one is `host/botRemoved`, never a drop, because a bot has no presence entry to lose; `reconcile` skips bots explicitly rather than letting them survive on the `everAttached` guard written for fixture players. Every ask is raced against the phase's own remaining clock — capped at 15s, floored at 1.5s, less the slowest dwell — and falls to the written-in corpus rather than leaving a gate nobody can pass. [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md) |
+| Bot runtime | `lib/room/BotPool.ts` — host-local, and the pool acts rather than the seat | **The pool acts, not the seat.** It calls `engine.apply(action, botId)` directly rather than sending an intent over the transport, and reads `project(state, botId)`. Seating one is the *host's* `player/joined` carrying `bot`, which `authorize` refuses from anyone else — `player/joined` has no phase guard and is deliberately not host-only, and that openness is exactly why the check has to exist. Firing one is `host/botRemoved`, never a drop, because a bot has no presence entry to lose; `reconcile` skips bots explicitly rather than letting them survive on the `everAttached` guard written for fixture players. Every ask is raced against the phase's own remaining clock — capped at 15s, floored at 1.5s, less the slowest dwell — and falls to the written-in corpus rather than leaving a gate nobody can pass. [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md) |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
 
@@ -904,9 +904,11 @@ afterwards, in the browser.
 
 ## Routes
 
-Ten routes of ours, as `next build` reports them — `/_not-found` used to be
-Next's default black page and is now `app/not-found.tsx`, and `/api/bots/turn`
-is the newest, the first route handler added since the terms took `/api/gifs`:
+Ten routes of ours. `next build` reports nine — the tenth is `/components`,
+which exists only under `next dev` and is explained below. `/_not-found` used to
+be Next's default black page and is now `app/not-found.tsx`; `/api/bots/turn` is
+the newest of the nine, and the first route handler added since the terms took
+`/api/gifs`:
 
 ```
 Route (app)       Revalidate  Expire
@@ -1151,7 +1153,13 @@ page-shaped landing components: `LandingNav` and `LandingActions` are
 single-use, so `e2e/landing.spec.ts` covers them on the real page instead.
 `LandingLegal` and `LicenseModal` join it on the same argument: they are the
 landing page's own foot, single-use, and `e2e/refinements.spec.ts` covers them
-on the real page. `CloseButton` does **not** get that excuse — it is a shared
+on the real page. **`BotPicker` is the newest name on that list** — one caller,
+the host's lobby, and `e2e/bots.spec.ts` drives it there, including the Escape
+and the focus ring a gallery case would only have approximated. It is not
+`ReconnectOverlay`'s exemption: this one dismisses three ways, so it could be
+shown here; it is the single-use argument, and if a second surface ever hires a
+bot it belongs in the Molecules panel that day.
+`CloseButton` does **not** get that excuse — it is a shared
 atom serving five surfaces — so it is in the Atoms panel, at both sizes side by
 side, because the whole decision the atom records is that a header's key and a
 staged row's key are one control at two scales.
@@ -1277,8 +1285,9 @@ property, so no component ever declares a font family directly.
 
 ## Room state
 
-Three layers in a stack, plus `lib/gifs/`, `lib/avatar.ts`, `lib/ably/`,
-`lib/reactions.ts`, `lib/noto.ts` and `lib/recent-reactions.ts` alongside — and
+Three layers in a stack, plus `lib/gifs/`, `lib/bots/`, `lib/avatar.ts`,
+`lib/ably/`, `lib/reactions.ts`, `lib/noto.ts` and `lib/recent-reactions.ts`
+alongside — and
 the arrows only ever point one way. **State lives in `lib/`; `components/` is
 UI.** Providers, stores and hooks belong in `lib/room/` even though they are
 React — putting a provider in `components/` would make a tier that is supposed
@@ -1558,6 +1567,23 @@ wrong first render is the harmless one — stillness before motion, a phone's
 layout before a desk's, and no share sheet before one. None of the three knows
 anything about a room, which is why all three sit at `lib/`'s top level rather
 than in `lib/room/`.
+
+`lib/bots/` is the ninth, and it was built by copying the second. The split is
+`lib/gifs/`'s exactly — a contract with nothing that fetches (`types.ts`), the
+data a picker needs on its own (`personas.ts`), the adapters (`stub.ts`,
+`claude.ts`), and one `source.ts` that answers which road this page load is on.
+Divergence there is not a style question: two seams that disagree about what
+"stubbed" means are two ways for a suite to think it is offline while one of
+them is not, which is why `?brain=` beats its environment variable in both
+directions the way `?gifs=` had to learn to. Two files have no counterpart on
+the GIF side and both exist because a model does. `prompt.ts` is server-only, so
+the words a bot is told are not in anybody's bundle and can still be unit-tested
+without a key or a request. `budget.ts` is the tally, and it is `lib/gifs/usage.ts`
+re-used rather than re-invented: a local count, in the host's tab, never on the
+wire and never in `GameState`. It is deliberately not the cap — the cap is a
+spend limit on the Anthropic workspace, which no bug in this repo can exceed —
+and what it buys is the *graceful* stop, a sentence in a snackbar a few cents
+early instead of a round meeting a 400.
 
 `Avatar` fills its circle three ways in order — a resolved `src`, a rendered
 `avatarSeed`, then the initial — and `avatarSeed` was added to the
@@ -3062,7 +3088,13 @@ popovers (the vote card's and the composer's).
 
 ## Rendering path
 
-Five shapes, across ten routes. The simple one is prerendered HTML with
+Six shapes now, across the ten routes above — the sixth is the bot turn, and it
+is the proxy shape ADR 0020 deleted, back for the one key that may stay behind
+it. (This count read "ten routes" while there were nine: it was one ahead from
+the day `/api/gifs` was removed, and the arrival of `/api/bots/turn` is what
+made it right rather than what changed it.)
+
+The simple one is prerendered HTML with
 hydration reaching only the `'use client'` islands inside it — `/components`,
 `/host`, `/join`, and now `/_not-found`, which is the thinnest example the app
 has: every piece of it is a Server Component except `Button` and the one island
@@ -3387,8 +3419,11 @@ so nothing hedges the lazy tail.
 The fifth shape is the room's own, and it is the shape the GIF path used to
 have: browser → route handler → third party, with the credential stopping at the
 server. The picker lost that middle hop when the terms took `/api/gifs`; the
-realtime lane keeps it, because `ABLY_API_KEY` is the one credential in the app
-that may stay server-side. This diagram has been owed since phase 2.
+realtime lane keeps it, because `ABLY_API_KEY` may stay server-side. It is no
+longer the *only* credential that may — `ANTHROPIC_API_KEY` is the other, and
+its own path is [below](#the-bots-turn) — but it is still the only one whose
+route stays out of the hot path: a token is minted once at boot, and after that
+the browser talks to Ably directly. This diagram has been owed since phase 2.
 
 ```mermaid
 sequenceDiagram
@@ -3469,6 +3504,76 @@ transport is still live is a real fault and still says so.
 
 The stub branch is not a footnote. With no `ABLY_API_KEY` the whole right-hand
 side of that diagram is unreached, and that is the state this machine is in.
+
+### The bot's turn
+
+The sixth shape belongs to `/api/bots/turn`, and it is the only true proxy in
+the app: the browser asks *us*, we ask the model, and the answer comes back
+through us. That is the shape `/api/gifs` had and the shape ADR 0020 deleted —
+restored here because the reasoning inverts. A GIF may not be proxied and a
+model key may not be public, so the same argument produces opposite routes.
+
+Two facts do most of the work in reading this diagram. **It runs in the host's
+tab only**, because that is the only tab with a pool. And **it happens once per
+phase**, not once per bot: `BotPool` gathers everyone who still owes an answer
+and asks for all of them together.
+
+```mermaid
+sequenceDiagram
+  participant E as HostEngine
+  participant P as BotPool
+  participant C as lib/bots/claude
+  participant T as /api/bots/turn
+  participant M as Anthropic
+  participant G as The GIF provider
+
+  E-->>P: onChange(state) — every accepted transition
+  Note over P: one action per round:phase, marked<br/>before awaiting, so a re-broadcast<br/>cannot submit twice
+  P->>P: botBrain(budgetSpent()) — stub, or the route
+
+  P->>C: answers({ bots: everyone still due, subject })
+  C->>T: POST — seat + sig out of sessionStorage
+  Note over T: verifySeat, else 403 · 30/min per seat<br/>no key → { stub: true } outside production
+  T->>M: one call · json_schema · the still frame in caption mode
+  M-->>T: a line per bot id
+  T-->>C: words + usage
+  Note over C: recordSpend(usage) — the host's own tally
+  opt react mode — the answer is a query, not a picture
+    C->>G: fetchBoard(query) — from the browser, offset per bot
+    G-->>C: tiles → toMediaRef
+  end
+  C-->>P: one EntryAnswer per bot id
+
+  loop each bot, in turn
+    P->>P: dwell(persona.delayMs / rate)
+    P->>E: apply({ round/entrySubmitted }, botId)
+    Note over E: authorize · reduce · schedule · project —<br/>nothing is skipped for being a bot
+  end
+```
+
+**The race is against the round, not against a fixed timeout.** `withFallback`
+gives a brain whatever is left on the phase's own clock, less the slowest bot's
+dwell, capped at 15s and floored at 1.5s — below that it does not ask at all.
+A provider that is merely *slow* is worse than one that is down: the round sits
+at a gate nobody can pass, and every player watches a tracker that never moves.
+Every failure lands on the same place, the written-in corpus in `lib/bots/stub.ts`,
+so a timeout, a 502, a spent budget and a fresh clone with no key are one code
+path with four causes. Only the budget says anything out loud, once, in a
+snackbar the host alone sees.
+
+**The dwell is why bots do not end phases early.** They see a broadcast the
+instant it lands and would otherwise slam every gate shut before a person had
+finished reading the GIF; each persona waits 2.5s, 6s or 9s, divided by the
+room's clock rate so `?fast=` shortens it like everything else timed.
+
+**Two things never leave the tab.** A player's name — the route is sent seat ids
+and levels, and the prompt is built from those — and authorship, because the
+cards a bot ranks come off `project(state, botId)`, which stripped `authorId`
+before the pool ever saw them. Neither is a rule to remember: the first is a
+shape `prompt.ts` cannot fill in, and the second is the projection's own
+guarantee. The one thing that *does* travel and is new is a still frame's URL,
+sent in caption mode so the model writes about the picture rather than its
+title.
 
 ---
 
@@ -3557,6 +3662,18 @@ and would be a guess, and `left` is the opposite of a guess: it is the one thing
 on that row the room knows for a fact, straight off the transport's presence
 set. A row reading "still thinking" over a closed tab was the guess.
 [ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md).
+
+**Bots closed no row either, because none was ever open.** The design draws no
+bot and the roadmap never promised one — `?bots=N` was a harness for testing a
+room with nobody in it, and hiring one is a capability added on top rather than
+a gap filled in. What it *did* change is a claim two sections up: `?bots=` no
+longer exercises the transport, so what the [dev levers](#dev-levers) buy is
+narrower than it was, and the ADR says which half was given up
+([ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md)). The one row it
+touches is the `reveal` omission below, which still reads correctly: a room with
+no bots in it stops at every untimed phase until the host presses the button,
+and the autopilot dwell is still attached only under `?bots=` — a hired bot does
+not advance the room, because a hired bot's room has a host in it.
 
 **The OS share sheet closed no row either, and the podium's is the one it looks
 like it should have.** `useWebShare` hands a *link* to whatever the device has
@@ -3647,8 +3764,8 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-373 unit tests (`lib/**/*.test.ts`, node, over 24 files) and 554 Playwright
-tests across the two viewports — 277 per project, over 31 spec files. Not all of
+401 unit tests (`lib/**/*.test.ts`, node, over 27 files) and 598 Playwright
+tests across the two viewports — 299 per project, over 32 spec files. Not all of
 them run: 23 skip on viewport (a docked rail exists only above `md`, a
 floating dock only below it), which is a branch of the layout rather than a hole
 in the coverage. 23 *tests* out of sixteen viewport `test.skip` call sites —
@@ -3729,6 +3846,32 @@ composer emoji **posts** rather than vanishing into a burst, and a message
 reaction lands on the message you aimed at rather than the newest. No unit test
 changed in that pass, which is the honest reading of it — nothing moved in
 `lib/`.
+
+**The bots' share is 24 unit tests over three new files and one spec, and the
+spec is where the claims that cannot be checked anywhere else are made
+executable.** `lib/room/BotPool.test.ts` is 10 in
+node over a virtual clock — the pool is injected a `wait`, so a whole game runs
+without spending the seconds that exist for people to watch — and it pins the
+things a refactor breaks silently: that a re-broadcast of the same
+`round:phase` does not submit twice, that a refused seat leaves no bot in the
+pool acting on nothing, that removal is `host/botRemoved` rather than a drop,
+and that a brain which throws leaves the round intact. `lib/bots/prompt.test.ts`
+is 8 and is the *specification* of what leaves the tab: no player name, no
+authorship, and one brief per bot in a single system prompt.
+`lib/bots/budget.test.ts` is 6 over the tally and the ceiling. `e2e/bots.spec.ts`
+is 10 per project, and four of them exist because nothing else can prove them —
+the route refuses an unsigned seat and a forged signature, driven through the
+`request` fixture the way `ably.spec.ts` drives the seat route; and, with
+`?brain=live` opting two specs onto the route, a phase is asserted to make
+**one** call for three bots rather than three, and no request body is allowed to
+carry a nickname read off the lobby. That last pair is the reason
+`ANTHROPIC_API_KEY` is set to a non-key in `playwright.config.ts`: with no key
+the route short-circuits to `stub` before a request is ever shaped, and both
+assertions would pass over an empty road. **Nothing reaches the model even
+then** — `page.route` intercepts the POST in the browser and answers it as a
+keyless route would, so what is verified is the request this app *builds*, and
+the model's own behaviour has no automated coverage at all, for the same reason
+Ably's does not.
 
 **The boot screen's share is `e2e/boot.spec.ts`, 6 tests per project, and
 `lib/room/store.test.ts`, 8 in node.** Five of the six specs drive a real boot end to end, which is the
@@ -3954,8 +4097,9 @@ surfaced doing it — the `authUrl` returned an envelope, which the SDK rejects
 outright, and a `?phase=` fixture asked the server for a seat it would never
 use. Both are fixed; neither was reachable from any test.
 
-**But no test touches Ably.** `playwright.config.ts` sets `ABLY_STUB: '1'` and
-`NEXT_PUBLIC_GIFS_STUB: '1'` on the dev server it spawns, so `/api/ably/seat` answers
+**But no test touches Ably.** `playwright.config.ts` sets `ABLY_STUB: '1'`,
+`NEXT_PUBLIC_GIFS_STUB: '1'` and `NEXT_PUBLIC_BOTS_STUB: '1'`
+on the dev server it spawns, so `/api/ably/seat` answers
 `stub: true`, `transportKind` resolves to `broadcast`, and every spec in the
 repo — `twotabs`, `reconnect`, `chat`, all of it — exercises the tab transport.
 That switch is stated rather than inherited from whether this machine has a key,

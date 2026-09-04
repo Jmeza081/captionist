@@ -4,6 +4,11 @@ import type { BotDifficulty } from './types'
  * What each level actually changes. Data only — no prompts are built here and
  * nothing fetches, so `BotPicker` can import this without importing a client.
  *
+ * **The ladder runs the other way to the seniority.** An intern has not yet
+ * learned what they cannot say, and a principal has been media-trained — so
+ * hiring a Principal is the *easy* setting. The names are in career order
+ * because that ordering is the joke; the difficulty descends through it.
+ *
  * Four axes, and they are deliberately not "a temperature":
  *
  * 1. `brief` — the voice the model is asked to write in.
@@ -26,8 +31,9 @@ export interface BotPersona {
   /** How long it waits before acting, in room time. */
   delayMs: number
   /**
-   * How it ranks without a model. `rotate` is today's positional behaviour;
-   * `first` takes the board in order, which reads as an intern not thinking.
+   * How it ranks without a model. `rotate` offsets by seat so ballots differ;
+   * `first` takes the board in order, which reads as somebody who deliberated
+   * at length and then picked the obvious one.
    */
   taste: 'first' | 'rotate'
 }
@@ -36,39 +42,43 @@ export const PERSONAS: Readonly<Record<BotDifficulty, BotPersona>> = {
   intern: {
     id: 'intern',
     label: 'Intern',
-    tag: 'Gentle',
-    blurb: 'Writes the first thing that comes to mind. Funny about a third of the time.',
+    tag: 'Ruthless',
+    blurb: 'Has not learned what you cannot say yet. Fastest and funniest thing in the room.',
     brief:
-      'You are an eager junior engineer three weeks into the job. Go for the ' +
-      'obvious joke and commit to it. Occasionally miss.',
+      'You are three weeks into your first job and have not yet learned which ' +
+      'jokes end up in a retro. Fast, unfiltered, and genuinely funny. Go for ' +
+      'the line the room will still be quoting on Friday.',
     delayMs: 2_500,
-    taste: 'first',
+    taste: 'rotate',
   },
   senior: {
     id: 'senior',
     label: 'Senior',
     tag: 'Even',
-    blurb: 'Reads the room. Will not embarrass you in front of the new hire.',
+    blurb: 'Still funny, and has learned which jokes end up in a retro.',
     brief:
-      'You are a senior engineer with good timing. Understated, specific, and ' +
-      'never trying too hard.',
+      'You are a senior engineer with good timing and a working instinct for ' +
+      'self-preservation. Understated, specific, and never trying too hard.',
     delayMs: 6_000,
     taste: 'rotate',
   },
   principal: {
     id: 'principal',
     label: 'Principal',
-    tag: 'Ruthless',
-    blurb: 'Ruthless. Has seen this outage before and still finds it funny.',
+    tag: 'Diplomatic',
+    blurb: 'Writes captions like postmortems. Blameless, thorough, not funny.',
     brief:
-      'You are a principal engineer who has survived every outage on the ' +
-      'roadmap. Dry, merciless, and economical. The best line in the room.',
+      'You have been media-trained. Every joke is hedged, scoped and made ' +
+      'blameless before it leaves your mouth. Reach for "learnings" and ' +
+      '"action items". You are only funny by accident, and never on purpose.',
     delayMs: 9_000,
-    taste: 'rotate',
+    // Takes the first thing on the board. Deliberating for nine seconds and
+    // then picking the obvious one is the whole character.
+    taste: 'first',
   },
 }
 
-/** The default a picker opens on. Even, and the one most rooms want. */
+/** The default a picker opens on. The middle of the ladder, and the safe pick. */
 export const DEFAULT_DIFFICULTY: BotDifficulty = 'senior'
 
 export function personaFor(difficulty: BotDifficulty): BotPersona {
