@@ -395,6 +395,12 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
         snapshot: () => engine.snapshot(),
         now: () => engine.now(),
         rate: levers.fast,
+        // **A snackbar, never a modal.** Only the host's explicit pause stops
+        // the room's clock, so a dialog over a live round would break the rule
+        // the help modal already keeps. And only the host hears it: what a
+        // room costs is not part of anybody else's game.
+        onDegraded: () =>
+          announce('That’s the bot budget. Bots are on written-in jokes for the rest of this game.'),
       })
       poolRef.current = pool
       cleanups.push(() => {

@@ -45,6 +45,15 @@ export interface BotPoolOptions {
    * time, which is what a room actually wants.
    */
   wait?: (ms: number) => Promise<void>
+  /**
+   * Fires once, the first time this room's bots fall back for good.
+   *
+   * Once, because it is news the first time and noise every round after. Only
+   * for the *budget* — a one-off timeout or a provider blip is handled and
+   * says nothing, because a player does not need to hear about a call that
+   * already recovered.
+   */
+  onDegraded?: () => void
 }
 
 /**
@@ -65,6 +74,7 @@ export class BotPool {
   private readonly done = new Set<string>()
   private seq = 0
   private closed = false
+  private toldDegraded = false
 
   constructor(options: BotPoolOptions) {
     this.options = options
@@ -323,7 +333,12 @@ export class BotPool {
     ask: (brain: ReturnType<typeof botBrain>) => Promise<T>,
     fallback: () => Promise<T>,
   ): Promise<T> {
-    const brain = botBrain(budgetSpent())
+    const spent = budgetSpent()
+    if (spent && !this.toldDegraded) {
+      this.toldDegraded = true
+      this.options.onDegraded?.()
+    }
+    const brain = botBrain(spent)
     if (brain.id === 'stub') return fallback()
 
     const budget = this.deadlineFor(state)

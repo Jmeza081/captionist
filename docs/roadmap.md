@@ -226,6 +226,31 @@ neighbouring gaps are still deliberately open:
   dozen flickering thumbnails over a live chat rail is a different amount of
   noise. It is `tuning={board}` → `tuning` if that reads wrong.
 
+**Phase 10 — bots the host can hire.** Not a phase in the original nine; the
+same shape as the refinements pass, in that it adds a capability the roadmap
+never promised. `?bots=N` was a harness behind a lever `readLevers` switches off
+in production, writing from six hardcoded strings picked by seat index. It is
+now a lobby control, a difficulty, and a model.
+
+Four things changed shape:
+
+1. **The pool acts, not the seat.** One model call answers for every bot in a
+   phase — what keeps a room at cents, and the only way to ask for lines that
+   differ from each other. `BotDriver` is deleted;
+   [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md) records what
+   host-local bots keep and what they give up.
+2. **The first key that cannot be public.** The GIF keys ship to the browser
+   because their providers forbid a proxy; nothing forbids one here, so
+   `/api/bots/turn` exists and is gated by the seat `/api/ably/token` already
+   signs — [ADR 0035](./adr/0035-the-comedy-is-a-seam-and-its-key-cannot-be-public.md).
+3. **Two rules that held by accident now hold on purpose.** `reconcile` skips
+   bots because they are bots, rather than via the `everAttached` guard written
+   for fixture players; and the search query that found a GIF rides on the
+   subject instead of being handed to the provider and discarded.
+4. **A bug older than the feature.** `answerFor` returned one caption line
+   whatever the room asked for, so a `format: 'tb'` room got half a caption from
+   every bot — live since phase 7.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.
@@ -266,6 +291,15 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
       real choice is a production key or accepting that `?gifs=giphy` is a
       development lever and a small-room fallback. Giphy quotes production
       pricing privately and only after an application.
+- [ ] **Issue the Anthropic key from a project-owned organisation.** Never a
+      personal one — the same rule the Ably key already carries. Scope it to a
+      **workspace with both a spend limit and a rate limit**: limits cannot be
+      set on the Default Workspace, and a monthly spend cap cannot notice a loop
+      that burns the budget in an hour. Use a **service account** key, which
+      survives its author leaving the org where a personal key is archived. A
+      Claude Max subscription does not fund this; API billing is separate.
+- [ ] **Clear `NEXT_PUBLIC_BOTS_STUB`** in the deployed environment, alongside
+      the two above.
 - [ ] **Widen `allowedDevOrigins`** only for LAN testing, never for the deployed
       build.
 
