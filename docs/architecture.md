@@ -245,6 +245,46 @@ a beat after the motion preference settles — without it the effect had already
 run for the last time before the element existed, and the backdrop sat on its
 poster forever. `HeroWall` had always had that dependency; this is why.
 
+**Since then the host can hire bots, and a bot is the host's puppet rather than
+a peer.** `?bots=N` was a harness — a lever `readLevers` switches off in
+production, spawning guests over the transport who wrote from six hardcoded
+strings picked by seat index. It is a lobby control now, "Add a bot" on the
+roster it fills with three levels behind `BotPicker`, and the road underneath it
+changed twice.
+
+**A bot no longer crosses the wire.** `lib/room/BotPool.ts` calls
+`engine.apply(action, botId)` directly and reads `project(state, botId)`;
+`BotDriver` is deleted. The old road sent an intent out of the host's tab, to
+Ably, and back into the host's own engine — a round trip to reach a room it was
+already in, at up to nineteen extra billed connections — and it could never have
+run against Ably at all, because `/api/ably/token` refuses a seat without an
+HMAC the server minted and no bot has ever had one. What is kept is everything
+that mattered: `apply()` still authorises, still orders, still stamps `at`, and
+a bot still reads a *projection*, so it cannot know who wrote the caption it is
+ranking. [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md).
+
+**And the lines are written by a model, through the first key in this app that
+cannot be public.** `lib/bots/` is a seam shaped like `lib/gifs/` — a types-only
+module, data-only personas, a written-in `stub`, a `claude` adapter and one
+`source.ts` resolving which road — and `app/api/bots/turn/route.ts` is a third
+API route where there were two. That is not ADR 0020 reversed, it is ADR 0020's
+own reasoning read on different terms: the GIF keys ship to the browser because
+their providers *forbid* a proxy, nothing forbids one here, and a model key
+handed to twenty browsers is a stranger's bill. **The route writes words only** —
+in caption mode the model's answer is a *search query*, and the browser turns it
+into a picture, so no GIF is proxied and ADR 0020 still holds for media. The
+seat arrives signed or it does not arrive, verified by the same `verifySeat`
+`/api/ably/token` uses.
+[ADR 0035](./adr/0035-the-comedy-is-a-seam-and-its-key-cannot-be-public.md).
+
+**One call per phase, not one per bot.** `BotBrain`'s `answers` and `ballots`
+are plural in the type, which is what keeps a five-round game at cents and the
+only way to ask for lines that differ from each other — N independent calls
+cannot see what the others wrote and converge on the same joke. `budget.ts`
+counts what a room has spent off each response's own `usage`, in the host's tab
+and never on the wire, and a spent budget lands on the written-in corpus rather
+than stopping the game.
+
 **The pick screen lost its bottom row, and the search field started working.**
 `useGifSearch` exposes `setQuery`; both boards were passing
 `onQueryChange={() => {}}` against a `query`-controlled field, which meant the
@@ -802,6 +842,8 @@ here now*. Where they overlap, this file links rather than repeats.
 | Avatars | `@dicebear/core@10` + `@dicebear/styles`, the `critters` style | `lib/avatar.ts` turns a seed into a data URI *at the edge*, and only the seed ever travels in state. **Seventy seeds, seven pages of ten**, with `avatarPage(seed)` deriving which page a stored face sits on so the picker's opening window is the same on the server and in the browser. `@dicebear/collection@9` is gone — `critters` exists only in DiceBear 10 and there is no 10 of that package — which made this a major bump rather than a one-constant edit: a style is a JSON definition now, so `createAvatar(funEmoji, …)` is `new Avatar(new Style(definition), …)`, and 10 validates colours as hex, so a transparent background is `'00000000'` rather than `'transparent'`. CC0 1.0, so nothing about where a face appears is constrained by attribution. [ADR 0008](./adr/0008-avatar-art-is-derived-at-the-edge.md) |
 | GIF search | A **provider seam**, called from the browser — Klipy by default, Giphy as the second adapter | `lib/gifs/provider.ts` is the contract (`search`, optional `share`, optional `items`) and `descriptors.ts` is the data — the brand, the placeholder, the attribution mark, the board ceiling and the media hosts, so nothing downstream hard-codes a vendor. `registry.ts` resolves who answers: `?gifs=klipy\|giphy` pins one for a page load, then `NEXT_PUBLIC_GIF_PROVIDER`, then the preference order `klipy → giphy`, and a named provider with no key falls through rather than erroring. Both keys are public by necessity — `NEXT_PUBLIC_KLIPY_API_KEY`, `NEXT_PUBLIC_GIPHY_API_KEY` — because both providers require the call to come from the client and forbid proxying and caching alike ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md) · [ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). Errors are provider-neutral too: `GifProviderError`, with `GifQuotaError` for a spent allowance, the one failure the room ends the game over. **Searching is unmetered** — a Klipy production key does not charge for boards, so the per-round budget is gone ([ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md)) |
 | GIF renditions | GIF · MP4 · WebP · a still — Giphy's `fixed_width` family, Klipy's `file.md` (with `file.xs.jpg` for the still it has no format for) | `GifResult` carries all four whichever adapter filled it, **and the rendition's own `width`/`height`** — read off the same rendition `src` came from, so the ratio describes the image actually rendered. It is a rendering hint and nothing depends on it: the picker reserves each tile's shape from it before the image lands, `SAMPLE_GIFS` states its artwork's 320×200, and `toMediaRef()` drops it with `id` and `keywords`. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
+| Bots | A **brain seam**, `lib/bots/` — `stub` written in, `claude` through our own route | `types.ts` is the contract and holds nothing that fetches: `subject`, `answers`, `ballots` — the last two **plural**, because one model call serves every bot in a phase. `personas.ts` is data only, three levels each carrying a voice, a dwell before acting and how it ranks without a model, so `BotPicker` can import it without importing a client. `source.ts` resolves the road exactly as `lib/gifs/source.ts` does — `?brain=stub\|live` beats `NEXT_PUBLIC_BOTS_STUB` **in both directions**, and no browser means no route at all. `prompt.ts` is server-side, so nothing in the bundle knows what a bot is told; `budget.ts` is a per-room tally of what the model cost, read off each response's own `usage`, local to the host's tab and never on the wire — the shape `lib/gifs/usage.ts` established. **A bot never receives a player's name**, and the cards it ranks carry no authorship because `project()` already stripped it. [ADR 0035](./adr/0035-the-comedy-is-a-seam-and-its-key-cannot-be-public.md) |
+| Bot runtime | `lib/room/BotPool.ts` — host-local, one call per phase | **The pool acts, not the seat.** It calls `engine.apply(action, botId)` directly rather than sending an intent over the transport, and reads `project(state, botId)`. Seating one is the *host's* `player/joined` carrying `bot`, which `authorize` refuses from anyone else — `player/joined` has no phase guard and is deliberately not host-only, and that openness is exactly why the check has to exist. Firing one is `host/botRemoved`, never a drop, because a bot has no presence entry to lose; `reconcile` skips bots explicitly rather than letting them survive on the `everAttached` guard written for fixture players. Every ask is raced against the phase's own remaining clock — capped at 15s, floored at 1.5s, less the slowest dwell — and falls to the written-in corpus rather than leaving a gate nobody can pass. [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md) |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
 
@@ -818,10 +860,11 @@ here now*. Where they overlap, this file links rather than repeats.
 | `npm run docs:pack` | Repomix pack → `docs/repomix-output.xml` (gitignored) |
 
 No key is needed to run any of these, and the E2E suite refuses to use one:
-`playwright.config.ts` sets `ABLY_STUB: '1'` and `NEXT_PUBLIC_GIFS_STUB: '1'` on
+`playwright.config.ts` sets `ABLY_STUB: '1'`, `NEXT_PUBLIC_GIFS_STUB: '1'` and
+`NEXT_PUBLIC_BOTS_STUB: '1'` on
 the dev server it spawns, so `/api/ably/seat` answers `stub: true`, `transportKind`
-resolves to `broadcast`, and the picker and the landing wall come off the
-offline shelf. That is stated rather than inherited from the machine, so a key
+resolves to `broadcast`, the picker and the landing wall come off the
+offline shelf, and every bot in every spec plays with written-in jokes. That is stated rather than inherited from the machine, so a key
 in `.env.local` cannot silently move the suite onto a live service — and it is
 also why phase 5's gate is unverified: nothing in the repo exercises Ably, key
 or no key. `?transport=broadcast` and `?gifs=stub` do the same for one page
@@ -836,6 +879,15 @@ the committed stills work. `launchOptions.args` carries
 nothing but the dev server. Everything is blocked rather than that one host, so
 the claim is enforced by the network layer instead of by remembering to add the
 next hostname.
+
+**Our own server is the hole in that rule, which is why the bot stub is set
+rather than assumed.** `--host-resolver-rules` cannot block `/api/bots/turn` —
+it is on the dev server, so the model is reachable from a spec whatever the
+browser resolves. `NEXT_PUBLIC_BOTS_STUB` is what actually stops a full run
+being a bill. `ANTHROPIC_API_KEY` is set to a string that is *not* a key for the
+same reason the Klipy one is: with no key at all the route answers `stub: true`,
+and `e2e/bots.spec.ts`'s count of how many calls a phase makes would assert
+nothing while looking green.
 
 With **neither** `NEXT_PUBLIC_KLIPY_API_KEY` nor `NEXT_PUBLIC_GIPHY_API_KEY` the
 picker serves the offline shelf outside production, so a fresh clone gets a
@@ -852,8 +904,9 @@ afterwards, in the browser.
 
 ## Routes
 
-Nine routes of ours, as `next build` reports them — `/_not-found` used to be
-Next's default black page and is now `app/not-found.tsx`:
+Ten routes of ours, as `next build` reports them — `/_not-found` used to be
+Next's default black page and is now `app/not-found.tsx`, and `/api/bots/turn`
+is the newest, the first route handler added since the terms took `/api/gifs`:
 
 ```
 Route (app)       Revalidate  Expire
@@ -861,6 +914,7 @@ Route (app)       Revalidate  Expire
 ○ /_not-found
 ƒ /api/ably/seat
 ƒ /api/ably/token
+ƒ /api/bots/turn
 ○ /host
 ○ /join
 ƒ /join/[code]
@@ -891,8 +945,11 @@ about the *room*, because **nothing before the room needs one**: a code is
 generated in the browser, and whether a room already exists is a question only
 the transport can answer, which happens after the push. `/join/[code]` is dynamic solely because it awaits `params` to prefill one field;
 `/room/[code]` is dynamic and everything inside it is client-driven.
-`/api/ably/seat` and `/api/ably/token` are the only route handlers left — no
-layout, no React, JSON only. `/api/gifs` was a third until the terms took it.
+`/api/ably/seat`, `/api/ably/token` and `/api/bots/turn` are the three route
+handlers — no layout, no React, JSON only. `/api/gifs` was a fourth until the
+terms took it, and the bot route is not its return: a GIF may not be proxied and
+a model key may not be public, so the road that was closed and the road that was
+opened are one rule read on two different sets of terms.
 
 **`/_not-found` is a root `not-found.tsx`, so it catches both halves of the
 problem**: a URL that matches no route at all, and any `notFound()` a segment
@@ -930,7 +987,9 @@ graph TD
   R["app/room/[code]/page.tsx<br/><i>/room/[code] — dynamic ƒ</i>"]
   SE["app/api/ably/seat/route.ts<br/><i>/api/ably/seat — route handler ƒ<br/>a signed seat · is realtime on</i>"]
   TK["app/api/ably/token/route.ts<br/><i>/api/ably/token — route handler ƒ<br/>bare TokenRequest · no-store</i>"]
+  BR["app/api/bots/turn/route.ts<br/><i>/api/bots/turn — route handler ƒ<br/>verifySeat · words only · no-store</i>"]
   AB["Ably"]
+  AN["Anthropic<br/><i>claude-haiku-4-5 · the one server-only key</i>"]
   NF["app/not-found.tsx<br/><i>/_not-found — every URL we don't have · static ○</i>"]
   NFM["ResolvedNotFoundMedia<br/><i>'use client' · upgrades the fallback</i>"]
   HW["HeroWall<br/><i>'use client' · our art first,<br/>then useResolvedArt(WALL_SLUGS)</i>"]
@@ -974,6 +1033,9 @@ graph TD
   RP -.->|"probeRealtime() — one ask, two answers"| SE
   RP -.->|"connectAbly · authUrl mints the token"| TK
   RP -.->|"control + per-recipient state channels"| AB
+  RP -.->|"BotPool → botBrain() — the host's tab only,<br/>and only once a bot is hired"| BR
+  BR --> AN
+  RP -.->|"a bot's query becomes a picture here,<br/>never on the server — ADR 0020 still holds"| GP
   SC -->|"screens={SCREENS}"| SH
   SH -->|"until isSeated(snapshot)"| BT
   BT -->|"Cancel — a link, not a handler"| H
@@ -1190,6 +1252,25 @@ makes no network call of its own; the capability it grants is the glob
 with twenty per-recipient state channels would otherwise put twenty keys in
 every token. The seat half is [below](#who-hosts).
 
+**`/api/bots/turn` is the third handler, and it reuses that seat verbatim.** An
+unsigned request is a 403, because an ungated route that proxies a model is a
+free-token faucet for anyone who finds the URL — so the boundary the app already
+trusts is the boundary it gets, rather than a second one to reason about. On top
+of it sits a crude in-memory throttle, thirty calls a minute per seat, per
+instance and lost on redeploy: honest about being a circuit breaker rather than
+an accounting system, and the fast guard a monthly spend limit cannot be. It is
+`no-store` for the token route's reason and one of its own — an answer is
+written for one round's board and would be wrong on any other. **It never
+returns a picture.** In caption mode the model answers with a *search query*,
+and the browser turns that into a GIF through the provider it already holds the
+key for, so the proxy ADR 0020 deleted is not rebuilt under a new name; in react
+mode the subject is a sentence and no provider is touched at all.
+`lib/bots/prompt.ts` builds the words server-side, so the shapes can be
+unit-tested without a key and without a request and nothing in the client bundle
+knows what a bot is told. With no key the route answers `{ stub: true }` outside
+production and 500s inside it — the same branch `/api/ably/seat` takes, and the
+same promise: a fresh clone plays.
+
 `app/layout.tsx` is the only place fonts and global CSS are loaded. Inter is
 pulled by `next/font/google` and exposed to Sass as the `--font-inter` custom
 property, so no component ever declares a font family directly.
@@ -1206,7 +1287,7 @@ to be about markup the owner of room authority instead.
 ```mermaid
 graph LR
   U["components/organisms/ + app/<br/><i>markup only</i>"]
-  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · store · events · announce · RoomProvider<br/>identity · pendingSettings · useRoom · useCountdown · bootTimeline<br/>useStoredPerson · useSuggestedName</i>"]
+  R["lib/room/<br/><i>transport · AblyTransport · BroadcastTransport · LocalTransport<br/>connect · HostEngine · GuestClient · BotPool · store · events · announce<br/>RoomProvider · identity · pendingSettings · useRoom · useCountdown<br/>bootTimeline · useStoredPerson · useSuggestedName</i>"]
   G["lib/game/<br/><i>pure — types · reducer · authorize<br/>selectors · project · rng</i>"]
   F["lib/gifs/<br/><i>provider · descriptors · registry · source<br/>klipy · giphy · samples · art · wall · usage<br/>useGifSearch · useArt · allow — isAllowedImageSrc</i>"]
   AV["lib/avatar.ts<br/><i>seed → data URI, cached · DiceBear 10 critters<br/>70 seeds · avatarPage · seedLabel</i>"]
@@ -1220,6 +1301,8 @@ graph LR
   GL["components/atoms/ReactionGlyph"]
   TKR["app/api/ably/seat<br/>app/api/ably/token"]
   ABL["lib/ably/<br/><i>token · seat — server only, node:crypto</i>"]
+  B["lib/bots/<br/><i>types — contract only, nothing fetches<br/>personas · stub · claude · source · budget<br/>prompt — server side, never in the bundle</i>"]
+  BTR["app/api/bots/turn<br/><i>verifySeat, then the model</i>"]
   U -->|"useRoom() · useChat() · publish(event)<br/>announcementLine · ROOM_FACE — the words,<br/>rendered where they are read"| R
   U -->|"REACTIONS · glyphFor · labelFor · isImageGlyph"| RX
   U -->|"readRecent · pushRecent<br/>ReactionToolbar only"| RC
@@ -1238,6 +1321,13 @@ graph LR
   R -.->|"fetch — a signed seat, then a token"| TKR
   TKR --> ABL
   F -.->|"toMediaRef → MediaRef"| G
+  R -->|"BotPool — botBrain() · personaFor · budgetSpent"| B
+  B -->|"claude.ts turns a query into a picture,<br/>in the browser — the key lives there"| F
+  G -->|"reducer: asBotDifficulty, the way it narrows a hat"| B
+  B -.->|"the wire vocabulary, re-exported —<br/>type-only, so nothing runs both ways"| G
+  U -->|"BotPicker — personas and the budget meter,<br/>data modules with no client behind them"| B
+  B -.->|"fetch — a signed seat, then one call per phase"| BTR
+  BTR -->|"systemPrompt · userPrompt"| B
 ```
 
 Every solid arrow is a dependency, and the dotted ones are runtime traffic
@@ -1260,6 +1350,26 @@ on the lane. The allowlist sits in `lib/gifs/` rather than beside the store
 that calls it because it is a fact about where this app's pictures come from,
 not about how a room talks — the same reasoning that put `GifResult` there
 instead of in `components/`.
+
+**Bots added four arrows and one pair that has to be read carefully.** Three are
+ordinary: `lib/room/` → `lib/bots/` is `BotPool` resolving a brain,
+`lib/bots/` → `lib/gifs/` is `claude.ts` turning the model's query into a
+picture in the browser, and `components/` → `lib/bots/` is `BotPicker` reading
+`personas.ts` and `budget.ts` — both data modules with nothing behind them, which
+is why the seam splits its types and its personas off from its adapters at all.
+
+The pair is `lib/game/` and `lib/bots/`, and it is not the drift phase 6 caught.
+`BotDifficulty` is declared in `lib/game/types.ts` because it travels on the
+wire inside `Player`, and `lib/bots/types.ts` re-exports it so the seam reads
+whole — a **type-only** re-export, erased at build. The runtime edge runs the
+other way and only once: `lib/game/reducer.ts` imports `asBotDifficulty` to
+narrow a level arriving from a browser, exactly as it imports `asHatId` from
+`lib/hats.ts` and `sampleAt` from `lib/gifs/samples.ts`. So there is no cycle in
+the emitted graph and `lib/game/` is still node-reachable with no React, no
+browser and nothing that fetches — `lib/bots/types.ts` imports nothing at
+runtime, which is the property that makes the arrangement safe rather than
+merely tidy. It is worth stating because the *type* graph does contain a loop,
+and the phase 6 lesson was that a type edge is invisible to every test we run.
 
 `lib/game/` imports nothing outside `lib/` — no React, no browser, no
 transport. Phase 6 added its one exception and made it a re-export rather than a
@@ -1675,8 +1785,10 @@ aspirational. **It runs a real status machine** —
 local bus could only ever say `connected`. The `role` option is how an endpoint
 that already knows what it is skips the question: `auto` asks and lives with the
 answer, which is every real room; `host` is the `?phase=` harness declaring
-itself; `guest` is a bot or the `?as=` seat, which never promote themselves and
-re-ask until the host in their own tab attaches.
+itself; `guest` is the `?as=` seat, which never promotes itself and
+re-asks until the host in its own tab attaches. A bot is no longer one of them —
+it has no endpoint at all, which is
+[ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md).
 
 `LocalTransport` is still the test bus, not a legacy path: `room.test.ts` drives
 a virtual clock and `BroadcastChannel` will not answer to one. Its `onStatus` is
@@ -1794,9 +1906,12 @@ Seven details are load-bearing:
   and a leak. `HostEngine.refuse()` fires the in-process callback *and*, when
   the asker is not the host's own endpoint, publishes over the transport; the
   host's own refusals stay in-process, because putting them on the wire as well
-  would show them twice. `RoomProvider` still filters on `intent.from`, so a bot
-  being told to sit a round out is the harness working rather than something to
-  interrupt over. It arrives as a subscription rather than state, because
+  would show them twice. `RoomProvider` filters that in-process callback on
+  `intent.from`, so another player's refusal is not narrated on the host's own
+  screen. A bot's refused action never reaches the filter: it carries no intent,
+  because `BotPool` calls `apply()` directly, so the engine returns `false` and
+  says nothing — which is what `BotPool.add` reads as "this room would not seat
+  it", the one refusal a bot has that anybody needs to hear about. It arrives as a subscription rather than state, because
   re-rendering a refusal back into view later would be a lie, and `authorize.ts`
   returns finished sentences, so `RoomShell`'s handler is just the snackbar
   queue. This lane landed in phase 4, not phase 5: a second *tab* is already a
@@ -2078,8 +2193,8 @@ now)` is a pure function, and the `now` it reads comes from the room clock.
 
 ### Dev levers
 
-Eleven now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
-`?format=` · `?out=` · `?as=` · `?gifs=` · `?transport=`, read once in
+Twelve now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
+`?format=` · `?out=` · `?as=` · `?gifs=` · `?transport=` · `?brain=`, read once in
 `RoomProvider` and gated to
 non-production in `lib/room/levers.ts` — in a production build every lever reads
 as absent whatever the query string says. **`?transport=ably|broadcast` is phase
@@ -2088,7 +2203,11 @@ as absent whatever the query string says. **`?transport=ably|broadcast` is phase
 tab bus without restarting the server. **`?gifs=` answers two questions now** —
 `stub` and `live` switch the offline shelf in either direction, and
 `klipy` / `giphy` pin which provider answers, which is how one page load is put
-on the second adapter without touching the environment.
+on the second adapter without touching the environment. **`?brain=stub|live` is
+the newest and is `?gifs=`'s twin down to the both-directions rule**: `stub` is
+the written-in corpus, `live` calls the model, and either one beats
+`NEXT_PUBLIC_BOTS_STUB`. It is named `brain` rather than `bots` because that name
+was already taken by the count.
 
 **`?voting=rank|single` and `?format=tb|one` are phase 7's, and they are
 `?mode=`'s siblings** — the three now go through one helper,
@@ -2102,8 +2221,14 @@ fixture *is* the room, so probing for one could only ever hand it to a stale
 tab; the harness connects with `role: 'host'` and skips the claim, which is what
 keeps every harness URL behaving exactly as it did before joining existed. That
 is the only way the claim path could be added under a suite that guards
-everything else. `?bots=` spawns guests *over the transport*, so
-authorisation and ordering are exercised rather than bypassed; `?fast=` scales
+everything else. **`?bots=` no longer spawns anything over the transport.** It seats N bots in
+`BotPool` — the same object the lobby's "Add a bot" fills — so the lever
+exercises the shipped road rather than a parallel one, and what it exercises is
+`engine.apply` rather than the intent lane. Authorisation and ordering are still
+covered, because `apply()` is where both live; what is not is the transport's
+own `from` stamping, which was the point of the old shape and is meaningless for
+a puppet the host spawned
+([ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md)). `?fast=` scales
 the host's clock rather than the page's, because `page.clock` is per-page and
 would desynchronise a room split across tabs. What each one is for is in
 [the roadmap](./roadmap.md#the-url-levers).
@@ -2144,8 +2269,9 @@ in `HostEngine`.
 because it takes a seat the fixture already populated. When it is set the local
 endpoint stops being the host's own `GuestClient` on the host transport and
 becomes a real guest — its own `connectBroadcast({ role: 'guest' })`, its own
-seat — and the bot loop skips that id, since two drivers in one chair would
-submit twice and vote against themselves. It was the first exercise of the guest
+seat. It no longer has to be skipped by a bot loop: bots live in their own
+`bot-N` namespace now, precisely because `p${i}` collided with fixture seats and
+with `?as=p2`, and the guard against that used to be a `continue` in a loop. It was the first exercise of the guest
 path, built before anything depended on it; the path it rehearsed is now the one
 every real guest takes. Note what `isHost` means under it: this *tab* runs the
 engine, but the *player* is a guest, so `store.setIdentity` is told
@@ -2181,6 +2307,7 @@ graph BT
     Compose["Composer · RevealReactionBar<br/>ReactionFloaters · AppHeader"]
     Lobby["CodeEntry · RoomShare · Podium"]
     Entry["AvatarPicker · ModeCard · HatPicker"]
+    Bots["BotPicker<br/><i>'use client' · three levels and the spend meter —<br/>a form, so not a configured Modal</i>"]
     Landing["HeroWall · LandingNav · QuickJoin"]
     Legal["LandingLegal · LicenseModal<br/><i>the foot, and the four licences —<br/>a configured Modal, like HelpModal</i>"]
     Boot["BootChecklist<br/><i>an ol — the order is the meaning</i>"]
@@ -2208,6 +2335,10 @@ graph BT
   end
 
   Overlay -->|"GifPanel — the board"| Picker
+  Entry -->|"ModeCard — a level needs a sentence,<br/>same as a mode does"| Bots
+  Controls -->|"Button — 'Hire Senior', live even when spent"| Bots
+  Close -->|"the card's own key"| Bots
+  Bots -->|"LobbyScreen — a sibling of .columns,<br/>never a child: a query container is the<br/>containing block for position: fixed"| Screens
   Picker -->|"BriefScreen picks the image,<br/>ComposeScreen answers the prompt"| Screens
   Icon --> Feedback
   Icon -->|"close, at a weight the plate can carry"| Close
