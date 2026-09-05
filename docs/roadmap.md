@@ -239,15 +239,20 @@ Four things changed shape:
    differ from each other. `BotDriver` is deleted;
    [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md) records what
    host-local bots keep and what they give up.
-2. **The first key that cannot be public.** The GIF keys ship to the browser
+2. **Two models, split by job.** Writing a caption is the only job that has to
+   be funny, so it gets Opus 5 at low effort; search queries and ballots are
+   constrained extraction and go to Haiku 4.5 for a fifth of the price. About
+   $0.064 a game. A key **cannot** be scoped to a model — workspace limits are
+   per limiter type, not permissions — so the choice is a constant in the route.
+3. **The first key that cannot be public.** The GIF keys ship to the browser
    because their providers forbid a proxy; nothing forbids one here, so
    `/api/bots/turn` exists and is gated by the seat `/api/ably/token` already
    signs — [ADR 0035](./adr/0035-the-comedy-is-a-seam-and-its-key-cannot-be-public.md).
-3. **Two rules that held by accident now hold on purpose.** `reconcile` skips
+4. **Two rules that held by accident now hold on purpose.** `reconcile` skips
    bots because they are bots, rather than via the `everAttached` guard written
    for fixture players; and the search query that found a GIF rides on the
    subject instead of being handed to the provider and discarded.
-4. **A bug older than the feature.** `answerFor` returned one caption line
+5. **A bug older than the feature.** `answerFor` returned one caption line
    whatever the room asked for, so a `format: 'tb'` room got half a caption from
    every bot — live since phase 7.
 

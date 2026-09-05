@@ -22,7 +22,7 @@ interface TurnResponse {
   subject?: RoundSubject
   answers?: Record<PlayerId, { kind: 'caption'; lines: string[] } | { query: string }>
   ballots?: Record<PlayerId, Ballot>
-  usage?: { input: number; output: number }
+  usage?: { input: number; output: number; model?: string }
   stub?: boolean
 }
 
@@ -50,7 +50,7 @@ async function ask(body: unknown): Promise<TurnResponse> {
   if (!response.ok) throw new BotRouteError(`The bot route answered ${response.status}.`)
 
   const parsed = (await response.json()) as TurnResponse
-  if (parsed.usage) recordSpend(parsed.usage.input, parsed.usage.output)
+  if (parsed.usage) recordSpend(parsed.usage.input, parsed.usage.output, parsed.usage.model)
   if (parsed.stub) throw new BotRouteError('No model key is configured.')
   return parsed
 }

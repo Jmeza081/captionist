@@ -40,9 +40,15 @@ already signs.**
   plural in the type. It is what keeps a five-round game at cents, and the only
   way to ask for lines that differ from each other — N independent calls cannot
   see what the others wrote and converge on the same joke.
-- `claude-haiku-4-5`, with vision on the one job of five that needs eyes. **No
-  `thinking` and no `effort`:** Haiku 4.5 predates adaptive thinking, so
-  `output_config.effort` is rejected on it.
+- **Two models, split by job.** Writing a caption is the only job that has to
+  be *funny* — and the only one with an image attached — so it gets
+  `claude-opus-5` at `effort: 'low'`: a one-liner needs wit, not deliberation.
+  Search queries and ballots are constrained extraction, which
+  `claude-haiku-4-5` does as well and for a fifth of the price. Roughly $0.064
+  a game against $0.088 all-Opus and $0.018 all-Haiku — three quarters of the
+  top price for effectively all of the quality, because the cheap jobs were
+  never the ones carrying it. **`effort` is sent only to Opus:** Haiku 4.5
+  predates adaptive thinking and rejects the parameter.
 - The **stub is not a courtesy**. Playwright's Chromium resolves nothing but
   the dev server and a fresh clone has no key — the same two reasons
   `SAMPLE_GIFS` exists — so it is the road the whole suite takes, and the road
@@ -61,6 +67,11 @@ Default Workspace, so a separate workspace is required, and it carries a *rate*
 limit too — a monthly cap cannot notice a loop that burns a budget in an hour);
 `lib/bots/budget.ts` trips a few cents early so a host reads a sentence instead
 of a round hitting a 400; and the route throttles per seat.
+
+Note that a spend limit you set yourself returns **HTTP 400**, not 429
+(`"You have reached your specified API usage limits"`). The route turns any
+failure into a 502 and bots fall to the corpus, which is the right behaviour
+but logs "not answering" rather than "out of budget".
 
 `budget.ts` caps a **room**, not every room — only the workspace limit does
 that. The two are complementary, not redundant.

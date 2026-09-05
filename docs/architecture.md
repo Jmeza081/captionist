@@ -991,7 +991,7 @@ graph TD
   TK["app/api/ably/token/route.ts<br/><i>/api/ably/token — route handler ƒ<br/>bare TokenRequest · no-store</i>"]
   BR["app/api/bots/turn/route.ts<br/><i>/api/bots/turn — route handler ƒ<br/>verifySeat · words only · no-store</i>"]
   AB["Ably"]
-  AN["Anthropic<br/><i>claude-haiku-4-5 · the one server-only key</i>"]
+  AN["Anthropic<br/><i>opus-5 captions · haiku-4-5 the rest<br/>the one server-only key</i>"]
   NF["app/not-found.tsx<br/><i>/_not-found — every URL we don't have · static ○</i>"]
   NFM["ResolvedNotFoundMedia<br/><i>'use client' · upgrades the fallback</i>"]
   HW["HeroWall<br/><i>'use client' · our art first,<br/>then useResolvedArt(WALL_SLUGS)</i>"]

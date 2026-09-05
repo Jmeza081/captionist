@@ -15,37 +15,60 @@
  * does that, and the two are complementary rather than redundant.
  */
 
-/** Claude Haiku 4.5, dollars per token. The route bills nothing else. */
-const INPUT_PER_TOKEN = 1 / 1_000_000
-const OUTPUT_PER_TOKEN = 5 / 1_000_000
+/**
+ * Dollars per token, per model the route may use.
+ *
+ * Two of them, priced five times apart, so a tally that assumed one would be
+ * wrong by that much whenever the other ran. The route reports which model
+ * answered; this prices it. An unknown model falls to the dearer rate — a
+ * budget that guesses should guess against itself.
+ */
+const PRICES: Readonly<Record<string, { input: number; output: number }>> = {
+  'claude-opus-5': { input: 5 / 1_000_000, output: 25 / 1_000_000 },
+  'claude-haiku-4-5': { input: 1 / 1_000_000, output: 5 / 1_000_000 },
+}
+
+const DEAREST = PRICES['claude-opus-5'] ?? { input: 5 / 1_000_000, output: 25 / 1_000_000 }
 
 /**
  * What one room may spend before its bots fall back to written-in jokes.
  *
- * Sized against a measured game rather than a guess: ~$0.018 for five rounds
- * with four bots, so this is roughly a dozen full games in one room — far more
- * than a room can play in a sitting, and small enough that a runaway loop is a
- * rounding error rather than a bill.
+ * Sized against a game rather than a round number: ~$0.064 for five rounds
+ * with four bots under the split in `app/api/bots/turn/route.ts`, so this is
+ * roughly a dozen full games in one room — far more than a room can play in a
+ * sitting, and small enough that a runaway is a rounding error against the
+ * month's cap rather than the month's cap.
  */
-export const ROOM_BUDGET_USD = 0.25
+export const ROOM_BUDGET_USD = 0.75
 
 interface Spend {
+  usd: number
   input: number
   output: number
   calls: number
 }
 
-const spend: Spend = { input: 0, output: 0, calls: 0 }
+const spend: Spend = { usd: 0, input: 0, output: 0, calls: 0 }
 
-/** Add what one call actually cost, from the response's own `usage`. */
-export function recordSpend(input: number, output: number): void {
-  spend.input += Math.max(0, input)
-  spend.output += Math.max(0, output)
+/**
+ * Add what one call actually cost, from the response's own `usage`.
+ *
+ * Priced as it lands rather than totalled at the end, because the two models
+ * cannot be summed first — the same token count means a different number of
+ * dollars depending on which one produced it.
+ */
+export function recordSpend(input: number, output: number, model?: string): void {
+  const rate = (model ? PRICES[model] : undefined) ?? DEAREST
+  const inTokens = Math.max(0, input)
+  const outTokens = Math.max(0, output)
+  spend.usd += inTokens * rate.input + outTokens * rate.output
+  spend.input += inTokens
+  spend.output += outTokens
   spend.calls += 1
 }
 
 export function spentUsd(): number {
-  return spend.input * INPUT_PER_TOKEN + spend.output * OUTPUT_PER_TOKEN
+  return spend.usd
 }
 
 /** True once this room should stop asking the model. */
@@ -77,6 +100,7 @@ export function budgetReport(): BudgetReport {
 
 /** Reset between rooms, and in tests. */
 export function clearBudget(): void {
+  spend.usd = 0
   spend.input = 0
   spend.output = 0
   spend.calls = 0

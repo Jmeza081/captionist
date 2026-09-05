@@ -23,7 +23,26 @@ import { isBotDifficulty } from '@/lib/bots/types'
  * to ask for lines that differ from each other.
  */
 
-const MODEL = 'claude-haiku-4-5'
+/**
+ * Which model does which job — and they are not the same job.
+ *
+ * **Writing a caption is the only one that has to be funny**, and comedy is
+ * precisely where model size shows. It is also the only one with an image
+ * attached. Everything else is constrained extraction — a two-to-four word
+ * search query, or a ranking of ids — which a small fast model does as well as
+ * a large one and for a fifth of the price.
+ *
+ * The split is roughly $0.064 a game against $0.088 all-Opus and $0.018
+ * all-Haiku: about three quarters of the top price for effectively all of the
+ * quality, because the cheap jobs were never the ones carrying it.
+ */
+const FUNNY_MODEL = 'claude-opus-5'
+const FAST_MODEL = 'claude-haiku-4-5'
+
+function modelFor(body: TurnRequest): string {
+  return body.kind === 'answers' && body.mode === 'caption' ? FUNNY_MODEL : FAST_MODEL
+}
+
 // Short by design: a caption is one line and a ballot is a list of ids.
 // Nothing here should ever approach a cap, and a low one bounds a runaway.
 const MAX_TOKENS = 1_024
@@ -157,14 +176,20 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     content.push({ type: 'text', text: userPrompt(body) })
 
+    const model = modelFor(body)
     const response = await client.messages.create({
-      model: MODEL,
+      model,
       max_tokens: MAX_TOKENS,
-      // **No `thinking` and no `effort`.** Haiku 4.5 predates adaptive
-      // thinking: `output_config.effort` is rejected on it, and the older
-      // `budget_tokens` form would buy nothing for a one-line caption.
       system: systemPrompt(bots.length > 0 ? bots : [{ id: 'bot', difficulty: 'senior' }]),
-      output_config: { format: { type: 'json_schema', schema } },
+      output_config: {
+        format: { type: 'json_schema', schema },
+        // **Effort only on the model that has it.** Opus 5 thinks by default;
+        // `low` is right for a one-liner, which needs wit rather than
+        // deliberation. Haiku 4.5 predates the parameter and *rejects* it, so
+        // it must not be sent there — and its older `budget_tokens` form would
+        // buy nothing for a search query.
+        ...(model === FUNNY_MODEL ? { effort: 'low' as const } : {}),
+      },
       messages: [{ role: 'user', content }],
     })
 
@@ -179,6 +204,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         usage: {
           input: response.usage.input_tokens,
           output: response.usage.output_tokens,
+          // Which model, because the two are priced five times apart and the
+          // host's tally would be wrong for whichever one it assumed.
+          model,
         },
       },
       { headers: { 'Cache-Control': 'no-store' } },
