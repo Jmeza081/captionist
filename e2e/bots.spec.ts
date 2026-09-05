@@ -38,8 +38,9 @@ test.describe('hiring from the lobby', () => {
 
     await expect(page.getByText('2 of 20')).toBeVisible()
     // The badge is the thing that stops a player believing a bot is a
-    // colleague, so it is asserted rather than assumed.
-    await expect(page.getByText('Bot', { exact: true })).toBeVisible()
+    // colleague, so it is asserted rather than assumed — and it names the
+    // level, because which one you hired is the thing you want at a glance.
+    await expect(page.getByText('Principal bot', { exact: true })).toBeVisible()
   })
 
   test('offers the three levels, each with a sentence', async ({ page }) => {
@@ -220,7 +221,7 @@ test.describe('a bot, from the other side of the wire', () => {
     // And now the only assertion that matters: the guest sees it too, as a
     // player, labelled — without the guest's tab having any pool at all.
     await expect(guest.getByRole('listitem').filter({ hasText: name as string })).toBeVisible()
-    await expect(guest.getByText('Bot', { exact: true })).toBeVisible()
+    await expect(guest.getByText('Principal bot', { exact: true })).toBeVisible()
     // Three seats from the guest's side: the host, the guest, the bot. The
     // "N of 20" counter is the host's roster card, so it is not asserted here.
     await expect(guest.getByRole('listitem')).toHaveCount(3)

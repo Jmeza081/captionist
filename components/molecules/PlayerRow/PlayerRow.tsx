@@ -1,5 +1,6 @@
 import { Avatar } from '@/components/atoms/Avatar'
 import { Tag } from '@/components/atoms/Tag'
+import { personaFor } from '@/lib/bots/personas'
 import styles from './PlayerRow.module.scss'
 import type { PlayerFace } from '@/lib/game/types'
 
@@ -89,8 +90,10 @@ export function PlayerRow({
       {you && <Tag tone="neutral">You</Tag>}
       {/* Never optional, and never a caller's decision. Nobody should believe
           a bot is a colleague, so the badge follows the face rather than a
-          prop a screen could forget to pass. */}
-      {player.bot && <Tag tone="neutral">Bot</Tag>}
+          prop a screen could forget to pass. It names the level as well —
+          "Intern bot" — because which one you hired is the thing you want to
+          know at a glance, and the word "bot" is what keeps it honest. */}
+      {player.bot && <Tag tone="neutral">{`${personaFor(player.bot).label} bot`}</Tag>}
 
       {status && (
         <span className={`${styles.status} ${done ? styles.done : ''}`}>

@@ -334,6 +334,29 @@ function HostLobby({
                   </div>
                 </li>
               )}
+              {/* A seat you can fill yourself, drawn as the seat it fills —
+                  beside the one you are waiting on somebody else to take.
+                  Blocked rather than disabled, naming what is missing
+                  (ADR 0032). A `button` in the placeholder's own clothes
+                  rather than the pill `Button`: this is a roster slot that
+                  happens to be interactive, not an action row. */}
+              <li>
+                <button
+                  type="button"
+                  className={`${styles.empty} ${styles.hire} ${full ? styles.hireBlocked : ''}`}
+                  aria-disabled={full || undefined}
+                  onClick={() => {
+                    if (full) {
+                      notify(`This room is full — ${state.settings.maxPlayers} players is the limit.`)
+                      return
+                    }
+                    setHiring(true)
+                  }}
+                >
+                  <span className={styles.emptyDot} aria-hidden="true" />
+                  {full ? 'Add a bot — room is full' : 'Add a bot'}
+                </button>
+              </li>
             </ul>
 
             {/* Only where the window actually hides somebody. Both lines are
@@ -352,23 +375,6 @@ function HostLobby({
               </p>
             )}
 
-            {/* On the roster it fills, not in the foot — that dock holds the
-                one control that starts the room. Blocked rather than
-                disabled, naming what is missing (ADR 0032). */}
-            <Button
-              variant="secondary"
-              fullWidth
-              blocked={full}
-              onClick={() => {
-                if (full) {
-                  notify(`This room is full — ${state.settings.maxPlayers} players is the limit.`)
-                  return
-                }
-                setHiring(true)
-              }}
-            >
-              {full ? 'Add a bot — room is full' : 'Add a bot'}
-            </Button>
           </Stack>
         </div>
       </div>

@@ -364,8 +364,43 @@
   padding: t.$player-row-pad-y t.$player-row-pad-x;
   border: 1px dashed t.$line-dashed;
   border-radius: t.$radius-field;
-  @include t.bodyText;
+  // The same type as a seated player's name in `PlayerRow`, not `bodyText`:
+  // that mixin is fluid and reaches 21px on a desk, so the empty seat read
+  // larger than the people beside it.
+  font-family: t.$font-sans;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.55;
   color: t.$text-meta;
+}
+
+// The empty seat you can fill yourself. Same clothes as `.empty`, plus the
+// things a control needs: a reset, a hover, and a ring.
+.hire {
+  @include t.focusRing;
+
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  background: none;
+  color: t.$text-body;
+  transition: border-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    border-color: t.$accent-border;
+    color: t.$text-primary;
+  }
+}
+
+// Blocked, not disabled: still live, still focusable, and the label says why.
+.hireBlocked {
+  cursor: default;
+  color: t.$text-caption;
+
+  &:hover {
+    border-color: t.$line-dashed;
+    color: t.$text-caption;
+  }
 }
 
 .emptyDot {
