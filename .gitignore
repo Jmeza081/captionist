@@ -59,3 +59,4 @@ next-env.d.ts
 
 # design review contact sheet (derived — regenerate with SHOTS=1 npm run test:e2e)
 /design-review/
+.env*
