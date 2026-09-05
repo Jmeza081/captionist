@@ -1,6 +1,6 @@
 import type { Ballot, EntryAnswer, PlayerId, RoundSubject } from '@/lib/game/types'
 import { fetchBoard } from '@/lib/gifs/source'
-import { toMediaRef } from '@/lib/gifs/types'
+import { toMediaRef, type GifResult } from '@/lib/gifs/types'
 import { sampleAt } from '@/lib/gifs/samples'
 import { readSeat, readSeatSignature } from '@/lib/room/identity'
 import { recordSpend } from './budget'
@@ -55,23 +55,33 @@ async function ask(body: unknown): Promise<TurnResponse> {
   return parsed
 }
 
-/**
- * A query becomes a picture.
- *
- * `pick` offsets into the board so no two bots answer with the same GIF — a
- * vote grid showing the same card twice is a bug you only ever see with bots.
- * A board that comes back short or empty falls to the offline shelf rather
- * than leaving a round with no subject.
- */
-async function gifFor(query: string, pick: number): Promise<ReturnType<typeof toMediaRef>> {
+/** One search, or an empty board if the provider is down — never a throw. */
+async function boardFor(query: string): Promise<readonly GifResult[]> {
   try {
     const board = await fetchBoard(query, undefined, BOARD_SIZE)
-    const chosen = board.results[pick % Math.max(1, board.results.length)]
-    if (chosen) return toMediaRef(chosen)
+    return board.results
   } catch {
     // A provider that is down must not take the round with it.
+    return []
   }
-  return toMediaRef(sampleAt(pick))
+}
+
+/**
+ * A board becomes a picture.
+ *
+ * `pick` offsets into the results so no two bots answer with the same GIF — a
+ * vote grid showing the same card twice is a bug you only ever see with bots.
+ * A board that came back empty falls to the offline shelf rather than leaving
+ * a bot with no answer.
+ */
+function pickFrom(board: readonly GifResult[], pick: number): ReturnType<typeof toMediaRef> {
+  const chosen = board[pick % Math.max(1, board.length)]
+  return chosen ? toMediaRef(chosen) : toMediaRef(sampleAt(pick))
+}
+
+/** A single subject, for the one caller that needs exactly one. */
+async function gifFor(query: string, pick: number): Promise<ReturnType<typeof toMediaRef>> {
+  return pickFrom(await boardFor(query), pick)
 }
 
 export const claudeBrain: BotBrain = {
@@ -118,20 +128,46 @@ export const claudeBrain: BotBrain = {
 
     const out = new Map<PlayerId, EntryAnswer>()
     const rows = answer.answers ?? {}
-    // Sequential rather than `Promise.all`: react mode turns each query into a
-    // board, and firing nineteen searches at once is exactly the burst the
-    // provider's rate limit is there to refuse.
-    let pick = 0
+
+    // Caption mode is words only — nothing to fetch, so it is done here.
+    const needBoards: { id: PlayerId; query: string }[] = []
     for (const bot of ctx.bots) {
       const row = rows[bot.id]
       if (!row) continue
-      if ('lines' in row) {
-        out.set(bot.id, { kind: 'caption', lines: row.lines })
-        continue
-      }
-      const media = await gifFor(row.query, ctx.roundNumber + pick)
-      pick += 1
-      out.set(bot.id, { kind: 'media', media })
+      if ('lines' in row) out.set(bot.id, { kind: 'caption', lines: row.lines })
+      else needBoards.push({ id: bot.id, query: row.query })
+    }
+    if (needBoards.length === 0) return out
+
+    /**
+     * **One board per distinct query, fetched at once.**
+     *
+     * This used to be a board per bot, sequentially, to avoid bursting the
+     * provider — and it cost a round: nineteen bots meant nineteen round trips
+     * in series while the compose clock ran. Every bot is answering the *same*
+     * prompt, so their queries collapse hard; deduping usually leaves one or
+     * two, and fetching those together costs one round trip rather than N.
+     *
+     * Variety comes from where a bot reads in the board rather than from
+     * having its own — bot *n* takes result *n*, which is the same rule that
+     * stops two bots answering with the same GIF.
+     */
+    const queries = [...new Set(needBoards.map((row) => row.query))]
+    const boards = new Map<string, Awaited<ReturnType<typeof boardFor>>>()
+    await Promise.all(
+      queries.map(async (query) => {
+        boards.set(query, await boardFor(query))
+      }),
+    )
+
+    const taken = new Map<string, number>()
+    for (const row of needBoards) {
+      const board = boards.get(row.query) ?? []
+      // Offset within the board this bot's query produced, so two bots that
+      // asked the same thing still answer differently.
+      const nth = taken.get(row.query) ?? 0
+      taken.set(row.query, nth + 1)
+      out.set(row.id, { kind: 'media', media: pickFrom(board, ctx.roundNumber + nth) })
     }
     return out
   },

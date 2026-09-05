@@ -199,6 +199,7 @@ export class BotPool {
     const holder = this.list().find((bot) => isRoleHolder(state, bot.id))
     if (!holder) return
 
+    const opened = this.options.now()
     const ctx = {
       mode: state.settings.mode,
       format: state.settings.format,
@@ -210,7 +211,7 @@ export class BotPool {
       (brain) => brain.subject(ctx),
       () => stubBrain.subject(ctx),
     )
-    await this.dwell(holder.difficulty)
+    await this.dwell(holder.difficulty, opened)
     this.options.apply({ type: 'round/subjectLocked', subject }, holder.id)
   }
 
@@ -223,6 +224,10 @@ export class BotPool {
 
     const subject = this.subjectFor(state)
     if (!subject) return
+
+    // Stamped before any work, because the dwell is a *submission time* rather
+    // than a sleep — see `dwell`.
+    const opened = this.options.now()
 
     const ctx = {
       mode: state.settings.mode,
@@ -237,12 +242,17 @@ export class BotPool {
       () => stubBrain.answers(ctx),
     )
 
-    for (const bot of due) {
-      const answer = answers.get(bot.id)
-      if (!answer) continue
-      await this.dwell(bot.difficulty)
-      this.options.apply({ type: 'round/entrySubmitted', answer }, bot.id)
-    }
+    // **Concurrently, and each against the phase's own start.** Awaiting a
+    // dwell per bot inside a loop made them cumulative: three bots was
+    // 2.5 + 6 + 9 = 17.5 seconds before the last one submitted, not 9.
+    await Promise.all(
+      due.map(async (bot) => {
+        const answer = answers.get(bot.id)
+        if (!answer) return
+        await this.dwell(bot.difficulty, opened)
+        this.options.apply({ type: 'round/entrySubmitted', answer }, bot.id)
+      }),
+    )
   }
 
   /** Every bot that has not voted, in one call. */
@@ -254,6 +264,7 @@ export class BotPool {
     // the same for everybody but `own` — and a bot never ranks its own entry.
     const first = due[0]
     if (!first) return
+    const opened = this.options.now()
     const cards: BallotCard[] = voteCards(state, first.id)
       .filter((card) => !card.own)
       .map((card) => ({
@@ -278,12 +289,14 @@ export class BotPool {
       () => stubBrain.ballots(ctx),
     )
 
-    for (const bot of due) {
-      const ballot = ballots.get(bot.id)
-      if (!ballot) continue
-      await this.dwell(bot.difficulty)
-      this.options.apply({ type: 'round/ballotCast', ballot }, bot.id)
-    }
+    await Promise.all(
+      due.map(async (bot) => {
+        const ballot = ballots.get(bot.id)
+        if (!ballot) return
+        await this.dwell(bot.difficulty, opened)
+        this.options.apply({ type: 'round/ballotCast', ballot }, bot.id)
+      }),
+    )
   }
 
   /**
@@ -299,7 +312,7 @@ export class BotPool {
       if (tiebreak.votes[bot.id] !== undefined) continue
       const choice = tiebreak.contenders[bot.index % tiebreak.contenders.length]
       if (!choice) continue
-      await this.dwell(bot.difficulty)
+      await this.dwell(bot.difficulty, this.options.now())
       this.options.apply({ type: 'round/tiebreakVoted', choice }, bot.id)
     }
   }
@@ -388,9 +401,24 @@ export class BotPool {
    * to the next screen and the humans never got a turn. Scaled by the room's
    * clock so `?fast=80` shortens it like everything else timed.
    */
-  private dwell(difficulty: BotDifficulty): Promise<void> {
+  /**
+   * Sit until this bot's moment in the phase, then act.
+   *
+   * **A target time, not a sleep.** Waiting `delayMs` *after* the work finished
+   * was the bug that lost react mode: a model call plus a provider board is
+   * real network time that `?fast` does not scale, so the bots were still
+   * thinking when the clock the same lever had shortened ran out, and the room
+   * moved on without them. Measured from `opened`, slow work simply eats into
+   * the pause and a bot that is already late acts at once.
+   *
+   * The pause itself is a product beat: bots see a broadcast the instant it
+   * lands, and without it the phase gate slams shut before anyone has read the
+   * GIF. It is never a reason to miss the gate entirely.
+   */
+  private dwell(difficulty: BotDifficulty, opened: number): Promise<void> {
     const rate = this.options.rate && this.options.rate > 0 ? this.options.rate : 1
-    const ms = personaFor(difficulty).delayMs / rate
+    const target = opened + personaFor(difficulty).delayMs / rate
+    const ms = target - this.options.now()
     if (ms < 1) return Promise.resolve()
     const wait = this.options.wait
     if (wait) return wait(ms)

@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { authorize } from '@/lib/game/authorize'
 import { createRoom } from '@/lib/game/create'
+import { fixtureFor } from '@/lib/game/fixtures'
 import { reduce } from '@/lib/game/reducer'
-import type { GameAction } from '@/lib/game/actions'
+import type { ActionInput, GameAction } from '@/lib/game/actions'
 import type { GameState } from '@/lib/game/types'
 import { BotPool } from './BotPool'
 import { HostEngine, type TimerHandle } from './HostEngine'
@@ -16,13 +17,15 @@ import { LocalBus, createLocalTransport } from './LocalTransport'
  * authorise as well as reduce — otherwise this harness proves the pool works
  * against rules the room does not actually have.
  */
-function harness(random?: () => number) {
-  let state: GameState = createRoom({
-    roomCode: 'DEV000',
-    host: { id: 'p0', name: 'Host', avatarSeed: 'a' },
-    seed: 1,
-    at: 0,
-  })
+function harness(random?: () => number, initial?: GameState) {
+  let state: GameState =
+    initial ??
+    createRoom({
+      roomCode: 'DEV000',
+      host: { id: 'p0', name: 'Host', avatarSeed: 'a' },
+      seed: 1,
+      at: 0,
+    })
 
   // Walks the name lists rather than sitting on one entry, so two hires get
   // two nicknames — which is what a room with `uniqueNicknames` requires.
@@ -33,6 +36,16 @@ function harness(random?: () => number) {
   }
 
   const applied: GameAction[] = []
+  const apply = (action: ActionInput, actor: string): boolean => {
+    const full = { ...action, at: 0, actor } as GameAction
+    if (authorize(state, full) !== true) return false
+    const next = reduce(state, full)
+    if (next === state) return false
+    state = next
+    applied.push(full)
+    return true
+  }
+
   const pool = new BotPool({
     apply: (action, actor) => {
       const full = { ...action, at: 0, actor } as GameAction
@@ -49,7 +62,7 @@ function harness(random?: () => number) {
     random: random ?? spread,
   })
 
-  return { pool, applied, state: () => state }
+  return { pool, applied, apply, state: () => state }
 }
 
 describe('the bots a host has hired', () => {
@@ -148,6 +161,51 @@ describe('a brain that fails', () => {
     // Nothing threw, and nothing hung. That is the guarantee: a provider
     // outage costs a joke's quality, never a playable round.
     expect(true).toBe(true)
+  })
+})
+
+describe('when bots act', () => {
+  /**
+   * The bug that lost a react round.
+   *
+   * `await dwell()` inside a `for` loop made the pauses *cumulative*: three
+   * bots was 2.5 + 6 + 9 = 17.5 seconds before the last one submitted rather
+   * than 9. Add a model call and a provider board — real network time that
+   * `?fast` does not scale, while it *does* shorten the clock — and the room
+   * moved on without them.
+   *
+   * Scaled by `rate` so the test costs milliseconds, and asserted on real
+   * elapsed time because a virtual clock cannot tell concurrent from
+   * sequential.
+   */
+  it('dwells concurrently, so N bots do not cost N pauses', async () => {
+    // A room already writing, so the pool actually reaches `answer()`.
+    // Joining mid-phase is legal — that is the late-arrival path — so the
+    // bots land as competitors with no entry, which is exactly `due`.
+    const h = harness(undefined, fixtureFor('compose', { players: 4 }))
+
+    // 2.5s / 6s / 9s become 25ms / 60ms / 90ms. Cumulative would be 175ms.
+    const pool = new BotPool({
+      apply: h.apply,
+      snapshot: h.state,
+      now: () => Date.now(),
+      rate: 100,
+    })
+    for (const level of ['intern', 'senior', 'principal'] as const) pool.add(level)
+    expect(pool.list()).toHaveLength(3)
+
+    const started = Date.now()
+    pool.observe(h.state())
+    await new Promise((resolve) => setTimeout(resolve, 130))
+    const elapsed = Date.now() - started
+
+    // Every bot has submitted, by the time the *slowest* was due plus slack.
+    const entries = h.state().round?.entries ?? []
+    for (const bot of pool.list()) {
+      expect(entries.some((entry) => entry.authorId === bot.id)).toBe(true)
+    }
+    expect(elapsed).toBeLessThan(175)
+    pool.close()
   })
 })
 
