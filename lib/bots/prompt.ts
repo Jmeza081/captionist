@@ -38,18 +38,49 @@ export function systemPrompt(bots: readonly { id: string; difficulty: BotDifficu
     .join('\n')
 
   return [
-    'You are writing for a party game played by an engineering team.',
-    'The voice is dry, specific and understated — the tone of a good standup, not a comedy club.',
+    'You are writing for a meme-caption party game played by an engineering team.',
     '',
     HOUSE_RULES,
+    '',
+    WHAT_A_CAPTION_IS,
     '',
     // **No names reach here.** The browser sends seat ids and levels, and the
     // projection the bots read has already stripped authorship — so a joke
     // about a person is not discouraged, it is unavailable.
-    'You are writing for these players. Give each one a distinctly different line:',
+    'You are writing for these players. Give each one a distinctly different line, in their own voice:',
     voices,
   ].join('\n')
 }
+
+/**
+ * What the model is actually being asked to make.
+ *
+ * Asked for "a one-line caption", it wrote paragraphs — grammatical, hedged,
+ * and self-explaining. A meme caption is none of those things. The examples do
+ * more than the rules: a register is easier to copy than to describe, and the
+ * one marked bad is verbatim the shape that came back before this existed.
+ */
+const WHAT_A_CAPTION_IS = [
+  'What a caption is here: the picture does the work, the words are the twist.',
+  '- Short. Most good ones are under eight words. Under forty characters.',
+  '- One beat. The image is the setup; you only supply the payoff.',
+  '- Deadpan. Lowercase is fine. No exclamation marks, no emoji, no hashtags.',
+  '- Never describe the image. Never explain the joke. Never say "when you realize".',
+  '- Formats that work: "nobody: / me:", "POV:", "me when", a flat statement, a single word.',
+  '',
+  'Good:',
+  '- works on my machine',
+  '- nobody: / the linter:',
+  '- POV: the intern found the prod credentials',
+  '- it\'s a feature',
+  '- this you?',
+  '- we\'ll fix it in the retro',
+  '- rollback is a deploy with better instincts',
+  '',
+  'Bad — too long, and it explains itself:',
+  '- When you realize that the deployment you pushed on Friday afternoon is now',
+  '  causing issues in production and everyone in the channel is looking at you',
+].join('\n')
 
 /** One line per job, describing what to write. */
 export function userPrompt(request: TurnRequest): string {
@@ -59,8 +90,9 @@ export function userPrompt(request: TurnRequest): string {
     case 'subject':
       if (request.mode === 'caption') {
         lines.push(
-          'Suggest a GIF search query for this round. Two to four words, the kind of',
-          'thing that returns a widely recognised reaction GIF. Reply with the query only.',
+          'Suggest a GIF search query for this round. Two to four words that return a',
+          'widely recognised reaction GIF. Name the *reaction*, not the topic — "nervous',
+          'sweating", not "deployment anxiety". Reply with the query only.',
         )
       } else {
         lines.push(
@@ -74,8 +106,9 @@ export function userPrompt(request: TurnRequest): string {
       if (request.mode === 'caption') {
         lines.push(
           request.format === 'tb'
-            ? 'Write a two-line caption for this image: a setup and a punchline.'
-            : 'Write a one-line caption for this image.',
+            ? 'Write TOP text and BOTTOM text for this image, image-macro style: the top ' +
+                'sets up, the bottom pays off. A few words each, in Impact-font energy.'
+            : 'Write one meme caption for this image. A handful of words. No sentence.',
         )
         if (request.subject?.kind === 'media') {
           if (request.subject.alt) lines.push(`The GIF is titled: ${request.subject.alt}`)
@@ -85,7 +118,9 @@ export function userPrompt(request: TurnRequest): string {
         }
       } else {
         lines.push(
-          'Suggest a GIF search query that answers the prompt below. Two to four words.',
+          'Suggest a GIF search query that *answers* the prompt below, as a reaction image',
+          'would. Two to four words. Name the reaction, not the topic — "slow clap", not',
+          '"sarcastic approval of the plan".',
           request.subject?.kind === 'prompt' ? `The prompt is: ${request.subject.text}` : '',
         )
       }

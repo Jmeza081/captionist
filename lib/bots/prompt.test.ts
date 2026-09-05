@@ -20,11 +20,34 @@ describe('what a bot is told', () => {
     expect(systemPrompt(BOTS)).toContain('never a person')
   })
 
-  it('asks for two lines only when the room asked for two', () => {
+  it('asks for top and bottom only when the room asked for two', () => {
     const base: TurnRequest = { kind: 'answers', mode: 'caption', roundNumber: 1, bots: BOTS }
-    expect(userPrompt({ ...base, format: 'tb' })).toContain('two-line')
+    expect(userPrompt({ ...base, format: 'tb' })).toContain('TOP text and BOTTOM text')
     // The bug this replaced: one line was returned whatever the room wanted.
-    expect(userPrompt({ ...base, format: 'one' })).toContain('one-line')
+    expect(userPrompt({ ...base, format: 'one' })).toContain('one meme caption')
+  })
+
+  it('shows the model what a caption is, with the failure it replaced marked bad', () => {
+    // A register is easier to copy than to describe. The bad example is the
+    // shape that came back before the examples existed: a hedged, grammatical
+    // paragraph that explains itself.
+    const prompt = systemPrompt(BOTS)
+    expect(prompt).toContain('Good:')
+    expect(prompt).toContain('Bad')
+    expect(prompt).toContain('When you realize')
+    expect(prompt).toContain('Never explain the joke')
+  })
+
+  it('asks a search query to name the reaction rather than the topic', () => {
+    const prompt = userPrompt({
+      kind: 'answers',
+      mode: 'react',
+      roundNumber: 1,
+      bots: BOTS,
+      subject: { kind: 'prompt', text: 'Describe the deploy.' },
+    })
+    // Meme-GIF search works on reaction vocabulary, not on subject matter.
+    expect(prompt).toContain('Name the reaction, not the topic')
   })
 
   it('hands the model the GIF title and the search that found it', () => {

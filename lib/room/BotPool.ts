@@ -2,7 +2,7 @@ import { botBrain } from '@/lib/bots/source'
 import { budgetSpent } from '@/lib/bots/budget'
 import { personaFor } from '@/lib/bots/personas'
 import { stubBrain } from '@/lib/bots/stub'
-import type { BallotCard, BotDifficulty, BotSubject, SeatedBot } from '@/lib/bots/types'
+import type { BallotCard, BotBrain, BotDifficulty, BotSubject, SeatedBot } from '@/lib/bots/types'
 import type { ActionInput } from '@/lib/game/actions'
 import { project } from '@/lib/game/project'
 import { hasSubmitted, hasVoted, isRoleHolder, rankSlotCount, voteCards } from '@/lib/game/selectors'
@@ -54,6 +54,11 @@ export interface BotPoolOptions {
    * already recovered.
    */
   onDegraded?: () => void
+  /**
+   * A brain to use instead of resolving one. For tests, which need a model
+   * that misbehaves in a specific way and cannot get one from a route.
+   */
+  brain?: BotBrain
 }
 
 /**
@@ -236,9 +241,13 @@ export class BotPool {
       bots: due,
       subject,
     }
-    const answers = await this.withFallback(
-      state,
-      (brain) => brain.answers(ctx),
+    const answers = await this.covering(
+      due,
+      await this.withFallback(
+        state,
+        (brain) => brain.answers(ctx),
+        () => stubBrain.answers(ctx),
+      ),
       () => stubBrain.answers(ctx),
     )
 
@@ -253,6 +262,37 @@ export class BotPool {
         this.options.apply({ type: 'round/entrySubmitted', answer }, bot.id)
       }),
     )
+  }
+
+  /**
+   * Every bot gets an answer, whatever the model returned.
+   *
+   * A model that echoes an id wrong, or returns fewer rows than it was asked
+   * for, used to leave those bots with nothing — and a bot with nothing was
+   * skipped, silently, with the phase already marked done so nothing retried.
+   * The room then sat at a gate those bots could never pass until the clock
+   * ran out. Caption mode never showed it because Opus echoes ids faithfully;
+   * react mode runs on Haiku, which does not always. Same code, one model's
+   * habit apart.
+   *
+   * So the corpus fills the gaps. A bot the model forgot writes a written-in
+   * line rather than nothing — the same guarantee the budget has: a failure
+   * costs a joke's quality, never a playable round.
+   */
+  private async covering<T>(
+    bots: readonly SeatedBot[],
+    got: ReadonlyMap<PlayerId, T>,
+    corpus: () => Promise<ReadonlyMap<PlayerId, T>>,
+  ): Promise<ReadonlyMap<PlayerId, T>> {
+    const missing = bots.filter((bot) => !got.has(bot.id))
+    if (missing.length === 0) return got
+    const filled = await corpus()
+    const out = new Map(got)
+    for (const bot of missing) {
+      const line = filled.get(bot.id)
+      if (line) out.set(bot.id, line)
+    }
+    return out
   }
 
   /** Every bot that has not voted, in one call. */
@@ -283,9 +323,13 @@ export class BotPool {
       places: rankSlotCount(state, first.id),
       cards,
     }
-    const ballots = await this.withFallback(
-      state,
-      (brain) => brain.ballots(ctx),
+    const ballots = await this.covering(
+      due,
+      await this.withFallback(
+        state,
+        (brain) => brain.ballots(ctx),
+        () => stubBrain.ballots(ctx),
+      ),
       () => stubBrain.ballots(ctx),
     )
 
@@ -343,7 +387,7 @@ export class BotPool {
    */
   private async withFallback<T>(
     state: GameState,
-    ask: (brain: ReturnType<typeof botBrain>) => Promise<T>,
+    ask: (brain: BotBrain) => Promise<T>,
     fallback: () => Promise<T>,
   ): Promise<T> {
     const spent = budgetSpent()
@@ -351,7 +395,7 @@ export class BotPool {
       this.toldDegraded = true
       this.options.onDegraded?.()
     }
-    const brain = botBrain(spent)
+    const brain = this.options.brain ?? botBrain(spent)
     if (brain.id === 'stub') return fallback()
 
     const budget = this.deadlineFor(state)

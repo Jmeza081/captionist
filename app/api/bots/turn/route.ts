@@ -68,52 +68,81 @@ function throttled(seat: string, now: number): boolean {
   return recent.length > MAX_PER_WINDOW
 }
 
-/** The shapes the model may answer in. Structured, so nothing is parsed out of prose. */
-const SCHEMAS = {
-  subject: {
-    type: 'object' as const,
-    properties: { text: { type: 'string' as const } },
-    required: ['text'],
-    additionalProperties: false,
-  },
-  answers: {
-    type: 'object' as const,
-    properties: {
-      answers: {
-        type: 'array' as const,
-        items: {
-          type: 'object' as const,
-          properties: {
-            id: { type: 'string' as const },
-            lines: { type: 'array' as const, items: { type: 'string' as const } },
+/**
+ * The longest a caption line may be, in characters.
+ *
+ * A structural cap rather than a prompt request. The model was asked for "one
+ * line" and returned paragraphs; a meme caption is a handful of words, and a
+ * schema `maxLength` is the one instruction it cannot talk its way past. Eighty
+ * characters is generous — most of the good ones are under thirty.
+ */
+const LINE_MAX = 80
+
+/**
+ * The shapes the model may answer in. Structured, so nothing is parsed out of
+ * prose — and **built per request**, so the ids are an `enum` of exactly the
+ * bots asked for.
+ *
+ * `id: { type: 'string' }` was the react-mode timeout. Haiku would echo an id
+ * loosely — `bot_1`, `1`, a nickname — the route dropped the row as unknown,
+ * and the bot it belonged to never acted. An enum makes a wrong id impossible
+ * rather than merely unlikely; the pool's corpus fallback is the net under it,
+ * not the road.
+ */
+function schemaFor(kind: TurnRequest['kind'], ids: readonly string[]) {
+  const id = ids.length > 0 ? { type: 'string' as const, enum: [...ids] } : { type: 'string' as const }
+  const lines = {
+    type: 'array' as const,
+    items: { type: 'string' as const, maxLength: LINE_MAX },
+    minItems: 1,
+    maxItems: 2,
+  }
+  switch (kind) {
+    case 'subject':
+      return {
+        type: 'object' as const,
+        properties: { text: { type: 'string' as const, maxLength: LINE_MAX } },
+        required: ['text'],
+        additionalProperties: false,
+      }
+    case 'answers':
+      return {
+        type: 'object' as const,
+        properties: {
+          answers: {
+            type: 'array' as const,
+            items: {
+              type: 'object' as const,
+              properties: { id, lines },
+              required: ['id', 'lines'],
+              additionalProperties: false,
+            },
           },
-          required: ['id', 'lines'],
-          additionalProperties: false,
         },
-      },
-    },
-    required: ['answers'],
-    additionalProperties: false,
-  },
-  ballots: {
-    type: 'object' as const,
-    properties: {
-      ballots: {
-        type: 'array' as const,
-        items: {
-          type: 'object' as const,
-          properties: {
-            id: { type: 'string' as const },
-            ranked: { type: 'array' as const, items: { type: 'string' as const } },
+        required: ['answers'],
+        additionalProperties: false,
+      }
+    case 'ballots':
+      return {
+        type: 'object' as const,
+        properties: {
+          ballots: {
+            type: 'array' as const,
+            items: {
+              type: 'object' as const,
+              properties: {
+                id,
+                ranked: { type: 'array' as const, items: { type: 'string' as const } },
+              },
+              required: ['id', 'ranked'],
+              additionalProperties: false,
+            },
           },
-          required: ['id', 'ranked'],
-          additionalProperties: false,
         },
-      },
-    },
-    required: ['ballots'],
-    additionalProperties: false,
-  },
+        required: ['ballots'],
+        additionalProperties: false,
+      }
+  }
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -165,7 +194,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   try {
     const client = new Anthropic({ apiKey })
-    const schema = SCHEMAS[body.kind]
+    const schema = schemaFor(body.kind, bots.map((bot) => bot.id))
 
     // The image goes first, ahead of the text — the order the vision docs ask
     // for. One image per call, because every bot captions the same GIF, which

@@ -4,7 +4,8 @@ import { createRoom } from '@/lib/game/create'
 import { fixtureFor } from '@/lib/game/fixtures'
 import { reduce } from '@/lib/game/reducer'
 import type { ActionInput, GameAction } from '@/lib/game/actions'
-import type { GameState } from '@/lib/game/types'
+import type { EntryAnswer, GameState } from '@/lib/game/types'
+import type { AnswersContext } from '@/lib/bots/types'
 import { BotPool } from './BotPool'
 import { HostEngine, type TimerHandle } from './HostEngine'
 import { LocalBus, createLocalTransport } from './LocalTransport'
@@ -205,6 +206,53 @@ describe('when bots act', () => {
       expect(entries.some((entry) => entry.authorId === bot.id)).toBe(true)
     }
     expect(elapsed).toBeLessThan(175)
+    pool.close()
+  })
+})
+
+describe('a brain that answers for some bots and not others', () => {
+  /**
+   * The bug that kept losing react rounds after the timing was fixed.
+   *
+   * A model that echoes an id wrong, or returns fewer rows than bots, left the
+   * uncovered bots with no answer — and the pool skipped them silently. The
+   * phase was already marked done, so nothing retried, and the room sat at a
+   * gate those bots could never pass until the clock ran out.
+   *
+   * Caption mode was fine only because Opus echoes `bot-1` faithfully. React
+   * mode runs on Haiku, which is less reliable at exact ids. Same code, one
+   * model's habit apart.
+   */
+  it('still submits for every bot, from the corpus if it has to', async () => {
+    const h = harness(undefined, fixtureFor('compose', { players: 4 }))
+    const pool = new BotPool({
+      apply: h.apply,
+      snapshot: h.state,
+      now: () => 0,
+      wait: () => Promise.resolve(),
+      // A brain that covers one bot and forgets the rest.
+      brain: {
+        id: 'claude',
+        subject: () => Promise.reject(new Error('unused')),
+        ballots: () => Promise.resolve(new Map()),
+        answers: (ctx: AnswersContext) => {
+          const first = ctx.bots[0]
+          const out = new Map<string, EntryAnswer>()
+          if (first) out.set(first.id, { kind: 'caption', lines: ['covered'] })
+          return Promise.resolve(out)
+        },
+      },
+    })
+    for (const level of ['intern', 'senior', 'principal'] as const) pool.add(level)
+
+    pool.observe(h.state())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const entries = h.state().round?.entries ?? []
+    for (const bot of pool.list()) {
+      expect(entries.some((entry) => entry.authorId === bot.id)).toBe(true)
+    }
     pool.close()
   })
 })
