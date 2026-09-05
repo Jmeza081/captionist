@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { exportMedia } from '@/flags'
 import { normalizeCode } from '@/lib/game/codes'
 import { RoomShell } from '@/components/organisms/RoomShell'
 import { RoomProvider } from '@/lib/room/RoomProvider'
@@ -28,8 +29,12 @@ export default async function RoomPage({
   const roomCode = code === 'DEV' ? 'C-DEV000' : normalizeCode(code)
   if (!roomCode) notFound()
 
+  // Decided here, per request, because this is the last Server Component
+  // above the room — see `flags.ts` for why it is a flag and not a build setting.
+  const canExport = await exportMedia()
+
   return (
-    <RoomProvider roomCode={roomCode} search={search}>
+    <RoomProvider roomCode={roomCode} search={search} flags={{ exportMedia: canExport }}>
       <RoomShell screens={SCREENS} />
     </RoomProvider>
   )

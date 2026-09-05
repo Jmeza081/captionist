@@ -2,7 +2,7 @@ import { FIXTURE_PHASES } from '@/lib/game/fixtures'
 import type { GameMode, PlayerId, RoomPhase, RoomSettings } from '@/lib/game/types'
 
 /**
- * The eleven URL levers, read once in `RoomProvider`.
+ * The URL levers, read once in `RoomProvider`.
  *
  * Gated to non-production so no test branch can leak into a screen: in a
  * production build every lever reads as absent, whatever the query string says.
@@ -73,6 +73,16 @@ export interface Levers {
    * one-browser transport instead. `ABLY_STUB=1` does the same thing stickily.
    */
   transport?: 'ably' | 'broadcast'
+  /**
+   * Turn the export keys off for one page load.
+   *
+   * The feature is behind a server-side flag (`flags.ts`) whose default is on
+   * until a Vercel project exists to say otherwise, so the off state would be
+   * unreachable in development and in the suite without this. Off is the only
+   * value: a lever that turned the feature *on* would be a way round the flag,
+   * which is the one thing the flag exists to prevent.
+   */
+  export?: 'off'
   /**
    * This tab is a development guest, letting itself into the room.
    *
@@ -158,6 +168,8 @@ export function readLevers(
 
   const transport = search.get('transport')
   if (transport === 'ably' || transport === 'broadcast') levers.transport = transport
+
+  if (search.get('export') === 'off') levers.export = 'off'
 
   return levers
 }

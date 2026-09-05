@@ -24,6 +24,20 @@ import type {
   Unsubscribe,
 } from './transport'
 
+/**
+ * The feature flags, as the server decided them for this request.
+ *
+ * Decided in `app/room/[code]/page.tsx` from `flags.ts` and handed down as a
+ * prop, so a screen reads a boolean and never the flag itself — a client
+ * component cannot evaluate one, and should not know where it came from.
+ */
+export interface RoomFlags {
+  /** The export keys on the reveal, vote, score and podium screens. */
+  exportMedia: boolean
+}
+
+export const DEFAULT_FLAGS: RoomFlags = { exportMedia: false }
+
 export interface RoomBinding {
   store: RoomStore
   send: (action: ActionInput) => void
@@ -74,6 +88,8 @@ export interface RoomBinding {
    */
   hireBot: (difficulty: BotDifficulty) => PlayerId | undefined
   fireBot: (id: PlayerId) => void
+  /** What the server switched on for this room. Constant for the tab's life. */
+  flags: RoomFlags
 }
 
 export const RoomContext = createContext<RoomBinding | undefined>(undefined)
@@ -98,6 +114,11 @@ export function useRoom(): RoomSnapshot & { send: (action: ActionInput) => void 
 /** The local player's chosen name and face. Constant for the tab's life. */
 export function useIdentity(): Identity {
   return useBinding().identity
+}
+
+/** The feature flags the server decided for this request. */
+export function useRoomFlags(): RoomFlags {
+  return useBinding().flags
 }
 
 /** Which room this is. Constant, and known before the room exists. */

@@ -8,7 +8,7 @@ describe('url levers', () => {
   it('reads every lever', () => {
     expect(
       parse(
-        'seed=42&bots=4&fast=10&phase=vote&mode=react&voting=single&format=one&out=1&as=p2&gifs=stub&transport=broadcast',
+        'seed=42&bots=4&fast=10&phase=vote&mode=react&voting=single&format=one&out=1&as=p2&gifs=stub&transport=broadcast&export=off',
       ),
     ).toEqual({
       seed: 42,
@@ -22,7 +22,15 @@ describe('url levers', () => {
       as: 'p2',
       gifs: 'stub',
       transport: 'broadcast',
+      export: 'off',
     })
+  })
+
+  it('can only ever take the export keys away', () => {
+    // A lever that switched them *on* would be a way round the server's flag,
+    // which is the one thing the flag exists to prevent.
+    expect(parse('export=on')).toEqual({})
+    expect(parse('export=1')).toEqual({})
   })
 
   it('ignores a voting rule or caption format that is neither', () => {

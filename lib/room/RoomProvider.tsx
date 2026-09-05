@@ -18,7 +18,7 @@ import { readLevers, type Levers } from './levers'
 import { clearPendingSettings, readPendingSettings } from './pendingSettings'
 import { createRoomStore, isSeated, type BootProgress } from './store'
 import type { RoomTransport } from './transport'
-import { RoomContext, type RoomBinding } from './useRoom'
+import { DEFAULT_FLAGS, RoomContext, type RoomBinding, type RoomFlags } from './useRoom'
 
 /**
  * Constructs the room and hands screens a store to subscribe to.
@@ -45,6 +45,12 @@ export interface RoomProviderProps {
   roomCode: RoomCode
   /** The page's `searchParams`, already resolved. */
   search?: Record<string, string | string[] | undefined>
+  /**
+   * What the server switched on. Evaluated per request in the page from
+   * `flags.ts`; absent means nothing is, which is what a gallery or a test
+   * that mounts the provider bare should get.
+   */
+  flags?: RoomFlags
   children: ReactNode
 }
 
@@ -171,7 +177,12 @@ function intendedRole(seat: Seat): BootProgress['role'] {
   return readPendingSettings() ? 'host' : 'guest'
 }
 
-export function RoomProvider({ roomCode, search, children }: RoomProviderProps) {
+export function RoomProvider({
+  roomCode,
+  search,
+  flags = DEFAULT_FLAGS,
+  children,
+}: RoomProviderProps) {
   const levers = useMemo(() => readLevers(toSearchParams(search)), [search])
   const seat = useMemo(() => resolveSeat(levers), [levers])
   const selfId = seat.identity.id
@@ -634,8 +645,10 @@ export function RoomProvider({ roomCode, search, children }: RoomProviderProps) 
        */
       hireBot: (difficulty) => poolRef.current?.add(difficulty),
       fireBot: (id) => poolRef.current?.remove(id),
+      // The lever can only ever take a flag away — see `Levers.export`.
+      flags: { exportMedia: flags.exportMedia && levers.export !== 'off' },
     }),
-    [store, events, seat.identity, seat.declared, levers.fast, roomCode],
+    [store, events, seat.identity, seat.declared, levers.fast, levers.export, roomCode, flags.exportMedia],
   )
 
   return <RoomContext.Provider value={binding}>{children}</RoomContext.Provider>
