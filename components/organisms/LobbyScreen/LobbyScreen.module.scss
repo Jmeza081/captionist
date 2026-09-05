@@ -375,29 +375,47 @@
 }
 
 // The empty seat you can fill yourself. Same clothes as `.empty`, plus the
-// things a control needs: a reset, a hover, and a ring.
+// things a control needs — and a wash of the accent, so it reads as a nudge
+// beside the seat you are merely waiting on. The *weak* fill and border on
+// purpose: the screen's one real CTA is the start button in the foot, and a
+// second surface at full accent would argue with it.
 .hire {
   @include t.focusRing;
 
   width: 100%;
   cursor: pointer;
   text-align: left;
-  background: none;
-  color: t.$text-body;
-  transition: border-color 120ms ease, color 120ms ease;
+  background: t.$accent-fill-weak;
+  border-color: t.$accent-border-weak;
+  color: t.$accent-text;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+
+  // The seat's dot picks up the same wash, so the whole slot reads as one.
+  .emptyDot {
+    background-color: t.$accent-fill;
+  }
 
   &:hover {
+    background: t.$accent-fill;
     border-color: t.$accent-border;
-    color: t.$text-primary;
+    color: t.$accent-on-fill;
   }
 }
 
 // Blocked, not disabled: still live, still focusable, and the label says why.
+// The wash comes off — a nudge towards something you cannot do is a taunt.
 .hireBlocked {
   cursor: default;
+  background: none;
+  border-color: t.$line-dashed;
   color: t.$text-caption;
 
+  .emptyDot {
+    background-color: t.$fill-subtle;
+  }
+
   &:hover {
+    background: none;
     border-color: t.$line-dashed;
     color: t.$text-caption;
   }
