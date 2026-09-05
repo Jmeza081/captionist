@@ -11,8 +11,9 @@ The event lane's `chat` variant now takes an optional `attachment` and a
 `replyTo` quote, the reaction picker put its 32 reactions behind pack tabs
 with the design's four Slackmoji tiles among them, and the two `/host` settings
 that no screen read — `voting: 'single'` and `format: 'one'` — are read. Still
-nine routes and ten phases; nothing about the shape of a room moved. (Two have
-landed since: the 404 page below, and `/api/bots/turn`.)
+nine routes and ten phases; nothing about the shape of a room moved. (Three have
+landed since: the 404 page below, `/api/bots/turn`, and the flags discovery
+endpoint the export feature brought with it.)
 
 **Since then the reaction catalog grew from 32 to 616, and the wire did not
 change.** 584 emoji were imported from Google's Noto Animated Emoji under CC BY
@@ -285,6 +286,27 @@ counts what a room has spent off each response's own `usage`, in the host's tab
 and never on the wire, and a spent budget lands on the written-in corpus rather
 than stopping the game.
 
+**Since then a meme can leave the room, and it is made in the browser that is
+watching it.** `lib/export/` re-encodes the provider's GIF with the caption
+burned in — fetched from the CDN with CORS, decoded one frame at a time with
+`gifuct-js`, composed on a canvas in `MediaCard`'s own type, encoded with
+`gifenc` under one global palette — and hands the `Blob` to whatever the device
+has: the share sheet where it takes files, the clipboard where it takes a PNG,
+a download otherwise. No route, no cache, no second host; the standings go the
+same way as a drawn PNG. **One molecule carries it on four screens**:
+`ExportKey` sits in the winner card's foot on the reveal, on every card of the
+vote as a glyph, before the host's primary on the score screen, and as the
+podium's third pill — the one the design draws as "Post to Slack" and this
+file used to list as needing a destination of ours. Its label is the device's
+word, never the artefact's ([ADR 0033](./adr/0033-a-device-capability-decides-the-label.md)
+applied to a file), and while it renders the count is the label
+([ADR 0032](./adr/0032-a-blocked-label-counts-what-is-missing.md)). **The whole
+thing is behind the app's first feature flag**, `export-media` in `flags.ts`,
+evaluated per request in `app/room/[code]/page.tsx` and handed down as a prop —
+because a provider's terms neither allow nor forbid a caption over their frame
+in so many words, and the answer to "stop" has to be minutes rather than a
+redeploy. [ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md).
+
 **The pick screen lost its bottom row, and the search field started working.**
 `useGifSearch` exposes `setQuery`; both boards were passing
 `onQueryChange={() => {}}` against a `query`-controlled field, which meant the
@@ -496,9 +518,10 @@ promise: `components/molecules/Dropzone/` is deleted, `GifPanel` renders
 unconditionally on the brief, the `/host` row is **absent rather than
 disabled**, `MediaRef` lost the `source: 'giphy' | 'upload'` union nothing read
 (it is `{ src, alt }` plus the optional `width`/`height` a card's shape needs),
-`Icon` dropped `upload` and went back to eleven glyphs (it is thirteen since —
-`shuffle` arrived with "Shuffle results" and `toolbox` with the FAB that stopped
-wearing a smiley; `IconName` is the count and the docblock follows it), and four
+`Icon` dropped `upload` and went back to eleven glyphs (it is fourteen since —
+`shuffle` arrived with "Shuffle results", `toolbox` with the FAB that stopped
+wearing a smiley, and `share` with the export key; `IconName` is the count and
+the docblock follows it), and four
 `$dropzone-*` metrics left
 `theme/_metrics.scss`. A GIF provider is the only image source, in both modes.
 [ADR 0014](./adr/0014-uploads-are-not-a-feature.md).
@@ -835,6 +858,8 @@ here now*. Where they overlap, this file links rather than repeats.
 | Reaction art | `public/media/emoji/` stills · `lib/noto.ts` derives the motion | 584 CC BY 4.0 stills, 2.79MB, written by `scripts/import-noto-emoji.mjs` — run by hand, output committed, **deliberately not wired into `build`**, which has no network. `animatedSrcFor(glyph)` turns a same-origin still into its `fonts.gstatic.com` WebP and returns `null` for anything else; Google publishes these at 512px only, so one animated tile is ~369KB and the whole catalog would be ~57MB committed. [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
 | Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Read by `HeroWall`, `SceneBackdrop`, `ReactionGlyph` and the walkthrough's illustrations: every place the decision is *which file to fetch* rather than which rule to apply, and therefore every place CSS cannot make it |
 | Sharing a link | `lib/useWebShare.ts` | `useSyncExternalStore` over `navigator.share`, with **`false` as the server snapshot** — a button whose label came out of feature detection during SSR is a hydration mismatch on every phone, and it settles on the first client commit long before anybody has read the button. `share()` resolves to what happened — `shared` · `copied` · `cancelled` · `failed` — so the caller can confirm a copy, say nothing about a sheet that is already on screen, and treat a dismissal as a decision rather than an error. `AbortError` *is* the dismissal; every other failure falls through to the clipboard, because a sheet that refused to open is exactly when the old behaviour is wanted. The label moves with the capability rather than only the behaviour — [ADR 0033](./adr/0033-a-device-capability-decides-the-label.md) |
+| Sharing a file | `lib/export/` — `gifuct-js@2.1.2` decodes, `gifenc@1.0.3` encodes, both reached only through dynamic `import()` | **Client-side, end to end, and nothing is kept.** The pure half — `budget.ts` (480px wide, 100 frames, a 20ms floor under a delay), `layout.ts` (band and overlay geometry against an injected `measure`), `labels.ts` (capability → label, filenames, `markFor(src)` over `providerOf`, every snackbar line) — imports nothing that needs a browser, so Vitest covers it. The DOM half — `fonts.ts` reads `--font-inter`, the colours, the four overlay steps and the hat numbers off `:root`; `frames.ts` fetches with CORS and decodes one frame at a time with the file's own disposal, or takes one frame through an `<img>` for anything that is not a GIF; `compose.ts` paints a frame, the caption and the footer with the provider's mark; `encode.ts` builds one palette from sampled *composed* frames and yields per frame; `meme.ts` runs those two passes; `standings.ts` draws the table with DiceBear data-URI faces and hats; `deliver.ts` picks sheet, clipboard or download by capability. `useExport` is the hook a screen owns — capability through `useSyncExternalStore` with a `false` server snapshot, progress, an idle `prepare()`, and the `expired` two-tap for a sheet that refused a stale gesture — and `jobs.ts` is what the screens call, importing the renderers only when a job runs. Both pins are exact and both libraries are dormant, because GIF89a is finished; `types/gifenc.d.ts` declares the slice that is called. [ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md) |
+| Feature flags | `flags@4.3.0` + `@flags-sdk/vercel@1.4.7`, declared in `flags.ts` at the repo root | One flag, `export-media`, and it exists for one reason: the export has to be able to go dark in the time it takes to flip a switch. `flag()` from `flags/next` takes `vercelAdapter()` only where a Vercel project can answer (`VERCEL`, `FLAGS` or `VERCEL_OIDC_TOKEN` set); everywhere else a `decide` returns the environment's default, `process.env.EXPORT_MEDIA !== 'off'` — server-side on purpose, since a `NEXT_PUBLIC_` variable is inlined at build and cannot be flipped. Evaluated per request in `app/room/[code]/page.tsx`, the last Server Component above the room, and carried down as `RoomProvider`'s `flags` prop to `useRoomFlags()`; a client component never evaluates one. `/.well-known/vercel/flags` is the Flags Explorer's discovery endpoint, 401 without `FLAGS_SECRET`. `?export=off` is the only lever, and it can only take the keys away |
 | Recent reactions | `lib/recent-reactions.ts` — `localStorage`, ids not glyphs | The picker's Recent tab, and the one piece of reaction state that never travels: not the event store (whose contract is one event off the wire), not `GameState` (it would bump `rev`), not `sessionStorage` (your emoji should outlive the room). Filtered against `REACTIONS` on read, so a retired tile leaves quietly |
 | Realtime | `AblyTransport` over Ably v2 · `BroadcastTransport` over `BroadcastChannel` | All three `RoomTransport` implementations now exist and **no method changed at the swap** — [ADR 0009](./adr/0009-the-room-crosses-the-network.md). Ably is what a real room takes; the tab transport is what the suite runs on. Who hosts is presence on Ably and a claim probe on the tab bus — [ADR 0007](./adr/0007-the-first-tab-to-ask-owns-the-room.md). Both lanes — intents and events — stamp `from` from the identity the transport authenticated, never from the payload |
 | Realtime auth | `/api/ably/seat` + `/api/ably/token`, `lib/ably/` | `ABLY_API_KEY` is server-only. Two routes because an `authUrl` must answer with the bare `TokenRequest`: the seat (signed, and where the stub answer lives) comes from one, the token from the other. `createTokenRequest` signs locally, so neither route makes a call of its own; the capability is the glob `captionist:<code>:*` |
@@ -900,19 +925,29 @@ landing wall renders the app's own art from the server whatever the switches
 say, so the first page anyone sees costs no request; the real GIFs are resolved
 afterwards, in the browser.
 
+Two more are the export's, and neither is a key. `EXPORT_MEDIA=off` is the
+default the `export-media` flag falls back to where no Vercel project answers —
+which is every laptop and the whole suite, so the keys are *on* under
+Playwright and `e2e/export.spec.ts` reaches the off state through `?export=off`
+rather than the environment. `FLAGS_SECRET` only unlocks the Flags Explorer's
+discovery endpoint; without it that route answers 401 and nothing else in the
+app changes.
+
 ---
 
 ## Routes
 
-Ten routes of ours. `next build` reports nine — the tenth is `/components`,
+Eleven routes of ours. `next build` reports ten — the eleventh is `/components`,
 which exists only under `next dev` and is explained below. `/_not-found` used to
-be Next's default black page and is now `app/not-found.tsx`; `/api/bots/turn` is
-the newest of the nine, and the first route handler added since the terms took
-`/api/gifs`:
+be Next's default black page and is now `app/not-found.tsx`; `/api/bots/turn`
+was the first route handler added since the terms took `/api/gifs`, and
+`/.well-known/vercel/flags` is the newest of the ten — a handler that serves
+nobody in the room, only the Vercel Toolbar:
 
 ```
 Route (app)       Revalidate  Expire
 ○ /
+ƒ /.well-known/vercel/flags
 ○ /_not-found
 ƒ /api/ably/seat
 ƒ /api/ably/token
@@ -946,12 +981,23 @@ still ask no server
 about the *room*, because **nothing before the room needs one**: a code is
 generated in the browser, and whether a room already exists is a question only
 the transport can answer, which happens after the push. `/join/[code]` is dynamic solely because it awaits `params` to prefill one field;
-`/room/[code]` is dynamic and everything inside it is client-driven.
-`/api/ably/seat`, `/api/ably/token` and `/api/bots/turn` are the three route
-handlers — no layout, no React, JSON only. `/api/gifs` was a fourth until the
+`/room/[code]` is dynamic and everything inside it is client-driven — and it is
+now the one page that **awaits something other than a `params` promise before
+it renders**: the `export-media` flag, read from `flags.ts` per request because this is the last
+Server Component above the room, and passed to `RoomProvider` as
+`flags={{ exportMedia }}`. The room's screens read `useRoomFlags()` and see a
+boolean; none of them knows where it came from, and nothing in the browser can
+turn it back on.
+`/api/ably/seat`, `/api/ably/token`, `/api/bots/turn` and
+`/.well-known/vercel/flags` are the four route handlers — no layout, no React,
+JSON only. `/api/gifs` was one until the
 terms took it, and the bot route is not its return: a GIF may not be proxied and
 a model key may not be public, so the road that was closed and the road that was
-opened are one rule read on two different sets of terms.
+opened are one rule read on two different sets of terms. The fourth is not the
+app's at all in the sense the other three are: `createFlagsDiscoveryEndpoint`
+from `flags/next` over `getProviderData(flags)`, so the Vercel Toolbar's Flags
+Explorer can list the flag and override it for one person's session. It answers
+401 without `FLAGS_SECRET`, and no browser in a room ever calls it.
 
 **`/_not-found` is a root `not-found.tsx`, so it catches both halves of the
 problem**: a URL that matches no route at all, and any `notFound()` a segment
@@ -992,6 +1038,8 @@ graph TD
   BR["app/api/bots/turn/route.ts<br/><i>/api/bots/turn — route handler ƒ<br/>verifySeat · words only · no-store</i>"]
   AB["Ably"]
   AN["Anthropic<br/><i>opus-5 captions · haiku-4-5 the rest<br/>the one server-only key</i>"]
+  FL["flags.ts<br/><i>export-media — vercelAdapter() where a project answers,<br/>else EXPORT_MEDIA's default</i>"]
+  FD["app/.well-known/vercel/flags/route.ts<br/><i>/.well-known/vercel/flags — route handler ƒ<br/>Flags Explorer discovery · 401 without FLAGS_SECRET</i>"]
   NF["app/not-found.tsx<br/><i>/_not-found — every URL we don't have · static ○</i>"]
   NFM["ResolvedNotFoundMedia<br/><i>'use client' · upgrades the fallback</i>"]
   HW["HeroWall<br/><i>'use client' · our art first,<br/>then useResolvedArt(WALL_SLUGS)</i>"]
@@ -1014,6 +1062,8 @@ graph TD
   L --> JC
   L --> R
   L --> NF
+  FD -->|"getProviderData(flags)"| FL
+  R -->|"await exportMedia() — per request,<br/>the last Server Component above the room"| FL
   R -.->|"notFound() — a code that never normalised"| NF
   NF -->|"notFoundGif() — our own art in the HTML"| NFM
   NFM -.->|"resolveArt([NOT_FOUND_SLUG]) — in the browser,<br/>after the paint. NEXT_PUBLIC_GIFS_STUB keeps the shelf"| GP
@@ -1031,7 +1081,8 @@ graph TD
   JC -->|"code prefilled"| JS
   HS -->|"router.push → /room/NEW"| R
   JS -->|"router.push → /room/CODE"| R
-  R --> RP --> SH
+  R -->|"flags: exportMedia — a boolean,<br/>read by the screens through useRoomFlags()"| RP
+  RP --> SH
   RP -.->|"probeRealtime() — one ask, two answers"| SE
   RP -.->|"connectAbly · authUrl mints the token"| TK
   RP -.->|"control + per-recipient state channels"| AB
@@ -1045,6 +1096,7 @@ graph TD
   SH -->|"seated → screens[state.phase]"| SCR
   SCR -.->|"joinUrlFor() — QR + copy link"| JC
   SCR -.->|"useGifSearch() → fetchBoard"| GP
+  SCR -.->|"lib/export/frames — fetch(src) with CORS,<br/>decoded and re-encoded in this tab, kept nowhere"| GP
   SH -.->|"ChatPanel's GifPanel — same hook,<br/>mounted only while the surface is open"| GP
   SH -.->|"HelpModal's four illustrations —<br/>resolveArt(HELP_SLUGS), the SVG until it lands"| GP
 ```
@@ -1061,6 +1113,13 @@ Playwright suite looking at pictures rather than at holes. The fourth is the
 only one of them that is not a page: `HelpModal` opens from four different
 places — the landing nav, `/host`, the lobby's key and the room toolbox — so its
 slugs are resolved when somebody opens it rather than at a route's first paint.
+**The export is the newest dotted arrow and the one that fetches bytes rather
+than a board**: `lib/export/frames.ts` reads the GIF straight off the provider's
+CDN — both send `access-control-allow-origin: *` — into the tab that is
+watching it, and the file it makes leaves by the share sheet, the clipboard or
+a download. The same rule, read from the other end: no server of ours touches
+the picture on the way in, and none holds it on the way out
+([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md)).
 
 **`/` is the landing page from artboard 1a**, and it composes four things:
 `LandingNav`, the hero copy, `LandingActions` and — since the licences arrived —
@@ -1141,9 +1200,10 @@ and Tokens are new surfaces rather than moved ones: the first reads
 `AVATAR_SEEDS`, `HAT_IDS`, `REACTIONS` and `SAMPLE_GIFS` straight from the
 modules the room reads, so a hat added to the picker appears there without
 anybody remembering; the second draws the spacing scale and the radii from the
-published CSS custom properties, which is why colour is *not* there — sixty-four
-Sass tokens are never published, and a swatch grid would be a second copy of
-every hex value. `JoinPanel` lives here
+published CSS custom properties, which is why colour is *not* there — the
+palette is never published (eight colours are, since the export's canvas paints
+from them, and that is a renderer's need rather than a swatch grid's), and a
+swatch grid would be a second copy of every hex value. `JoinPanel` lives here
 now rather than on `/`, as does `QuickJoin` — and note that the gallery is the
 *only* thing that renders `JoinPanel`: `/join` was built from `CodeEntry`,
 `AvatarPicker` and `TextField`, because the design's join screen is a form with
@@ -1285,9 +1345,10 @@ property, so no component ever declares a font family directly.
 
 ## Room state
 
-Three layers in a stack, plus `lib/gifs/`, `lib/bots/`, `lib/avatar.ts`,
-`lib/ably/`, `lib/reactions.ts`, `lib/noto.ts` and `lib/recent-reactions.ts`
-alongside — and
+Three layers in a stack, plus `lib/gifs/`, `lib/bots/`, `lib/export/`,
+`lib/avatar.ts`, `lib/ably/`, `lib/reactions.ts`, `lib/noto.ts` and
+`lib/recent-reactions.ts` alongside — and `flags.ts` at the repo root, which is
+read by a page and by nothing in `lib/` — and
 the arrows only ever point one way. **State lives in `lib/`; `components/` is
 UI.** Providers, stores and hooks belong in `lib/room/` even though they are
 React — putting a provider in `components/` would make a tier that is supposed
@@ -1312,7 +1373,19 @@ graph LR
   ABL["lib/ably/<br/><i>token · seat — server only, node:crypto</i>"]
   B["lib/bots/<br/><i>types — contract only, nothing fetches<br/>personas · stub · claude · source · budget<br/>prompt — server side, never in the bundle</i>"]
   BTR["app/api/bots/turn<br/><i>verifySeat, then the model</i>"]
+  EX["lib/export/<br/><i>types · budget · layout · labels — pure<br/>fonts · frames · compose · encode · meme<br/>standings · deliver · useExport · jobs</i>"]
+  MD["lib/media.ts<br/><i>captionLines · CHARS_PER_LINE · mediaAspect</i>"]
+  CDN["The provider's CDN<br/><i>static.klipy.com · media.giphy.com</i>"]
+  FLG["flags.ts<br/><i>export-media · read by the room page,<br/>never by lib/</i>"]
   U -->|"useRoom() · useChat() · publish(event)<br/>announcementLine · ROOM_FACE — the words,<br/>rendered where they are read"| R
+  U -->|"useExport() · memeJob · standingsJob —<br/>Reveal · Vote · Score · Podium"| EX
+  U -->|"MediaCard — captionLines, the step as a class"| MD
+  EX -->|"captionLines — the same step, as a font size"| MD
+  EX -->|"providerOf · descriptorFor — whose mark"| F
+  EX -->|"avatarUri(seed, size) — a sized face for a canvas"| AV
+  EX -.->|"MediaRef · PlayerFace · FaceHat — types only"| G
+  EX -.->|"fetch(src) with CORS — bytes in, a Blob out,<br/>nothing kept between"| CDN
+  FLG -.->|"through app/room/[code]/page.tsx — a prop, not an import:<br/>RoomProvider flags: exportMedia → useRoomFlags()"| R
   U -->|"REACTIONS · glyphFor · labelFor · isImageGlyph"| RX
   U -->|"readRecent · pushRecent<br/>ReactionToolbar only"| RC
   U -->|"useGifSearch() · useResolvedArt()<br/>both in the browser — nothing on the server"| F
@@ -1379,6 +1452,18 @@ browser and nothing that fetches — `lib/bots/types.ts` imports nothing at
 runtime, which is the property that makes the arrangement safe rather than
 merely tidy. It is worth stating because the *type* graph does contain a loop,
 and the phase 6 lesson was that a type edge is invisible to every test we run.
+
+**The export added five arrows and every one of them points sideways or
+down.** `components/` → `lib/export/` is the four screens calling `useExport`
+and the two job builders; `lib/export/` → `lib/gifs/`, → `lib/avatar.ts` and
+→ `lib/media.ts` are the mark, the face and the caption step; and the edge to
+`lib/game/` is type-only. `lib/media.ts` is on the map for the first time
+because it now has two readers on two sides of the tree — `MediaCard` and
+`layout.ts` — and a rule with two readers is the kind that drifts. The one
+dotted arrow with no import behind it is `flags.ts` → `lib/room/`: the flag
+crosses the server–client boundary as a *prop* on `RoomProvider`, which is the
+only way a server-evaluated value can reach a client component, and it is why
+`lib/` never imports `flags.ts` at all.
 
 `lib/game/` imports nothing outside `lib/` — no React, no browser, no
 transport. Phase 6 added its one exception and made it a re-export rather than a
@@ -1584,6 +1669,43 @@ wire and never in `GameState`. It is deliberately not the cap — the cap is a
 spend limit on the Anthropic workspace, which no bug in this repo can exceed —
 and what it buys is the *graceful* stop, a sentence in a snackbar a few cents
 early instead of a round meeting a 400.
+
+`lib/export/` is the tenth, and it is the first lib whose job is to *draw*. It
+is split the way `lib/gifs/` and `lib/bots/` are, along the line a node test
+can cross: `types.ts`, `budget.ts`, `layout.ts` and `labels.ts` import nothing
+that needs a browser — `layout()` takes a `measure` function rather than a
+canvas, which is what lets a test pin that a caption never crosses half the
+picture without one in the room — and the other nine are the browser's. It reads
+sideways rather than up: `providerOf` and `descriptorFor` from `lib/gifs/` for
+whose mark goes in the footer, `avatarUri(seed, size)` from `lib/avatar.ts` —
+the one caller that needs a sized face, because a canvas `drawImage` of an SVG
+with no intrinsic size draws nothing in Firefox, cached under its own key so
+the sizeless one every screen reads stays what it was — `hatArt` from
+`lib/hats.ts`, and `captionLines` from `lib/media.ts`. That last one moved
+there from `MediaCard.tsx` for this: the card turns the step into a class and
+the renderer turns it into a font size, and one rule is what makes a caption
+exported look the way it was shown. `lib/game/` it reaches for types only
+(`MediaRef`, `PlayerFace`, `FaceHat`); `lib/room/` it never imports — the
+screens hand it what they already have. The one runtime edge that leaves the
+machine is `frames.ts`'s `fetch` of the GIF itself, and the only thing it
+touches in `theme/` is a read: `fonts.ts` takes the family, eight colours, the
+four overlay steps and three hat numbers back off `:root`, because a canvas has
+no stylesheet and a second copy of a colour is a colour that drifts.
+`useExport.ts` and `jobs.ts` are the two ends a screen holds — the hook that
+owns one export at a time and hands each key its label, and the builders that
+turn a winner or a standings table into a job and `import()` the renderer only
+when it runs, so a room whose flag is off ships no decoder.
+[ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md).
+
+`flags.ts` is beside `lib/`, not in it, and the placement is the point. It is
+where the Flags SDK looks for declarations, it is imported by exactly two
+things — the room page and the discovery route — and nothing in `lib/` may read
+it: a screen gets `useRoomFlags()`, which is a boolean the server decided,
+handed through `RoomProvider`'s `flags` prop with `DEFAULT_FLAGS` (everything
+off) for a provider mounted bare in a test or the gallery. The lever is applied
+at the same seam — `flags.exportMedia && levers.export !== 'off'` — so the
+binding a screen reads is already the answer and no screen learns there was a
+question.
 
 `Avatar` fills its circle three ways in order — a resolved `src`, a rendered
 `avatarSeed`, then the initial — and `avatarSeed` was added to the
@@ -2219,9 +2341,9 @@ now)` is a pure function, and the `now` it reads comes from the room clock.
 
 ### Dev levers
 
-Twelve now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
-`?format=` · `?out=` · `?as=` · `?gifs=` · `?transport=` · `?brain=`, read once in
-`RoomProvider` and gated to
+Thirteen now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
+`?format=` · `?out=` · `?as=` · `?gifs=` · `?transport=` · `?brain=` · `?export=`,
+read once in `RoomProvider` and gated to
 non-production in `lib/room/levers.ts` — in a production build every lever reads
 as absent whatever the query string says. **`?transport=ably|broadcast` is phase
 5's**, and it stands to `ABLY_STUB` exactly as `?gifs=stub` stands to
@@ -2233,7 +2355,11 @@ on the second adapter without touching the environment. **`?brain=stub|live` is
 the newest and is `?gifs=`'s twin down to the both-directions rule**: `stub` is
 the written-in corpus, `live` calls the model, and either one beats
 `NEXT_PUBLIC_BOTS_STUB`. It is named `brain` rather than `bots` because that name
-was already taken by the count.
+was already taken by the count. **`?export=off` is the odd one out: it only
+takes.** The export keys are behind a server-side flag whose default is on
+until a Vercel project says otherwise, so the off state would be unreachable in
+development without it — and a lever that turned the feature *on* would be a
+way round the flag, which is the one thing the flag exists to prevent.
 
 **`?voting=rank|single` and `?format=tb|one` are phase 7's, and they are
 `?mode=`'s siblings** — the three now go through one helper,
@@ -2340,6 +2466,7 @@ graph BT
     Mark["Wordmark<br/><i>the mark and the name — a molecule<br/>because it imports Logo, and Icon<br/>is the only atom exemption</i>"]
     Scene["SceneBackdrop<br/><i>'use client' · a dead channel behind a wait —<br/>a molecule for Wordmark's reason: it composes TvStatic</i>"]
     Tuned["TunedImage<br/><i>'use client' · TvStatic behind a picture on its way —<br/>dropped on load, and never on error</i>"]
+    Export["ExportKey<br/><i>'use client' · the one key that takes something out —<br/>label, or a glyph in a card's foot; the word is the device's</i>"]
   end
   subgraph organisms["organisms/ — room state or routing"]
     Shell["RoomShell<br/>+ context (notify)"]
@@ -2438,6 +2565,10 @@ graph BT
   Tuned -->|"Composer — the staged GIF,<br/>and the reply quote's thumb"| Compose
   Tuned -->|"VoteScreen's own subject thumbnail —<br/>not an entry, so not a MediaCard"| Screens
   Tuned --> Gallery
+  Controls -->|"Button — secondary, blocked while it renders"| Export
+  Icon -->|"share — the fourteenth glyph"| Export
+  Export -->|"RevealScreen · VoteScreen — into MediaCard's share slot<br/>ScoreScreen — before the host's primary<br/>PodiumScreen — the third pill, size=form"| Screens
+  Export -->|"idle · rendering · ready · as a glyph"| Gallery
   Scene -->|"BriefScreen — behind the wait,<br/>and it settles to the picked GIF"| Screens
   Dots -->|"LobbyScreen · ComposeScreen · WaitingScreen"| Screens
   Dots --> Gallery
@@ -2907,6 +3038,43 @@ one nothing: it subscribes to nothing and fires nothing until the handle is
 pressed, and above `md` the stylesheet overrides height outright so the detent
 it publishes is never read.
 
+**The export added one molecule, one glyph and one slot, and the molecule is
+new on the rule-1 argument rather than in spite of it.** `ExportKey` is not a
+`Button` variant because a button's label is its text and this one's is
+sometimes a glyph, sometimes a fraction, and always a different word on a
+different device; and it is not `ReactionCTA`, which is the smiley by rule. It
+composes `Button` and `Icon`, so it is a molecule, and it reads nothing — the
+label, `busy` and `progress` all arrive from the screen's `useExport`, which is
+why the gallery can show idle, rendering, ready and the glyph form side by side
+from static props. Two appearances, per rule 2: `label` is a secondary `Button`
+for a screen with room, at `small` beside a card or `form` in a row of form
+keys; `glyph` is the 32px pill a card foot draws its controls at, where the
+label becomes the accessible name and the count replaces the glyph while it
+runs. Progress is announced at the ends and the middle rather than every frame,
+because a live region changing sixty times in three seconds is a screen reader
+reading numbers over the person using it. **Four organisms hold it and each
+puts it where its own layout has a quiet place**: the reveal in the winner
+card's foot, the vote on every card as a glyph with no author in its name
+(`project()` stripped it before the state left the host, and the filename says
+the round instead), the score screen in the `.advance` row *before* the host's
+primary — it changes nothing in the room, so it does not get the last word —
+and the podium as the third pill after the way out, `size="form"` like its
+neighbours. The vote lifts one `useExport` above nineteen cards and tells `run`
+which was tapped; the reveal is the one screen that calls `prepare()` at idle,
+keyed on the winner's entry, because a share sheet has to open inside the tap's
+activation window and a long re-encode does not fit in one.
+
+`MediaCard` gained `share` as a fifth foot peer — first in the row, by the
+caption text, because it is the quiet one — and the foot's gap went from ten to
+twelve: two 32px pills side by side each grow a 44px touch area, and ten
+between their boxes left the grown areas overlapping by two, which is a
+coin-flip tap. `Icon` gained `share`, a tray with an arrow leaving it, the one
+glyph the key wears whether the device shares, copies or saves — the label says
+which. `captionLines` left `MediaCard.tsx` for `lib/media.ts` in the same pass,
+which is the card giving up a rule rather than a prop: `overlayStep` is only the
+lookup from a line count to a class now, and the count is decided where the
+export's `layout.ts` can decide it the same way.
+
 ## Token flow
 
 Values exist exactly once. Sass owns them; React reads them by name.
@@ -2914,17 +3082,38 @@ Values exist exactly once. Sass owns them; React reads them by name.
 ```mermaid
 graph LR
   S["theme/_spacing.scss<br/><i>$spaces, $radii maps</i>"]
+  CM["theme/_colors.scss · _metrics.scss<br/><i>eight colours · four overlay steps · three hat numbers</i>"]
   V["theme/_css-vars.scss<br/><i>rootVars() mixin</i>"]
   T["app/tokens.scss<br/><i>:root only — no keyframes</i>"]
-  B["Browser<br/><i>--space-26, --radius-card</i>"]
+  B["Browser<br/><i>--space-26, --radius-card,<br/>--color-text-primary, --media-overlay-size-2</i>"]
   TS["theme/tokens.ts<br/><i>names only, no values</i>"]
   P["Stack / Inline / Box / Grid<br/><i>gap={26} → var(--space-26)</i>"]
+  FX["lib/export/fonts.ts<br/><i>getComputedStyle(:root) — a canvas has no stylesheet</i>"]
 
   S --> V --> T --> B
+  CM --> V
   TS --> P --> B
+  B -->|"read back at render time,<br/>never copied into TS"| FX
 
   style TS stroke-dasharray: 5 5
 ```
+
+`theme/_css-vars.scss` published spacing, radii and the two rail widths until
+the export arrived, and **every custom property it publishes now has a reader
+that cannot take a Sass value** — that is still the test for putting one on the
+bridge. The new fifteen are a canvas's: eight colours
+(`--color-surface-canvas` / `-card`, `--color-text-primary` / `-label` /
+`-meta`, `--color-accent-text`, `--color-winner`, `--color-line-hairline`), the
+caption's four steps verbatim (`--media-overlay-size-1..4`, still in `cqw`, so
+`fonts.ts` resolves them with a probe element at the width it draws at — only a
+container can turn `cqw` into pixels), and the hat's `--avatar-hat-ratio` /
+`-rise` / `-tilt`, which `Avatar` reads from Sass directly and the scoreboard
+renderer reads back so the two cannot disagree about the tilt. The palette
+itself stays in Sass; `paint()` throws on an empty property rather than shipping
+white on nothing, and `e2e/tokens.spec.ts` now reads one colour and one overlay
+step across the bridge beside the spacing it always checked. `--font-inter` is
+the same shape from the other direction: `next/font` sets it on `<html>`, and
+`fonts.ts` is the first reader of it that is not a stylesheet.
 
 `theme/tokens.ts` contains no numbers — only the legal token names and the
 `var()` references built from them. So `gap={13}` is a type error (13px isn't in
@@ -3006,14 +3195,17 @@ card holds both.
 
 **Which step a caption gets is chosen in TypeScript, and the constant that does
 it is deliberately not a token.** `CHARS_PER_LINE` (20) lives in
-`MediaCard.tsx`, because the size is in `cqw` — a card fits about the same
-character count per line at every width, so the line count falls out of the
-string's length and `MediaCard` never has to become a client component to size
-its own text. No stylesheet can read that number, and a token nothing consumes
-is a number that drifts from the one that runs, so it is not on the bridge and
-there is no Sass copy of it; `theme/_metrics.scss` carries a comment beside the
-sizes pointing at where it lives instead. It is still a property of
-`$media-overlay-size`, and changing that type means re-measuring it.
+`lib/media.ts` beside `captionLines()` — it was in `MediaCard.tsx` until the
+export needed the same answer — because the size is in `cqw`: a card fits about
+the same character count per line at every width, so the line count falls out
+of the string's length and `MediaCard` never has to become a client component
+to size its own text. No stylesheet can read that number, and a token nothing
+consumes is a number that drifts from the one that runs, so it is not on the
+bridge and there is no Sass copy of it; `theme/_metrics.scss` carries a comment
+beside the sizes pointing at where it lives instead. It is still a property of
+`$media-overlay-size`, and changing that type means re-measuring it. The steps
+themselves *are* on the bridge now, as `--media-overlay-size-1..4`, for the
+reader above that has no other way to them.
 
 **`theme/_typography.scss` gained a mixin, and it is not on the token bridge at
 all.** `displaySmallText` is the ramp one step below the hero's — 42→68px, the
@@ -3088,11 +3280,13 @@ popovers (the vote card's and the composer's).
 
 ## Rendering path
 
-Six shapes now, across the ten routes above — the sixth is the bot turn, and it
-is the proxy shape ADR 0020 deleted, back for the one key that may stay behind
-it. (This count read "ten routes" while there were nine: it was one ahead from
+Seven shapes now, across the eleven routes above — the sixth is the bot turn,
+which is the proxy shape ADR 0020 deleted, back for the one key that may stay
+behind it, and the seventh is the export, which touches no route of ours at
+all. (This count read "ten routes" while there were nine: it was one ahead from
 the day `/api/gifs` was removed, and the arrival of `/api/bots/turn` is what
-made it right rather than what changed it.)
+made it right rather than what changed it. The eleventh is the flags discovery
+handler, which no shape below passes through.)
 
 The simple one is prerendered HTML with
 hydration reaching only the `'use client'` islands inside it — `/components`,
@@ -3575,6 +3769,102 @@ guarantee. The one thing that *does* travel and is new is a still frame's URL,
 sent in caption mode so the model writes about the picture rather than its
 title.
 
+### The export
+
+The seventh shape is the first with no server of ours anywhere in it, and it
+starts a request earlier than any other: the flag is decided before the room
+page has rendered a byte. From there everything is the browser's — the bytes
+come from the provider's CDN into the tab, are decoded, composed and re-encoded
+there, and leave as a `Blob` through whichever door the device has. The
+provider is asked for nothing it was not already serving, and nothing is stored
+on the way through.
+
+```mermaid
+sequenceDiagram
+  participant N as app/room/[code]/page.tsx
+  participant P as RoomProvider
+  participant S as RevealScreen · VoteScreen<br/>ScoreScreen · PodiumScreen
+  participant X as useExport
+  participant J as lib/export/jobs
+  participant R as meme.ts · standings.ts
+  participant C as The provider's CDN
+  participant D as deliver.ts
+
+  Note over N: per request — the last Server Component above the room
+  N->>N: await exportMedia() — flags.ts
+  N->>P: flags — exportMedia, as a prop
+  Note over P: and levers.export !== 'off' — the lever only takes
+  P-->>S: useRoomFlags().exportMedia — a boolean, or no key at all
+
+  S->>J: memeJob(winner) · standingsJob(code, title, rows)
+  Note over J: a job is an id, an artefact, a filename<br/>and a render() that import()s its renderer
+  opt the reveal only
+    S->>X: prepare(job) — at idle, keyed on the winner's entry
+  end
+  S->>X: run(job) — the tap
+  Note over X: capability read once, false on the server —<br/>the first paint wears the laptop's word
+
+  alt png on a laptop with a clipboard
+    X->>D: copyPng(promise) — the ClipboardItem is built inside the gesture
+  end
+  X->>R: render(onProgress, signal)
+  R->>R: fontFamily() · loadFonts() · paint() — read off :root
+  alt a GIF
+    R->>C: fetch(src) — CORS, allow-origin: *
+    C-->>R: the bytes
+    R->>R: gifuct-js — one frame at a time, the file's own disposal<br/>budgetFrames: ≤100 kept, delays inherited
+  else the shelf's SVG, a still, a GIF that will not parse
+    R->>R: one frame through an img element — the road every spec takes
+  end
+  R->>R: pass one — 8 composed frames sampled → one palette
+  R->>R: pass two — compose · applyPalette · writeFrame, yielding
+  R-->>X: onProgress {done, total} — "Rendering 12 of 60…"
+  R-->>X: Blob
+  X->>D: deliver(artefact, blob, filename, capability)
+  alt canShare({ files })
+    D->>D: navigator.share — shared · cancelled · expired
+  else
+    D->>D: an anchor with download — saved
+  end
+  D-->>X: outcome
+  X-->>S: labelFor · busy · progress — and a snackbar, or nothing
+```
+
+Four things that diagram is saying. **The flag's whole journey is one prop.**
+It is evaluated on the server because that is the only place a Vercel Flag can
+be read, handed to `RoomProvider` because a Server Component's only way into a
+client tree is a prop, and read by four screens as a boolean through
+`useRoomFlags()` — so a client component never imports `flags.ts`, never knows
+an SDK exists, and cannot turn the keys back on. `DEFAULT_FLAGS` is everything
+off, which is what a provider mounted bare gets. **The renderer is loaded when
+the job runs, not when the screen mounts.** `jobs.ts` builds the job and
+`render()` is the first thing that `import()`s `meme.ts` or `standings.ts`, so a
+room that never taps the key never loads a decoder and a room whose flag is off
+never renders the key at all. **Memory is one source frame and one composed
+frame, however long the clip.** `meme.ts` decodes the source *twice* — a
+handful of evenly spaced frames on the first pass to build one global palette
+from what will actually be drawn (the caption's white, the bands, the picture),
+every kept frame on the second, mapped onto it — because decoding twice is
+cheap next to quantising once and it means nothing is held for later.
+`encode.ts` yields between frames, which is what lets the key count and a tap
+elsewhere still land. **And two browser rules shape the hook more than any
+design decision.** `navigator.share` must run inside the tap's activation
+window, and a long re-encode does not fit in one: the reveal pre-renders at
+idle so the tap shares a file that already exists, and everywhere else a sheet
+that refuses a stale gesture comes back `expired`, the file is kept in a small
+cache, the label turns to "Send GIF" and one more tap sends it. Safari's
+clipboard wants the `ClipboardItem` *constructed* during the gesture, so for a
+PNG on a laptop `copyPng` is called synchronously from the click with a promise
+for the bytes, and the render fills it in afterwards.
+
+**The suite exercises the one-frame road only**, and says so: it blocks every
+host but loopback and the shelf is SVG, so every spec in `e2e/export.spec.ts`
+goes through the `<img>` branch. The GIF decode itself was checked by hand
+against a live Klipy round; the ADR carries the numbers and the threshold for
+moving `encode.ts` to a Worker. A hand check is not coverage, and this file
+lists it with the other unverified gates
+[below](#what-is-verified-and-what-is-not) rather than implying otherwise.
+
 ---
 
 ## Not yet built
@@ -3675,13 +3965,19 @@ no bots in it stops at every untimed phase until the host presses the button,
 and the autopilot dwell is still attached only under `?bots=` — a hired bot does
 not advance the room, because a hired bot's room has a host in it.
 
-**The OS share sheet closed no row either, and the podium's is the one it looks
-like it should have.** `useWebShare` hands a *link* to whatever the device has
-installed, which is a destination the browser already owns; the podium's Slack
-buttons and highlight reel need a destination *of ours* — somewhere to put a
-reel, and a workspace to post it into on the room's behalf — so that row stands
-exactly as it was. What changed is a label that was overpromising: the lobby's
-second key said "Share to Slack" and put a URL on the clipboard.
+**The OS share sheet closed the podium's row after all — once the thing
+shared was a file.** The earlier reading here was that `useWebShare` hands a
+*link* to a destination the browser already owns, and that a reel or a Slack
+post needs a destination *of ours*. A `File` handed to `navigator.share`, a PNG
+on the clipboard or a download needs none, so the row's third pill is built as
+`Share image` — the final standings as a picture — and the reveal, the vote and
+the score screen gained the same key for the meme and the running table
+([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md)).
+What still needs a destination of ours is only the *reel* and posting on the
+room's behalf, and those stand as they were. The whole feature sits behind the
+`export-media` flag, read per request in `app/room/[code]/page.tsx` from
+`flags.ts`, so it can go dark without a deploy if the provider objects. The
+path from that flag to the file is drawn in [the export](#the-export).
 
 | Area | What exists | What doesn't |
 | --- | --- | --- |
@@ -3698,7 +3994,7 @@ The four omissions in the round-flow screens, in phase order:
 | `waiting` | *"Everyone's in — start voting"*, always | The button was never a gate — `waiting` is timed, and `host/skippedPhase` runs the same `advance()` the clock does — so once the last entry landed the room said "now we wait" over a tracker reading N of N, under a 12s clock, beside a button offering to start a vote that was starting anyway. `waitingCopy` now reads the tracker: everyone in gets *"That's everyone in."*, `WAITING_ALL_IN_MS` instead of the full `PHASE_DURATIONS.waiting`, and no button; a straggler gets *"Now we wait."*, the full 12s, and a label that names who is being left behind. Both readings count the *present* now — `phaseLength` applies `settleGates`' both-sides rule, so a wait that is over because everybody left reads as over and a held entry does not make it so |
 | `vote` | The Caption \| Vote segmented control | Two views of one grid, and the vote is the one the phase is for |
 | `reveal` | `auto-advancing in 6s` | `reveal` is untimed by design. The label would be counting a clock that does not exist; the host's advance button is the real mechanism, and `?bots=` supplies the [autopilot dwell](#dev-levers) instead |
-| `podium` | The awards row, the highlight reel and the Slack buttons | Awards need a stat layer nothing computes yet; the reel and the share need a destination outside the browser |
+| `podium` | The awards row, the highlight reel and posting to Slack on the room's behalf | Awards need a stat layer nothing computes yet; the reel needs somewhere to keep one and a post needs a workspace of ours to post into. **The pill row's third pill is built**, as `Share image` — the final standings as a PNG, handed to the share sheet, the clipboard or a download by capability ([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md); drawn in [the export](#the-export)). What the design labels it is what is not: a reel, and a destination |
 
 Each of those is a *decision*, not a gap in the sweep — which is why they are
 listed here rather than left for the next pass to rediscover.
@@ -3764,8 +4060,8 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-401 unit tests (`lib/**/*.test.ts`, node, over 27 files) and 598 Playwright
-tests across the two viewports — 299 per project, over 32 spec files. Not all of
+444 unit tests (`lib/**/*.test.ts`, node, over 30 files) and 622 Playwright
+tests across the two viewports — 311 per project, over 33 spec files. Not all of
 them run: 23 skip on viewport (a docked rail exists only above `md`, a
 floating dock only below it), which is a branch of the layout rather than a hole
 in the coverage. 23 *tests* out of sixteen viewport `test.skip` call sites —
@@ -4090,6 +4386,45 @@ steps, checking that KLIPY's link goes to its *terms* rather than its home page.
 The last two need a phone and skip above `md`: a tap on the handle shrinks the
 sheet and a second closes it, and a drag does the same two things by distance.
 
+**The export's share is 36 unit tests over five files and 11 browser tests
+per project in one new spec, and the split follows the module split exactly.**
+`lib/export/layout.test.ts` is 14 and is the *geometry* pinned without a
+canvas — the caption never crosses half the picture and steps down before it
+truncates, the prompt sits in a band above the picture in react mode and caps
+at three lines, the reveal names an author and the vote names the round
+instead, and a token wider than the box breaks by character — all against an
+injected `measure`, which is the whole reason `layout()` takes one.
+`lib/export/labels.test.ts` is 10 and holds the words: the label is decided by
+what the device can do, the count is the label while it renders, a stale
+gesture asks for a second tap, a lookalike host earns no mark and the app's own
+art credits nobody, a sheet and a dismissal say nothing. `lib/export/budget.test.ts`
+is 8 over the frame budget — every Nth frame dropped with the running time
+kept, a zero delay counted as the hundred it would have played for, a small
+source never upscaled. `lib/media.test.ts` gained 3 for `captionLines` on its
+way out of `MediaCard`, and `lib/room/levers.test.ts` gained the one that
+matters for the flag: `?export=` can only ever take the keys away.
+`e2e/export.spec.ts` is the 11, and every one of them runs the one-frame road —
+the runner blocks every host but loopback and the shelf is SVG — so what they
+prove is delivery, labelling and the flag rather than the decode: a stubbed
+sheet that takes files is handed `captionist-round-1.gif` as `image/gif` and
+**no snackbar appears**; with no sheet the GIF saves and says so; react mode
+offers the key too; a guest has it as much as the host; it fires on Enter; the
+first paint is the same on both visits with no hydration warning; every vote
+card has its own key named for the card and none names an author; the
+standings copy a PNG on a laptop and say where to paste it, or save where the
+clipboard cannot take an image; the podium's is the third pill after the way
+out; and with `?export=off` no screen offers a key and the podium's row is
+exactly what it was before the key existed. `e2e/targets.spec.ts` sweeps the
+score and podium screens now as well, because a key joined those two rows and
+must not land under anything, and `e2e/tokens.spec.ts` reads one colour and
+one overlay step across the bridge beside the spacing it always checked.
+**What is not covered is the GIF decode itself** — `gifuct-js` over a real
+multi-frame file, the disposal rules, the palette — which was checked by hand
+against a live Klipy round and is recorded as such in
+[ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md). It
+joins Ably and the model as a road the suite cannot drive without a network,
+and this file says so rather than letting the one-frame specs imply otherwise.
+
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a
 guest closing its tab turned into a held seat through Ably presence. Two bugs
@@ -4252,3 +4587,12 @@ rather than code:
    one optional path segment and by no host at all.
    [ADR 0011](./adr/0011-a-quote-is-a-copy-and-a-glyph-is-a-location.md) ·
    [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md).
+16. **A flag is decided on the server and crosses as a prop.** `flags.ts` is
+   read by the room page and the discovery route and by nothing in `lib/` or
+   `components/`; what a screen sees is `useRoomFlags()`, a boolean the server
+   already decided, handed through `RoomProvider`'s `flags` prop. A URL lever
+   may narrow it and never widen it — `?export=off` exists, `?export=on` does
+   not — because the flag's one job is to be the thing nothing in the browser
+   can override. A second flag goes in the same file and the same prop, not in
+   a `NEXT_PUBLIC_` variable, which is inlined at build and cannot be flipped
+   ([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md)).

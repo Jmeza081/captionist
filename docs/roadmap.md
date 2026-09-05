@@ -256,6 +256,32 @@ Four things changed shape:
    whatever the room asked for, so a `format: 'tb'` room got half a caption from
    every bot — live since phase 7.
 
+**Phase 11 — the room can leave the room.** Not a phase in the original nine
+either. The winning card, any card on the vote grid and the standings can be
+taken out: the meme as an animated GIF with the caption burned in, the table
+as a PNG, handed to the OS share sheet where it takes files, the clipboard
+where it takes an image, and a download otherwise. Everything happens in the
+browser that is watching — the provider's GIF is fetched from its CDN, decoded,
+composed and re-encoded there, with `Powered by KLIPY` in the footer, and
+nothing is kept ([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md)).
+It is the first feature behind a **Vercel flag**, `export-media` in `flags.ts`,
+because the terms neither allow nor forbid a captioned re-encode in so many
+words and the answer to "please stop" has to be minutes rather than a build.
+Three things changed shape:
+
+1. **The colour tokens reach the browser as custom properties.** A canvas reads
+   no stylesheet, so `_css-vars.scss` publishes the eight colours, the four
+   caption type steps and the three hat numbers an export paints with.
+2. **`MediaCard`'s foot has a fifth peer**, `share`, and its gap grew from ten
+   to twelve so two 32px pills keep their 44px touch areas apart.
+3. **The caption's line rule moved** from `MediaCard` to `lib/media.ts`
+   (`captionLines`), so the card and the canvas set a caption the same way.
+
+Deferred: the highlight reel and posting on the room's behalf (both need a
+destination of ours); a "Copy still" beside "Save GIF" on a laptop (the first
+composed frame is kept for it); and a Worker for the encoder, whose threshold
+the ADR names.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.
@@ -305,6 +331,20 @@ Not a phase — a gate. Do these when the room stops being a dev toy.
       Claude Max subscription does not fund this; API billing is separate.
 - [ ] **Clear `NEXT_PUBLIC_BOTS_STUB`** in the deployed environment, alongside
       the two above.
+- [ ] **Email `developers@klipy.com` about the export.** One paragraph: the
+      winning GIF is re-encoded in the user's browser with a caption and
+      `Powered by KLIPY` burned in, no proxy, no retention, the share signal
+      sent at pick time — and ask whether they want anything different. Their
+      Integration Requirements ask for this from any "custom implementation".
+      Do it before the first real room shares one
+      ([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md)).
+- [ ] **Create the `export-media` flag** in the Vercel project once it is
+      linked (`vercel link && vercel env pull` pulls the OIDC token the SDK
+      authenticates with). Boolean; on for Development and Preview, Production
+      per Klipy's answer. Set `FLAGS_SECRET` so the Toolbar's Flags Explorer
+      can override it per session. Until then `defaultValue` governs — on
+      unless `EXPORT_MEDIA=off` — and if Klipy says no, the flag goes off and
+      the code stays.
 - [ ] **Widen `allowedDevOrigins`** only for LAN testing, never for the deployed
       build.
 
@@ -362,6 +402,7 @@ can leak into a screen.
 | `?as=p2` | Takes a different seat. Round one's role holder is always `p0`, and the role holder sits the round out — so the caption and answer faces cannot be reached as the host. It exercised the guest path a phase before real joining depended on it. |
 | `?transport=broadcast` | Runs the room over `BroadcastChannel` instead of Ably — one browser, many tabs, no network and no key. What the whole test suite runs on; `ABLY_STUB=1` does the same thing stickily. |
 | `?gifs=stub` | Serves offline sample art instead of calling the provider. `?gifs=giphy` / `?gifs=klipy` pin one for a page load. `NEXT_PUBLIC_GIFS_STUB=1` does the stub permanently; a missing key falls back to it outside production. |
+| `?export=off` | Hides the export keys for one page load. Off is the only value — the keys are behind a server-side flag, and a lever that turned them on would be a way round it. `EXPORT_MEDIA=off` does the same stickily. |
 
 `?as=` needs `?phase=`: it takes a seat that already exists, and in a fresh room
 the other seats are empty until somebody joins. Real joining is built now, so

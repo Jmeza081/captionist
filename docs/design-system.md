@@ -433,6 +433,16 @@ So `theme/tokens.ts` contains no values, `gap={13}` is a type error because
 `e2e/tokens.spec.ts` guards the bridge — if it breaks, gaps silently fall back
 to `0` and nothing else would fail.
 
+**The same bridge carries what a canvas needs.** The export renderer
+(`lib/export/`) draws into a `<canvas>`, which reads no stylesheet, so
+`_css-vars.scss` also publishes the eight colours an export paints with
+(`--color-surface-canvas`, `--color-text-primary`, `--color-winner`, …), the
+four caption type steps (`--media-overlay-size-1..4`, still in `cqw` — the
+renderer resolves them with a probe container at the width it draws at) and
+the three hat numbers (`--avatar-hat-ratio/-rise/-tilt`). Only what an export
+uses; the palette stays in Sass, and `paint()` throws on an empty value rather
+than painting white on nothing.
+
 In a `.module.scss`, keep using `t.$space-12`. The TS module is only for the
 primitives.
 
@@ -496,7 +506,7 @@ primitives.
 
 | Component | Tier | Use when |
 | --- | --- | --- |
-| `Icon` | atom | Any glyph. Thirteen stroked paths traced from the design; `currentColor` by default. `weight` overrides a glyph's own stroke — `CloseButton` is the only caller, because an × wants more body once it is a filled key rather than a bare mark. The `toolbox` glyph is not in the design: it was traced so the room's floating controls stop opening behind the smiley, which interaction rule 4 reserves for reactions |
+| `Icon` | atom | Any glyph. Fourteen stroked paths traced from the design; `currentColor` by default. `weight` overrides a glyph's own stroke — `CloseButton` is the only caller, because an × wants more body once it is a filled key rather than a bare mark. The `toolbox` glyph is not in the design: it was traced so the room's floating controls stop opening behind the smiley, which interaction rule 4 reserves for reactions. Nor is `share`: the tray-and-arrow the export key wears whether the device shares, copies or saves — the label says which |
 | `Button` | atom | Any clickable action. Variants `primary` (one per screen), `secondary`, `outline`, `destructive`, `ghost`; sizes `inline`, `text` (no horizontal padding, for a label that has to share an edge with the column it sits in), `small` (share pills), `form` (51px CTA), `toolbox`; `blocked` for "not yet, and here's why"; `href` renders it as a link when the action is really a navigation |
 | `CloseButton` | atom | The one way out of anything — a filled disc with a heavier × on it. `medium` is a **36px plate inside a 44px target**: 36 because it is `$lobby-help-key`'s size and on a phone this sits directly under that key, where a 44px disc was eight pixels wider than the key above it and four further right — two round keys in a column, neither the same size nor on the same edge. The target is a `::after`, out of flow, so the touch minimum never widens the box its neighbours are laid out against. `small` is a 26px key for a row that never had 44 to give (a staged GIF, a popover title bar). Five surfaces drew their own before this: the modal, the chat sheet, the room toolbox, the GIF popover and the composer's two staged rows, every one of them a bare 2.2pt × on nothing — which is the least affordance a control can have, and no affordance at all on a phone with no hover to find it with. `label` is required and specific; only `Modal` passes a bare "Close", because the dialog names itself a line above |
 | `HelpKey` | atom | The round key that opens the walkthrough — the `help` glyph on a disc. `accent` is the room's: a 36px plate sharing `CloseButton.medium`'s size and its out-of-flow 44px `::after` target, because those are the app's two round keys and a phone stacks them in a column. It is the one thing the app header's trailing slot hangs on the lobby, a screen with neither a clock nor rounds-played to report. `outline` is the landing nav's — the outline button's hairline, hover fill *and* height, drawn at the full 44 because it sits in that button's row and a plate eight pixels shorter than the pill beside it read as a decoration. Both read `$tap-target-min` for that height rather than copying a number out of the other's rendered box. The tone carries the size on purpose: matching its neighbour is the whole reason there are two — on a phone it *replaces* "How it works", which stands down there with `GitHub`. The lobby drew this inline first; the nav needing the same control is what made it an atom rather than a second copy |
@@ -530,7 +540,7 @@ primitives.
 | `JoinPanel` | molecule | A room's code and QR on their own, for a screen shared to a wall. **No caller today** — `/join` is built from `CodeEntry` + `AvatarPicker`, and the lobby's own share block is `RoomShare` |
 | `PromptBanner` | molecule | React mode's stand-in for the shared image. Always its own full-width line. Reflows on **its own** width (`$prompt-banner-columns`, `$prompt-banner-roomy`) because it is drawn in four different columns: the author block is a measured 186px that does not shrink, so under the measure it stacks above the quote instead of squeezing it, and tightens its padding — a phone gives it 289px and the sweep holds running text to 260 of that |
 | `PlayerRow` | molecule | One player in a list — `roster`, `tracker`, `standing` or `pill`. The guest lobby's `pill` draws its avatar at 34px rather than the design's 30, because 30 is under `HAT_MIN_SIZE` and "who else is here" is the question a hat answers. A bot's badge comes off the face rather than a prop, so no screen can forget it — a bot nobody labelled is a person as far as the room can tell |
-| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Drawn at its image's own ratio, with caption overlays sized against the card and stepped down a size per line they need. Its foot takes `caption`, `reply`, `reaction` and `action` as peers; `onActivate` makes the picture itself a pointer target for whatever `action` does |
+| `MediaCard` | molecule | One entry in a vote grid. Six states, both modes. Drawn at its image's own ratio, with caption overlays sized against the card and stepped down a size per line they need. Its foot takes `caption`, `share`, `reply`, `reaction` and `action` as peers — `share` first, because it changes nothing in the room; `onActivate` makes the picture itself a pointer target for whatever `action` does |
 | `ChatMessage` | molecule | One chat message in three bands: a **name row**, a **bubble** carrying body, quote and attachment together, and a **reaction row** under it. The bubble is `fit-content`, so four words read as four words rather than as a plate with 200px of nothing after them, and the avatar drops to the bubble's top edge — the face belongs to what was said, the name is the label on it. `onReact` puts the CTA at the end of the reaction row, **always lit**: under the plate it is out of the reading path, which is what lets it stay visible, and a hover-only affordance is no affordance on a phone. A room announcement is the same component with `announcement` — its own accent plate, taking the avatar gutter too. It is set by the **host engine**, never by a tap: a mode switch, a player dropping, a player coming back ([ADR 0028](adr/0028-the-room-speaks-in-its-own-lane.md)). It is drawn with `ROOM_FACE` rather than a person's props, and the eyebrow is the speaker's name alone — the old `· host` suffix came from `author.isHost`, which made every line the host typed a card signed "HOST · HOST", and since that branch drew only the body a GIF from the host was an empty one. The host is a player, so their chat is chat. An attachment is bounded by 180×120 rather than forced to it, so a Slackmoji posted from the composer stays its own size |
 | `UnreadDivider` | molecule | Where you stopped reading |
 | `ReactionToolbar` | molecule | The searchable reaction picker. Controlled by `open` so it can animate out, dismissed by Escape or a click anywhere outside it, and genie-in/out from the edge its `flipped` anchor sits on. No printed title — the thing you opened it from already said what it is for. Six emoji and four Slackmojis by default, then five pack tabs in a row that scrolls sideways, then keyword search across all 616. Packs render 60 at a time and extend on scroll |
@@ -554,6 +564,7 @@ primitives.
 | `LandingLegal` | molecule | The landing page's foot — one link, to the licences. It exists so `app/page.tsx` can stay a Server Component: the `'use client'` boundary is this line and nothing above it. Not in `LandingNav`, whose third item is the way in and should not compete with "Licensing"; and it carries no repository link of its own, because the nav's "GitHub" already goes there and two links to one destination on one screen is a reader wondering what the difference is |
 | `HeroWall` | molecule | A tilted wall of looping GIFs — the landing hero's background, and the 60% beside `/host`'s form. Video over GIF, still-first, and stoppable. `scrim` picks the veil's weight: `full` for a wall carrying display type, `soft` for one carrying nothing |
 | `Podium` | molecule | The final three. Winner centred visually, 1-2-3 in the DOM |
+| `ExportKey` | molecule | The one key that takes something out of the room — a meme as a GIF, the standings as a PNG. `label` form is a secondary `Button`; `glyph` form is the card foot's 32px pill. Its words come from `useExport` (`lib/export/`): the device's ("Share GIF" / "Copy image" / "Save image", [ADR 0033](./adr/0033-a-device-capability-decides-the-label.md) applied to files), the count while it renders ("Rendering 12 of 60…", the blocked-label rule), and "Send GIF" for a file waiting on a second tap. Announces progress at the ends and the middle only. Rendered only when the `export-media` flag is on ([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md)) |
 | `CycleWall` | molecule | Four frames in a row, each dissolving through four GIFs — the waiting screen's answer to dead time, and the design's own note on artboard 1h is the brief: anticipation rather than an empty spinner. **The cross-fade is CSS**: every layer runs one animation at one duration, offset by an even fraction of it, so the browser owns the schedule and no second clock ticks on a screen that deliberately runs one. Resolves `WALL_SLUGS`, so it shares the landing wall's lookup and a ten-round room pays for it once. **One row at every width, and never a scroller**: frames drop off the end as the column narrows and what is left is centred, on `@container` measures rather than `mq()` — the content column is 360px narrower than its window whenever chat is docked, so a window query would lay four frames into a 584px column at 1024. Hidden frames still render but are not played, so a phone showing two decodes eight clips rather than sixteen. The provider credit is a line centred under the row rather than hung off one end, where it read as a label for whichever frame it sat beside. Frames are sized in CSS rather than by their contents, so the row is the same shape before, during and after the art arrives; with none it is four veiled dead channels, one layer each — a tuning frame is one state, not four. Prefers MP4 over GIF and holds ADR 0005's contract, like `HeroWall`, which it is deliberately not: that is twenty static tiles behind a whole page |
 | `UpNext` | molecule | "Up next after Vic" — who takes the role next, as a pill with their faces overlapping in the order they will take it. Reads `upNextRoleHolders`, which is `roleHolderIndex` modulo a roster kept in join order and **capped by the rounds actually left**, so a room on its last round renders nothing rather than promising two more turns. Its note is not the design's: the artboard says "order is randomised each round" and the rotation is fixed, so it says the true thing. One `role="img"` for the row rather than a label per face — three announced avatars is three stops past what is, to a reader, one fact |
 | `SceneBackdrop` | molecule | **No caller as of this change** — kept, not deleted, but nothing renders it. Media behind a whole screen rather than inside a card: fixed, inert and `aria-hidden`, with a scrim in two weights, television static while its clip is fetched and nothing once the lookup settles on nothing. It was the waiting faces' answer to an avatar and a headline alone on the canvas; that screen has `CycleWall` on it now, and a veiled full-bleed clip behind the words was the same idea drawn worse. Still carries [ADR 0005](./adr/0005-media-that-can-move-ships-a-still.md)'s contract, including the fix that made it keep it — the play effect takes the clip's URL as a dependency, because the `<video>` mounts a beat after the motion preference settles and without it the clip sat on its poster forever |
@@ -685,12 +696,29 @@ the *Slackmojis* tab selected. Those are two different views, and the system
 spec wins over one instance of it — so the default tab is the mixed ten, and a
 pack is something you choose. Recorded here so it is not re-litigated.
 
-Three more designed elements are drawn but not built, and are listed with the
+Two more designed elements are drawn but not built, and are listed with the
 rest of the gap in [architecture.md](./architecture.md#not-yet-built): the
 reveal's `auto-advancing in 6s` label (reveal is untimed — a label with no timer
-behind it would break "timers are honest"), the podium's awards row and its
-`Download the highlight reel` / `Post to Slack` buttons, and per-card reactions
-on the vote grid.
+behind it would break "timers are honest") and the podium's awards row. The
+podium's `Download the highlight reel` / `Post to Slack` pills became one pill
+that does what the row honestly can — `Share image`, the final standings as a
+PNG handed to whatever the device shares with
+([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md)).
+There is no reel and no storage to keep one in.
+
+**The export's copy**, in one place because it is decided in one (`lib/export/labels.ts`):
+
+| Moment | GIF | PNG |
+| --- | --- | --- |
+| Idle, sheet takes files | Share GIF | Share image |
+| Idle, clipboard takes an image | Save GIF | Copy image |
+| Idle, neither | Save GIF | Save image |
+| Rendering | Rendering 12 of 60… | Rendering… |
+| A file waiting on a second tap | Send GIF | Send image |
+| Saved | GIF saved | Image saved |
+| Copied | — | Image copied — paste it into Slack |
+| Shared, or the sheet dismissed | *nothing* | *nothing* |
+| Failed | Couldn’t fetch that GIF. Try again. / Couldn’t render that GIF. Try again. | Couldn’t render the scoreboard. Try again. / Couldn’t copy it. Save it instead. |
 
 ### Glossary
 
