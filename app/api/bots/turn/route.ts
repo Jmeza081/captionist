@@ -71,12 +71,14 @@ function throttled(seat: string, now: number): boolean {
 /**
  * The longest a caption line may be, in characters.
  *
- * A structural cap rather than a prompt request. The model was asked for "one
- * line" and returned paragraphs; a meme caption is a handful of words, and a
- * schema `maxLength` is the one instruction it cannot talk its way past. Eighty
- * characters is generous — most of the good ones are under thirty.
+ * Enforced in `shape()`, **not in the schema.** Structured outputs reject
+ * `maxLength`, `minLength`, `minItems` and `maxItems` outright — a 400 from
+ * the API that this route turned into a 502, which took every bot in every
+ * mode down to the corpus for a whole live session. The prompt does the real
+ * work of keeping lines short; this is the backstop that catches a paragraph,
+ * and a line that trips it is dropped so the corpus fills the seat.
  */
-const LINE_MAX = 80
+const LINE_MAX = 100
 
 /**
  * The shapes the model may answer in. Structured, so nothing is parsed out of
@@ -88,20 +90,23 @@ const LINE_MAX = 80
  * and the bot it belonged to never acted. An enum makes a wrong id impossible
  * rather than merely unlikely; the pool's corpus fallback is the net under it,
  * not the road.
+ *
+ * **Only what structured outputs supports.** Types, `enum`, `required` and
+ * `additionalProperties: false`. No length or count constraints — those are
+ * validated in `shape()` instead, because the API refuses them.
+ *
+ * A new id set is a new schema, and a new schema pays a one-time compilation
+ * on its first request (cached for 24h after). A room's bots are stable, so
+ * that is once per room per kind, not once per round.
  */
 function schemaFor(kind: TurnRequest['kind'], ids: readonly string[]) {
   const id = ids.length > 0 ? { type: 'string' as const, enum: [...ids] } : { type: 'string' as const }
-  const lines = {
-    type: 'array' as const,
-    items: { type: 'string' as const, maxLength: LINE_MAX },
-    minItems: 1,
-    maxItems: 2,
-  }
+  const lines = { type: 'array' as const, items: { type: 'string' as const } }
   switch (kind) {
     case 'subject':
       return {
         type: 'object' as const,
-        properties: { text: { type: 'string' as const, maxLength: LINE_MAX } },
+        properties: { text: { type: 'string' as const } },
         required: ['text'],
         additionalProperties: false,
       }
@@ -242,7 +247,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   } catch (error) {
     console.error('[api/bots/turn] failed', error)
-    return NextResponse.json({ error: 'The bots aren’t answering.' }, { status: 502 })
+    // **Say why, outside production.** The upstream reason used to reach only
+    // the dev server's terminal, and a 502 in the browser console said nothing
+    // — which cost a live session to a rejected schema that one line here
+    // would have named. Never in production: an upstream error message is not
+    // a player's business, and can carry more than it should.
+    const detail =
+      !production && error instanceof Error ? { detail: error.message } : {}
+    return NextResponse.json(
+      { error: 'The bots aren’t answering.', ...detail },
+      { status: 502 },
+    )
   }
 }
 
@@ -258,7 +273,7 @@ function shape(body: TurnRequest, parsed: unknown): Record<string, unknown> {
 
   if (body.kind === 'subject') {
     const text = typeof data.text === 'string' ? data.text.trim() : ''
-    if (!text) return {}
+    if (!text || text.length > LINE_MAX) return {}
     // A caption-mode subject is a *query*, not a GIF: the browser owns the
     // provider call, because that is where the key lives (ADR 0022).
     return body.mode === 'caption' ? { query: text } : { subject: { kind: 'prompt', text } }
@@ -270,9 +285,18 @@ function shape(body: TurnRequest, parsed: unknown): Record<string, unknown> {
     for (const row of rows as { id?: unknown; lines?: unknown }[]) {
       if (typeof row.id !== 'string') continue
       const lines = Array.isArray(row.lines)
-        ? row.lines.filter((line): line is string => typeof line === 'string')
+        ? row.lines
+            .filter((line): line is string => typeof line === 'string')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0)
+            // Two at most — top and bottom. A third line is not a caption.
+            .slice(0, 2)
         : []
       if (lines.length === 0) continue
+      // A paragraph is not a meme caption. Dropping the row rather than
+      // truncating it: a joke cut mid-sentence is worse than a written-in one,
+      // and the pool fills any seat this leaves empty.
+      if (lines.some((line) => line.length > LINE_MAX)) continue
       out[row.id] = body.mode === 'caption' ? { kind: 'caption', lines } : { query: lines[0] }
     }
     return { answers: out }

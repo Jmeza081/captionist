@@ -29,8 +29,15 @@ import type { GifResult } from './types'
 
 const ENDPOINT = 'https://api.klipy.com/api/v1'
 
-/** The brief clock is 30s. A hung request must not eat it. */
-const TIMEOUT_MS = 4_000
+/**
+ * The brief clock is 30s at its shortest. A hung request must not eat it.
+ *
+ * Eight rather than four: four timed out a phone on ordinary wifi often enough
+ * to be reported, and a board that gives up early is not faster — the player
+ * just asks again. Eight still leaves most of the shortest clock, and the
+ * panel now offers the retry the error copy had always promised.
+ */
+const TIMEOUT_MS = 8_000
 
 /**
  * The SFW filter, pinned — and this one is load-bearing in a way Giphy's is not.

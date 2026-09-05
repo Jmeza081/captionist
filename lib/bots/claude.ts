@@ -47,7 +47,18 @@ async function ask(body: unknown): Promise<TurnResponse> {
     body: JSON.stringify({ ...(body as object), seat, sig }),
   })
 
-  if (!response.ok) throw new BotRouteError(`The bot route answered ${response.status}.`)
+  if (!response.ok) {
+    // The route names the upstream failure outside production. Read it, so a
+    // 502 in the console says *what* rather than just *that*.
+    let detail = ''
+    try {
+      const body = (await response.json()) as { detail?: string }
+      detail = body.detail ? ` — ${body.detail}` : ''
+    } catch {
+      // A body that is not JSON has nothing to add.
+    }
+    throw new BotRouteError(`The bot route answered ${response.status}${detail}`)
+  }
 
   const parsed = (await response.json()) as TurnResponse
   if (parsed.usage) recordSpend(parsed.usage.input, parsed.usage.output, parsed.usage.model)

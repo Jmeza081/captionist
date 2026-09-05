@@ -74,6 +74,15 @@ export interface GifPanelProps {
   status?: 'loading' | 'ready' | 'error'
   /** Shown under the field — an error, or a note that these are samples. */
   message?: string
+  /**
+   * Ask for the board again after it failed.
+   *
+   * The error copy has always ended "Try again" — and offered nothing to try
+   * with. A timed-out board left a player re-typing a search they had already
+   * typed, and a timed-out *trending* board on arrival left them with no field
+   * to type into at all. This is the control the sentence was promising.
+   */
+  onRetry?: () => void
   /** The badge on the chosen tile: "Selected" when picking, "Your answer" when answering. */
   selectionLabel?: string
   /**
@@ -111,6 +120,7 @@ export function GifPanel({
   onSurprise,
   status = 'ready',
   message,
+  onRetry,
   selectionLabel = 'Selected',
   provider,
   ads,
@@ -251,13 +261,24 @@ export function GifPanel({
 
   const grid =
     shown.length === 0 ? (
-      <p className={styles.empty}>
-        {status === 'error'
-          ? (message ?? 'That search didn\u2019t come back. Try again.')
-          : status === 'loading'
+      status === 'error' ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyLine}>
+            {message ?? 'That search didn\u2019t come back. Try again.'}
+          </p>
+          {onRetry && (
+            <Button variant="secondary" size="inline" onClick={onRetry}>
+              Try again
+            </Button>
+          )}
+        </div>
+      ) : (
+        <p className={styles.empty}>
+          {status === 'loading'
             ? 'Looking\u2026'
             : `No GIFs for \u201c${value}\u201d. Try a shorter word.`}
-      </p>
+        </p>
+      )
     ) : board ? (
       // The board grows with the page, so it is its own scroller.
       tiles

@@ -561,3 +561,54 @@ test.describe('a tile with no picture yet', () => {
     await expect(staticIn(page)).toHaveCount(0)
   })
 })
+
+test.describe('a board that did not come back', () => {
+  /**
+   * The error copy always ended "Try again" and offered nothing to try with.
+   * A timed-out trending board on arrival left a player with no tiles and no
+   * field worth typing into; the key is the control that sentence promised.
+   *
+   * The provider fails *until the key is pressed*, rather than for a counted
+   * number of attempts. Under `next dev`, StrictMode runs the mount effect
+   * twice and the first request is thrown away — so "fail the first call" is
+   * consumed before anything is on screen, and the visible board succeeds.
+   */
+  test('offers a retry, and the retry actually asks again', async ({ page }) => {
+    let retried = false
+    let boards = 0
+    for (const glob of [GIPHY, KLIPY]) {
+      await page.route(glob, async (route) => {
+        const url = route.request().url()
+        if (url.includes('/gifs/share/') || url.includes('/gifs/items')) {
+          await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+          return
+        }
+        if (!retried) {
+          // The way a dropped connection fails: a bare TypeError, not a status.
+          await route.abort('failed')
+          return
+        }
+        boards += 1
+        await route.fulfill({ status: 200, contentType: 'application/json', body: emptyBoard(url) })
+      })
+    }
+
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=live')
+
+    // House copy, not the browser's "Failed to fetch".
+    await expect(page.getByText('Couldn’t reach the GIF library')).toBeVisible()
+
+    const retry = page.getByRole('button', { name: 'Try again' })
+    await expect(retry).toBeVisible()
+    // Live and focusable — a control, not a sentence.
+    await retry.focus()
+    await expect(retry).toBeFocused()
+
+    retried = true
+    await retry.click()
+    // Exactly one more board went out, for the same request. Not two: a retry
+    // that restarted from the field would fire the trending request as well.
+    await expect.poll(() => boards).toBe(1)
+    await expect(retry).toBeHidden()
+  })
+})

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { GifQuotaError } from './errors'
+import { GifProviderError, GifQuotaError } from './errors'
 import { descriptorFor } from './descriptors'
 import { intendedProvider } from './registry'
 import { fetchBoard, reportPick } from './source'
@@ -112,6 +112,8 @@ export interface GifSearch {
    * could answer.
    */
   surprise: () => GifResult | undefined
+  /** Ask again for exactly what last failed — same query, same page. */
+  retry: () => void
 }
 
 /**
@@ -124,7 +126,27 @@ export interface GifSearch {
  */
 const LIMIT = 50
 
+const TIMED_OUT = 'That took too long to load. Try again.'
+const OFFLINE = 'Couldn’t reach the GIF library. Check your connection and try again.'
 const FAILED = 'That search didn’t come back. Try again.'
+
+/**
+ * A sentence a player can act on, whatever the browser threw.
+ *
+ * Only *our* errors carry copy worth showing: `GifProviderError` says which
+ * provider answered what. Everything the platform throws is raw — "Failed to
+ * fetch", "The operation was aborted due to timeout" — and §5 says an error
+ * names what happened and what to do next, which neither of those does to a
+ * person holding a phone.
+ */
+function describe(error: unknown): string {
+  if (error instanceof GifProviderError) return error.message
+  if (error instanceof DOMException && error.name === 'TimeoutError') return TIMED_OUT
+  // A dropped connection, a blocked host, a DNS miss: `fetch` rejects with a
+  // bare `TypeError` for all of them.
+  if (error instanceof TypeError) return OFFLINE
+  return FAILED
+}
 
 export function useGifSearch(options?: GifSearchOptions): GifSearch {
   const enabled = options?.enabled ?? true
@@ -214,8 +236,14 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
       return
     }
     setStatus('error')
-    setMessage(error instanceof Error ? error.message : FAILED)
+    setMessage(describe(error))
   }, [])
+
+  /** What was last asked for, so a failed board can be asked for again. */
+  const lastAsk = useRef<{ query: string; from: GifCursor | undefined }>({
+    query: '',
+    from: undefined,
+  })
 
   const run = useCallback(
     (next: string, from: GifCursor | undefined) => {
@@ -223,6 +251,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
       const controller = new AbortController()
       inFlight.current = controller
       const ticket = ++latest.current
+      lastAsk.current = { query: next, from }
 
       loading.current = true
       setStatus('loading')
@@ -244,6 +273,7 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     const controller = new AbortController()
     inFlight.current = controller
     const ticket = ++latest.current
+    lastAsk.current = { query: '', from: undefined }
     loading.current = true
 
     void fetchBoard('', undefined, LIMIT)
@@ -283,6 +313,17 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     return results[Math.floor(Math.random() * results.length)]
   }, [results])
 
+  /**
+   * Ask again for exactly what failed.
+   *
+   * Not `search(query)`: that would restart from the first page, and a board
+   * that timed out on "Shuffle results" should come back with the *next* page,
+   * not the one the player already saw.
+   */
+  const retry = useCallback(() => {
+    run(lastAsk.current.query, lastAsk.current.from)
+  }, [run])
+
   return {
     results,
     ads,
@@ -296,5 +337,6 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     search: (next: string) => run(next, undefined),
     more,
     surprise,
+    retry,
   }
 }

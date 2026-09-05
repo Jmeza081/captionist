@@ -94,6 +94,7 @@ export function RoundPicker({
         results={search.results}
         status={search.status}
         message={search.message}
+        onRetry={search.retry}
         query={search.query}
         onQueryChange={search.setQuery}
         onSubmit={search.search}

@@ -213,6 +213,7 @@ export function ChatPanel() {
               results={gifs.results}
               status={gifs.status}
               message={gifs.message}
+              onRetry={gifs.retry}
               /*
                 Controlled, and searched by the provider rather than filtered
                 here. That is not a preference: `GifPanel` narrows a fixed list

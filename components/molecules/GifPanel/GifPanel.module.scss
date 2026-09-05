@@ -119,6 +119,16 @@
   font-weight: 500;
   color: t.$text-caption;
   text-align: center;
+  // A `div` when it carries the retry key as well as the line, so the two
+  // stack and centre together; a `p` otherwise. Same box either way.
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-10;
+}
+
+.emptyLine {
+  margin: 0;
 }
 
 /* ------------------------------------------------------------------ */
