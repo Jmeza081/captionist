@@ -16,6 +16,7 @@ import { CycleWall } from '@/components/molecules/CycleWall'
 import { ChatRail } from '@/components/molecules/ChatRail'
 import { CodeEntry } from '@/components/molecules/CodeEntry'
 import { Composer } from '@/components/molecules/Composer'
+import { ExportKey } from '@/components/molecules/ExportKey'
 import { GifPanel, type GifResult } from '@/components/molecules/GifPanel'
 import { HelpModal } from '@/components/molecules/HelpModal'
 import { JoinPanel } from '@/components/molecules/JoinPanel'
@@ -369,6 +370,43 @@ export function MoleculesPanel() {
               actionLabel={quickCode.length === 6 ? 'Join' : `Enter ${6 - quickCode.length} more`}
               blocked={quickCode.length < 6}
             />
+          </Case>
+        </Grid>
+      </Section>
+
+      <Section id="export">
+        {/* Static props: the words come from `useExport`, which decides them
+            from what the device can do. Here every state is shown at once. */}
+        <Grid columns={1} mdColumns={2} gap={20}>
+          <Case label="Idle — the device's word">
+            <Inline gap={12}>
+              <ExportKey label="Share GIF" onClick={() => undefined} />
+              <ExportKey label="Copy image" onClick={() => undefined} />
+              <ExportKey label="Save GIF" onClick={() => undefined} />
+            </Inline>
+          </Case>
+          <Case label="Rendering — the count is the label">
+            <Inline gap={12}>
+              <ExportKey
+                label="Rendering 12 of 60…"
+                busy
+                progress={{ done: 12, total: 60 }}
+                onClick={() => undefined}
+              />
+              <ExportKey label="Send GIF" onClick={() => undefined} />
+            </Inline>
+          </Case>
+          <Case label="As a glyph — the card foot's pill">
+            <Inline gap={12}>
+              <ExportKey appearance="glyph" label="Share entry 2 as a GIF" onClick={() => undefined} />
+              <ExportKey
+                appearance="glyph"
+                label="Rendering 12 of 60…"
+                busy
+                progress={{ done: 12, total: 60 }}
+                onClick={() => undefined}
+              />
+            </Inline>
           </Case>
         </Grid>
       </Section>

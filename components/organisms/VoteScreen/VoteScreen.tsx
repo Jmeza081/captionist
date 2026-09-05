@@ -11,11 +11,14 @@ import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { Stack } from '@/components/atoms/Stack'
 import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import { TallyPill } from '@/components/atoms/TallyPill'
+import { ExportKey } from '@/components/molecules/ExportKey'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { ReactionToolbar } from '@/components/molecules/ReactionToolbar'
 import { TunedImage } from '@/components/molecules/TunedImage'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
+import { memeJob } from '@/lib/export/jobs'
+import { useExport } from '@/lib/export/useExport'
 import {
   ballotFrom,
   clearLabel,
@@ -33,7 +36,7 @@ import type { EntryId } from '@/lib/game/types'
 import { idFor, labelFor, REACTIONS } from '@/lib/reactions'
 import type { EventSnapshot, Tally } from '@/lib/room/events'
 import { tallyKey } from '@/lib/room/events'
-import { useChat, useEventSelector, useRoom } from '@/lib/room/useRoom'
+import { useChat, useEventSelector, useRoom, useRoomFlags } from '@/lib/room/useRoom'
 import styles from './VoteScreen.module.scss'
 
 /**
@@ -63,6 +66,10 @@ export function VoteScreen() {
   const { notify, startReply } = useRoomShell()
   const { react } = useChat()
   const tallies = useEventSelector(selectTallies)
+  const { exportMedia } = useRoomFlags()
+  // One for the whole grid: `run` is told which card, and only that card's
+  // key counts. Nineteen hooks in a `map` is not an option.
+  const exporter = useExport(notify)
   const [draft, setDraft] = useState<readonly (EntryId | null)[]>([])
   /** Which card's picker is open. One at a time — they overlap otherwise. */
   const [picking, setPicking] = useState<EntryId | undefined>(undefined)
@@ -259,6 +266,36 @@ export function VoteScreen() {
                     </span>
                   </span>
                 }
+                // Out of the room, per card. No author: `project()` stripped
+                // it before the state left the host, and the file says so by
+                // naming the round instead.
+                share={(() => {
+                  if (!exportMedia) return undefined
+                  const n = i + 1
+                  const job = memeJob({
+                    id: card.entryId,
+                    mode: state.settings.mode,
+                    media: card.media,
+                    lines: card.lines,
+                    prompt: subject?.kind === 'prompt' ? subject.text : undefined,
+                    roundNumber: state.roundNumber,
+                    entryIndex: n,
+                  })
+                  if (!job) return undefined
+                  const what = card.own ? 'your answer' : `entry ${n}`
+                  const label = exporter.busy(job.id)
+                    ? exporter.labelFor(job)
+                    : `${exporter.labelFor(job).replace(/ GIF$/, '')} ${what} as a GIF`
+                  return (
+                    <ExportKey
+                      appearance="glyph"
+                      label={label}
+                      busy={exporter.busy(job.id)}
+                      progress={exporter.progress(job.id)}
+                      onClick={() => exporter.run(job)}
+                    />
+                  )
+                })()}
                 // Answering a caption in kind is where the laughter is — and
                 // the quote is what keeps the reply legible once the grid has
                 // scrolled past. Your own entry included: replying to yourself

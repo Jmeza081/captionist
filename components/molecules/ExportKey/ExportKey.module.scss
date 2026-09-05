@@ -1,0 +1,51 @@
+@use 'theme' as t;
+
+.wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+/**
+ * The card foot's pill, the same shape the reply key draws: 32px tall so it
+ * reads as the reaction key's peer, a 44px finger regardless.
+ */
+.pill {
+  @include t.focusRing;
+  @include t.tapTarget;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 t.$space-10;
+  border: 0;
+  border-radius: t.$radius-pill;
+  background-color: t.$fill-subtle;
+  color: t.$text-meta;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    background-color: t.$accent-fill-strong;
+    color: t.$accent-on-fill;
+  }
+}
+
+// The blocked tint, as `Button` draws it: the control is live, the count is
+// what is missing.
+.busy {
+  opacity: 0.6;
+}
+
+.fraction {
+  font-family: t.$font-sans;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.srOnly {
+  @include t.srOnly;
+}

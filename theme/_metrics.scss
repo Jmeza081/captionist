@@ -180,7 +180,7 @@ $media-overlay-size-2: clamp(1.125rem, 6cqw, 2rem);
 $media-overlay-size-3: clamp(1rem, 4.8cqw, 1.625rem);
 $media-overlay-size-4: clamp(0.875rem, 4cqw, 1.375rem);
 // How many characters a line of that type holds — and therefore which step a
-// caption gets — is `CHARS_PER_LINE` in `MediaCard.tsx`. It is not a token,
+// caption gets — is `CHARS_PER_LINE` in `lib/media.ts`. It is not a token,
 // because no stylesheet can read it: the step is chosen in TypeScript. It is a
 // property of the sizes above all the same, so changing the font, the weight
 // or the letter-spacing means re-measuring it.

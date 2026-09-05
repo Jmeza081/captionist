@@ -224,7 +224,10 @@
 .foot {
   display: flex;
   align-items: center;
-  gap: t.$space-10;
+  // Twelve, not the ten the row had with three things in it: two 32px pills
+  // side by side each grow a 44px touch area, and ten between their boxes
+  // left the grown areas overlapping by two — a coin-flip tap.
+  gap: t.$space-12;
 }
 
 .captionText {

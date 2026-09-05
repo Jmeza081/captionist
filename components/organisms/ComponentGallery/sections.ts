@@ -109,6 +109,7 @@ export const SECTIONS = {
   chat: { tab: 'molecules', title: 'Chat', spec: 'message · announcement · unread' },
   chrome: { tab: 'molecules', title: 'App header', spec: '72px · phase · settings line' },
   entry: { tab: 'molecules', title: 'Code entry & share', spec: 'C- prefix · 6 chars' },
+  export: { tab: 'molecules', title: 'Export key', spec: 'idle · rendering · ready · as a glyph' },
   podium: { tab: 'molecules', title: 'Podium', spec: 'winner centre · 1-2-3 in the DOM' },
   composer: {
     tab: 'molecules',

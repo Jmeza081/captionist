@@ -1,3 +1,5 @@
+@use 'colors';
+@use 'metrics';
 @use 'spacing';
 
 // The bridge between the Sass tokens and React.
@@ -28,4 +30,31 @@
   // has to survive a media query — so it is chosen in CSS, not in React.
   --rail-width: #{spacing.$rail-width};
   --rail-width-collapsed: #{spacing.$rail-width-collapsed};
+
+  // What an exported image is painted with. A canvas has no stylesheet, so
+  // the renderer in `lib/export/` reads these back off `:root` — the one way
+  // to draw a PNG in the app's own colours without a second copy of them.
+  // Only the handful an export uses; the palette itself stays in Sass.
+  --color-surface-canvas: #{colors.$surface-canvas};
+  --color-surface-card: #{colors.$surface-card};
+  --color-text-primary: #{colors.$text-primary};
+  --color-text-label: #{colors.$text-label};
+  --color-text-meta: #{colors.$text-meta};
+  --color-accent-text: #{colors.$accent-text};
+  --color-winner: #{colors.$winner};
+  --color-line-hairline: #{colors.$line-hairline};
+
+  // The caption's four type steps, verbatim. Published so the export can
+  // resolve them at the width it draws at — with a probe element, because
+  // they are in `cqw` and only a container can turn that into pixels.
+  --media-overlay-size-1: #{metrics.$media-overlay-size};
+  --media-overlay-size-2: #{metrics.$media-overlay-size-2};
+  --media-overlay-size-3: #{metrics.$media-overlay-size-3};
+  --media-overlay-size-4: #{metrics.$media-overlay-size-4};
+
+  // How a hat sits on a head, for the same renderer. `Avatar` reads the Sass
+  // directly; these exist so the two never disagree about the tilt.
+  --avatar-hat-ratio: #{metrics.$avatar-hat-ratio};
+  --avatar-hat-rise: #{metrics.$avatar-hat-rise};
+  --avatar-hat-tilt: #{metrics.$avatar-hat-tilt};
 }

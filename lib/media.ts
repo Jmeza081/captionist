@@ -62,3 +62,37 @@ export function mediaAspect(
   if (!clamp) return ratio
   return Math.min(MEDIA_ASPECT_MAX, Math.max(MEDIA_ASPECT_MIN, ratio))
 }
+
+/**
+ * How many characters a line of caption holds, in the overlay's own type.
+ *
+ * Twenty is measured against the 800-weight uppercase sans the overlay is set
+ * in, not guessed: at 8cqw an average glyph advances about 0.55em, so a card
+ * fits `1 / (0.08 * 0.55)` ≈ 22 of them, less the padding either side. It
+ * lives here rather than in `theme/_metrics.scss` because no stylesheet can
+ * read it — a token nothing consumes is a number that drifts from the one that
+ * runs. It is still a property of `$media-overlay-size`, so changing that type
+ * means re-measuring this.
+ */
+export const CHARS_PER_LINE = 20
+
+/**
+ * Which type step a caption needs, from its length alone.
+ *
+ * No measuring, and therefore no effect, no ref and no `'use client'`: the
+ * overlay is sized in `cqw`, so a card holds about the same number of
+ * characters per line whatever its pixel width, and the line count falls out of
+ * the character count. Capped at the fourth step, which is where `CAPTION_MAX`
+ * lands.
+ *
+ * Shared by `MediaCard`, which turns the step into a class, and the export
+ * renderer, which turns it into a font size — one rule, so a caption exported
+ * is set the way it was shown.
+ */
+export function captionLines(text: string): 1 | 2 | 3 | 4 {
+  const lines = Math.ceil(text.trim().length / CHARS_PER_LINE)
+  if (lines <= 1) return 1
+  if (lines === 2) return 2
+  if (lines === 3) return 3
+  return 4
+}

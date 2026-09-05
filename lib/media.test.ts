@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { MEDIA_ASPECT_MAX, MEDIA_ASPECT_MIN, hasImage, imageSrc, mediaAspect } from './media'
+import {
+  CHARS_PER_LINE,
+  MEDIA_ASPECT_MAX,
+  MEDIA_ASPECT_MIN,
+  captionLines,
+  hasImage,
+  imageSrc,
+  mediaAspect,
+} from './media'
 
 /**
  * The shape a card is drawn at.
@@ -56,5 +64,34 @@ describe('imageSrc', () => {
     expect(hasImage('/media/stub-retro.svg')).toBe(true)
     expect(hasImage('')).toBe(false)
     expect(hasImage(undefined)).toBe(false)
+  })
+})
+
+/**
+ * The step a caption is set at, from its length alone.
+ *
+ * The boundaries are what matter: a caption exactly one line long keeps the
+ * poster size, one character more drops a step, and nothing ever goes past the
+ * fourth — which is where `CAPTION_MAX` lands.
+ */
+describe('captionLines', () => {
+  const of = (n: number) => 'x'.repeat(n)
+
+  it('holds one line up to the line length and steps down one character later', () => {
+    expect(captionLines('')).toBe(1)
+    expect(captionLines(of(CHARS_PER_LINE))).toBe(1)
+    expect(captionLines(of(CHARS_PER_LINE + 1))).toBe(2)
+    expect(captionLines(of(CHARS_PER_LINE * 2))).toBe(2)
+    expect(captionLines(of(CHARS_PER_LINE * 2 + 1))).toBe(3)
+    expect(captionLines(of(CHARS_PER_LINE * 3))).toBe(3)
+    expect(captionLines(of(CHARS_PER_LINE * 3 + 1))).toBe(4)
+  })
+
+  it('never goes past the fourth step', () => {
+    expect(captionLines(of(CHARS_PER_LINE * 9))).toBe(4)
+  })
+
+  it('does not count the whitespace around a caption', () => {
+    expect(captionLines(`   ${of(CHARS_PER_LINE)}   `)).toBe(1)
   })
 })

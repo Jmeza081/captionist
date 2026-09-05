@@ -3,9 +3,13 @@
 import { Button } from '@/components/atoms/Button'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
+import { ExportKey } from '@/components/molecules/ExportKey'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
+import { useRoomShell } from '@/components/organisms/RoomShell/context'
+import { standingsJob, standingsRow } from '@/lib/export/jobs'
+import { useExport } from '@/lib/export/useExport'
 import { scoreCopy, standings } from '@/lib/game/selectors'
-import { useRoom } from '@/lib/room/useRoom'
+import { useRoom, useRoomCode, useRoomFlags } from '@/lib/room/useRoom'
 import styles from './ScoreScreen.module.scss'
 
 /**
@@ -20,10 +24,15 @@ import styles from './ScoreScreen.module.scss'
  */
 export function ScoreScreen() {
   const { state, selfId, isHost, send } = useRoom()
+  const roomCode = useRoomCode()
+  const { notify } = useRoomShell()
+  const { exportMedia } = useRoomFlags()
+  const exporter = useExport(notify)
   if (!state) return null
 
   const copy = scoreCopy(state)
   const table = standings(state)
+  const job = exportMedia ? standingsJob(roomCode, 'Standings', table.map(standingsRow)) : undefined
 
   return (
     <Stack gap={34}>
@@ -34,6 +43,16 @@ export function ScoreScreen() {
         </Stack>
 
         <Inline gap={14} className={styles.advance}>
+          {/* Before the host's primary, and alone in the row for a guest: it
+              changes nothing in the room, so it does not get the last word. */}
+          {job && (
+            <ExportKey
+              label={exporter.labelFor(job)}
+              busy={exporter.busy(job.id)}
+              progress={exporter.progress(job.id)}
+              onClick={() => exporter.run(job)}
+            />
+          )}
           {copy.nextRoleLine && <span className={styles.next}>{copy.nextRoleLine}</span>}
           {isHost && (
             <Button size="form" onClick={() => send({ type: 'round/advanced' })}>

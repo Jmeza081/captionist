@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { TunedImage } from '@/components/molecules/TunedImage'
-import { hasImage, imageSrc, mediaAspect } from '@/lib/media'
+import { captionLines, hasImage, imageSrc, mediaAspect } from '@/lib/media'
 import styles from './MediaCard.module.scss'
 
 export interface MediaCardProps {
@@ -62,6 +62,16 @@ export interface MediaCardProps {
    * row it joins was drawn with three things in it.
    */
   reply?: ReactNode
+  /**
+   * The export affordance, first in the foot.
+   *
+   * Its own slot for the same reason the other two have one, and first
+   * because it is the quiet one: it changes nothing in the room, so it sits
+   * by the caption text rather than beside the rank button people are
+   * reaching for. The design draws no export control on a card; the podium's
+   * unbuilt pill row is the nearest thing, and this is that want, per card.
+   */
+  share?: ReactNode
   /** Caption label under the card. */
   caption?: string
   /**
@@ -107,6 +117,7 @@ export function MediaCard({
   action,
   reaction,
   reply,
+  share,
   caption,
   naturalRatio = false,
   onActivate,
@@ -191,9 +202,10 @@ export function MediaCard({
         )}
       </div>
 
-      {(caption || action || reaction || reply) && (
+      {(caption || action || reaction || reply || share) && (
         <figcaption className={styles.foot}>
           {caption && <span className={styles.captionText}>{caption}</span>}
+          {share}
           {reply}
           {reaction}
           {action}
@@ -204,27 +216,12 @@ export function MediaCard({
 }
 
 /**
- * Which type step a caption needs, from its length alone.
- *
- * No measuring, and therefore no effect, no ref and no `'use client'`: the
- * overlay is sized in `cqw`, so a card holds about the same number of
- * characters per line whatever its pixel width, and the line count falls out of
- * the character count. Capped at the fourth step, which is where `CAPTION_MAX`
- * lands.
- *
- * Twenty is measured against the 800-weight uppercase sans the overlay is set
- * in, not guessed: at 8cqw an average glyph advances about 0.55em, so a card
- * fits `1 / (0.08 * 0.55)` ≈ 22 of them, less the padding either side. It lives
- * here rather than in `theme/_metrics.scss` because no stylesheet can read it —
- * a token nothing consumes is a number that drifts from the one that runs. It
- * is still a property of `$media-overlay-size`, so changing that type means
- * re-measuring this.
+ * The step class for a caption's length. The rule itself is `captionLines` in
+ * `lib/media.ts`, shared with the export renderer; this is only the lookup.
  */
-const CHARS_PER_LINE = 20
-
 function overlayStep(text: string): string {
-  const lines = Math.ceil(text.trim().length / CHARS_PER_LINE)
-  if (lines <= 1) return ''
+  const lines = captionLines(text)
+  if (lines === 1) return ''
   if (lines === 2) return styles.lines2 ?? ''
   if (lines === 3) return styles.lines3 ?? ''
   return styles.lines4 ?? ''

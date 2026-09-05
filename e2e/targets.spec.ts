@@ -136,6 +136,9 @@ const SCREENS: readonly (readonly [string, string])[] = [
   ['vote', '/room/C-F34911?seed=42&phase=vote&as=p2&gifs=stub'],
   ['reveal', '/room/C-F34912?seed=42&phase=reveal&as=p2&gifs=stub'],
   ['lobby', '/room/C-F34913?seed=42&gifs=stub'],
+  // The export key joined these two rows; it must not land under anything.
+  ['score', '/room/C-F34915?seed=42&phase=score&gifs=stub'],
+  ['podium', '/room/C-F34916?seed=42&phase=podium&gifs=stub'],
 ]
 
 test.describe('touch targets', () => {

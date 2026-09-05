@@ -210,3 +210,9 @@
     display: block;
   }
 }
+
+// The winner card's foot holds only the export key, so it sits at the far
+// end rather than under the picture's left edge like a stray caption.
+.exportKey {
+  margin-left: auto;
+}

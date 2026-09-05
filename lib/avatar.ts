@@ -66,11 +66,19 @@ const OPTIONS = { backgroundColor: ['00000000'], animationVariant: 'none' } as c
  */
 const cache = new Map<string, string>()
 
-export function avatarUri(seed: string): string {
-  const hit = cache.get(seed)
+/**
+ * `size` is for a canvas, not a page. An `<img>` sizes the SVG itself, so the
+ * face the app draws carries no dimensions; but a canvas `drawImage` of an
+ * SVG with no intrinsic size draws nothing in Firefox, and the export renderer
+ * is the one caller that needs one. A sized face is cached under its own key
+ * so the sizeless one every screen reads stays what it was.
+ */
+export function avatarUri(seed: string, size?: number): string {
+  const key = size === undefined ? seed : `${seed}@${size}`
+  const hit = cache.get(key)
   if (hit !== undefined) return hit
-  const uri = new Avatar(STYLE, { ...OPTIONS, seed }).toDataUri()
-  cache.set(seed, uri)
+  const uri = new Avatar(STYLE, { ...OPTIONS, seed, ...(size === undefined ? {} : { size }) }).toDataUri()
+  cache.set(key, uri)
   return uri
 }
 

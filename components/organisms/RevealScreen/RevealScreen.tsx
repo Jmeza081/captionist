@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
@@ -9,9 +10,13 @@ import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
 import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import { TallyPill } from '@/components/atoms/TallyPill'
+import { ExportKey } from '@/components/molecules/ExportKey'
 import { MediaCard } from '@/components/molecules/MediaCard'
 import { PromptBanner } from '@/components/molecules/PromptBanner'
 import { RevealReactionBar } from '@/components/molecules/RevealReactionBar'
+import { useRoomShell } from '@/components/organisms/RoomShell/context'
+import { memeJob } from '@/lib/export/jobs'
+import { useExport } from '@/lib/export/useExport'
 import {
   REVEAL_REACTIONS,
   requireSubject,
@@ -22,7 +27,7 @@ import {
   toAvatarProps,
 } from '@/lib/game/selectors'
 import { glyphFor, idFor, labelFor } from '@/lib/reactions'
-import { useChat, useRoom, useTallies } from '@/lib/room/useRoom'
+import { useChat, useRoom, useRoomFlags, useTallies } from '@/lib/room/useRoom'
 import styles from './RevealScreen.module.scss'
 
 /**
@@ -45,13 +50,44 @@ export function RevealScreen() {
   // cannot sit behind an early return. An empty id simply has no tallies.
   const winnerId = state ? (revealWinner(state)?.entryId ?? '') : ''
   const counts = useTallies('entry', winnerId)
+  const { notify } = useRoomShell()
+  const { exportMedia } = useRoomFlags()
+  const exporter = useExport(notify)
+
+  const winner = state ? revealWinner(state) : undefined
+  const subject = state ? requireSubject(state) : undefined
+  /*
+    The file, made before anyone asks for it.
+
+    A share sheet has to open inside the tap's activation window, and a
+    re-encode of a long GIF does not fit in one. So the reveal — one card,
+    untimed, everyone looking at it — renders at idle, and the tap shares a
+    file that already exists. Only here: the vote has nineteen cards and no
+    idea which one will be wanted.
+  */
+  const job =
+    exportMedia && state && winner
+      ? memeJob({
+          id: winner.entryId,
+          mode: state.settings.mode,
+          media: winner.media,
+          lines: winner.lines,
+          prompt: subject?.kind === 'prompt' ? subject.text : undefined,
+          author: winner.author ? { face: winner.author, points: winner.points } : undefined,
+          roundNumber: state.roundNumber,
+        })
+      : undefined
+  const { prepare } = exporter
+  useEffect(() => {
+    if (job) prepare(job)
+    // Keyed on the entry, not the job object, which is rebuilt every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id, prepare])
 
   if (!state) return null
 
   const copy = revealCopy(state, selfId)
-  const winner = revealWinner(state)
   const others = runnersUp(state)
-  const subject = requireSubject(state)
   const holder = roleHolder(state)
 
   return (
@@ -74,6 +110,17 @@ export function RevealScreen() {
             topText={winner?.lines?.[0]}
             bottomText={winner?.lines?.[1]}
             winner
+            share={
+              job ? (
+                <ExportKey
+                  label={exporter.labelFor(job)}
+                  busy={exporter.busy(job.id)}
+                  progress={exporter.progress(job.id)}
+                  onClick={() => exporter.run(job)}
+                  className={styles.exportKey}
+                />
+              ) : undefined
+            }
             tallies={
               counts.length > 0
                 ? counts.map((tally) => (

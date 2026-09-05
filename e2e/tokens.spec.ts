@@ -21,6 +21,9 @@ test.describe('design tokens', () => {
         space52: read('--space-52'),
         radiusCard: read('--radius-card'),
         radiusPill: read('--radius-pill'),
+        // The export renderer paints from these; a canvas cannot fall back.
+        textPrimary: read('--color-text-primary'),
+        overlay2: read('--media-overlay-size-2'),
       }
     })
 
@@ -31,6 +34,8 @@ test.describe('design tokens', () => {
     expect(scale.space52).toBe('52px')
     expect(scale.radiusCard).toBe('16px')
     expect(scale.radiusPill).toBe('143px')
+    expect(scale.textPrimary).toBe('#fff')
+    expect(scale.overlay2).toBe('clamp(1.125rem, 6cqw, 2rem)')
   })
 
   test('a Stack resolves its gap prop to a real computed gap', async ({

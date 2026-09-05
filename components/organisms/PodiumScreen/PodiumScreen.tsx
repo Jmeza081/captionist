@@ -6,10 +6,14 @@ import { Eyebrow } from '@/components/atoms/Eyebrow'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { Stack } from '@/components/atoms/Stack'
+import { ExportKey } from '@/components/molecules/ExportKey'
 import { Modal } from '@/components/molecules/Modal'
 import { Podium } from '@/components/molecules/Podium'
-import { podiumCopy, podiumPlaces } from '@/lib/game/selectors'
-import { useRoom } from '@/lib/room/useRoom'
+import { useRoomShell } from '@/components/organisms/RoomShell/context'
+import { standingsJob, standingsRow } from '@/lib/export/jobs'
+import { useExport } from '@/lib/export/useExport'
+import { podiumCopy, podiumPlaces, standings } from '@/lib/game/selectors'
+import { useRoom, useRoomCode, useRoomFlags } from '@/lib/room/useRoom'
 import styles from './PodiumScreen.module.scss'
 
 /**
@@ -35,11 +39,22 @@ export function PodiumScreen() {
    * closed it for everyone.
    */
   const [excuseSeen, setExcuseSeen] = useState(false)
+  const roomCode = useRoomCode()
+  const { notify } = useRoomShell()
+  const { exportMedia } = useRoomFlags()
+  const exporter = useExport(notify)
 
   if (!state) return null
 
   const copy = podiumCopy(state)
   const places = podiumPlaces(state)
+  /*
+    The design's third pill. It draws "Download the highlight reel" and
+    "Post to Slack" here; there is no reel and no storage to keep one in
+    (ADR 0014), so the row offers the thing it honestly can — the final table
+    as a picture, handed to whatever the device shares with.
+  */
+  const job = exportMedia ? standingsJob(roomCode, 'Final standings', standings(state).map(standingsRow)) : undefined
 
   return (
     <Stack gap={34} align="center" className={styles.screen}>
@@ -73,6 +88,15 @@ export function PodiumScreen() {
         <Button variant="secondary" size="form" href="/">
           {copy.secondary}
         </Button>
+        {job && (
+          <ExportKey
+            size="form"
+            label={exporter.labelFor(job)}
+            busy={exporter.busy(job.id)}
+            progress={exporter.progress(job.id)}
+            onClick={() => exporter.run(job)}
+          />
+        )}
       </Inline>
 
       {/*
