@@ -63,6 +63,8 @@ function context(el: HTMLCanvasElement): CanvasRenderingContext2D {
 export async function loadSource(
   src: string,
   hint?: { width?: number; height?: number },
+  /** Ceiling on frames. Lowered on a retry — see `renderMeme`. */
+  maxFrames?: number,
 ): Promise<Source> {
   let bytes: ArrayBuffer | undefined
   try {
@@ -75,7 +77,7 @@ export async function loadSource(
 
   if (bytes && isGif(bytes)) {
     try {
-      return await gifSource(bytes)
+      return await gifSource(bytes, maxFrames)
     } catch {
       // A GIF the decoder could not read is still a picture the browser can
       // show. Fall through to one frame of it.
@@ -98,7 +100,7 @@ export async function loadSource(
  * Budgeting decides which frames are *yielded*; every frame is still
  * composited, because a skipped frame's disposal still happened.
  */
-async function gifSource(bytes: ArrayBuffer): Promise<Source> {
+async function gifSource(bytes: ArrayBuffer, maxFrames?: number): Promise<Source> {
   const { parseGIF, decompressFrame } = await import('gifuct-js')
   const gif = parseGIF(bytes)
   const width = gif.lsd.width
@@ -113,7 +115,7 @@ async function gifSource(bytes: ArrayBuffer): Promise<Source> {
     index,
     delay: normaliseDelay(frame.gce ? (frame.gce.delay || 10) * 10 : DEFAULT_DELAY_MS),
   }))
-  const kept = budgetFrames(timed)
+  const kept = budgetFrames(timed, maxFrames)
   const delayFor = new Map(kept.map((f) => [f.index, f.delay]))
 
   return {

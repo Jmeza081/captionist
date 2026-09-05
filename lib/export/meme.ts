@@ -29,15 +29,45 @@ export interface MemeJob {
   hint?: { width?: number; height?: number }
 }
 
+/**
+ * A meme, and a still one rather than none.
+ *
+ * The animated path asks a phone to decode, composite and re-encode a hundred
+ * frames, and a phone can refuse — a canvas it will not allocate, a
+ * `getImageData` that throws once memory is tight. That surfaced as
+ * "Couldn't render that GIF" on Android while desktop was fine, which is the
+ * worst trade available: the whole feature lost to the last frame of a long
+ * animation.
+ *
+ * So a failure retries once at a single frame. The picture, the caption and
+ * the credit all survive; only the movement is given up, and only when the
+ * device could not have had it anyway. Anything that throws twice is a real
+ * failure and is reported as one.
+ */
 export async function renderMeme(
   job: MemeJob,
   onProgress: (progress: Progress) => void,
   signal?: AbortSignal,
 ): Promise<Blob> {
+  try {
+    return await draw(job, onProgress, signal)
+  } catch (error) {
+    if (signal?.aborted || (error instanceof ExportError && error.reason === 'source')) throw error
+    console.error('[export] animated render failed; retrying as a still frame', error)
+    return draw(job, onProgress, signal, 1)
+  }
+}
+
+async function draw(
+  job: MemeJob,
+  onProgress: (progress: Progress) => void,
+  signal?: AbortSignal,
+  maxFrames?: number,
+): Promise<Blob> {
   const family = fontFamily()
   await loadFonts(family)
 
-  const source = await loadSource(job.src, job.hint)
+  const source = await loadSource(job.src, job.hint, maxFrames)
   if (signal?.aborted) throw new DOMException('export aborted', 'AbortError')
 
   const size = exportScale(source.width, source.height)

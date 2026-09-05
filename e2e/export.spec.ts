@@ -151,6 +151,39 @@ test.describe('exporting the winning meme', () => {
   })
 })
 
+test.describe('an export the device cannot finish', () => {
+  test('falls back to a still frame rather than failing outright', async ({ page }) => {
+    // A phone that will not allocate another canvas throws here — which is how
+    // this surfaced: "Couldn't render that GIF" on Android while every desktop
+    // was fine. Losing the movement is a fair trade; losing the meme is not.
+    await page.addInitScript(() => {
+      const proto = CanvasRenderingContext2D.prototype
+      const real = proto.getImageData
+      let first = true
+      proto.getImageData = function (...args: Parameters<typeof real>) {
+        if (first) {
+          first = false
+          throw new DOMException('Out of memory', 'UnknownError')
+        }
+        return real.apply(this, args)
+      }
+    })
+    await noSheet(page)
+    await page.goto(REVEAL)
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Save GIF' }).click(),
+    ])
+    expect(download.suggestedFilename()).toBe('captionist-round-1.gif')
+    const path = await download.path()
+    const { size } = await import('node:fs').then((fs) => fs.promises.stat(path))
+    expect(size).toBeGreaterThan(200)
+    // And it still reports the truth: a file was saved.
+    await expect(page.getByRole('status')).toHaveText('GIF saved')
+  })
+})
+
 test.describe('exporting a card from the vote', () => {
   test('every card has its own key, named for the card, and none names an author', async ({
     page,

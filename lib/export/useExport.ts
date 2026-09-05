@@ -135,6 +135,9 @@ export function useExport(notify: (message: string) => void): ExportControl {
           settle('cancelled')
           return
         }
+        // The snackbar says what to do; this says what happened. Without it a
+        // failure on somebody else's phone is a sentence and no evidence.
+        console.error('[export] failed', error)
         settle('failed', error instanceof ExportError ? error.reason : 'render')
       }
 
