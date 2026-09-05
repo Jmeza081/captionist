@@ -77,10 +77,11 @@ export default defineConfig({
      *
      * It was already true — but only because this machine happened to have no
      * keys, which meant anyone adding one to `.env.local` silently moved the
-     * whole suite onto a live service. Both switches are stated here rather
-     * than inherited from an absence:
+     * whole suite onto a live service. All three switches are stated here
+     * rather than inherited from an absence:
      *
      * - `ABLY_STUB` keeps every room on the tab transport.
+     * - `VERCEL_OIDC_TOKEN` keeps the feature flags local — see below.
      * - `NEXT_PUBLIC_GIFS_STUB` keeps the picker *and the landing wall* on the
      *   offline shelf. Not every room spec passes `?gifs=stub`, and
      *   `room.spec.ts` walks a full game through the picker — so without this,
@@ -131,6 +132,23 @@ export default defineConfig({
        * `stub` and the counting would assert nothing while looking green.
        */
       ANTHROPIC_API_KEY: 'e2e-not-a-real-key',
+      /**
+       * The flags are decided here, not by a dashboard.
+       *
+       * `flags.ts` consults Vercel only when a token or an SDK key says it
+       * can, so on a machine that has never run `vercel env pull` this is
+       * already true. The moment somebody links the project, though,
+       * `.env.local` grows a `VERCEL_OIDC_TOKEN` and every room render in the
+       * suite starts calling the flags service — and unlike a browser call,
+       * `--host-resolver-rules` above does not stop it, because this one is
+       * made by the dev server. It would still *pass*, on the fallback, which
+       * is the worst way for it to break: a suite quietly depending on a
+       * third party while looking exactly as green as before.
+       *
+       * Empty rather than absent, because `env` here is merged over the
+       * process environment rather than replacing it.
+       */
+      VERCEL_OIDC_TOKEN: '',
     },
   },
 })
