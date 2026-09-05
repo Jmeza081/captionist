@@ -12,7 +12,11 @@ test.describe('the lobby', () => {
     // `toContainText`: the code is rendered twice, once visibly and once
     // spelled out for screen readers.
     await expect(page.getByTestId('room-code')).toContainText('C-F34213')
-    await expect(page.getByRole('listitem')).toHaveCount(5)
+    // Five seated, plus the seat the host can fill with a bot: the roster
+    // draws that as a row in the same list, beside the one it waits on a
+    // friend to take, so it counts here too.
+    await expect(page.getByRole('listitem')).toHaveCount(6)
+    await expect(page.getByRole('button', { name: 'Add a bot' })).toBeVisible()
     await expect(page.getByText('Jesse')).toBeVisible()
 
     const start = page.getByRole('button', { name: 'Start game — 5 players ready' })
