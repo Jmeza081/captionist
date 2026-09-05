@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
+import { Tag } from '@/components/atoms/Tag'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
@@ -26,6 +27,7 @@ import {
   runnersUp,
   toAvatarProps,
 } from '@/lib/game/selectors'
+import { botLabel } from '@/lib/bots/personas'
 import { glyphFor, idFor, labelFor } from '@/lib/reactions'
 import { useChat, useRoom, useRoomFlags, useTallies } from '@/lib/room/useRoom'
 import styles from './RevealScreen.module.scss'
@@ -176,11 +178,20 @@ export function RevealScreen() {
                   <Inline key={entry.entryId} gap={14} className={styles.runner}>
                     <span className={styles.runnerRank}>{i + 2}</span>
                     {entry.author && <Avatar {...entry.author} size={34} />}
-                    <Stack gap={2} className={styles.who}>
+                    <Stack gap={5} className={styles.who}>
                       <span className={styles.runnerTitle}>
                         {entry.lines?.[0] ?? entry.media?.alt ?? 'An entry'}
                       </span>
-                      <span className={styles.runnerAuthor}>{entry.author?.name}</span>
+                      {/* The badge sits with the name for the reason
+                          `PlayerRow` puts it there: a bot is not a colleague,
+                          and the row that says who came second is exactly
+                          where that matters. */}
+                      <Inline gap={6} className={styles.runnerBy}>
+                        <span className={styles.runnerAuthor}>{entry.author?.name}</span>
+                        {entry.author?.bot && (
+                          <Tag tone="neutral">{botLabel(entry.author.bot)}</Tag>
+                        )}
+                      </Inline>
                     </Stack>
                     <span className={styles.runnerPoints}>+{entry.points}</span>
                   </Inline>

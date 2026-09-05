@@ -414,7 +414,7 @@ export function MoleculesPanel() {
       <Section id="podium">
         <Case label="After round five">
           <Podium
-            first={{ player: PLAYERS.lukasz, score: 18 }}
+            first={{ player: PLAYERS.latency, score: 18 }}
             second={{ player: PLAYERS.jack, score: 14 }}
             third={{ player: PLAYERS.jesska, score: 11 }}
           />

@@ -154,7 +154,11 @@
 // the rank against one edge and the score against the other under an
 // attribution box padded at 20. Up on both, then: a stated +1 / +4.
 .runner {
-  padding: t.$space-14 t.$space-20;
+  // Up another step on both axes, from 14/20. The row carries a badge under
+  // the name now, and at the old padding the tag sat almost on the card's
+  // bottom edge — a chip needs air around it to read as a chip rather than as
+  // part of the border.
+  padding: t.$space-20 t.$space-26;
   border-radius: t.$radius-field;
   background-color: t.$fill-subtle;
 }
@@ -185,10 +189,19 @@
   color: t.$text-primary;
 }
 
+.runnerBy {
+  // The name may be long and the badge must not be pushed out of the row, so
+  // the name is what gives way.
+  min-width: 0;
+}
+
 .runnerAuthor {
   @include t.labelText;
   font-size: 13px;
   color: t.$text-meta;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .runnerPoints {

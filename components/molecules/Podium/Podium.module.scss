@@ -4,7 +4,10 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: t.$space-12;
+  // Tighter on a phone, where three blocks and two gaps are competing for
+  // 393px and the blocks themselves cannot give: the widest badge sets their
+  // floor. The design's 12 returns above `sm`.
+  gap: t.$space-8;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -36,6 +39,7 @@
   justify-content: center;
   gap: 3px;
   width: t.$podium-block-width;
+  padding: 0 t.$podium-block-pad;
   border: 1px solid t.$line-hairline-strong;
   border-bottom: 0;
   border-radius: t.$radius-field t.$radius-field 0 0;
@@ -71,11 +75,27 @@
   color: t.$winner;
 }
 
+/**
+ * The name, which is the one thing here with no length limit.
+ *
+ * Two lines then an ellipsis, and `anywhere` so a single long token breaks
+ * rather than running out through both sides of the pedestal — the same pair
+ * `MediaCard`'s overlay uses, for the same reason. The block is sized so an
+ * ordinary nickname never reaches this; it is the backstop, not the mechanism.
+ */
 .name {
   font-family: t.$font-sans;
   font-size: 13px;
   font-weight: 800;
   color: t.$text-primary;
+  max-width: 100%;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .first .name {
@@ -90,6 +110,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+// The badge, under the name. Never optional and never the caller's choice —
+// `PlayerRow`'s rule, applied to the screen where being beaten by a bot is
+// the whole joke.
+.badge {
+  margin-top: 2px;
+}
+
 // Runners-up don't show a score at this size; the winner's is the headline.
 .second .score,
 .third .score {
@@ -100,5 +127,18 @@
   .second .score,
   .third .score {
     display: block;
+  }
+
+  .podium {
+    gap: t.$space-12;
+  }
+
+  // Room to be roomier. On a phone these are held narrower — see the tokens.
+  .block {
+    width: t.$podium-block-width-sm;
+  }
+
+  .first .block {
+    width: t.$podium-block-width-first-sm;
   }
 }

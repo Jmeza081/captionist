@@ -1,6 +1,6 @@
 import { Avatar } from '@/components/atoms/Avatar'
 import { Tag } from '@/components/atoms/Tag'
-import { personaFor } from '@/lib/bots/personas'
+import { botLabel } from '@/lib/bots/personas'
 import styles from './PlayerRow.module.scss'
 import type { PlayerFace } from '@/lib/game/types'
 
@@ -93,7 +93,7 @@ export function PlayerRow({
           prop a screen could forget to pass. It names the level as well —
           "Intern bot" — because which one you hired is the thing you want to
           know at a glance, and the word "bot" is what keeps it honest. */}
-      {player.bot && <Tag tone="neutral">{`${personaFor(player.bot).label} bot`}</Tag>}
+      {player.bot && <Tag tone="neutral">{botLabel(player.bot)}</Tag>}
 
       {status && (
         <span className={`${styles.status} ${done ? styles.done : ''}`}>

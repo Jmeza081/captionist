@@ -576,11 +576,27 @@ $slot-height-lg: 76px;
 // The design gives block heights 150/190/262 at full size; these are the
 // proportions it actually draws the compact block at.
 
-$podium-block-width: 96px;
-$podium-block-width-first: 110px;
-$podium-height-first: 110px;
-$podium-height-second: 74px;
-$podium-height-third: 58px;
+// Wider and taller than the design's, and deliberately: the design drew the
+// blocks against three short names, and a real room has long ones. The block
+// now carries a name that may wrap to two lines and a bot badge under it, and
+// the old 96px put an eight-character nickname over both edges. Widening alone
+// would not fix it — a nickname has no length cap — so `.name` clamps as well;
+// this is what stops the common case ever reaching the clamp.
+// Mobile first, and the phone is the binding constraint: three blocks plus two
+// gaps have to fit 393px with margin to spare, which caps the wide one at
+// ~120. Above `sm` there is room for the roomier set.
+// 112 is not arbitrary: the widest badge is "Principal bot", which needs 92px
+// of content box, and the block adds 10 either side. Three of these plus two
+// gaps is 380 of a 393px phone — the reason the pair below exists at all.
+$podium-block-width: 112px;
+$podium-block-width-first: 132px;
+$podium-block-width-sm: 124px;
+$podium-block-width-first-sm: 148px;
+$podium-height-first: 138px;
+$podium-height-second: 102px;
+$podium-height-third: 86px;
+// Air between the block's edge and anything in it.
+$podium-block-pad: 10px;
 
 /// The tiebreak's duel card. Wider than a vote card because two of them carry
 /// the whole screen, and narrower than the reveal's winner because two fit.

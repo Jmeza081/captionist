@@ -102,6 +102,20 @@ export const PLAYERS = {
   jack: { name: 'Jack', color: PLAYER_COLORS.purple, avatarSeed: 'moss' },
   vic: { name: 'Vic', color: PLAYER_COLORS.yellow, avatarSeed: 'amber' },
   roberto: { name: 'Roberto', color: PLAYER_COLORS.green, avatarSeed: 'fern' },
+  /**
+   * A hired bot, and the longest name in the cast.
+   *
+   * Both on purpose: the badge has to be shown somewhere, and bot nicknames
+   * are the longest the app generates — which is what pushed a name out
+   * through the sides of a podium block in the first place. This is the case
+   * the pedestal is now sized against.
+   */
+  latency: {
+    name: 'Panicked_Latency',
+    color: PLAYER_COLORS.amber,
+    avatarSeed: 'quartz',
+    bot: 'principal',
+  },
 } as const
 
 /** A fixed board for the composer's attach surface, which filters locally. */

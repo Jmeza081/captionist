@@ -462,10 +462,43 @@ test.describe('compositions', () => {
     const places = page.getByRole('listitem').filter({ hasText: 'pts' })
     await expect(places).toHaveCount(3)
 
-    // DOM order is the standings order.
-    await expect(places.nth(0)).toContainText('Lukasz')
+    // DOM order is the standings order. First place is the hired bot, whose
+    // name is the longest the generator makes — the case the block is sized
+    // against, and the one that used to run out through both sides of it.
+    await expect(places.nth(0)).toContainText('Panicked_Latency')
     await expect(places.nth(1)).toContainText('Jack')
     await expect(places.nth(2)).toContainText('Jesska')
+
+    // The badge names the level as well as the fact, exactly as a roster row
+    // does — nobody should read a podium and think they lost to a colleague.
+    await expect(places.nth(0)).toContainText('Principal bot')
+    await expect(places.nth(1)).not.toContainText('bot')
+
+    // The name wraps at the underscore via `<wbr>`, which contributes no
+    // character — so the text stays exactly what the player is called. A
+    // zero-width space here would pass the eye and fail this line.
+    const name = await places.nth(0).locator('span').first().evaluate((el) => {
+      const span = el.parentElement?.querySelector('[class*="name"]')
+      return span?.textContent ?? ''
+    })
+    expect(name).toBe('Panicked_Latency')
+
+    // And it stays inside its pedestal at every width.
+    const spill = await places.nth(0).evaluate((li) => {
+      const block = li.querySelector(':scope > div')
+      if (!block) return 0
+      const b = block.getBoundingClientRect()
+      return Math.max(
+        ...[...block.querySelectorAll(':scope > span')]
+          .filter((s) => s.getBoundingClientRect().width > 0)
+          .map((s) => {
+            const r = s.getBoundingClientRect()
+            return Math.max(b.left - r.left, r.right - b.right)
+          }),
+        0,
+      )
+    })
+    expect(spill).toBeLessThanOrEqual(1)
 
     // Visual order puts first in the middle.
     const boxes = await places.evaluateAll((els) =>

@@ -90,6 +90,18 @@ export function personaFor(difficulty: BotDifficulty): BotPersona {
 }
 
 /**
+ * What a bot is called on a badge — "Intern bot", "Principal bot".
+ *
+ * The level *and* the word, because which one you hired is the thing worth
+ * knowing at a glance and "bot" is what keeps it honest: nobody should read a
+ * podium and believe they were beaten by a colleague. One function rather than
+ * the same template string in three screens, so a rename lands everywhere.
+ */
+export function botLabel(difficulty: BotDifficulty): string {
+  return `${personaFor(difficulty).label} bot`
+}
+
+/**
  * The rule every bot writes under, whatever its level.
  *
  * **Bots never receive player names**, so a bot cannot write about a person
