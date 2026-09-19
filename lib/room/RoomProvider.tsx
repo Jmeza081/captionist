@@ -333,6 +333,8 @@ export function RoomProvider({
                 seed: levers.seed,
                 settings: leverSettings(levers),
                 out: levers.out,
+                votes: levers.votes,
+                submitted: levers.submitted,
               }),
               Date.now(),
             )

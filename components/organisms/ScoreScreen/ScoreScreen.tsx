@@ -32,7 +32,7 @@ export function ScoreScreen() {
 
   const copy = scoreCopy(state)
   const table = standings(state)
-  const job = exportMedia ? standingsJob(roomCode, 'Standings', table.map(standingsRow)) : undefined
+  const job = exportMedia ? standingsJob(roomCode, 'Standings', table.map(standingsRow), state.roundNumber) : undefined
 
   return (
     <Stack gap={34}>

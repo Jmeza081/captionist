@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
 import { Eyebrow } from '@/components/atoms/Eyebrow'
@@ -23,14 +23,18 @@ import {
   roleHolder,
   submissionRows,
   submittedLine,
+  takenMedia,
   toAvatarProps,
   viewKey,
 } from '@/lib/game/selectors'
 import { toMediaRef, type GifResult } from '@/lib/gifs/types'
 import { useGifSearch } from '@/lib/gifs/useGifSearch'
-import { mediaAspect } from '@/lib/media'
+import { mediaAspect, mediaKey } from '@/lib/media'
 import { useRoom } from '@/lib/room/useRoom'
 import styles from './ComposeScreen.module.scss'
+
+/** One stable empty set, so a room with no state does not churn the memo. */
+const EMPTY_TAKEN: ReadonlySet<string> = new Set()
 
 /**
  * Answering the round — and, if you set it up, watching it happen.
@@ -72,6 +76,44 @@ export function ComposeScreen() {
    */
   const [lines, setLines] = useState<readonly string[]>([])
   const [picked, setPicked] = useState<GifResult | undefined>(undefined)
+
+  /**
+   * What the others have already locked in, so the board can say so.
+   *
+   * Recomputed per broadcast — `state` is a new object on every `rev` — and
+   * only meaningful on the answer face; a caption room's set is empty.
+   */
+  const taken = useMemo(
+    () => (state ? takenMedia(state, selfId) : EMPTY_TAKEN),
+    [state, selfId],
+  )
+
+  /**
+   * Your staged pick was just taken.
+   *
+   * The ring comes off and the lock goes back to blocked, because a ring on
+   * a GIF you can no longer submit is a lie the button would then have to
+   * explain.
+   *
+   * **Derived, not cleared.** Unstaging it in an effect would be a setState
+   * inside an effect — a cascading render, and the lint rule that names it is
+   * right: the ring and the lock are a *function* of the board, so they can be
+   * read off it. `picked` stays where the tap put it and stops counting.
+   */
+  const stagedTaken = picked !== undefined && taken.has(mediaKey(picked.src))
+  const staged = stagedTaken ? undefined : picked
+
+  /**
+   * And say so, once, to the one person it happened to.
+   *
+   * The snackbar queue is an external system, which is what an effect is for —
+   * and keyed on the transition rather than on `picked`, so nineteen taken
+   * tiles are not nineteen announcements.
+   */
+  useEffect(() => {
+    if (!stagedTaken) return
+    notify('Someone just took that one. Pick another.', 'warning')
+  }, [stagedTaken, notify])
 
   const setLine = (index: number, value: string) =>
     setLines((current) => {
@@ -168,11 +210,16 @@ export function ComposeScreen() {
         headline={copy.headline}
         note={copy.body}
         search={gifs}
-        picked={picked}
+        picked={staged}
         onPick={setPicked}
         selectionLabel="Your answer"
         action={copy.action}
+        taken={taken}
         onLock={(gif) => {
+          // `staged` already blocks the control, so this is only the tap that
+          // lands in the same frame the broadcast did — the handler is holding
+          // the render before it.
+          if (taken.has(mediaKey(gif.src))) return
           // Before `toMediaRef`, which drops the id the trigger needs.
           gifs.chose(gif)
           send({

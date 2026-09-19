@@ -1289,9 +1289,12 @@ Each adapter pins its SFW filter unconditionally — `rating=pg-13` for Giphy,
 `content_filter=high` for Klipy — so the picker's "SFW filter on" promise cannot
 be raised by a caller. Klipy's is the load-bearing one: an unrecognised or
 omitted `content_filter` there **fails open**, returning exactly what `off`
-returns with a cheerful 200. Both still give up after 4s because the brief clock
-is 30s, and both raise `GifQuotaError` on a 429 — the one failure the room
-treats differently, because it ends the game rather than losing a board. The
+returns with a cheerful 200. Both give up on their own after 8s — `TIMEOUT_MS`
+in each adapter, folded through `withTimeout` in `provider.ts` into whatever
+`AbortSignal` the caller passed, so a superseded search is cancelled on the
+wire rather than ignored when it lands — and both raise `GifQuotaError` on a
+429, the one failure the room treats differently, because it ends the game
+rather than losing a board. The
 three switches that land on the offline shelf are unchanged in behaviour and
 moved in location: `NEXT_PUBLIC_GIFS_STUB=1`, the `?gifs=stub` lever, and a
 missing key outside production are all resolved in `lib/gifs/source.ts`, which
@@ -1374,12 +1377,13 @@ graph LR
   B["lib/bots/<br/><i>types — contract only, nothing fetches<br/>personas · stub · claude · source · budget<br/>prompt — server side, never in the bundle</i>"]
   BTR["app/api/bots/turn<br/><i>verifySeat, then the model</i>"]
   EX["lib/export/<br/><i>types · budget · layout · labels — pure<br/>fonts · frames · compose · encode · meme<br/>standings · deliver · useExport · jobs</i>"]
-  MD["lib/media.ts<br/><i>captionLines · CHARS_PER_LINE · mediaAspect</i>"]
+  MD["lib/media.ts<br/><i>captionLines · CHARS_PER_LINE · mediaAspect<br/>mediaKey — what makes two MediaRefs one GIF</i>"]
   CDN["The provider's CDN<br/><i>static.klipy.com · media.giphy.com</i>"]
   FLG["flags.ts<br/><i>export-media · read by the room page,<br/>never by lib/</i>"]
   U -->|"useRoom() · useChat() · publish(event)<br/>announcementLine · ROOM_FACE — the words,<br/>rendered where they are read"| R
   U -->|"useExport() · memeJob · standingsJob —<br/>Reveal · Vote · Score · Podium"| EX
-  U -->|"MediaCard — captionLines, the step as a class"| MD
+  U -->|"MediaCard — captionLines, the step as a class<br/>GifPanel · ComposeScreen — mediaKey, per tile"| MD
+  G -->|"selectors: takenMedia keys an entry's src<br/>the same way the picker keys a tile"| MD
   EX -->|"captionLines — the same step, as a font size"| MD
   EX -->|"providerOf · descriptorFor — whose mark"| F
   EX -->|"avatarUri(seed, size) — a sized face for a canvas"| AV
@@ -1403,6 +1407,7 @@ graph LR
   R -.->|"fetch — a signed seat, then a token"| TKR
   TKR --> ABL
   F -.->|"toMediaRef → MediaRef"| G
+  G -->|"create · fixtures · reducer:<br/>sampleAt · toMediaRef — the shelf<br/>a round falls back to"| F
   R -->|"BotPool — botBrain() · personaFor · budgetSpent"| B
   B -->|"claude.ts turns a query into a picture,<br/>in the browser — the key lives there"| F
   G -->|"reducer: asBotDifficulty, the way it narrows a hat"| B
@@ -1432,6 +1437,19 @@ on the lane. The allowlist sits in `lib/gifs/` rather than beside the store
 that calls it because it is a fact about where this app's pictures come from,
 not about how a room talks — the same reasoning that put `GifResult` there
 instead of in `components/`.
+
+**The taken-GIF rule added one more, `lib/game/` → `lib/media.ts`**, and it
+points the same way. `selectors.ts` keys an entry's `src` with `mediaKey` so
+the set it hands the picker is comparable with the keys the picker takes off
+its own tiles — one rule in one file rather than two string trims that could
+disagree. `mediaKey` is pure and has neither a DOM nor a fetch behind it, which
+is what *pure* means on the `lib/game/` node: the core is free of I/O, not of
+imports. It has always reached sideways for `lib/hats.ts` — `asHatId` in
+`create.ts` and the reducer, `CROWN` in the selectors — and
+for `lib/gifs/`'s `sampleAt` and `toMediaRef` — the shelf a brief falls back to
+when nobody picked — and that second one is drawn now rather than implied by
+the dotted arrow beside it, which is data flow: a search result *becomes* a
+`MediaRef`.
 
 **Bots added four arrows and one pair that has to be read carefully.** Three are
 ordinary: `lib/room/` → `lib/bots/` is `BotPool` resolving a brain,
@@ -1540,6 +1558,26 @@ them drifting again. The floor under all of it is `authorize.ts`, which now
 refuses a multi-entry rank ballot in a single-vote room: the mismatch was
 reachable from any client, not only from the screen that happened to draw the
 slots.
+
+**Two settlements changed since, and both are the reducer's.** `tally` seeds
+every entry at zero and sends whatever is level at the top to `tiebreak` — so a
+vote clock that ran out on an empty ballot box used to send the *whole field*
+to a duel drawn for two, and `resolveTiebreak` settled it the way it settles
+any persisting tie, a coin flip on the seed, which then paid `TIEBREAK_BONUS`
+to a round nobody scored. Now a best of zero commits the `RoundResult` with
+`winnerEntryId: ''` and an empty `ranking`, and awards nothing: `revealCopy`
+carries the branch ("Nobody voted. Nobody wins."), `RevealScreen` draws no card
+and builds no export job, and `revealWinner`, `runnersUp` and
+`myRoundPlacement` all read empty. **An empty `winnerEntryId` is a legal
+result**, and anything new that reads `history` has to expect one. The other is
+the duel's own outcome: `pending.ranking` was sorted on the pre-duel points,
+where the contenders were level by definition, so its head was whoever
+submitted first and the reveal could tell the duel's loser they came first —
+`resolveTiebreak` now hoists the winner to the front. A persisting tie is still
+the seed's: the role holder sits the round out and never had the "deciding
+vote" `tiebreakCopy` used to promise, so the copy says coin flip now, and a
+contender is barred from voting for their *own* entry, not from the duel.
+[ADR 0037](./adr/0037-a-round-nobody-voted-in-has-no-winner.md).
 
 `lib/gifs/` is the second lib, and it sits beside the room rather than under it.
 The route handler, the browser hook and now the landing page's server render all
@@ -2341,11 +2379,16 @@ now)` is a pure function, and the `now` it reads comes from the room clock.
 
 ### Dev levers
 
-Thirteen now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
-`?format=` · `?out=` · `?as=` · `?gifs=` · `?transport=` · `?brain=` · `?export=`,
-read once in `RoomProvider` and gated to
+Fifteen now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
+`?format=` · `?out=` · `?submitted=` · `?votes=` · `?as=` · `?gifs=` ·
+`?transport=` · `?brain=` · `?export=`, read once in `RoomProvider` and gated to
 non-production in `lib/room/levers.ts` — in a production build every lever reads
-as absent whatever the query string says. **`?transport=ably|broadcast` is phase
+as absent whatever the query string says. Two more live in the same parser and
+are not a room's levers at all: `?guests=n` on `/host` and the `?auto=i` it
+writes onto each `/join/[code]` tab it opens, which are how a development room
+is watched from several real seats at once (`lib/room/devGuests.ts`, capped at
+six, staggered so the host claims the room first and no two tabs write the
+shared identity record at the same moment). **`?transport=ably|broadcast` is phase
 5's**, and it stands to `ABLY_STUB` exactly as `?gifs=stub` stands to
 `NEXT_PUBLIC_GIFS_STUB`: the URL wins, so one page load can be moved onto the
 tab bus without restarting the server. **`?gifs=` answers two questions now** —
@@ -2393,6 +2436,24 @@ one that still has someone to wait for and still offers the host a button, is
 reached only by the *compose* clock expiring on a straggler, which is what
 `out` reproduces: it submits all but the last `n`, then times the phase out from
 under them.
+
+**`?submitted=n` is the same lever one phase earlier, and it exists because a
+fixture boots a compose face nobody has answered yet.** It submits the first
+`n` competitors before handing the room over — capped one short of the field,
+since the last entry is what flips `compose` to `waiting` — so the answer face
+can be opened with somebody else's GIF already locked in, which is the only
+configuration where a taken tile exists to look at. A real room reaches it by
+being slower than someone else.
+
+**`?votes=n` is `?out=`'s twin one phase later.** Every fixture casts every
+ballot, and the last one landing is what closes the vote — so a `?phase=reveal`
+jump always had a winner. `votes` casts the first `n` and lets the clock run
+out on the rest; `votes=0` is the round nobody voted in, which the reducer
+commits with no winner rather than sending the whole field to a duel
+([ADR 0037](./adr/0037-a-round-nobody-voted-in-has-no-winner.md)). Zero being
+the point, `readLevers` takes it only when the URL actually says it —
+`Number(null)` is `0` too, and would have read every harness URL as an empty
+ballot box.
 
 **Both of those levers now reach the boot screen, and neither gained a
 branch.** `?fast=` divides the interstitial's two pacing floors exactly as it
@@ -2559,6 +2620,7 @@ graph BT
   Static -->|"HeroWall — one tuning set per cell,<br/>while the real GIF is still out"| Landing
   Static -->|"one set per picture, seeded off the src —<br/>so no two tiles in a grid run the same field"| Tuned
   Static --> Gallery
+  Static -->|"GifPanel's placeholder tiles — the set alone,<br/>at a reserved ratio, while a board is out"| Overlay
   Tuned -->|"GifPanel's board tile — tuning={board},<br/>so the chat popover is deliberately out"| Overlay
   Tuned -->|"MediaCard's img — the client boundary is the leaf,<br/>so the card is still a server component"| Media
   Tuned -->|"ChatMessage — the attachment,<br/>and the quote's own thumb"| Chat
@@ -2624,7 +2686,11 @@ overlay, the room-wide reaction floaters and one snackbar at a time. A
 screen owns its content column and nothing else, which is what stops nine
 screens each growing their own header. What a screen may ask of the chrome is
 `RoomShellContext`, and it stays deliberately tiny: `notify()`, `openHelp()`,
-and — since phase 7 — `startReply(quote)` with the `replyTo` it stages. The
+and — since phase 7 — `startReply(quote)` with the `replyTo` it stages.
+`notify` takes a second argument now, `tone?: SnackbarTone`, defaulting to
+`'confirm'`: a screen's own toast is nearly always the room agreeing, and the
+`warning` mark used to be reachable only from the room-refusal lane, which is
+the wrong owner for "somebody just took the GIF you had staged". The
 reply belongs there by the same test as the other two: it is raised in the
 content column and consumed in the rail, so it reaches outside the screen that
 produced it. The context falls back to a no-op
@@ -3476,13 +3542,14 @@ sequenceDiagram
 
   S->>U: mount, only where a board draws → trending<br/>Enter → search(q) · Shuffle → more()
   Note over U: unmetered. Nothing rations a board<br/>and nothing counts them down
-  Note over U: aborts the in-flight request<br/>and takes a monotonic ticket
-  U->>R: fetchBoard(q, cursor, 50)
+  Note over U: aborts the in-flight request on the wire<br/>and takes a monotonic ticket
+  U->>R: fetchBoard(q, cursor, 50, signal)
   alt stubbed, or no key outside production
     R->>P: SAMPLE_GIFS filtered on keywords
     P-->>R: source: 'sample' · hasMore: false
   else
-    R->>V: search or trending · SFW pinned · limit 50 · 4s timeout
+    R->>V: search(q, key, signal) or trending · SFW pinned · limit 50
+    Note over V: withTimeout(signal, 8s) — the caller's abort<br/>and the adapter's own timeout, as one
     V-->>R: items · ads · hasMore
     Note over V,R: 429 → GifQuotaError → game/gifsExhausted
     Note over R: recordCall() — the ledger counts<br/>the call that failed too
@@ -3490,6 +3557,7 @@ sequenceDiagram
   R-->>U: GifSearchResponse
   Note over U: a stale ticket is discarded,<br/>so two searches cannot land out of order
   U-->>S: results · ads · status · message · descriptor
+  Note over S: react mode adds a second input the provider<br/>never sees: taken = takenMedia(state, selfId),<br/>which marks tiles rather than filtering the board
 ```
 
 There is no debounce anywhere in that path, on purpose: the design's picker says
@@ -3499,8 +3567,14 @@ path at all — the field is controlled by `query` so a chip and a search both
 land in it, and `setQuery` is the keystroke half, which changes the field and
 fetches nothing. It exists because both boards passed a no-op change handler
 against that controlled field and the search box was frozen. What is left is the
-stale guard. A picked result becomes a `MediaRef` through `toMediaRef()` and is
-broadcast to the room — which is why the sample shelf is SVG files under
+stale guard, and the abort under it is real now: `fetchBoard` and
+`GifProvider.search` take the hook's `AbortSignal`, each adapter folds it into
+its own timeout through `withTimeout`, and a superseded search is cancelled on
+the wire rather than run to completion and discarded on arrival — which is also
+what tears down StrictMode's first trending call. Before this the hook's
+`AbortController` was decorative and only the ticket kept a stale board off the
+screen; the ticket stays as the second guard. A picked result becomes a
+`MediaRef` through `toMediaRef()` and is broadcast to the room — which is why the sample shelf is SVG files under
 `public/media/` rather than data URIs, since a full-state message has to fit
 inside Ably's 64KB cap. `public/media/` holds 28 files at its top level: twelve
 animated tiles and a `-still` companion for each, because stopping an animated
@@ -3579,6 +3653,61 @@ markup on the server. `tuning` turns the whole thing off where nothing is
 coming — `false` on a `MediaCard` whose entry has no media at all, a settled
 nothing rather than a wait, and `tuning={board}` on `GifPanel`, which keeps a
 dozen flickering thumbnails off a live chat rail.
+
+**A board on its way is drawn as the shapes it will take, and the last board
+is not left standing in for it.** Every empty-state branch in `GifPanel` used
+to be gated on the board being empty, so a re-search gave no sign at all and a
+tap on a still-live tile submitted a GIF from the query the player had just
+abandoned. While `status` is `loading` the tiles are replaced by placeholders:
+the same `.tile` box, at the last board's own ratios so the columns do not
+reflow — a first search has none to lend and gets a stock set, eight on the
+board and six in the popover — with `TvStatic` behind and nothing over it.
+That is `TunedImage` without the image, and the one place `GifPanel` reaches
+for the atom directly. The panel carries `aria-busy` and a visually hidden
+"Looking…". It is not gated on `tuning`, so the popover runs the set while a
+board is out — a wait rather than a thumbnail. An error keeps the last board
+that did come back under its line, because a blank one would leave nothing to
+pick while the retry is being considered; and the `message` note is drawn on
+every non-error board rather than only a populated one, which had hidden
+"these are samples" on exactly the empty board that needed explaining.
+
+**A board now carries a second input, and it comes from the room rather than
+from the provider.** In `react` mode every competitor answers with a GIF, and
+two of them picking the same one splits the joke across two identical vote
+cards. `takenMedia(state, viewerId)` in `lib/game/selectors.ts` is the set of
+GIFs the *others* have already locked in this round, which costs **no new wire
+traffic at all**: every client holds `round.entries` during `compose` —
+`project()` redacts authorship only once voting opens — so the set is a read
+over state the room is already broadcasting, and it moves on the next `rev` like
+everything else. `ComposeScreen` computes it in a `useMemo` and hands it down
+through `RoundPicker` to `GifPanel`'s new `taken` prop; a caption room's set is
+empty, because every answer there is text. The key is `mediaKey(src)` from
+`lib/media.ts` — `MediaRef` has no id, and Klipy's bare CDN URL compares cleanly
+while Giphy hangs a per-request `?cid=&rid=` tail off every result, so two
+players who searched separately hold byte-different strings for one GIF.
+Everything from `?` or `#` on is dropped.
+
+**The tile is marked, not removed, and it stays a control.** Both providers
+forbid filtering or reordering a board, so a taken tile keeps its place and
+wears `MediaCard`'s own-entry look — picture at 0.4 under `$scrim-own-entry`,
+with a "Taken" pill on `$scrim-tally` — and carries `aria-disabled="true"`
+rather than `disabled`, so it is still in the tab order for a reader who needs
+to find out *why* it is not an option (`aria-label` leads with "Taken.", and
+nobody is named on it: entries are anonymous until the reveal). That is rule
+10's split applied to a reason that lives off-screen —
+[ADR 0032](./adr/0032-a-blocked-label-counts-what-is-missing.md) — and the
+choice to keep the rule out of `authorize` is
+[ADR 0038](./adr/0038-a-taken-gif-is-marked-in-the-picker-not-refused-by-the-reducer.md):
+`BotPool` discards the boolean `apply()` returns and has no retry, and the
+offline shelf is twelve tiles, so a refusal in the reducer would strand bot
+rounds in exactly the configuration the whole suite runs in. Two players who
+lock the same GIF inside one round trip both land, and the reveal shows two of
+it. On the screen's own side, a staged pick that someone else takes is
+**derived, not cleared**: `stagedTaken`/`staged` read the ring and the lock
+straight off the board rather than unsetting state in an effect, which is the
+`react-hooks/set-state-in-effect` rule, and the one effect left fires a single
+`warning` snackbar on the transition. `composeCopy` says the rule before it can
+bite — "First to lock a GIF keeps it."
 
 A second pass took the five remote pictures the first one left: the composer's
 staged attachment and its "Replying to" thumb, a sent message's attachment and
@@ -3796,8 +3925,8 @@ sequenceDiagram
   Note over P: and levers.export !== 'off' — the lever only takes
   P-->>S: useRoomFlags().exportMedia — a boolean, or no key at all
 
-  S->>J: memeJob(winner) · standingsJob(code, title, rows)
-  Note over J: a job is an id, an artefact, a filename<br/>and a render() that import()s its renderer
+  S->>J: memeJob(winner) · standingsJob(code, title, rows, round)
+  Note over J: a job is an id, an artefact, a filename<br/>and a render() that import()s its renderer —<br/>the id names the round, because the cache is keyed on it
   opt the reveal only
     S->>X: prepare(job) — at idle, keyed on the winner's entry
   end
@@ -3852,7 +3981,11 @@ design decision.** `navigator.share` must run inside the tap's activation
 window, and a long re-encode does not fit in one: the reveal pre-renders at
 idle so the tap shares a file that already exists, and everywhere else a sheet
 that refuses a stale gesture comes back `expired`, the file is kept in a small
-cache, the label turns to "Send GIF" and one more tap sends it. Safari's
+cache, the label turns to "Send GIF" and one more tap sends it. That cache is
+keyed on the job's id and nothing else, which is why `standingsJob` takes the
+round and its id is `standings-<code>-<round>` — `final` on the podium — rather
+than a constant: a score screen survives a round boundary, and a constant id
+handed the second round the first round's bytes. Safari's
 clipboard wants the `ClipboardItem` *constructed* during the gesture, so for a
 PNG on a laptop `copyPng` is called synchronously from the click with a promise
 for the bytes, and the render fills it in afterwards.
@@ -4060,8 +4193,8 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-444 unit tests (`lib/**/*.test.ts`, node, over 30 files) and 622 Playwright
-tests across the two viewports — 311 per project, over 33 spec files. Not all of
+452 unit tests (`lib/**/*.test.ts`, node, over 30 files) and 634 Playwright
+tests across the two viewports — 317 per project, over 33 spec files. Not all of
 them run: 23 skip on viewport (a docked rail exists only above `md`, a
 floating dock only below it), which is a branch of the layout rather than a hole
 in the coverage. 23 *tests* out of sixteen viewport `test.skip` call sites —
@@ -4424,6 +4557,19 @@ against a live Klipy round and is recorded as such in
 [ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md). It
 joins Ably and the model as a road the suite cannot drive without a network,
 and this file says so rather than letting the one-frame specs imply otherwise.
+
+**The taken GIF's share is 5 unit tests and 3 specs per project, and the split
+says where the rule lives.** `lib/media.test.ts` is 2 over `mediaKey` — Giphy's
+per-request tail dropped, a bare CDN URL and a shelf path left alone — and
+`lib/game/selectors.test.ts` is 2 over `takenMedia`: that it is every *other*
+competitor's media entry, keyed without its query string, and that a caption
+room's set is empty. `lib/room/levers.test.ts` gained the one for `?submitted=`.
+The browser half is in `e2e/compose.spec.ts`, where the claims are the ones a
+pure test cannot make: the shelf still shows all twelve tiles with one of them
+marked, the marked tile keeps `aria-disabled="true"` and focus rather than
+`disabled`, a forced click on it stages nothing and leaves `aria-pressed`
+false, no player is named on it, and the tile beside it still works. The other
+two hold the copy before anything is taken and the empty caption-room case.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

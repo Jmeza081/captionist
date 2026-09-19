@@ -37,6 +37,20 @@ export type BoardSource = GifProviderId | 'sample'
  * control to save a call and ADR-0026 put it back, which is the case this type
  * was kept alive for.
  */
+/**
+ * The caller's signal and the adapter's own timeout, as one.
+ *
+ * Either ends the request: the search being superseded, or the provider
+ * taking longer than anyone will wait. Without a caller's signal it is just
+ * the timeout, which is what every adapter used on its own before — when the
+ * hook's `AbortController` was decorative and every abandoned search still
+ * completed on the wire.
+ */
+export function withTimeout(signal: AbortSignal | undefined, ms: number): AbortSignal {
+  const timeout = AbortSignal.timeout(ms)
+  return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 export interface GifCursor {
   readonly provider: GifProviderId
   readonly page: number
@@ -171,8 +185,12 @@ export interface GifProvider {
    * Throws `GifQuotaError` when the allowance is spent and `GifProviderError`
    * for anything else. Never returns a partial board — a caller has no way to
    * tell a short page from a spent one.
+   *
+   * `signal` is the caller's — a superseded search gets cancelled on the wire,
+   * not merely ignored when it lands. Each adapter combines it with its own
+   * timeout, so a provider that never answers still gives up on its own.
    */
-  search(query: GifQuery, apiKey: string): Promise<GifBoard>
+  search(query: GifQuery, apiKey: string, signal?: AbortSignal): Promise<GifBoard>
   /**
    * Tell the provider one of its GIFs was chosen.
    *

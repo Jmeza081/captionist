@@ -170,7 +170,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   }, [])
 
   const notify = useCallback(
-    (message: string) => push(message, 'confirm'),
+    (message: string, tone: SnackbarTone = 'confirm') => push(message, tone),
     [push],
   )
 

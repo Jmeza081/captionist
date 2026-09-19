@@ -65,6 +65,25 @@ async function noClipboardImage(page: Page): Promise<void> {
 
 const sharedFiles = (page: Page) => page.evaluate(() => window.__shared ?? [])
 
+/**
+ * Exactly one file reached the sheet.
+ *
+ * Not `expect.poll(...).toHaveLength(1)`: that succeeds the instant the array
+ * first reaches one and never looks again, so a second `share()` landing a
+ * beat later was invisible to every test here — which is the shape of the
+ * "duplicate share image" report, and the suite could not have caught it.
+ * Wait for the first, give a second one room to arrive, then count.
+ */
+async function expectSharedOnce(page: Page): Promise<Shared> {
+  await expect.poll(() => sharedFiles(page)).toHaveLength(1)
+  await page.waitForTimeout(500)
+  const files = await sharedFiles(page)
+  expect(files).toHaveLength(1)
+  const [file] = files
+  if (!file) throw new Error('unreachable: one file was just counted')
+  return file
+}
+
 async function grantClipboard(context: BrowserContext): Promise<void> {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
 }
@@ -80,8 +99,7 @@ test.describe('exporting the winning meme', () => {
     await expect(key).toBeVisible()
     await key.click()
 
-    await expect.poll(() => sharedFiles(page)).toHaveLength(1)
-    const [file] = await sharedFiles(page)
+    const file = await expectSharedOnce(page)
     expect(file?.name).toBe('captionist-round-1.gif')
     expect(file?.type).toBe('image/gif')
     expect(file?.size).toBeGreaterThan(200)
@@ -113,8 +131,7 @@ test.describe('exporting the winning meme', () => {
     await sheetWithFiles(page)
     await page.goto(REVEAL_REACT)
     await page.getByRole('button', { name: 'Share GIF' }).click()
-    await expect.poll(() => sharedFiles(page)).toHaveLength(1)
-    expect((await sharedFiles(page))[0]?.type).toBe('image/gif')
+    expect((await expectSharedOnce(page)).type).toBe('image/gif')
   })
 
   test('is a guest’s to take as much as the host’s', async ({ page }) => {
@@ -133,7 +150,7 @@ test.describe('exporting the winning meme', () => {
     await key.focus()
     await expect(key).toBeFocused()
     await page.keyboard.press('Enter')
-    await expect.poll(() => sharedFiles(page)).toHaveLength(1)
+    await expectSharedOnce(page)
   })
 
   test('paints the first frame the same on both visits', async ({ page }) => {
@@ -164,8 +181,7 @@ test.describe('exporting a card from the vote', () => {
     await expect(page.getByRole('button', { name: 'Share your answer as a GIF' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Share entry 2 as a GIF' }).click()
-    await expect.poll(() => sharedFiles(page)).toHaveLength(1)
-    const [file] = await sharedFiles(page)
+    const file = await expectSharedOnce(page)
     expect(file?.name).toBe('captionist-round-1-entry-2.gif')
     expect(file?.type).toBe('image/gif')
   })
@@ -214,8 +230,7 @@ test.describe('exporting the standings', () => {
     await expect(pills).toHaveText([/Rematch/, 'Back to the start', 'Share image'])
 
     await page.getByRole('button', { name: 'Share image' }).click()
-    await expect.poll(() => sharedFiles(page)).toHaveLength(1)
-    expect((await sharedFiles(page))[0]?.type).toBe('image/png')
+    expect((await expectSharedOnce(page)).type).toBe('image/png')
 
     await page.goto(`${PODIUM}&as=p2`)
     await expect(page.getByRole('button', { name: 'Share image' })).toBeVisible()

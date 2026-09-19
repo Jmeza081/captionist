@@ -351,6 +351,52 @@ describe('scoring', () => {
     // 3 ranking points plus the sudden-death bonus.
     expect(result?.points.p1).toBe(3 + 1)
   })
+
+  it('ranks the duel’s winner first, whichever entry was submitted first', () => {
+    let state = apply(room(3), 'p0', { type: 'game/started' })
+    state = expire(state)
+    state = apply(state, 'p0', {
+      type: 'round/subjectLocked',
+      subject: { kind: 'prompt', text: 'x' },
+    })
+    state = submitAll(state) // p1 -> r1-e1, p2 -> r1-e2
+    state = expire(state)
+    state = apply(state, 'p1', { type: 'round/ballotCast', ballot: { kind: 'rank', ranked: ['r1-e2'] } })
+    state = apply(state, 'p2', { type: 'round/ballotCast', ballot: { kind: 'rank', ranked: ['r1-e1'] } })
+    state = expire(state)
+    expectPhase(state, 'tiebreak')
+
+    // The *second* entry wins the duel this time.
+    state = apply(state, 'p1', { type: 'round/tiebreakVoted', choice: 'r1-e2' })
+    state = apply(state, 'p2', { type: 'round/tiebreakVoted', choice: 'r1-e1' })
+    state = apply(state, 'p0', { type: 'round/tiebreakVoted', choice: 'r1-e2' })
+
+    expectPhase(state, 'reveal')
+    const result = state.history[0]
+    expect(result?.winnerEntryId).toBe('r1-e2')
+    // The pre-duel ranking had the contenders level, in entry order — so its
+    // head was the loser, and the reveal told them they had come first.
+    expect(result?.ranking).toEqual(['r1-e2', 'r1-e1'])
+  })
+
+  it('crowns nobody when nobody voted, rather than sending the whole field to a duel', () => {
+    let state = apply(room(4), 'p0', { type: 'game/started' })
+    state = expire(state)
+    state = apply(state, 'p0', {
+      type: 'round/subjectLocked',
+      subject: { kind: 'prompt', text: 'x' },
+    })
+    state = submitAll(state)
+    state = expire(state) // waiting -> vote
+    state = expire(state) // the vote clock runs out on an empty ballot box
+
+    // Three entries level at zero is not a three-way tiebreak.
+    expectPhase(state, 'reveal')
+    const result = state.history[0]
+    expect(result?.winnerEntryId).toBe('')
+    expect(result?.ranking).toEqual([])
+    expect(Object.values(result?.points ?? {})).toEqual([0, 0, 0])
+  })
 })
 
 describe('a hat on the wire', () => {

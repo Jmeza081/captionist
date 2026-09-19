@@ -476,6 +476,11 @@ function tally(state: GameState, at: number): GameState {
   const best = Math.max(...Object.values(points), 0)
   const tied = round.entries.map((e) => e.id).filter((id) => (points[id] ?? 0) === best)
 
+  // Nobody voted. Every entry is level at zero, which used to send the whole
+  // field to a "duel" — five cards with `VS` between them, on a screen written
+  // for two. A round nobody scored has no winner, and says so.
+  if (best === 0) return commit(state, { ...result, winnerEntryId: '', ranking: [] }, at)
+
   if (tied.length > 1) {
     return enterPhase(
       { ...state, round: { ...round, tiebreak: { contenders: tied, votes: {}, pending: result } } },
@@ -499,8 +504,9 @@ function resolveTiebreak(state: GameState, at: number): GameState {
   const best = Math.max(...Object.values(counts), 0)
   const stillTied = tiebreak.contenders.filter((id) => (counts[id] ?? 0) === best)
 
-  // Still level after the deciding vote: the seed breaks it rather than
-  // looping the room through another fifteen seconds.
+  // Still level after the duel: a coin flip on the seed breaks it rather than
+  // looping the room through another fifteen seconds. Nobody's vote weighs
+  // more than anybody else's here, and `tiebreakCopy` says so.
   let winner = stillTied[0] ?? tiebreak.contenders[0] ?? ''
   let seed = state.seed
   if (stillTied.length > 1) {
@@ -513,7 +519,11 @@ function resolveTiebreak(state: GameState, at: number): GameState {
   const points = { ...tiebreak.pending.points }
   if (winnerAuthor) points[winnerAuthor] = (points[winnerAuthor] ?? 0) + TIEBREAK_BONUS
 
-  const result: RoundResult = { ...tiebreak.pending, winnerEntryId: winner, points }
+  // `pending.ranking` was sorted on the pre-duel points, where the contenders
+  // were level by definition — so its head was whoever submitted first, not
+  // whoever won, and the reveal told the duel's loser they came first.
+  const ranking = [winner, ...tiebreak.pending.ranking.filter((id) => id !== winner)]
+  const result: RoundResult = { ...tiebreak.pending, winnerEntryId: winner, points, ranking }
   return commit({ ...state, seed }, result, at)
 }
 

@@ -64,6 +64,20 @@ describe('url levers', () => {
     expect(parse('out=all').out).toBeUndefined()
   })
 
+  it('reads how many have already answered', () => {
+    expect(parse('submitted=2').submitted).toBe(2)
+    expect(parse('submitted=0').submitted).toBeUndefined()
+    expect(parse('submitted=lots').submitted).toBeUndefined()
+  })
+
+  it('reads a ballot count, zero included, and only when the URL says one', () => {
+    expect(parse('votes=0').votes).toBe(0)
+    expect(parse('votes=2').votes).toBe(2)
+    expect(parse('').votes).toBeUndefined()
+    expect(parse('votes=-1').votes).toBeUndefined()
+    expect(parse('votes=some').votes).toBeUndefined()
+  })
+
   it('caps bots at the room ceiling', () => {
     expect(parse('bots=500').bots).toBe(19)
   })

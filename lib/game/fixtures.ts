@@ -64,6 +64,23 @@ export interface FixtureOptions {
    * is what this reproduces.
    */
   out?: number
+  /**
+   * How many competitors have already answered when a `compose` fixture boots.
+   *
+   * None by default. The answer face with other people's entries already in
+   * is where a taken GIF shows, and a real room reaches it by being slower
+   * than someone else — so that is what this reproduces. Capped one short of
+   * the field, or the last entry would flip the phase to `waiting`.
+   */
+  submitted?: number
+  /**
+   * How many ballots are cast before the vote clock runs out.
+   *
+   * Everyone by default. `0` is the round nobody scored — the reveal with no
+   * winner — which a real room reaches by the clock running out on an empty
+   * ballot box, so that is what this reproduces.
+   */
+  votes?: number
 }
 
 /** A lobby with `players` people in it, coloured and named like the design's. */
@@ -127,9 +144,16 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
         ? { kind: 'media', media: toMediaRef(sampleAt(0)) }
         : { kind: 'prompt', text: 'The deploy went out at 4:59pm on a Friday.' },
   })
-  if (phase === 'compose') return state
-
   const competitors = state.players.filter((p) => p.id !== state.round?.roleHolderId)
+
+  if (phase === 'compose') {
+    const early = Math.min(Math.max(options.submitted ?? 0, 0), competitors.length - 1)
+    competitors.slice(0, early).forEach((p, i) => {
+      state = step(state, p.id, { type: 'round/entrySubmitted', answer: answerFor(state, i) })
+    })
+    return state
+  }
+
   // The last `out` competitors never submit — see `FixtureOptions.out`. With
   // none held back the final entry flips `compose` to `waiting` on its own;
   // with some, the phase has to be timed out from under them, which is exactly
@@ -163,7 +187,7 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
     return state
   }
 
-  for (const p of state.players) {
+  for (const p of state.players.slice(0, options.votes ?? state.players.length)) {
     const own = state.round?.entries.find((e) => e.authorId === p.id)
     const ranked = entryIds.filter((id) => id !== own?.id).slice(0, 3)
     // Through `ballotFrom` rather than a hardcoded `rank`, so a single-vote
@@ -174,6 +198,9 @@ export function fixtureFor(phase: RoomPhase, options: FixtureOptions = {}): Game
       state = step(state, p.id, { type: 'round/ballotCast', ballot })
     }
   }
+  // With ballots held back the last one never closes the vote, so the clock
+  // has to — see `FixtureOptions.votes`.
+  if (state.phase === 'vote') state = expire(state)
   if (state.phase === 'tiebreak') state = expire(state)
   if (phase === 'reveal') return state
 

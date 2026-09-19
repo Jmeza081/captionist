@@ -186,7 +186,7 @@ export function AtomsPanel() {
             <StatusPill context="media" confirmed>
               Locked in
             </StatusPill>
-            <StatusPill note="Jesska and Melania can’t vote in their own duel">
+            <StatusPill note="Jesska and Melania can’t vote for their own entries">
               4 of 7 have voted
             </StatusPill>
           </Inline>

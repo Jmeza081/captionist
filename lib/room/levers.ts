@@ -48,6 +48,20 @@ export interface Levers {
    */
   out?: number
   /**
+   * How many competitors a `?phase=compose` fixture has already answered for.
+   *
+   * The answer face with someone else's GIF already locked in. See
+   * `FixtureOptions.submitted`.
+   */
+  submitted?: number
+  /**
+   * How many ballots a `?phase=reveal` fixture casts before the clock runs out.
+   *
+   * `votes=0` is the round nobody voted in — the reveal with no winner. See
+   * `FixtureOptions.votes`.
+   */
+  votes?: number
+  /**
    * Which shelf a board comes from, and whose.
    *
    * `stub` serves offline placeholder art instead of calling anyone, which
@@ -145,6 +159,14 @@ export function readLevers(
 
   const out = Number(search.get('out'))
   if (Number.isInteger(out) && out > 0) levers.out = out
+
+  // Zero is the whole point of this one, so `Number(null)` cannot stand in for
+  // it: the lever is read only when the URL actually says it.
+  const submitted = Number(search.get('submitted'))
+  if (Number.isInteger(submitted) && submitted > 0) levers.submitted = submitted
+
+  const votes = Number(search.get('votes'))
+  if (search.get('votes') !== null && Number.isInteger(votes) && votes >= 0) levers.votes = votes
 
   const gifs = search.get('gifs')
   if (gifs === 'stub' || gifs === 'live' || gifs === 'giphy' || gifs === 'klipy') {

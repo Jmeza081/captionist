@@ -22,6 +22,20 @@ export function hasImage(src: string | undefined): boolean {
 }
 
 /**
+ * What makes two `MediaRef`s the same GIF.
+ *
+ * `MediaRef` carries no id — `src` is the only key, and it is not uniformly
+ * stable. Klipy's is a bare CDN URL and compares cleanly; Giphy's carries
+ * per-request `?cid=…&rid=…` parameters, so two players who searched
+ * separately hold byte-different strings for one GIF. Everything after the
+ * path is dropped, which is origin + pathname without asking `URL` to parse a
+ * relative shelf path.
+ */
+export function mediaKey(src: string): string {
+  return src.split(/[?#]/, 1)[0] ?? src
+}
+
+/**
  * The band a card's shape is allowed to take.
  *
  * A meme is roughly square, and the design draws every card that way — but a

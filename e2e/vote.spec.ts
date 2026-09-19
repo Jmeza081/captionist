@@ -92,7 +92,7 @@ test.describe('sudden death', () => {
     await page.goto('/room/DEV?seed=42&phase=tiebreak&as=p3&gifs=stub')
 
     await expect(page.getByText('Somebody has to break this tie.')).toBeVisible()
-    await expect(page.getByText(/can’t vote in their own duel/)).toBeVisible()
+    await expect(page.getByText(/can’t vote for their own entries/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Vote this one' })).toHaveCount(2)
   })
 
@@ -105,12 +105,12 @@ test.describe('sudden death', () => {
     await expect(page.getByRole('button', { name: 'Vote this one' })).toHaveCount(1)
   })
 
-  test('names the role that breaks a persisting deadlock, per mode', async ({ page }) => {
+  test('calls a persisting deadlock what it is — a coin flip', async ({ page }) => {
+    // It used to promise the role holder "the deciding vote", which the
+    // reducer never gave them.
     await page.goto('/room/DEV?seed=42&phase=tiebreak&as=p2&gifs=stub')
-    await expect(page.getByText(/The Captionist gets the deciding vote/)).toBeVisible()
-
-    await page.goto('/room/DEV?seed=42&phase=tiebreak&mode=react&as=p2&gifs=stub')
-    await expect(page.getByText(/The Prompter gets the deciding vote/)).toBeVisible()
+    await expect(page.getByText(/we flip a coin/)).toBeVisible()
+    await expect(page.getByText(/deciding vote/)).toHaveCount(0)
   })
 
   test('takes a vote and stops asking for another', async ({ page }) => {

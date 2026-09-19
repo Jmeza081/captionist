@@ -1,6 +1,7 @@
 import { GifProviderError, GifQuotaError } from './errors'
 import { adSessionId } from './customer'
 import { KLIPY } from './descriptors'
+import { withTimeout } from './provider'
 import type { GifAd, GifBoard, GifProvider, GifQuery } from './provider'
 import type { GifResult } from './types'
 
@@ -158,7 +159,11 @@ function toResult(item: KlipyItem, query: string | undefined): GifResult | undef
   }
 }
 
-async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
+async function search(
+  query: GifQuery,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<GifBoard> {
   const term = query.q.trim()
   const params = new URLSearchParams({
     // Klipy pages from one; the cursor counts from zero.
@@ -204,7 +209,7 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
   // The app key is a **path segment**, not a query parameter and not a header.
   const url = `${ENDPOINT}/${apiKey}/gifs/${term ? 'search' : 'trending'}?${params.toString()}`
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+  const response = await fetch(url, { signal: withTimeout(signal, TIMEOUT_MS) })
 
   if (response.status === 429) {
     throw new GifQuotaError('Klipy’s hourly limit is spent', 'klipy')

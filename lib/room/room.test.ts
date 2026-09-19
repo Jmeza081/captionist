@@ -158,12 +158,26 @@ function harness(mode: GameMode, bots: number, seed = 42): Harness {
 
   engine.start()
 
+  /**
+   * Let every promise chain in flight finish.
+   *
+   * `bus.flush()` waits on the *bus* and resolves at once when it is quiet —
+   * it is not a microtask drain. A bot's ballot is several awaits deep
+   * (fallback, covering, dwell) before it reaches `apply`, so firing the phase
+   * clock straight after a flush expired every vote on an empty box. Nobody
+   * noticed because the rounds still "had winners": the tiebreak's coin flip
+   * paid its bonus to one of five zero-vote entries, which is the defect the
+   * reducer no longer has.
+   */
+  const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+
   const run = async (): Promise<GameState> => {
     for (let step = 0; step < 4_000; step++) {
       await bus.flush()
       // Autopilot after the bus settles, so joins land before the game starts.
       autopilot(engine.snapshot())
       await bus.flush()
+      await settle()
       if (engine.snapshot().phase === 'podium') break
       if (!pending) continue
       const due = pending
@@ -204,9 +218,14 @@ describe('the room spine', () => {
     const final = await h.run()
     const scores = scoresFrom(final.history)
 
-    // Every round has a winner, so the table cannot be empty.
+    // Every round was voted in, so the table cannot be empty — and it is
+    // ballots that filled it, not a tiebreak bonus on a round nobody scored.
     const total = Object.values(scores).reduce((a, b) => a + b, 0)
     expect(total).toBeGreaterThan(0)
+    for (const result of final.history) {
+      expect(result.winnerEntryId).not.toBe('')
+      expect(Object.values(result.points).some((p) => p > 0)).toBe(true)
+    }
     for (const id of Object.keys(scores)) {
       expect(final.players.some((p) => p.id === id)).toBe(true)
     }

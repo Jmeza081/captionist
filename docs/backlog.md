@@ -1,8 +1,10 @@
 # Backlog
 
-What is left after phase 9: a launch gate, five defects and six wishlist items.
-Compiled from playtest feedback and re-derived against the code, because the
-report named symptoms and the code names causes.
+What is left after phase 9: a launch gate and six wishlist items. The five
+defects that were here were fixed on 2026-09-14 — their entries stay below,
+marked, because each records what was actually wrong and the decision that
+settled it. Compiled from playtest feedback and re-derived against the code,
+because the report named symptoms and the code names causes.
 
 > **Read [`roadmap.md`](./roadmap.md) first.** This file is what is *left*; that
 > one is what was *built*, and its "Before launch" gate is the source of truth
@@ -40,7 +42,20 @@ this is the index.
 
 ## 1 — Defects
 
+**All five fixed on 2026-09-14.** Each entry keeps its diagnosis and now
+carries the resolution in bold at the top. The two non-defects (§1.4, §1.5)
+stay as records.
+
 ### 1.1 Tiebreak — four separate defects
+
+**Fixed.** (a) `resolveTiebreak` hoists the duel's winner to the head of
+`ranking`. (b) The copy now says "Still level after that, and we flip a coin" —
+the role holder does *not* get a deciding vote; they sit the round out and
+weighting their vote would be a rule change. (c) The exclusion line reads
+"can't vote for their own entries". (d) A zero-ballot round commits with no
+winner and no points, and the reveal says "Nobody voted. Nobody wins." All four
+are in [ADR 0037](./adr/0037-a-round-nobody-voted-in-has-no-winner.md).
+Reachable at `?phase=reveal&votes=0`.
 
 Not one bug. Ordered by what a player notices.
 
@@ -92,6 +107,9 @@ zero-ballot round.
 
 ### 1.2 Two strings promise uploads
 
+**Fixed.** "…whatever the search box coughs up." and "Or arguing with the
+search box." — no provider named, no folder promised.
+
 [ADR 0014](./adr/0014-uploads-are-not-a-feature.md) removed the feature and its
 scaffolding, but `briefCopy` in `lib/game/selectors.ts` still promises a personal
 image source:
@@ -110,6 +128,15 @@ same pass.
 it as a record of what was designed. Do not "fix" it.
 
 ### 1.3 The picker gives no feedback on a re-search
+
+**Fixed.** While a board is out `GifPanel` takes the last one down and draws
+placeholder tiles — `TvStatic` behind a `.tile` at the last board's ratios —
+so nothing stale is pickable; an error keeps the last good board under the
+message and the retry key; the samples note is no longer hidden on an empty
+board. `fetchBoard` and `GifProvider.search` take the hook's `AbortSignal`,
+combined with each adapter's timeout by `withTimeout`, so a superseded search
+is cancelled on the wire and StrictMode's first arrival is torn down rather
+than completed. Covered by "a board on its way" in `e2e/gifs.spec.ts`.
 
 The whole empty/loading/error affordance in `GifPanel` is gated on
 `shown.length === 0`, and `status` is read nowhere else in the component.
@@ -140,6 +167,14 @@ reserved `--tile-ratio`, not a new primitive. `WaitingDots` covers a wait with n
 number attached.
 
 ### 1.4 "Duplicate share image" — not a duplicate
+
+**Cache key fixed, and the suite can now see a duplicate.** `standingsJob`
+takes the round and its id is `standings-${code}-${round}` (`final` on the
+podium). `e2e/export.spec.ts` asserts through `expectSharedOnce`, which waits
+for the first file, gives a second one room to land, then counts. The two
+smaller things at the end of this entry (`run()`'s guard on any active job,
+`prepare()` never setting `active`) and the multi-frame decode gap are still
+open.
 
 The renderer was run end to end against synthetic GIFs from 1 to 250 frames and
 the output re-parsed. **The artefact is not duplicated**: N frames in → N frames
@@ -206,6 +241,14 @@ per-round search budget is gone entirely for the same reason — which is also w
 Sizes assume the [`/feature`](../CLAUDE.md#feature-workflow) pipeline.
 
 ### 2.1 Lock a GIF once taken — small/medium
+
+**Shipped 2026-09-14.** Built as described below, with every one of its three
+non-obvious points honoured: matched on `mediaKey` (origin + pathname), marked
+rather than hidden with a label rather than a bare tint, and enforced in the UI
+rather than the reducer. A same-instant collision is **accepted** — both entries
+land and the reveal shows two of the GIF — because refusing the second needs a
+`BotPool` re-pick loop that does not exist and a stub corpus bigger than twelve.
+[ADR 0038](./adr/0038-a-taken-gif-is-marked-in-the-picker-not-refused-by-the-reducer.md).
 
 In `react` mode, a GIF another player has already submitted becomes unpickable
 for everyone else, live.
@@ -400,22 +443,15 @@ ours. **A recap that plays in the room rather than exporting sidesteps that.**
 
 ## 3 — Suggested order
 
-A reading of the list, not a schedule.
+A reading of the list, not a schedule. The defects and §2.1 are done; what is
+left:
 
-1. **The gate's credential rows (0.1–0.3, 0.5, 0.6).** They cost attention rather
-   than engineering, block a real room absolutely, and three of them currently
-   bill a personal account. 0.3 has the most teeth.
-2. **1.1(a)** — the only defect that corrupts something a player reads as fact.
-3. **1.2** — two strings, promising a feature ADR 0014 deliberately declined.
-4. **1.3** — the stale-clickable-tile half is a correctness bug, and `TunedImage`
-   is already in the tile.
-5. **1.4's cache key** — a one-line change closing a latent bug that is already
-   the most plausible reading of the report. Worth doing either way, as is the
-   `expect.poll` fix that would let the suite see a duplicate at all.
-6. **1.1(b) and (c)** need a product decision and a copy pass — batch them with
-   whoever owns the writing.
-7. **2.1** — best-value feature, and it needs no wire change.
-8. **2.2** — cheapest visible win; the numbers are computed and thrown away.
+1. **2.2** — cheapest visible win; the numbers are computed and thrown away.
+2. Everything else in §2 is optional. **Do not start 2.6 casually** — it reads
+   like a screen and is a wire-format change with a byte budget to defend.
+
+The launch gate's credential rows are settled: the keys are sourced locally
+from `.env` files and from Vercel's store.
 
 Everything else is optional. **Do not start 2.6 casually** — it reads like a
 screen and is a wire-format change with a byte budget to defend.
@@ -424,7 +460,7 @@ screen and is a wire-format change with a byte budget to defend.
 
 ## Working notes
 
-- `npm run verify` passes on `main` — 444 tests across 30 files. If it fails
+- `npm run verify` passes on `main` — 452 tests across 30 files. If it fails
   locally, delete `.next` first: a stale build from another branch produces
   phantom `validator.ts` type errors that look like real breakage.
 - Each defect above names the file to read. **Confirm it before fixing it** —

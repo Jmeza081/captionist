@@ -6,6 +6,7 @@ import {
   captionLines,
   hasImage,
   imageSrc,
+  mediaKey,
   mediaAspect,
 } from './media'
 
@@ -93,5 +94,18 @@ describe('captionLines', () => {
 
   it('does not count the whitespace around a caption', () => {
     expect(captionLines(`   ${of(CHARS_PER_LINE)}   `)).toBe(1)
+  })
+})
+
+describe('mediaKey', () => {
+  it('drops the per-request tail Giphy hangs off a URL', () => {
+    expect(mediaKey('https://media.giphy.com/x/200w.gif?cid=abc&rid=200w.gif')).toBe(
+      'https://media.giphy.com/x/200w.gif',
+    )
+  })
+
+  it('leaves a bare CDN URL and a shelf path alone', () => {
+    expect(mediaKey('https://static.klipy.com/ii/x/y/z.gif')).toBe('https://static.klipy.com/ii/x/y/z.gif')
+    expect(mediaKey('/media/stub-merge.svg')).toBe('/media/stub-merge.svg')
   })
 })
