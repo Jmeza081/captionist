@@ -54,9 +54,21 @@ export function memeJob(input: MemeJobInput): ExportJob | undefined {
   }
 }
 
-export function standingsJob(code: string, title: string, rows: readonly StandingsRow[]): ExportJob {
+/**
+ * @param round Which table this is — the round number, or `final` on the podium.
+ *   It is in the id because the cache is keyed on the id alone, with no content
+ *   key: a constant `'standings'` re-delivered the first render's bytes to any
+ *   later export from the same mount, which is exactly what a score screen that
+ *   survives a round boundary would do.
+ */
+export function standingsJob(
+  code: string,
+  title: string,
+  rows: readonly StandingsRow[],
+  round: number | 'final',
+): ExportJob {
   return {
-    id: 'standings',
+    id: `standings-${code}-${round}`,
     artefact: 'png',
     filename: standingsFilename(code),
     render: async () => {

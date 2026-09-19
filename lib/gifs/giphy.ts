@@ -1,5 +1,6 @@
 import { GifProviderError, GifQuotaError } from './errors'
 import { GIPHY } from './descriptors'
+import { withTimeout } from './provider'
 import type { GifBoard, GifProvider, GifQuery } from './provider'
 import type { GifResult } from './types'
 
@@ -115,7 +116,11 @@ function toResult(item: GiphyItem, query: string | undefined): GifResult | undef
   }
 }
 
-async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
+async function search(
+  query: GifQuery,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<GifBoard> {
   const term = query.q.trim()
   const params = new URLSearchParams({
     api_key: apiKey,
@@ -135,7 +140,7 @@ async function search(query: GifQuery, apiKey: string): Promise<GifBoard> {
 
   // No `next: { revalidate }`, and nothing else that would retain a copy: the
   // terms allow neither. Every board is a live request.
-  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+  const response = await fetch(url, { signal: withTimeout(signal, TIMEOUT_MS) })
 
   if (response.status === 429) {
     throw new GifQuotaError('Giphy\u2019s hourly limit is spent', 'giphy')

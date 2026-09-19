@@ -111,6 +111,68 @@
   border-color: t.$accent;
 }
 
+/**
+ * Somebody else's already.
+ *
+ * `MediaCard`'s own-entry treatment, which is the same fact on the vote grid:
+ * the picture dimmed but still readable, a scrim, and a pill saying why. Not
+ * `Chip.blocked`'s 0.3 — that erases a GIF, and the point of marking rather
+ * than removing is that you can still see what was taken.
+ */
+.taken {
+  cursor: default;
+
+  img {
+    opacity: 0.4;
+  }
+
+  &:hover {
+    border-color: t.$line-hairline-strong;
+  }
+}
+
+.takenScrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: t.$scrim-own-entry;
+}
+
+.takenLabel {
+  padding: t.$space-6 t.$space-12;
+  border-radius: t.$radius-pill;
+  background-color: t.$scrim-tally;
+  font-family: t.$font-sans;
+  font-size: 11px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+/**
+ * A tile with nothing in it yet.
+ *
+ * The same box as `.tile` — border, radius, column rhythm — reserved at the
+ * ratio the incoming picture will take, with only the set behind it. The
+ * component says why the last board is not left standing in its place.
+ */
+.placeholder {
+  aspect-ratio: var(--tile-ratio, #{t.$gif-tile-ratio});
+  cursor: default;
+  pointer-events: none;
+
+  &:hover {
+    border-color: t.$line-hairline-strong;
+  }
+}
+
+// "Looking…" for a reader that cannot see the set. The wrappers carry
+// `aria-busy` as well; this is the sentence behind it.
+.srOnly {
+  @include t.srOnly;
+}
+
 .empty {
   margin: 0;
   padding: t.$space-12 0;

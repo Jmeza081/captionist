@@ -33,6 +33,17 @@ test.describe('the reveal', () => {
     }
   })
 
+  test('crowns nobody when nobody voted', async ({ page }) => {
+    // The vote clock ran out on an empty ballot box. Every entry is level at
+    // zero, which is a round with no winner — not a whole-field duel.
+    await page.goto('/room/DEV?seed=42&phase=reveal&votes=0&as=p2&gifs=stub')
+
+    await expect(page.getByRole('heading', { name: 'Nobody voted. Nobody wins.' })).toBeVisible()
+    await expect(page.getByText(/ranking points? this round/)).toHaveCount(0)
+    await expect(page.getByText(/^You finished /)).toHaveCount(0)
+    await expect(page.getByText('Runners up')).toHaveCount(0)
+  })
+
   test('records your own reaction without inventing a tally', async ({ page }) => {
     // Nothing publishes a reaction until the event lane lands, so the bar
     // remembers your taps and claims nothing about anyone else's. It is a

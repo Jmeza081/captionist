@@ -562,6 +562,74 @@ test.describe('a tile with no picture yet', () => {
   })
 })
 
+test.describe('a board on its way', () => {
+  /** Two tiles, in whichever provider's shape was asked for. */
+  function twoTiles(url: string): string {
+    const pixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    if (url.includes('klipy')) {
+      const item = (slug: string, title: string) => ({
+        slug,
+        title,
+        type: 'gif',
+        file: { md: { gif: { url: pixel, width: 320, height: 200 } } },
+      })
+      return JSON.stringify({
+        result: true,
+        data: { data: [item('one', 'the first'), item('two', 'the second')], current_page: 1, per_page: 50, has_next: false },
+      })
+    }
+    const item = (id: string, title: string) => ({
+      id,
+      title,
+      images: { fixed_width: { url: pixel, width: '320', height: '200' } },
+    })
+    return JSON.stringify({ data: [item('one', 'the first'), item('two', 'the second')] })
+  }
+
+  test('takes the last board down while the next one is out', async ({ page }) => {
+    // Trending lands at once; the search hangs until the test lets it go.
+    let release: (() => void) | undefined
+    for (const glob of [GIPHY, KLIPY]) {
+      await page.route(glob, async (route) => {
+        const url = route.request().url()
+        if (url.includes('/gifs/share/') || url.includes('/gifs/items')) {
+          await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+          return
+        }
+        if (url.includes('/search')) {
+          await new Promise<void>((resolve) => {
+            release = resolve
+          })
+        }
+        // The hook cancels a superseded search on the wire now, so a fulfil
+        // can land on a request the browser has already let go of.
+        await route
+          .fulfill({ status: 200, contentType: 'application/json', body: twoTiles(url) })
+          .catch(() => undefined)
+      })
+    }
+
+    await page.goto('/room/DEV?seed=42&phase=brief&gifs=live')
+    await expect(tiles(page)).toHaveCount(2)
+
+    const field = page.getByRole('textbox', { name: 'Search GIFs' })
+    await field.fill('retro')
+    await field.press('Enter')
+
+    // Nothing pickable while the answer is out. The last board used to stay
+    // up, live, and a tap on it submitted a GIF from the query just abandoned.
+    // What stands in is the same two shapes, with only the set behind them.
+    await expect(tiles(page)).toHaveCount(0)
+    const shapes = page.getByRole('main').locator('[aria-hidden="true"] [data-testid="tv-static"]')
+    await expect(shapes).toHaveCount(2)
+
+    await expect.poll(() => release !== undefined).toBe(true)
+    release?.()
+    await expect(tiles(page)).toHaveCount(2)
+    await expect(shapes).toHaveCount(0)
+  })
+})
+
 test.describe('a board that did not come back', () => {
   /**
    * The error copy always ended "Try again" and offered nothing to try with.

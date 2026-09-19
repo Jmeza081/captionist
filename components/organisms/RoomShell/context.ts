@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext } from 'react'
+import type { SnackbarTone } from '@/components/atoms/Snackbar'
 import type { ChatQuote } from '@/lib/room/transport'
 
 /**
@@ -12,7 +13,10 @@ import type { ChatQuote } from '@/lib/room/transport'
  */
 export interface RoomShellApi {
   /** Confirm an action that has no other visible result. DESIGNSYSTEM.md §4.2. */
-  notify: (message: string) => void
+  // `confirm` by default — a screen's own `notify` is nearly always the room
+  // agreeing. `warning` is the room saying no, or that something happened to
+  // you off-screen: the mark the refusal lane already wears.
+  notify: (message: string, tone?: SnackbarTone) => void
   /**
    * Open the how-it-works walkthrough. The shell owns it because it is an
    * overlay, and only one of those may be open at a time — and because it must

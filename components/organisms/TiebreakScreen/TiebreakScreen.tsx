@@ -81,9 +81,9 @@ export function TiebreakScreen() {
                   </Inline>
                 )}
 
-                {/* A contender cannot vote in their own duel — `authorize`
+                {/* A contender cannot vote for their own entry — `authorize`
                     refuses it, so offering the button would produce a snackbar
-                    rather than a vote. */}
+                    rather than a vote. The other card is theirs to vote on. */}
                 <Button
                   // Sized to share the card's foot with a name rather than to
                   // lead a screen. The picture above it is the thing being

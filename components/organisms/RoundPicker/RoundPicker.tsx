@@ -61,6 +61,8 @@ export interface RoundPickerProps {
   onLock: (gif: GifResult) => void
   /** One-tap searches under the field. */
   suggestions?: readonly string[]
+  /** Passed straight to the board — see `GifPanelProps.taken`. */
+  taken?: ReadonlySet<string>
 }
 
 export function RoundPicker({
@@ -74,6 +76,7 @@ export function RoundPicker({
   action,
   onLock,
   suggestions = SEARCH_SUGGESTIONS,
+  taken,
 }: RoundPickerProps) {
   const { notify } = useRoomShell()
 
@@ -116,6 +119,7 @@ export function RoundPicker({
         }}
         provider={search.descriptor}
         ads={search.ads}
+        taken={taken}
         onPick={onPick}
       />
 

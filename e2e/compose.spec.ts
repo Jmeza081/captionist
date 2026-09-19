@@ -123,6 +123,55 @@ test.describe('composing', () => {
     await expect(page.getByRole('status')).toHaveText('Answer locked in')
   })
 
+  test('marks a GIF someone else locked in, and will not let you take it', async ({ page }) => {
+    // `submitted=1` answers for the first competitor, with the shelf's first
+    // tile — so viewing as the second, tile one is already gone.
+    await page.goto('/room/DEV?seed=42&phase=compose&mode=react&as=p2&submitted=1&gifs=stub')
+
+    const taken = page.getByRole('button', { name: /^Taken\./ })
+    await expect(taken).toHaveCount(1)
+    // Marked, never hidden: both providers forbid removing a result from a
+    // board, so the whole shelf is still there.
+    await expect(page.locator('button:has(img)')).toHaveCount(12)
+    await expect(page.getByText('Taken', { exact: true })).toBeVisible()
+
+    // Blocked is not disabled — still a real button, still in the tab order,
+    // so a reader can reach it and find out why it is not an option.
+    await expect(taken).toHaveAttribute('aria-disabled', 'true')
+    await taken.focus()
+    await expect(taken).toBeFocused()
+
+    // And tapping it does nothing at all: no ring, no badge, no lock.
+    // `force` because Playwright's own actionability check reads `aria-disabled`
+    // and refuses to click — which is the signal working. The point here is
+    // that the handler refuses too, so the tap has to actually land.
+    await taken.click({ force: true })
+    await expect(page.getByText('Your answer', { exact: true })).toHaveCount(0)
+    await expect(taken).toHaveAttribute('aria-pressed', 'false')
+
+    // Nobody is named on it. Entries are anonymous until the reveal, and a
+    // name on a tile would also be a voting hint.
+    await expect(page.getByText('Vic', { exact: true })).toHaveCount(0)
+
+    // The free tile beside it still works.
+    await page.locator('button:has(img)').nth(1).click()
+    await expect(page.getByText('Your answer', { exact: true })).toBeVisible()
+  })
+
+  test('says the rule before anyone has taken anything', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=compose&mode=react&as=p2&gifs=stub')
+
+    // Nothing is marked yet, so the note is the only place the rule exists.
+    await expect(page.getByText('First to lock a GIF keeps it.')).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Taken\./ })).toHaveCount(0)
+  })
+
+  test('marks nothing in a caption room, where every answer is text', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=compose&as=p2&submitted=2&gifs=stub')
+
+    await expect(page.getByRole('button', { name: /^Taken\./ })).toHaveCount(0)
+  })
+
   test('answers on the same board the Captionist picks on', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=compose&mode=react&as=p2&gifs=stub')
 

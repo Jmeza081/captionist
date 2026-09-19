@@ -257,7 +257,10 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
       setStatus('loading')
       setQuery(next)
 
-      void fetchBoard(next, from, LIMIT)
+      // The signal goes on the wire. It used to stop here — `fetchBoard` took
+      // none — so `abort()` cancelled nothing, every superseded search ran to
+      // completion, and only the ticket guard kept a stale board from landing.
+      void fetchBoard(next, from, LIMIT, controller.signal)
         .then((body) => apply(body, ticket))
         .catch((error: unknown) => fail(error, ticket, controller.signal))
     },
@@ -276,10 +279,12 @@ export function useGifSearch(options?: GifSearchOptions): GifSearch {
     lastAsk.current = { query: '', from: undefined }
     loading.current = true
 
-    void fetchBoard('', undefined, LIMIT)
+    void fetchBoard('', undefined, LIMIT, controller.signal)
       .then((body) => apply(body, ticket))
       .catch((error: unknown) => fail(error, ticket, controller.signal))
 
+    // A real cancellation now, so StrictMode's first arrival is torn down on
+    // the wire rather than left to complete beside the second.
     return () => controller.abort()
   }, [enabled, apply, fail])
 

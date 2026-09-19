@@ -1,4 +1,5 @@
 import { CROWN } from '@/lib/hats'
+import { mediaKey } from '@/lib/media'
 import {
   CAPTION_MAX,
   HOST_FALLBACK_NAME,
@@ -459,7 +460,10 @@ export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       eyebrow: 'Writing',
       headline: `${name} is typing a prompt.`,
       headlineSecond: 'Start warming up your search history.',
-      body: 'You’ll answer it with a GIF — Giphy, or something regrettable from your screenshots folder.',
+      // A GIF from the search box, and nothing else: uploads are not a feature
+      // (ADR 0014), and no provider is named because which one answers is the
+      // seam's business (ADR 0022).
+      body: 'You’ll answer it with a GIF — whatever the search box coughs up.',
     }
   }
 
@@ -467,7 +471,7 @@ export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
     view,
     eyebrow: 'Picking',
     headline: `${name} is scrolling for a GIF.`,
-    headlineSecond: 'Or rummaging through their screenshots.',
+    headlineSecond: 'Or arguing with the search box.',
     body: 'Brace yourself. Last time they picked a 4-second clip of a burning server rack.',
   }
 }
@@ -493,7 +497,9 @@ export function composeCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       view,
       eyebrow: `${name}’s prompt`,
       headline: 'Answer it with a GIF.',
-      body: 'Anonymous until the reveal. You get one shot — locking it in is final.',
+      body:
+        'Anonymous until the reveal. You get one shot — locking it in is final. ' +
+        'First to lock a GIF keeps it.',
       action: 'Lock in my answer',
     }
   }
@@ -723,6 +729,30 @@ export function activeCompetitors(state: GameState): readonly Player[] {
  */
 export function voters(state: GameState): readonly Player[] {
   return state.players.filter((p) => p.connection === 'online')
+}
+
+/**
+ * The GIFs other players have already locked in this round, by `mediaKey`.
+ *
+ * Every client holds every entry during `compose` — `project()` redacts
+ * authors only once voting opens — so this is a read over state the room is
+ * already broadcasting, and it moves the moment the next `rev` lands. Your
+ * own entry is left out: a swap before the clock runs out is still yours to
+ * make. Empty in a `caption` room, where every answer is text.
+ *
+ * Read by the picker, never by `authorize`. A refused submission has no
+ * retry path in `BotPool`, and the offline shelf is twelve tiles, so a rule
+ * in the reducer would strand bot rounds in exactly the configuration every
+ * test runs in. Two players who lock the same GIF inside one round-trip both
+ * land, and the reveal shows two of it.
+ */
+export function takenMedia(state: GameState, viewerId: PlayerId): ReadonlySet<string> {
+  const taken = new Set<string>()
+  for (const entry of state.round?.entries ?? []) {
+    if (entry.authorId === viewerId || entry.answer.kind !== 'media') continue
+    taken.add(mediaKey(entry.answer.media.src))
+  }
+  return taken
 }
 
 export function myEntry(state: GameState, viewerId: PlayerId): Entry | undefined {
@@ -1238,7 +1268,7 @@ export interface TiebreakCard {
   author?: PlayerFace
   media?: MediaRef
   lines?: readonly string[]
-  /** Contenders cannot vote in their own duel. */
+  /** A contender cannot vote for their own entry — the other one is fair game. */
   own: boolean
 }
 
@@ -1286,7 +1316,13 @@ export interface TiebreakCopy {
   voteLine: string
   /** `voteLine` as 0–1, for the phone's progress bar. */
   voteFraction: number
-  /** "Jack and Lukasz can’t vote in their own duel". */
+  /**
+   * "Jack and Lukasz can’t vote for their own entries".
+   *
+   * For their *own*, not "in their own duel": the rule bars a contender from
+   * backing themselves, and Jack can — should — vote for Lukasz's. The old
+   * line said both were out of the whole thing.
+   */
   exclusionLine: string
   action: string
   /** The same action where a card's foot puts a name beside it. */
@@ -1309,9 +1345,11 @@ export function tiebreakCopy(state: GameState): TiebreakCopy {
   return {
     eyebrow: `Dead heat — ${plural(points, 'point', 'points')} each`,
     headline: 'Somebody has to break this tie.',
-    body: `One vote each. No abstaining, no diplomacy. The ${roleName(
-      state.settings.mode,
-    )} gets the deciding vote if it’s still level.`,
+    // A coin flip, and said so. This used to promise the role holder "the
+    // deciding vote if it’s still level", and `resolveTiebreak` never gave
+    // them one — a persisting tie goes to the seed, and nobody's vote weighs
+    // more than anybody else's.
+    body: 'One vote each. No abstaining, no diplomacy. Still level after that, and we flip a coin.',
     // The people still here, not the whole roster — the reducer opens the
     // count the same way, so a line reading "4 of 7" over a room that resolves
     // at five is a timer disagreeing with the button beside it.
@@ -1320,7 +1358,10 @@ export function tiebreakCopy(state: GameState): TiebreakCopy {
     // than in the screen so the bar and the sentence can never disagree about
     // who is still expected to vote.
     voteFraction: voters(state).length > 0 ? voted / voters(state).length : 0,
-    exclusionLine: names.length > 0 ? `${nameList(names)} can’t vote in their own duel` : '',
+    exclusionLine:
+      names.length > 0
+        ? `${nameList(names)} can’t vote for their own ${names.length > 1 ? 'entries' : 'entry'}`
+        : '',
     action: 'Vote this one',
     // The phone's card foot puts the button beside a name, and "Vote this one"
     // took the width the name needed — the design draws the short one there.
@@ -1352,11 +1393,23 @@ export function revealCopy(state: GameState, viewerId: PlayerId): RevealCopy {
   // By id, not by name: `uniqueNicknames` is a setting, so two Jesses are legal.
   const mine = result !== undefined && result.authorOf[result.winnerEntryId] === viewerId
   const points = winner?.points ?? 0
+  // The clock ran out on an empty ballot box. `tally` commits the round with
+  // no winner rather than sending the whole field to a duel, and the screen
+  // says so instead of crowning "Nobody, you monster."
+  const nobody = result !== undefined && result.winnerEntryId === ''
 
   return {
-    eyebrow: react ? `Round ${state.roundNumber} · best answer` : `Round ${state.roundNumber} winner`,
+    eyebrow: nobody
+      ? `Round ${state.roundNumber} · no winner`
+      : react
+        ? `Round ${state.roundNumber} · best answer`
+        : `Round ${state.roundNumber} winner`,
     // "Legend" when it's you, "monster" when it isn't — the design's own joke.
-    headline: mine ? `${name}, you legend.` : `${name}, you monster.`,
+    headline: nobody
+      ? 'Nobody voted. Nobody wins.'
+      : mine
+        ? `${name}, you legend.`
+        : `${name}, you monster.`,
     // "Ranking points" names a mechanism a single-vote room does not have —
     // there, a point is one person choosing you.
     winnerSub:

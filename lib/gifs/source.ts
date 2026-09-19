@@ -85,6 +85,7 @@ export async function fetchBoard(
   query: string,
   cursor: GifCursor | undefined,
   limit: number,
+  signal?: AbortSignal,
 ): Promise<GifSearchResponse> {
   const pin = pinned()
   const provider = selectProvider(pin)
@@ -121,6 +122,7 @@ export async function fetchBoard(
     const board = await provider.search(
       { q: query, limit: Math.min(limit, descriptor.maxLimit), cursor: from },
       apiKey,
+      signal,
     )
     recordCall(descriptor.id, kind, 'ok')
 

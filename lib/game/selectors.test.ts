@@ -44,6 +44,7 @@ import {
   submittedCount,
   startLabel,
   submittedLine,
+  takenMedia,
   tiebreakCards,
   tiebreakCopy,
   timerSuffix,
@@ -53,6 +54,7 @@ import {
   waitingCopy,
 } from './selectors'
 import type { GameMode, GameState, PlayerId, RoundResult } from './types'
+import { mediaKey } from '@/lib/media'
 
 const brief = (mode: GameMode) => fixtureFor('brief', { players: 5, settings: { mode } })
 const compose = (mode: GameMode) => fixtureFor('compose', { players: 5, settings: { mode } })
@@ -189,6 +191,29 @@ describe('ordinals', () => {
       '21st',
       '22nd',
     ])
+  })
+})
+
+describe('a taken GIF', () => {
+  it('is every other player’s media entry, keyed without its query string', () => {
+    // Two competitors have answered; the third is still choosing.
+    const state = fixtureFor('compose', { players: 5, settings: { mode: 'react' }, submitted: 2 })
+    const [first, second, third] = state.players.filter((p) => p.id !== state.round?.roleHolderId)
+    if (!first || !second || !third) throw new Error('fixture needs three competitors')
+
+    const forThird = takenMedia(state, third.id)
+    expect(forThird.size).toBe(2)
+    const mine = state.round?.entries.find((e) => e.authorId === first.id)
+    if (mine?.answer.kind !== 'media') throw new Error('fixture answers with media in react mode')
+    expect(forThird.has(mediaKey(mine.answer.media.src))).toBe(true)
+
+    // Your own entry is not taken from you — a swap is still yours to make.
+    expect(takenMedia(state, first.id).size).toBe(1)
+  })
+
+  it('is empty in a caption room, where every answer is text', () => {
+    const state = fixtureFor('compose', { players: 5, settings: { mode: 'caption' }, submitted: 2 })
+    expect(takenMedia(state, 'p4').size).toBe(0)
   })
 })
 
@@ -360,12 +385,20 @@ describe('the tiebreak', () => {
     const cards = tiebreakCards(state, RIVAL)
     expect(cards).toHaveLength(2)
     for (const card of cards) expect(card.author?.name).toBeTruthy()
-    expect(tiebreakCopy(state).exclusionLine).toContain('own duel')
+    // For their *own entries* — not "in their own duel", which barred each of
+    // them from a vote they are entitled to cast.
+    expect(tiebreakCopy(state).exclusionLine).toMatch(/can’t vote for their own entries$/)
+    expect(tiebreakCopy(state).exclusionLine).not.toContain('duel')
   })
 
-  it('names the role that breaks a persisting deadlock', () => {
-    expect(tiebreakCopy(at('tiebreak', 'caption')).body).toContain('Captionist')
-    expect(tiebreakCopy(at('tiebreak', 'react')).body).toContain('Prompter')
+  it('calls a persisting deadlock what the reducer makes it — a coin flip', () => {
+    // It used to name the role holder as the deciding vote. `resolveTiebreak`
+    // never consulted them; this test locked the false promise in.
+    for (const mode of ['caption', 'react'] as const) {
+      const body = tiebreakCopy(at('tiebreak', mode)).body
+      expect(body).toContain('flip a coin')
+      expect(body).not.toMatch(/deciding vote|Captionist|Prompter/)
+    }
   })
 
   it('marks a contender out of their own duel', () => {

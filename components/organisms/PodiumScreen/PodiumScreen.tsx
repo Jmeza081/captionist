@@ -54,7 +54,7 @@ export function PodiumScreen() {
     (ADR 0014), so the row offers the thing it honestly can — the final table
     as a picture, handed to whatever the device shares with.
   */
-  const job = exportMedia ? standingsJob(roomCode, 'Final standings', standings(state).map(standingsRow)) : undefined
+  const job = exportMedia ? standingsJob(roomCode, 'Final standings', standings(state).map(standingsRow), 'final') : undefined
 
   return (
     <Stack gap={34} align="center" className={styles.screen}>

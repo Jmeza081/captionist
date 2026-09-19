@@ -1,14 +1,16 @@
 'use client'
 
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button } from '@/components/atoms/Button'
 import { CloseButton } from '@/components/atoms/CloseButton'
 import { Chip } from '@/components/atoms/Chip'
 import { Icon } from '@/components/atoms/Icon'
 import { Inline } from '@/components/atoms/Inline'
 import { TextField } from '@/components/atoms/TextField'
+import { TvStatic } from '@/components/atoms/TvStatic'
 import { TunedImage } from '@/components/molecules/TunedImage'
 import type { GifAd, GifProviderDescriptor } from '@/lib/gifs/provider'
+import { mediaKey } from '@/lib/media'
 import { AdSlot } from './AdSlot'
 import type { GifResult } from '@/lib/gifs/types'
 import styles from './GifPanel.module.scss'
@@ -104,6 +106,17 @@ export interface GifPanelProps {
    * the panel simply has none, which is the ordinary case.
    */
   ads?: readonly GifAd[]
+  /**
+   * GIFs somebody else has already locked in, by `mediaKey`.
+   *
+   * A taken tile is *marked*, never hidden — both providers forbid removing
+   * or reordering results — and it stays a real button in the tab order that
+   * says why it cannot be picked, which is the "blocked is not disabled" rule
+   * with the reason living off-screen (ADR 0032). It wears the vote grid's
+   * own-entry look, because it is the same fact: a card that is not yours to
+   * choose. Nobody is named on it — entries are anonymous until the reveal.
+   */
+  taken?: ReadonlySet<string>
 }
 
 export function GifPanel({
@@ -124,6 +137,7 @@ export function GifPanel({
   selectionLabel = 'Selected',
   provider,
   ads,
+  taken,
 }: GifPanelProps) {
   const [localQuery, setLocalQuery] = useState('')
   const controlled = query !== undefined
@@ -153,6 +167,7 @@ export function GifPanel({
   }, [localQuery, results, onSubmit, provider])
 
   const board = variant === 'board'
+  const busy = status === 'loading'
 
   const field = (
     <TextField
@@ -197,11 +212,15 @@ export function GifPanel({
 
   const tiles = (
     <div className={board ? styles.board : styles.grid}>
-      {shown.map((gif) => (
+      {shown.map((gif) => {
+        const isTaken = taken?.has(mediaKey(gif.src)) ?? false
+        return (
         <button
           key={gif.id}
           type="button"
-          className={`${styles.tile} ${gif.id === selectedId ? styles.selected : ''}`}
+          className={`${styles.tile} ${gif.id === selectedId ? styles.selected : ''} ${
+            isTaken ? styles.taken : ''
+          }`}
           /**
            * The GIF's own shape, reserved before it loads.
            *
@@ -216,9 +235,15 @@ export function GifPanel({
               ? ({ '--tile-ratio': `${gif.width} / ${gif.height}` } as CSSProperties)
               : undefined
           }
-          onClick={() => onPick(gif)}
-          aria-label={board ? `Pick ${gif.alt}` : `Attach ${gif.alt}`}
-          aria-pressed={gif.id === selectedId}
+          // A tap on a taken tile does nothing, and the name says so first.
+          // `aria-disabled` rather than `disabled`: it keeps the tile in the
+          // tab order, where a reader can find out *why* it is not an option.
+          onClick={() => {
+            if (!isTaken) onPick(gif)
+          }}
+          aria-label={isTaken ? `Taken. ${gif.alt}` : board ? `Pick ${gif.alt}` : `Attach ${gif.alt}`}
+          aria-disabled={isTaken || undefined}
+          aria-pressed={!isTaken && gif.id === selectedId}
         >
           {/*
             `webp` first, and lazily.
@@ -251,54 +276,102 @@ export function GifPanel({
             decoding="async"
             tuning={board}
           />
-          {board && gif.id === selectedId && (
+          {board && !isTaken && gif.id === selectedId && (
             <span className={styles.badge}>{selectionLabel}</span>
           )}
+          {isTaken && (
+            <span className={styles.takenScrim} aria-hidden="true">
+              <span className={styles.takenLabel}>Taken</span>
+            </span>
+          )}
         </button>
+        )
+      })}
+    </div>
+  )
+
+  /**
+   * The board that is on its way, drawn as the shapes it will take.
+   *
+   * While a search is out the last board is *not* shown. Its tiles were live
+   * — every state below used to be gated on the board being empty, so a
+   * re-search gave no sign at all — and a tap on one submitted a GIF from the
+   * query the player had just abandoned. What stands in is the tile itself,
+   * at the same reserved ratio, with only the set behind it: `TunedImage`
+   * without the image. The last board lends its shapes so the column does not
+   * reflow; a first search has none to lend and gets a stock set.
+   */
+  const placeholders =
+    shown.length > 0
+      ? shown.map((gif) => ({ key: gif.id, width: gif.width, height: gif.height }))
+      : Array.from({ length: board ? 8 : 6 }, (_, i) => ({
+          key: `placeholder-${i}`,
+          width: undefined,
+          height: undefined,
+        }))
+
+  const skeleton = (
+    <div className={board ? styles.board : styles.grid} aria-hidden="true">
+      {placeholders.map((shape, i) => (
+        <span
+          key={shape.key}
+          className={`${styles.tile} ${styles.placeholder}`}
+          style={
+            shape.width && shape.height
+              ? ({ '--tile-ratio': `${shape.width} / ${shape.height}` } as CSSProperties)
+              : undefined
+          }
+        >
+          <TvStatic seed={i} />
+        </span>
       ))}
     </div>
   )
 
-  const grid =
-    shown.length === 0 ? (
-      status === 'error' ? (
-        <div className={styles.empty}>
-          <p className={styles.emptyLine}>
-            {message ?? 'That search didn\u2019t come back. Try again.'}
-          </p>
-          {onRetry && (
-            <Button variant="secondary" size="inline" onClick={onRetry}>
-              Try again
-            </Button>
-          )}
-        </div>
-      ) : (
-        <p className={styles.empty}>
-          {status === 'loading'
-            ? 'Looking\u2026'
-            : `No GIFs for \u201c${value}\u201d. Try a shorter word.`}
+  /**
+   * The popover's scroller is a *wrapper*, never the columns themselves.
+   *
+   * A multicol box with a capped height treats that height as its
+   * fragmentainer: it fills the first column to the cap, then the second,
+   * then keeps laying out sideways past the edge of the panel — three tiles
+   * visible and the other nine off-screen. Letting the columns take their
+   * natural height and scrolling the box around them is what makes the list
+   * vertical again. The board grows with the page, so it is its own scroller.
+   */
+  const scrolled = (columns: ReactNode) =>
+    board ? columns : <div className={styles.gridScroll}>{columns}</div>
+
+  const grid = busy ? (
+    <>
+      <p className={styles.srOnly}>Looking…</p>
+      {scrolled(skeleton)}
+    </>
+  ) : status === 'error' ? (
+    <>
+      <div className={styles.empty}>
+        <p className={styles.emptyLine}>
+          {message ?? 'That search didn’t come back. Try again.'}
         </p>
-      )
-    ) : board ? (
-      // The board grows with the page, so it is its own scroller.
-      tiles
-    ) : (
-      /**
-       * The popover's scroller is a *wrapper*, never the columns themselves.
-       *
-       * A multicol box with a capped height treats that height as its
-       * fragmentainer: it fills the first column to the cap, then the second,
-       * then keeps laying out sideways past the edge of the panel — three
-       * tiles visible and the other nine off-screen. Letting the columns take
-       * their natural height and scrolling the box around them is what makes
-       * the list vertical again.
-       */
-      <div className={styles.gridScroll}>{tiles}</div>
-    )
+        {onRetry && (
+          <Button variant="secondary" size="inline" onClick={onRetry}>
+            Try again
+          </Button>
+        )}
+      </div>
+      {/* The last board that did come back stays under the line. It is a real
+          board, and a blank one would leave nothing to pick while the retry is
+          being considered. */}
+      {shown.length > 0 && scrolled(tiles)}
+    </>
+  ) : shown.length === 0 ? (
+    <p className={styles.empty}>{`No GIFs for “${value}”. Try a shorter word.`}</p>
+  ) : (
+    scrolled(tiles)
+  )
 
   if (board) {
     return (
-      <div className={styles.boardPanel}>
+      <div className={styles.boardPanel} aria-busy={busy}>
         {/* The field has the row to itself. The two controls that act moved to
             a sticky foot — see `RoundPicker` — because sharing this row with
             them squeezed the input down to its magnifier on a phone. */}
@@ -351,7 +424,10 @@ export function GifPanel({
           </Inline>
         )}
 
-        {message && shown.length > 0 && <p className={styles.note}>{message}</p>}
+        {/* Not on an error — that branch draws its own line — and not gated on
+            the board having tiles, which hid "these are samples" on exactly the
+            empty board that needed explaining. */}
+        {message && status !== 'error' && <p className={styles.note}>{message}</p>}
 
         {/* Above the board, so it is seen — and outside the grid, so it is
             never mistaken for something pickable. Absent when no ad came. */}
@@ -363,7 +439,7 @@ export function GifPanel({
   }
 
   return (
-    <div className={styles.panel} role="dialog" aria-label="Attach a GIF">
+    <div className={styles.panel} role="dialog" aria-label="Attach a GIF" aria-busy={busy}>
       <div className={styles.head}>
         <span className={styles.title}>Attach a GIF</span>
         {/* Same rule as the board's mark: never over the offline shelf. */}
@@ -387,7 +463,7 @@ export function GifPanel({
           </Button>
         </div>
       )}
-      {message && <p className={styles.note}>{message}</p>}
+      {message && status !== 'error' && <p className={styles.note}>{message}</p>}
       {grid}
     </div>
   )

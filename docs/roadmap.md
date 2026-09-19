@@ -7,6 +7,10 @@ and never get refactored when the network lands.
 > **Read this first after a context clear.** It is the answer to "where do we
 > stand". Update the status column as phases land.
 
+This file is what was **built**. [`backlog.md`](./backlog.md) is what is
+**left** — the launch gate below, the open defects, and the wishlist — compiled
+from playtest feedback and re-derived against the code.
+
 ## Why this order
 
 The alternatives both manage a risk this repo had already retired. *Scaffold

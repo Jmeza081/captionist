@@ -561,7 +561,7 @@ test.describe('the phase-3 atoms', () => {
 
     await expect(page.getByText('Locked in')).toBeVisible()
     await expect(page.getByText('4 of 7 have voted')).toBeVisible()
-    await expect(page.getByText(/can’t vote in their own duel/)).toBeVisible()
+    await expect(page.getByText(/can’t vote for their own entries/)).toBeVisible()
   })
 
   /**

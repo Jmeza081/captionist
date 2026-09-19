@@ -387,9 +387,23 @@ async function settled(page: Page): Promise<void> {
 test.describe('chat’s arrival', () => {
   test('leaves at both sizes, and is inert on the way out', async ({ page }) => {
     await page.goto(ROOM)
-    const open = page.getByRole('button', { name: /^Open chat/ })
-    if (await open.count()) await open.click()
-    await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible()
+    /**
+     * Open it, and mean it.
+     *
+     * The key is in the server HTML before React has attached anything to it,
+     * so a click can land on a button that is not listening yet — and then
+     * nothing ever opens, which reads as the panel being broken rather than as
+     * the tap being early. Playwright's actionability checks do not cover
+     * hydration, so this retries the open instead of racing it. Flaky here long
+     * before the taken-GIF work went in, and on the phone more than the desk.
+     */
+    await expect(async () => {
+      const open = page.getByRole('button', { name: /^Open chat/ })
+      if (await open.count()) await open.click()
+      await expect(page.getByRole('textbox', { name: 'Message the room' })).toBeVisible({
+        timeout: 1_000,
+      })
+    }).toPass({ timeout: 15_000 })
 
     await page.getByRole('button', { name: 'Close chat' }).click()
 

@@ -21,13 +21,36 @@ async function join(context: BrowserContext, code: string, name: string): Promis
   await page.getByRole('button', { name: 'Join the room' }).click()
   // A room that has already started seats them straight into the round in
   // progress, so this waits for *a* room rather than for the lobby.
-  await expect(page.locator('main[data-phase]')).toBeVisible()
+  //
+  // Longer than the 10s default on purpose, and it is the *server* this waits
+  // on rather than the room: every tab here is a real page load, `next dev`
+  // compiles `/room/[code]` on first request, and this file opens two or three
+  // tabs per test across two projects at once. The room itself is a
+  // `BroadcastChannel` message away — it is the compile that does not fit in
+  // ten seconds under that load.
+  await expect(page.locator('main[data-phase]')).toBeVisible({ timeout: 30_000 })
   return page
 }
 
 const CODE = 'C-F34783'
 
 test.describe('the phase 4 gate', () => {
+  /**
+   * One at a time, which `fullyParallel` otherwise overrides.
+   *
+   * Every test here opens two or three real tabs and plays a room on a real
+   * clock, so this file is the most expensive in the suite by some distance.
+   * Run concurrently — six tests × two projects, each spawning tabs against one
+   * `next dev` — they starve the server that is serving them, and tests fail on
+   * a page that never finished compiling rather than on anything about the
+   * room. Each one passes alone; it is only each other they cannot afford.
+   *
+   * `default` rather than `serial`: sequential, but a failure does not skip the
+   * rest, so a red run still says which clause of the gate broke. Other files
+   * keep running in parallel alongside this one.
+   */
+  test.describe.configure({ mode: 'default' })
+
   test('seats a guest in the room the host opened', async ({ context }) => {
     const host = await context.newPage()
     await host.goto('/host')
@@ -108,9 +131,70 @@ test.describe('the phase 4 gate', () => {
     const twin = await context.newPage()
     await twin.goto(`/join/${CODE}`)
     await twin.getByRole('textbox', { name: 'Nickname' }).fill('Vic')
-    await twin.getByRole('button', { name: 'Join the room' }).click()
 
-    await expect(twin.getByRole('status')).toHaveText('Someone already has that name. Pick another.')
+    /**
+     * Ask, and mean it.
+     *
+     * The key is in the server HTML before React has attached anything to it,
+     * so under load the tap can land on a button that is not listening yet —
+     * and then no intent is ever sent, no refusal comes back, and the snackbar
+     * this is waiting for was never going to arrive. Retrying the ask is the
+     * honest wait: a refusal that *did* cross the tab boundary still fails
+     * this, which is the thing the test is here to prove.
+     */
+    await expect(async () => {
+      await twin.getByRole('button', { name: 'Join the room' }).click()
+      await expect(twin.getByRole('status')).toHaveText(
+        'Someone already has that name. Pick another.',
+        { timeout: 2_000 },
+      )
+    }).toPass({ timeout: 20_000 })
+  })
+
+  test('takes a GIF off everyone else’s board the moment it is locked in', async ({
+    context,
+  }) => {
+    // The host tab boots the round and *plays* it: `?as=p2` sits it in a
+    // competitor's seat, so it is the authority and a picker at once. That is
+    // what keeps this to two tabs — a third would only be a second picker, and
+    // this file is already the most expensive in the suite.
+    const host = await context.newPage()
+    await host.goto(`/room/${CODE}?seed=42&phase=compose&mode=react&as=p2&gifs=stub`)
+    await expect(host.getByText('Answer it with a GIF.')).toBeVisible()
+
+    const guest = await join(context, CODE, 'Vic')
+    await expect(guest.getByText('Answer it with a GIF.')).toBeVisible()
+
+    const board = (page: Page) => page.locator('button:has(img)')
+
+    // Both of them stage the same GIF. Nothing is locked in yet, so neither
+    // board says anything is gone.
+    for (const page of [host, guest]) {
+      await expect(page.getByRole('button', { name: /^Taken\./ })).toHaveCount(0)
+      await board(page).first().click()
+      await expect(page.getByText('Your answer', { exact: true })).toBeVisible()
+    }
+
+    await guest.getByRole('button', { name: 'Lock in my answer' }).click()
+    await expect(guest.getByRole('status')).toHaveText('Answer locked in')
+
+    // The other tab hears it. No new wire traffic went out for this — the
+    // entry itself is the broadcast, and every client already holds it.
+    await expect(host.getByRole('button', { name: /^Taken\./ })).toHaveCount(1)
+    await expect(host.getByText('Taken', { exact: true })).toBeVisible()
+    // Marked, never removed: the whole shelf is still on the board.
+    await expect(board(host)).toHaveCount(12)
+
+    // The ring comes off what they had staged, so the lock goes back to
+    // blocked rather than offering a submission that would land as a duplicate.
+    await expect(host.getByText('Your answer', { exact: true })).toHaveCount(0)
+    await expect(host.getByRole('status')).toHaveText('Someone just took that one. Pick another.')
+
+    // And they can still answer, with anything else on the board.
+    await board(host).nth(1).click()
+    await expect(host.getByText('Your answer', { exact: true })).toBeVisible()
+    await host.getByRole('button', { name: 'Lock in my answer' }).click()
+    await expect(host.getByRole('status')).toHaveText('Answer locked in')
   })
 
   test('lets somebody in after the room has started', async ({ context }) => {

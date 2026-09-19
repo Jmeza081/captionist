@@ -103,42 +103,47 @@ export function RevealScreen() {
       </Stack>
 
       <div className={styles.payload}>
-        <div className={styles.winnerCard}>
-          <MediaCard
-            src={winner?.media?.src ?? ''}
-            alt={winner?.media?.alt ?? 'The winning entry'}
-            width={winner?.media?.width}
-            height={winner?.media?.height}
-            topText={winner?.lines?.[0]}
-            bottomText={winner?.lines?.[1]}
-            winner
-            share={
-              job ? (
-                <ExportKey
-                  label={exporter.labelFor(job)}
-                  busy={exporter.busy(job.id)}
-                  progress={exporter.progress(job.id)}
-                  onClick={() => exporter.run(job)}
-                  className={styles.exportKey}
-                />
-              ) : undefined
-            }
-            tallies={
-              counts.length > 0
-                ? counts.map((tally) => (
-                    <TallyPill
-                      key={tally.emoji}
-                      glyph={<ReactionGlyph glyph={tally.emoji} />}
-                      count={tally.count}
-                      mine={tally.mine}
-                      context="media"
-                      label={labelFor(tally.emoji)}
-                    />
-                  ))
-                : undefined
-            }
-          />
-        </div>
+        {/* No card for a round nobody voted in — there is no winning entry to
+            draw, and an empty frame would be the hole `TunedImage` exists to
+            fill. `revealCopy` carries the headline for that round. */}
+        {winner && (
+          <div className={styles.winnerCard}>
+            <MediaCard
+              src={winner.media?.src ?? ''}
+              alt={winner.media?.alt ?? 'The winning entry'}
+              width={winner.media?.width}
+              height={winner.media?.height}
+              topText={winner.lines?.[0]}
+              bottomText={winner.lines?.[1]}
+              winner
+              share={
+                job ? (
+                  <ExportKey
+                    label={exporter.labelFor(job)}
+                    busy={exporter.busy(job.id)}
+                    progress={exporter.progress(job.id)}
+                    onClick={() => exporter.run(job)}
+                    className={styles.exportKey}
+                  />
+                ) : undefined
+              }
+              tallies={
+                counts.length > 0
+                  ? counts.map((tally) => (
+                      <TallyPill
+                        key={tally.emoji}
+                        glyph={<ReactionGlyph glyph={tally.emoji} />}
+                        count={tally.count}
+                        mine={tally.mine}
+                        context="media"
+                        label={labelFor(tally.emoji)}
+                      />
+                    ))
+                  : undefined
+              }
+            />
+          </div>
+        )}
 
         <Stack gap={20} className={styles.column}>
           {subject?.kind === 'prompt' && (
