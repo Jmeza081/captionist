@@ -309,6 +309,29 @@ and left out; the backlog records why. One of them left a finding behind —
 `project()` never redacts `round.ballots`, so the reveal hands every guest
 who-voted-for-whom. That is [backlog §1.6](./backlog.md), open.
 
+**A ballot stopped going out with the room.** Not a phase — backlog §1.6, and
+the finding that fell out of deciding *against* vote attribution in §2.2.
+`project()` enforced one rule, that an entry is anonymous until the reveal, and
+enforced it correctly. It had nothing to say about who *voted* for what, so
+`Round.ballots` — keyed by voter — went out whole, at every phase, to every
+client. Each half was harmless: during the vote a ballot names entries whose
+authors are stripped, and at the reveal authorship is meant to be back. The
+leak was the **join**, and it stayed open for the whole reveal and the whole
+untimed scoreboard after it, because `Round` is not replaced until
+`round/advanced`.
+
+`Tiebreak.votes` was the same map on a worse screen — the duel names both
+contenders by design, so it needed no join at all. Ballots are projected to the
+viewer's own now, at every phase; the duel's votes keep their keys for "4 of 7
+have voted" and lose their values.
+[ADR 0040](./adr/0040-a-ballot-is-secret-at-every-phase.md) records the rule
+and the one edge it leaves: a per-contender live tally has to be computed on
+the host, because a client deriving one would now read blanks as zero.
+
+Worth noting what this was not. No shipped copy ever promised voter anonymity —
+the player-facing strings are about entries and all of them were honest. The
+only thing overclaiming was a code comment in `VoteScreen`.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.

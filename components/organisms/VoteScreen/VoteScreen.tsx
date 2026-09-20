@@ -106,9 +106,15 @@ export function VoteScreen() {
    *
    * Not the author either, which is what a foot like this would most like to
    * carry: `project()` strips authorship from every entry but your own before
-   * the state ever leaves the host, precisely so that a vote is anonymous. The
-   * one screen that does name people is the tiebreak, and it is after the
+   * the state ever leaves the host, so the thing you are ranking is anonymous.
+   * The one screen that does name people is the tiebreak, and it is after the
    * ballot rather than during it.
+   *
+   * That is a different guarantee from *your ballot* being secret, which this
+   * sentence used to run together with it — the entry you rank is anonymous
+   * until the reveal, and who you ranked is nobody's business at any phase.
+   * The second half is [ADR 0040](../../../docs/adr/0040-a-ballot-is-secret-at-every-phase.md),
+   * and it is enforced in the same projection rather than here.
    */
   const titleOf = (entryId: EntryId): string => {
     const card = cards.find((c) => c.entryId === entryId)

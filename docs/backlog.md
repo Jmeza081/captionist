@@ -1,8 +1,8 @@
 # Backlog
 
-What is left after phase 9: a launch gate, one open defect, and four wishlist
-items. The five defects originally here were fixed on 2026-09-14 and §2.1 and
-§2.2 have since shipped — their entries stay below, marked, because each
+What is left after phase 9: a launch gate and four wishlist items. Every defect
+in this file is fixed — the original five on 2026-09-14, §1.6 on 2026-09-20 —
+and §2.1 and §2.2 have shipped — their entries stay below, marked, because each
 records what was actually wrong and the decision that settled it. Compiled from
 playtest feedback and re-derived against the code, because the report named
 symptoms and the code names causes.
@@ -47,9 +47,10 @@ this is the index.
 and now carries the resolution in bold at the top. The two non-defects (§1.4,
 §1.5) stay as records.
 
-**§1.6 is open**, and did not come from a playtest — it was found on
-2026-09-20 while deciding against vote attribution in §2.2. It is the only
-unfixed correctness item in this file.
+**§1.6 did not come from a playtest** — it was found on 2026-09-20 while
+deciding against vote attribution in §2.2, and fixed the same day. It is the
+one entry here that was found by reading the projection rather than by playing
+the game.
 
 ### 1.1 Tiebreak — four separate defects
 
@@ -239,7 +240,21 @@ caps a design choice rather than a bill, so the landing page is accurate. The
 per-round search budget is gone entirely for the same reason — which is also why
 `Chip`'s `blocked` prop currently has no production consumer.
 
-### 1.6 The reveal hands every guest the ballots — open
+### 1.6 The reveal hands every guest the ballots
+
+**Fixed 2026-09-20**, and it was three routes rather than one.
+`Round.ballots` is projected to the viewer's own at **every** phase, not just
+the two that were guarded. `Tiebreak.votes` keeps its keys — `tiebreakCopy`
+counts them for "4 of 7 have voted" — and loses its values, so an empty id
+there means *this seat voted, and you may not see for whom*. The `VoteScreen`
+comment that claimed "precisely so that a vote is anonymous" was conflating
+the entry being anonymous with the ballot being secret, and now says which is
+which. [ADR 0040](./adr/0040-a-ballot-is-secret-at-every-phase.md).
+
+**The sharp edge it leaves:** a per-contender live tally can no longer be
+derived on a client — `Object.values(votes)` is blanks now, and would read as
+zero votes rather than failing loudly. If that screen is ever wanted, the host
+computes the number and publishes it. `project.test.ts` says so.
 
 Found while deciding against vote attribution (§2.2), not reported by a
 playtest. `lib/game/project.ts` redacts `entry.authorId`, and only during
@@ -258,10 +273,11 @@ vote grid needs it for `RankSlot` and needs nobody else's. Add a
 `project.test.ts` case. The honest aggregate the room is entitled to is already
 shipped as `RoundResult.points`.
 
-*Why it is not done:* it changes what guests receive over the wire. That is a
-different kind of change from a rendering pass and deserves its own gate.
-`redactTiebreak` is the cautionary tale sitting right beside it — it exists
-because a redaction leaked by a second route.
+*Why it got its own commit:* it changes what guests receive over the wire,
+which is a different kind of change from a rendering pass and deserved its own
+gate. `redactTiebreak` was the cautionary tale sitting right beside it — it
+exists because a redaction leaked by a second route, and this turned out to be
+the third and fourth.
 
 ---
 
@@ -516,9 +532,11 @@ ours. **A recap that plays in the room rather than exporting sidesteps that.**
 A reading of the list, not a schedule. The defects, §2.1 and §2.2 are done;
 what is left:
 
-1. **1.6** — the ballot leak. Small, and the only thing left here that is a
-   correctness question rather than a feature.
-2. Everything else in §2 is optional. **Do not start 2.6 casually** — it reads
+1. Nothing here is ship-blocking any more; §0's gate is. Everything in §2 is
+   optional.
+2. If something is wanted next, **2.3** (manual advance) is the one a real room
+   asks for — the rest are additions rather than answers to a complaint.
+   Everything else in §2 is optional. **Do not start 2.6 casually** — it reads
    like a screen and is a wire-format change with a byte budget to defend.
 
 The launch gate's credential rows are settled: the keys are sourced locally
