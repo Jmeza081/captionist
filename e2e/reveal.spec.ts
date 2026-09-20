@@ -19,17 +19,22 @@ test.describe('the reveal', () => {
     await expect(page.getByText(/ranking points? this round/)).toBeVisible()
   })
 
-  test('tells a phone where you came, and a desktop who else placed', async ({ page }) => {
+  test('tells you where you came at every width, and what it paid', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=reveal&as=p2&gifs=stub')
 
-    // Two rows of runners-up have no room on a phone, so the small screen gets
-    // the one line that is actually about you instead.
-    if (wide(page)) {
-      await expect(page.getByText('Runners up')).toBeVisible()
-      await expect(page.getByText(/^You finished /)).toBeHidden()
+    // The runners-up list stops at three, so on a desk it answers this for two
+    // people and leaves the rest of a twenty-player room without it. The line
+    // is drawn at both widths now; only the list is width-dependent.
+    await expect(page.getByText('Runners up')).toBeVisible({ visible: wide(page) })
+
+    // Asserted against the headline rather than a hard-coded seat, so the
+    // fixture's winner can change without rewriting the test. The winner is
+    // the one person this line says nothing to.
+    const won = await page.getByRole('heading', { name: /you legend\./ }).isVisible()
+    if (won) {
+      await expect(page.getByText(/^You finished /)).toHaveCount(0)
     } else {
-      await expect(page.getByText(/^You finished /)).toBeVisible()
-      await expect(page.getByText('Runners up')).toBeHidden()
+      await expect(page.getByText(/^You finished \d+(st|nd|rd|th) this round · \+\d+$/)).toBeVisible()
     }
   })
 
@@ -87,6 +92,40 @@ test.describe('the scoreboard', () => {
     await page.goto('/room/DEV?seed=42&phase=score&mode=react&gifs=stub')
 
     await expect(page.getByText(/^Next prompter: /)).toBeVisible()
+  })
+
+  test('shows the round’s points on every row, at every width', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=score&gifs=stub')
+
+    // The defect this closes: the delta lived in the note column, which is
+    // behind a 560px container query on the row's own width — so on a phone it
+    // had never rendered for anyone, and on a desk a round win replaced it.
+    const deltas = page.getByText(/^\+\d+ this round$/)
+    await expect(deltas.first()).toBeVisible()
+
+    // One per competitor. The role holder is the exception, below.
+    const rows = page.getByRole('listitem')
+    await expect(deltas).toHaveCount((await rows.count()) - 1)
+  })
+
+  test('reports a round win without swallowing the round’s points', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=score&gifs=stub')
+
+    const leader = page.getByRole('listitem').first()
+    // Both facts on one row, which is what the design's own screen 1m draws
+    // and what `standingNote` used to make impossible.
+    await expect(leader.getByText(/^\d+ rounds? won$/)).toBeVisible({ visible: wide(page) })
+    await expect(leader.getByText(/^\+\d+ this round$/)).toBeVisible()
+  })
+
+  test('gives whoever set the round up an absence, not a zero', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=score&gifs=stub')
+
+    // They were never allowed to score, so `+0` would read as a bad round.
+    const holder = page.getByRole('listitem').filter({ hasText: 'Sat this round out' })
+    await expect(holder).toHaveCount(1)
+    await expect(holder.getByText(/^\+\d+ this round$/)).toHaveCount(0)
+    await expect(holder.getByText('Set this round up')).toBeVisible({ visible: wide(page) })
   })
 
   test('advances the round', async ({ page }) => {

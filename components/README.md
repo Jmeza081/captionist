@@ -72,6 +72,14 @@ instead of a re-declaration:
 compile error because 13px isn't in the design. All four are server components
 and take an `as` prop, so the markup stays semantic (`as="section"`, `as="ul"`).
 
+**A molecule may take `as` for the same reason**, and `PlayerRow` is the first
+that does. A primitive with `as="ol"` only keeps its half of the bargain: the
+children have to be `li`, or the list has no `listitem` roles and reads to
+assistive tech as empty. Where a primitive's `as` decides the container, the
+child it wraps may need one too. It is not a general escape hatch — the union
+is `'div' | 'li'`, not `ElementType`, because the only question being answered
+is whether this row is inside a real list.
+
 Reach for one before writing `display: flex` in a `.module.scss`. What belongs
 in the stylesheet is what a primitive can't express: a `max-width` measure, a
 type mixin, a bespoke background.

@@ -120,9 +120,11 @@
   color: t.$winner;
 }
 
-// The narrow layout's own result line. The runners-up list only appears in the
-// two-column one, so without this a losing player would leave the reveal
-// knowing nothing about their round.
+// Where this viewer came, and what it paid. Drawn at every width: the
+// runners-up list beside it names the top three, so in a room of twenty it
+// answers this question for two people and leaves sixteen without it. The
+// winner gets no line at all — `myRoundPlacement` returns nothing for them,
+// because the headline and the attribution card have already said it twice.
 .placement {
   display: flex;
   justify-content: space-between;
@@ -140,10 +142,6 @@
 }
 
 @container (min-width: #{t.$reveal-columns}) {
-  .placement {
-    display: none;
-  }
-
   .runners {
     display: flex;
   }

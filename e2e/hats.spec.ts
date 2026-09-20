@@ -156,9 +156,11 @@ test.describe('the crown', () => {
     await expectDrawn(crown.first())
 
     // On the leader, not merely somewhere on the page: the crowned avatar is
-    // the one whose row also carries rank 1. A standings row is a `div`, so
-    // this walks up from the art rather than guessing at a list element.
-    const crownedRow = page.locator('main div', { has: crown }).last()
+    // the one whose row also carries rank 1. This used to walk up through
+    // `main div` because a standings row was a `div` inside an `ol` — invalid
+    // markup that also left the list with no `listitem` children to target.
+    // The row is an `li` now, so the row itself is the thing to ask for.
+    const crownedRow = page.getByRole('listitem').filter({ has: crown })
     await expect(crownedRow).toContainText('1')
     await expect(crownedRow.locator('img[src^="/media/hats/"]')).toHaveCount(1)
   })

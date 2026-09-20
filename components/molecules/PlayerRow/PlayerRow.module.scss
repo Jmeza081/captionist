@@ -118,17 +118,62 @@
   background-color: t.$winner;
 }
 
+/**
+ * The running total, with the round that produced it underneath.
+ *
+ * Two numbers in one cell rather than two columns, so the round's points ride
+ * the one piece of the row that is never dropped. `.note` and `.bar` below
+ * are both behind container queries; a player on a phone would otherwise
+ * finish a round without ever being told what they scored in it.
+ */
+.scoreCell {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  // Not from the scale: this is optical leading between two lines of one
+  // number, not space between two things. The scale starts at 2px, which
+  // already reads as a gap here.
+  gap: 0;
+  min-width: t.$tap-target-min;
+}
+
 .score {
   font-family: t.$font-sans;
   font-size: 24px;
   font-weight: 800;
+  line-height: 1.1;
   color: t.$text-primary;
   font-variant-numeric: tabular-nums;
 }
 
-// The standings' note column. Suppressed in a narrow row: it is already
-// carrying a rank, an avatar, a name, a bar and a score, and this is the one of
-// the six that repeats information the scoreboard shows elsewhere.
+.delta {
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: t.$text-label;
+  font-variant-numeric: tabular-nums;
+}
+
+// Scored nothing — still a result, so it stays on the board and recedes.
+.zero {
+  color: t.$text-timestamp;
+}
+
+// Set the round up, so there was no scoring to do.
+.satOut {
+  color: t.$text-timestamp;
+}
+
+.srOnly {
+  @include t.srOnly;
+}
+
+// The standings' note column — rounds won, or what a player who did not
+// compete was doing instead. Suppressed in a narrow row: it is the one thing
+// here a phone can lose without losing a fact, now that the round's points
+// have moved into `.scoreCell` where no container query can drop them.
 .note {
   display: none;
   flex: none;

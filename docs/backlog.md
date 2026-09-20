@@ -1,10 +1,11 @@
 # Backlog
 
-What is left after phase 9: a launch gate and six wishlist items. The five
-defects that were here were fixed on 2026-09-14 — their entries stay below,
-marked, because each records what was actually wrong and the decision that
-settled it. Compiled from playtest feedback and re-derived against the code,
-because the report named symptoms and the code names causes.
+What is left after phase 9: a launch gate, one open defect, and four wishlist
+items. The five defects originally here were fixed on 2026-09-14 and §2.1 and
+§2.2 have since shipped — their entries stay below, marked, because each
+records what was actually wrong and the decision that settled it. Compiled from
+playtest feedback and re-derived against the code, because the report named
+symptoms and the code names causes.
 
 > **Read [`roadmap.md`](./roadmap.md) first.** This file is what is *left*; that
 > one is what was *built*, and its "Before launch" gate is the source of truth
@@ -42,9 +43,13 @@ this is the index.
 
 ## 1 — Defects
 
-**All five fixed on 2026-09-14.** Each entry keeps its diagnosis and now
-carries the resolution in bold at the top. The two non-defects (§1.4, §1.5)
-stay as records.
+**The original five were fixed on 2026-09-14.** Each entry keeps its diagnosis
+and now carries the resolution in bold at the top. The two non-defects (§1.4,
+§1.5) stay as records.
+
+**§1.6 is open**, and did not come from a playtest — it was found on
+2026-09-20 while deciding against vote attribution in §2.2. It is the only
+unfixed correctness item in this file.
 
 ### 1.1 Tiebreak — four separate defects
 
@@ -234,6 +239,30 @@ caps a design choice rather than a bill, so the landing page is accurate. The
 per-round search budget is gone entirely for the same reason — which is also why
 `Chip`'s `blocked` prop currently has no production consumer.
 
+### 1.6 The reveal hands every guest the ballots — open
+
+Found while deciding against vote attribution (§2.2), not reported by a
+playtest. `lib/game/project.ts` redacts `entry.authorId`, and only during
+`vote` and `tiebreak`. It never touches `round.ballots` at all. At `reveal`
+the authors come back, so any guest can pair the two in devtools and read who
+ranked whom.
+
+Nothing in the product promises voter anonymity in so many words — §4.5's
+guarantee is about *entries*. But nobody decided voters were nameable either,
+and `project.ts` exists precisely to enforce this sort of thing by redaction
+rather than by nothing having asked yet. The room is played by colleagues;
+"Jesse put you last" is a retro argument the game should not be able to start.
+
+*Fix:* project `ballots` down to the viewer's own ballot, at every phase — the
+vote grid needs it for `RankSlot` and needs nobody else's. Add a
+`project.test.ts` case. The honest aggregate the room is entitled to is already
+shipped as `RoundResult.points`.
+
+*Why it is not done:* it changes what guests receive over the wire. That is a
+different kind of change from a rendering pass and deserves its own gate.
+`redactTiebreak` is the cautionary tale sitting right beside it — it exists
+because a redaction leaked by a second route.
+
 ---
 
 ## 2 — Features
@@ -292,6 +321,47 @@ so the loser needs a graceful "someone just took that" rather than a silent swap
 `caption` mode is unaffected — one GIF, one picker, no collision.
 
 ### 2.2 Round results — small, and mostly already computed
+
+**Shipped 2026-09-20.** The delta moved out of the note column and into the
+score cell, under the running total and behind **neither** container query —
+which turned out to matter more than the entry below knew. The note column
+keeps rounds won. Whoever set the round up gets an em dash rather than `+0`
+([ADR 0039](./adr/0039-a-role-holders-zero-is-an-absence-not-a-score.md)), and
+the reveal's placement line is drawn at every width with the points appended.
+Rank movement, places 4..N on the reveal, and vote attribution were all
+considered and **left out** — see the three notes at the end of this entry.
+
+**The diagnosis below understates it.** The note column is behind a 560px
+container query measured on the row's own width, so the delta was not merely
+eclipsed once someone had a round win — on a phone it had never rendered for
+anybody. Two smaller things came with the fix: the standings `<ol>` had been
+wrapping plain `<div>`s, so the list had no `listitem` children and a
+twenty-player scoreboard announced as a list of nothing (`PlayerRow` takes an
+`as` prop now); and `myRoundPlacement` no longer tells the round's winner they
+came first, which the screen was already saying twice above it.
+
+**What was left out, and why:**
+
+- **Rank movement.** Five rounds and up to twenty players means round two moves
+  nearly everyone, so an arrow on eighteen of twenty rows measures noise. It is
+  also in no part of `design/`, and it was the only thing here that would have
+  needed new gain/loss colour tokens and up/down glyphs. *If it is ever picked
+  up:* suppress the indicator whenever the player is tied with anyone in either
+  the previous or the current standings — `standings()` breaks ties on
+  `localeCompare(name)`, so that is precisely when movement is a naming
+  artefact rather than a result.
+- **Places 4..N on the reveal.** The reveal is the room's one shared-screen
+  beat. The placement line closes the same gap for the person who actually
+  wants it, without a second scroll surface.
+- **Vote attribution.** Out on product grounds — coworkers play this. But the
+  investigation turned up something real and still open: `project()` redacts
+  `authorId` at `vote` and `tiebreak` and **never touches `round.ballots`**, so
+  at `reveal`, once `authorOf` is back, every guest holds who-voted-for-whom in
+  devtools. Nobody decided that; it is incidental. The fix is to project
+  `ballots` down to the viewer's own at every phase, plus a `project.test.ts`
+  case. **Deliberately not done here** — it changes what guests receive over
+  the wire, which is a bigger blast radius than the rest of this put together.
+  Logged as §1.6 below.
 
 `Standing` carries `delta` (points this round) and `roundWins` as separate
 fields. `ScoreScreen` renders neither — only `note`, and `standingNote` collapses
@@ -443,10 +513,11 @@ ours. **A recap that plays in the room rather than exporting sidesteps that.**
 
 ## 3 — Suggested order
 
-A reading of the list, not a schedule. The defects and §2.1 are done; what is
-left:
+A reading of the list, not a schedule. The defects, §2.1 and §2.2 are done;
+what is left:
 
-1. **2.2** — cheapest visible win; the numbers are computed and thrown away.
+1. **1.6** — the ballot leak. Small, and the only thing left here that is a
+   correctness question rather than a feature.
 2. Everything else in §2 is optional. **Do not start 2.6 casually** — it reads
    like a screen and is a wire-format change with a byte budget to defend.
 

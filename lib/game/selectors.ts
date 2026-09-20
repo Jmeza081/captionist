@@ -943,10 +943,23 @@ export interface Standing {
   score: number
   /** 0–1, this row's score as a fraction of the leader's. */
   share: number
-  /** Points earned this round. */
-  delta: number
+  /**
+   * Points earned this round, or `'out'` for whoever set it up.
+   *
+   * The role holder does not compete, so their zero is not a score — it is an
+   * absence, and `+0` would read as a bad round rather than no round.
+   */
+  delta: number | 'out'
   roundWins: number
-  /** The right-hand column — rounds won once there are any, else this round's delta. */
+  /**
+   * The right-hand column — rounds won, or what a player who did not compete
+   * was doing instead. Empty for a competitor with no round wins yet: the
+   * design draws this column as whatever is worth saying about the row, and
+   * on most rows that is nothing.
+   *
+   * It used to carry the round's points as well, and could therefore only ever
+   * report one of the two. They are `delta` now.
+   */
   note: string
 }
 
@@ -958,16 +971,23 @@ export function standings(state: GameState): readonly Standing[] {
   const leader = Math.max(...Object.values(totals), 0)
 
   return state.players
-    .map((player) => ({
-      player: toAvatarProps(state, player),
-      id: player.id,
-      score: totals[player.id] ?? 0,
-      share: leader > 0 ? (totals[player.id] ?? 0) / leader : 0,
-      delta: last?.points[player.id] ?? 0,
-      roundWins: wins[player.id] ?? 0,
-      note: standingNote(wins[player.id] ?? 0, last?.points[player.id] ?? 0),
-      rank: 0,
-    }))
+    .map((player) => {
+      // Read off the round that produced `last`, which is still the current
+      // one at `score` — `round/advanced` is what replaces it. Null at the
+      // podium, where nobody is mid-round and nobody is sitting one out.
+      const satOut = last !== undefined && isRoleHolder(state, player.id)
+
+      return {
+        player: toAvatarProps(state, player),
+        id: player.id,
+        score: totals[player.id] ?? 0,
+        share: leader > 0 ? (totals[player.id] ?? 0) / leader : 0,
+        delta: satOut ? ('out' as const) : (last?.points[player.id] ?? 0),
+        roundWins: wins[player.id] ?? 0,
+        note: standingNote(wins[player.id] ?? 0, satOut),
+        rank: 0,
+      }
+    })
     .sort((a, b) => b.score - a.score || a.player.name.localeCompare(b.player.name))
     .map((row, i) => ({ ...row, rank: i + 1 }))
 }
@@ -1424,13 +1444,23 @@ export function revealCopy(state: GameState, viewerId: PlayerId): RevealCopy {
   }
 }
 
-/** Where this viewer's entry finished, for the reveal's phone layout. */
+/**
+ * Where this viewer's entry finished, and what it paid.
+ *
+ * Drawn at every width now. It was phone-only, on the grounds that the wide
+ * layout has the runners-up list instead — but that list is the top three, so
+ * a room of twenty told everyone from fourth down nothing at all on a laptop.
+ *
+ * Nothing for the winner: the headline already says their name and the
+ * attribution card already says their points, so a third line reading "You
+ * finished 1st this round" is the screen repeating itself.
+ */
 export function myRoundPlacement(state: GameState, viewerId: PlayerId): string | undefined {
   const result = latestResult(state)
   if (!result) return undefined
   const mine = result.ranking.findIndex((id) => result.authorOf[id] === viewerId)
-  if (mine < 0) return undefined
-  return `You finished ${ordinal(mine + 1)} this round`
+  if (mine <= 0) return undefined
+  return `You finished ${ordinal(mine + 1)} this round · +${result.points[viewerId] ?? 0}`
 }
 
 /**
@@ -1473,10 +1503,20 @@ export function showsRoundProgress(state: GameState): boolean {
   return state.phase === 'score'
 }
 
-/** The right-hand column of a standings row. */
-function standingNote(roundWins: number, delta: number): string {
+/**
+ * The right-hand column of a standings row.
+ *
+ * Empty is a real answer. This used to fall through to `+N this round`, which
+ * meant a leader's round points were invisible and every other row said the
+ * same sentence twenty times over — the design draws the column as the one
+ * interesting thing about a row, and most rows do not have one.
+ */
+function standingNote(roundWins: number, satOut: boolean): string {
+  // Mode-neutral on purpose: a Captionist supplies a GIF and a Prompter
+  // supplies a prompt, and both of them set the round up.
+  if (satOut) return 'Set this round up'
   if (roundWins > 0) return plural(roundWins, 'round won', 'rounds won')
-  return `+${delta} this round`
+  return ''
 }
 
 /* ---------------- Podium ---------------- */

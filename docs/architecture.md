@@ -86,7 +86,9 @@ and the react-lane audit has since added `$prompt-banner-columns` and
 mechanism is a wrapping flex row whose children go from full-width lines to
 real widths inside the query, because a container cannot query itself.
 `PlayerRow`'s `standing` variant is its own container — the row is the only
-thing that knows whether it can afford a bar and a note — and `Grid` gained a
+thing that knows whether it can afford a bar and a note, and **the round's own
+points are outside both queries on purpose**, because a query decides what a row
+can drop and the number the round was about is not droppable — and `Grid` gained a
 `fluid` mode that derives its column count from its own width, capped at
 `mdColumns`, so the vote grid never has to be told the rail is open.
 
@@ -3141,6 +3143,45 @@ which is the card giving up a rule rather than a prop: `overlayStep` is only the
 lookup from a line count to a class now, and the count is decided where the
 export's `layout.ts` can decide it the same way.
 
+**Round results added no component and moved no tier: it is two props on
+`PlayerRow`, and nothing in the map above changed.** The first is `delta`, the
+round's points, drawn under the running total rather than in the note column
+beside it — and it is the one thing on a `standing` row behind **neither**
+container query. `$standing-bar-min` and `$standing-note-min` are what the row
+gives up when it is narrow, and the number the round just produced is not a
+luxury: in the note column it had never rendered on a phone for anybody, and on
+a desk a round win took its place. `'out'` is the round's role holder, who set
+it up and could not compete in it; it draws an em dash with `Sat this round
+out` behind it for a screen reader, rather than `+0`, because zero is a result
+and they were never offered one
+([ADR 0039](./adr/0039-a-role-holders-zero-is-an-absence-not-a-score.md)). The
+real split is in
+`lib/game/selectors.ts`: `standingNote` returns rounds won, or `Set this round
+up`, or **nothing at all** — an empty note is a legal answer now, because the
+design draws that column as the one interesting thing about a row and most rows
+do not have one — and `Standing.delta` is `number | 'out'`, decided by
+`isRoleHolder` in the selector rather than re-derived on a screen. A union is
+the point: anything new that reads a delta has to say what an absence means
+instead of adding it to a total. `RevealScreen` is
+the same argument one screen over. Its placement line was suppressed above
+`$reveal-columns` on the grounds that the runners-up list stood in for it, but
+that list is the top three, so a room of twenty told everyone from fourth down
+nothing at all on a laptop. The line is drawn at every width now, the
+runners-up list is still the wide-only element, and `myRoundPlacement` returns
+nothing for the winner — the headline and the attribution card have said it
+twice already. Nothing crossed the wire to make any of this possible:
+`GameState` and `RoundResult` are untouched, and every number now on screen was
+already computed by `standings()` and discarded.
+
+**The second prop is a correctness fix rather than a variant**, and it is the
+kind rule 2 does not cover: `as?: 'div' | 'li'`. `ScoreScreen` composes the
+table as `Stack as="ol"` and had been filling it with plain `div`s — invalid
+markup that costs more than tidiness, because a `div` child carries no
+`listitem` role and a screen reader announced twenty players as a list of
+nothing. The scoreboard passes `as="li"`; `e2e/hats.spec.ts` stopped walking up
+through `main div` to find the crowned row and asks for it by role, which is
+the assertion that will now fail if the element regresses.
+
 ## Token flow
 
 Values exist exactly once. Sass owns them; React reads them by name.
@@ -4014,10 +4055,16 @@ not because either is queued.
 
 **A third category exists now and is deliberately not in this section.** A
 *departure* — a value the design states and the code overrules — is not a gap,
-so it does not belong in a list of what is missing. There are two: uploads,
-above, and the media card's shape and caption scale
+so it does not belong in a list of what is missing. Two of them carry an ADR,
+because the decision was bigger than the pixel: uploads, above, and the media
+card's shape and caption scale
 ([ADR 0016](./adr/0016-a-media-card-is-square-and-a-caption-scales-with-it.md)).
-Both are recorded where a reader would look for them — the ADR, and
+The rest — the reconnect copy, the scoreboard's one note column becoming two —
+are smaller calls that needed recording but not arguing, and the departures
+table is the whole list. **This sentence used to say "there are two" full
+stop**, which was already miscounting the reconnect rows before the scoreboard
+added another; a count maintained in two files drifts, so it is not kept here
+any more. Each is recorded where a reader would look for it — the ADR, and
 [design-system.md](./design-system.md)'s departures table — rather than here,
 because nothing about either is waiting on a phase.
 
@@ -4193,19 +4240,22 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-452 unit tests (`lib/**/*.test.ts`, node, over 30 files) and 634 Playwright
-tests across the two viewports — 317 per project, over 33 spec files. Not all of
-them run: 23 skip on viewport (a docked rail exists only above `md`, a
-floating dock only below it), which is a branch of the layout rather than a hole
-in the coverage. 23 *tests* out of sixteen viewport `test.skip` call sites —
-seventeen in the tree, one of which is `design-review.spec.ts`'s `SHOTS` gate and
-not a viewport question at all. The two counts differ because
+455 unit tests (`lib/**/*.test.ts`, node, over 30 files) and 642 Playwright
+tests across the two viewports — 321 per project, over 33 spec files. Not all of
+them run: 30 skip, and 26 of those are on viewport (a docked rail exists only
+above `md`, a floating dock only below it), which is a branch of the layout
+rather than a hole in the coverage. The other four are
+`design-review.spec.ts`'s two contact-sheet tests behind the `SHOTS` gate, on
+both projects — not a viewport question at all. 26 *tests* out of nineteen
+viewport `test.skip` call sites — twenty in the tree, one of them that gate.
+The two counts differ because
 `responsive.spec.ts` skips at the describe level and takes all of its own with
-it: 12 of the 23 skip on the phone (the width sweep's three, and nine that need
-a docked rail or an `xl` split), and 11 on the desk (the floating keys' two, the
-boards' four, three that are about a phone specifically, and the sheet handle's
-two, which are the newest — a docked column is not dragged anywhere). Both
-projects would otherwise sweep the same widths through the same browser.
+it: 13 of the 26 skip on the phone (the width sweep's three, and ten that need
+a docked rail, an `lg` or `xl` split, or the reveal's desktop-only reaction
+bar), and 13 on the desk (the responsive sweep's six phone layouts, the
+floating keys' two, chat's one sheet, and four in `refinements.spec.ts` for the
+floating dock and the sheet handle — a docked column is not dragged anywhere).
+Both projects would otherwise sweep the same widths through the same browser.
 
 **The avatar change's share is 12 unit tests and five specs.**
 `lib/avatar.test.ts` is the 12, and it is aimed at the two things a style swap
@@ -4570,6 +4620,23 @@ marked, the marked tile keeps `aria-disabled="true"` and focus rather than
 `disabled`, a forced click on it stages nothing and leaves `aria-pressed`
 false, no player is named on it, and the tile beside it still works. The other
 two hold the copy before anything is taken and the empty caption-room case.
+
+**Round results' share is 3 unit tests and 3 browser tests per project, and two older
+tests were inverted rather than added to** — which is the honest record of a
+change that was mostly a *defect*. `lib/game/selectors.test.ts` used to assert
+that a standings note read rounds won **or** this round's points, the very
+either/or the pass removed; it now asserts both facts on the leader's row, an
+empty note as legal, and `'out'` with `Set this round up` on the role holder
+while every competitor's zero stays a number. Its reveal half asserts a
+placement line for a runner-up read off the fixture's own ranking rather than a
+hard-coded seat, and **nothing at all for the winner**. The browser half is in
+`e2e/reveal.spec.ts`: the placement line is now asserted at both widths with
+only the runners-up list gated on width, and three new tests hold the
+scoreboard at both widths — a delta on every competitor's row, both facts
+together on the leader's, and the role holder's em dash with no `+0` anywhere
+on it. They count rows with `getByRole('listitem')`, which only became possible
+when the row became an `li`; `e2e/hats.spec.ts` was re-pointed at the same role
+for the same reason.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

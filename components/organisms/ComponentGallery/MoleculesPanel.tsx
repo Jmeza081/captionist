@@ -85,6 +85,8 @@ export function MoleculesPanel() {
               rank={1}
               score={18}
               share={0.78}
+              note="2 rounds won"
+              delta={6}
             />
             <PlayerRow
               player={PLAYERS.jack}
@@ -92,6 +94,17 @@ export function MoleculesPanel() {
               rank={2}
               score={14}
               share={0.6}
+              delta={0}
+            />
+            {/* The role holder, who could not score in the round they set up. */}
+            <PlayerRow
+              player={PLAYERS.melania}
+              variant="standing"
+              rank={3}
+              score={9}
+              share={0.5}
+              note="Set this round up"
+              delta="out"
             />
           </Stack>
         </Case>

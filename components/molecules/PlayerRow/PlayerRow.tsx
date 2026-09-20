@@ -29,13 +29,36 @@ export interface PlayerRowProps {
   /** 0–1, the row's score as a fraction of the leader's. */
   share?: number
   /**
-   * Standings only: the quiet right-hand column — "2 rounds won", or
-   * "+4 this round" before anyone has won one. Hidden on a phone, where the
-   * score is the only number with room.
+   * Standings only: the quiet right-hand column — "2 rounds won", or what this
+   * player was doing instead of competing. Hidden on a phone, where the score
+   * is the only number with room.
+   *
+   * It no longer carries the round's points. Those are `delta`, which has to
+   * survive the narrow row this one is dropped from.
    */
   note?: string
+  /**
+   * Standings only: points earned this round, drawn under the running total.
+   *
+   * `'out'` is the role holder, who set the round up and could not score in it
+   * — an em dash rather than `+0`, because zero is a result and they were
+   * never allowed one.
+   *
+   * Deliberately outside both container queries. The note column and the bar
+   * are the row's two luxuries; this is the number the round was about.
+   */
+  delta?: number | 'out'
   /** Marks this row as the viewer's own. */
   you?: boolean
+  /**
+   * The element to render as. `li` when the caller is a real list.
+   *
+   * The scoreboard's `Stack as="ol"` was wrapping plain `div`s, which is
+   * invalid — `ol` takes `li` — and costs more than tidiness: a `div` child
+   * has no `listitem` role, so a screen reader announced a list of twenty
+   * players as a list of nothing.
+   */
+  as?: 'div' | 'li'
 }
 
 /**
@@ -54,7 +77,9 @@ export function PlayerRow({
   score,
   share = 0,
   note,
+  delta,
   you = false,
+  as: Row = 'div',
 }: PlayerRowProps) {
   const pending = status !== undefined && !done
   const isWinner = rank === 1
@@ -70,7 +95,7 @@ export function PlayerRow({
     .join(' ')
 
   return (
-    <div className={classes}>
+    <Row className={classes}>
       {rank !== undefined && <span className={styles.rank}>{rank}</span>}
 
       <Avatar
@@ -110,9 +135,23 @@ export function PlayerRow({
             />
           </span>
           {note && <span className={styles.note}>{note}</span>}
-          <span className={styles.score}>{score}</span>
+          <span className={styles.scoreCell}>
+            <span className={styles.score}>{score}</span>
+            {delta !== undefined &&
+              (delta === 'out' ? (
+                <span className={`${styles.delta} ${styles.satOut}`}>
+                  <span aria-hidden="true">—</span>
+                  <span className={styles.srOnly}>Sat this round out</span>
+                </span>
+              ) : (
+                <span className={`${styles.delta} ${delta === 0 ? styles.zero : ''}`}>
+                  +{delta}
+                  <span className={styles.srOnly}> this round</span>
+                </span>
+              ))}
+          </span>
         </>
       )}
-    </div>
+    </Row>
   )
 }

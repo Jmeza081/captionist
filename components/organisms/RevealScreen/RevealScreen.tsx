@@ -167,8 +167,8 @@ export function RevealScreen() {
             </Box>
           )}
 
-          {/* The phone drops the runners-up list, so this is the only place a
-              non-winner learns where they came. */}
+          {/* The runners-up list beside it stops at three, so for everyone
+              below that this is the only place they learn where they came. */}
           {copy.placement && (
             <div className={styles.placement}>
               <span>{copy.placement}</span>

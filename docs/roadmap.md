@@ -286,6 +286,29 @@ destination of ours); a "Copy still" beside "Save GIF" on a laptop (the first
 composed frame is kept for it); and a Worker for the encoder, whose threshold
 the ADR names.
 
+**The scoreboard started reporting the round.** Not a phase — backlog §2.2, and
+a rendering change to numbers the reducer had been computing and discarding
+since phase 0. `Standing.delta` and `roundWins` both reach the row now:
+`standingNote` used to return one *or* the other, so a leader's round points
+were the one figure on the board nobody could read. The delta moved out of the
+note column and under the running total, which is the part that mattered most —
+the note column sits behind a 560px container query on the row's own width, so
+on a phone the delta had never rendered for anybody, for any row.
+
+Three smaller things came with it. Whoever set the round up gets an em dash
+rather than `+0`, because they were never eligible to score
+([ADR 0039](./adr/0039-a-role-holders-zero-is-an-absence-not-a-score.md)). The
+reveal's placement line is drawn at every width and carries the points — the
+runners-up list beside it stops at three, so a room of twenty was answering
+"where did I come" for two people. And the standings `<ol>` had been wrapping
+plain `<div>`s: invalid, and with no `listitem` children the whole scoreboard
+announced as an empty list, so `PlayerRow` takes an `as` prop now.
+
+Rank movement, places 4..N on the reveal and vote attribution were all weighed
+and left out; the backlog records why. One of them left a finding behind —
+`project()` never redacts `round.ballots`, so the reveal hands every guest
+who-voted-for-whom. That is [backlog §1.6](./backlog.md), open.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.

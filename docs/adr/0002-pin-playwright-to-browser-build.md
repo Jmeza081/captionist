@@ -33,3 +33,23 @@ projects only. "Mobile" means Chromium emulating a Pixel 5, not WebKit.
   rather than being caught by a test.
 - The constraint is repeated in the `/e2e` skill and in `CLAUDE.md`, so the
   next person to hit a launch failure has the reason to hand.
+- **Outside the provisioned container there is no browser at all**, and the
+  rule above has to be read for what it protects rather than literally. A
+  developer machine has no `/opt/pw-browsers`, so E2E cannot run until a build
+  is fetched — and the thing that must not happen is fetching *the wrong one*.
+  Install through the pinned local binary, never through `npx`:
+
+  ```sh
+  ./node_modules/.bin/playwright install chromium
+  ```
+
+  `npx playwright install` resolved a newer Playwright from the registry and
+  laid down build **1243** against a package that wants **1194**, which fails
+  at launch with the same confusing error this ADR was written about — arriving
+  from the opposite direction, a browser ahead of its package. The local binary
+  reads this repo's own `playwright-core/browsers.json` and can only ever fetch
+  the pinned revision. A stale extra build in the cache is inert; leave it.
+- `.claude/settings.json` denies `Bash(npx playwright install:*)`, so an agent
+  cannot do this on its own initiative. That is the intended shape: fetching a
+  browser is a decision a person makes once per machine, and the deny rule is
+  what turns it into a conversation rather than a silent 130MB download.

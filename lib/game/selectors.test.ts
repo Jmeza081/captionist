@@ -16,6 +16,7 @@ import {
   captionRemaining,
   clearLabel,
   composeCopy,
+  latestResult,
   leaderIds,
   lobbyCopy,
   lockGateFrom,
@@ -426,11 +427,31 @@ describe('the reveal', () => {
     expect(revealCopy(at('reveal', 'react'), HOLDER).eyebrow).toContain('best answer')
   })
 
-  it('tells everyone who submitted where they came', () => {
+  it('tells everyone who submitted where they came, and what it paid', () => {
     const state = at('reveal', 'caption')
-    expect(myRoundPlacement(state, RIVAL)).toMatch(/^You finished \d+(st|nd|rd|th) this round$/)
+    const result = latestResult(state)
+    if (!result) throw new Error('the reveal fixture needs a scored round')
+
+    // Anyone who competed and did not win. `RIVAL` is this fixture's winner,
+    // which is exactly the case the line below deliberately says nothing for.
+    const loser = result.ranking
+      .map((id) => result.authorOf[id])
+      .find((id) => id !== undefined && id !== result.authorOf[result.winnerEntryId])
+    if (!loser) throw new Error('the reveal fixture needs a runner-up')
+
+    expect(myRoundPlacement(state, loser)).toMatch(
+      /^You finished \d+(st|nd|rd|th) this round · \+\d+$/,
+    )
     // The role holder sat the round out, so they have no placement to report.
     expect(myRoundPlacement(state, HOLDER)).toBeUndefined()
+  })
+
+  it('does not tell the winner they won — the headline already did', () => {
+    const state = at('reveal', 'caption')
+    const result = latestResult(state)
+    const champ = result ? result.authorOf[result.winnerEntryId] : undefined
+    expect(champ).toBeDefined()
+    if (champ) expect(myRoundPlacement(state, champ)).toBeUndefined()
   })
 })
 
@@ -446,12 +467,36 @@ describe('the scoreboard', () => {
     expect(scoreCopy(last).nextRoleLine).toBe('Last round done')
   })
 
-  it('reports rounds won once there are any, and this round otherwise', () => {
+  it('reports the round’s points on every row, whether or not they won one', () => {
     const rows = standings(at('score', 'caption'))
+    // The regression this guards: `standingNote` used to return round wins
+    // *or* the round's points, so a leader's delta was the one number on the
+    // board you could not read. Both now, on the same row.
+    const leader = rows.find((row) => row.roundWins > 0)
+    expect(leader).toBeDefined()
+    expect(leader?.note).toMatch(/^\d+ rounds? won$/)
+    expect(leader?.delta).toEqual(expect.any(Number))
+
     for (const row of rows) {
-      expect(row.note).toMatch(/^(\d+ rounds? won|\+\d+ this round)$/)
+      expect(row.note).toMatch(/^(\d+ rounds? won|Set this round up)?$/)
     }
-    // The pips only belong on the scoreboard.
+  })
+
+  it('gives the role holder an absence rather than a zero', () => {
+    const rows = standings(at('score', 'caption'))
+    const holder = rows.find((row) => row.id === HOLDER)
+    // They set the round up, so they were never allowed to score in it — `+0`
+    // would read as a bad round rather than no round.
+    expect(holder?.delta).toBe('out')
+    expect(holder?.note).toBe('Set this round up')
+
+    // Everybody else competed, so their zero is a real result.
+    for (const row of rows.filter((r) => r.id !== HOLDER)) {
+      expect(typeof row.delta).toBe('number')
+    }
+  })
+
+  it('leaves the pips to the scoreboard', () => {
     expect(showsRoundProgress(at('score', 'caption'))).toBe(true)
     expect(showsRoundProgress(at('vote', 'caption'))).toBe(false)
   })

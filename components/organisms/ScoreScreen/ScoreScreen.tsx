@@ -66,12 +66,14 @@ export function ScoreScreen() {
         {table.map((row) => (
           <PlayerRow
             key={row.id}
+            as="li"
             player={row.player}
             variant="standing"
             rank={row.rank}
             score={row.score}
             share={row.share}
             note={row.note}
+            delta={row.delta}
             host={row.id === state.hostId}
             you={row.id === selfId}
           />
