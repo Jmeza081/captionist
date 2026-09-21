@@ -168,24 +168,36 @@ export function Modal({
           )}
 
           <div className={styles.foot}>
-            <div className={styles.dots} aria-hidden="true">
-              {steps.map((s, i) => (
-                <span
-                  key={s.heading}
-                  className={`${styles.dot} ${i === stepIndex ? styles.dotActive : ''}`}
-                />
-              ))}
-            </div>
+            {/* A single dot is not progress, it is a bullet. The same rule the
+                step count above already follows: one step is an announcement,
+                not a walkthrough. */}
+            {steps.length > 1 && (
+              <div className={styles.dots} aria-hidden="true">
+                {steps.map((s, i) => (
+                  <span
+                    key={s.heading}
+                    className={`${styles.dot} ${i === stepIndex ? styles.dotActive : ''}`}
+                  />
+                ))}
+              </div>
+            )}
 
             <div className={styles.nav}>
-              <Button
-                variant="secondary"
-                size="inline"
-                onClick={() => onStepChange(stepIndex - 1)}
-                disabled={isFirst}
-              >
-                Back
-              </Button>
+              {/* Not drawn when there is nowhere to go back to. Disabled is
+                  the right state for a control that will become available —
+                  Back on step 1 of 4 does, so it stays and greys. Back on the
+                  only step never will, and a permanently dead control beside
+                  the way out is just furniture. */}
+              {steps.length > 1 && (
+                <Button
+                  variant="secondary"
+                  size="inline"
+                  onClick={() => onStepChange(stepIndex - 1)}
+                  disabled={isFirst}
+                >
+                  Back
+                </Button>
+              )}
               <Button
                 size="inline"
                 onClick={() => (isLast ? onClose() : onStepChange(stepIndex + 1))}
