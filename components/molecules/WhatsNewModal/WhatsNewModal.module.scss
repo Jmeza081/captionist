@@ -1,0 +1,81 @@
+@use 'theme' as t;
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-14;
+}
+
+/**
+ * GitHub's markup, given this app's type.
+ *
+ * Descendant selectors rather than classes, because the HTML is theirs and
+ * carries none of ours. The set is small and known — the API returns `h2`,
+ * `p`, `ul`, `li`, `strong`, `code` and `a` — so this styles exactly that and
+ * lets anything else inherit.
+ */
+.rendered {
+  @include t.bodyText;
+  // Release notes are read in a card, not across a page: the body ramp's
+  // fluid size is tuned for a screen's measure and runs large here.
+  font-size: 15px;
+
+  h2 {
+    margin: t.$space-20 0 t.$space-8;
+    @include t.labelText;
+    // The eyebrow treatment, because these are the note's own sections and
+    // the card's real heading is the version above them.
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: t.$accent-text;
+  }
+
+  // The first section heading sits directly under the intro paragraph, and
+  // the gap above it would otherwise double the card's own rhythm.
+  h2:first-child {
+    margin-top: 0;
+  }
+
+  p {
+    margin: 0 0 t.$space-10;
+  }
+
+  ul {
+    margin: 0 0 t.$space-10;
+    padding-left: t.$space-20;
+  }
+
+  li {
+    margin-bottom: t.$space-6;
+  }
+
+  strong {
+    font-weight: 700;
+    color: t.$text-primary;
+  }
+
+  code {
+    padding: 2px t.$space-5;
+    border-radius: t.$radius-media;
+    background-color: t.$accent-fill-weak;
+    color: t.$accent-text;
+    font-size: 0.9em;
+  }
+
+  a {
+    color: t.$accent-text;
+    text-decoration: underline;
+  }
+}
+
+.permalink {
+  @include t.labelText;
+  color: t.$text-label;
+  text-decoration: underline;
+
+  &:hover {
+    color: t.$text-primary;
+  }
+}

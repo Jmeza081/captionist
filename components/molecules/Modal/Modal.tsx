@@ -13,10 +13,24 @@ export interface ModalStep {
   /**
    * A node rather than a string, because a step sometimes has to link out —
    * the licensing walkthrough cites four licences and a repository, and a
-   * licence you cannot open is a licence nobody read. Inline content only: it
-   * is rendered inside the card's `<p>`.
+   * licence you cannot open is a licence nobody read. **Inline content only**:
+   * it is rendered inside the card's `<p>`, so anything block-level belongs in
+   * `bodyBlock` instead.
    */
-  body: ReactNode
+  body?: ReactNode
+  /**
+   * Block content, in place of `body`.
+   *
+   * A release note is headings and bullet lists. Putting those inside the
+   * `<p>` above is invalid HTML, and the browser does not merely tolerate it —
+   * it closes the paragraph at the first block tag and reparents the rest,
+   * which breaks the card's own layout. So the step picks the container it
+   * needs rather than a second modal being copied to get a `<div>`.
+   *
+   * Set one or the other. `body` wins if both arrive, because it is the older
+   * contract and every existing caller uses it.
+   */
+  bodyBlock?: ReactNode
   /**
    * Fills the 380px rail, edge to edge.
    *
@@ -131,7 +145,11 @@ export function Modal({
 
           <span className={styles.eyebrow}>{step.eyebrow}</span>
           <h2 className={styles.heading}>{step.heading}</h2>
-          <p className={styles.body}>{step.body}</p>
+          {step.body !== undefined ? (
+            <p className={styles.body}>{step.body}</p>
+          ) : (
+            <div className={styles.body}>{step.bodyBlock}</div>
+          )}
 
           <div className={styles.foot}>
             <div className={styles.dots} aria-hidden="true">

@@ -5,6 +5,7 @@ import { LandingLegal } from '@/components/molecules/LandingLegal'
 import { LandingNav } from '@/components/molecules/LandingNav'
 import { LandingActions } from '@/components/organisms/LandingActions'
 import { PLAYER_COLORS } from '@/lib/game/constants'
+import { fetchReleases } from '@/lib/releases.server'
 import styles from './page.module.scss'
 
 /**
@@ -34,13 +35,23 @@ const FACES = [
 ] as const
 
 export default async function HomePage() {
+  /*
+    The changelog, resolved before a byte reaches the browser.
+
+    Cached for an hour by the framework, so this is one GitHub request per hour
+    per deployment rather than one per visitor — which is what keeps a page
+    with no API key of its own clear of the 60-an-hour anonymous limit. It
+    cannot throw: `fetchReleases` answers with a status either way, because a
+    changelog must never be the reason the front door fails to render.
+  */
+  const releases = await fetchReleases()
 
   return (
     <div className={styles.page}>
       <HeroWall />
 
       <div className={styles.content}>
-        <LandingNav joinHref="/join" repoHref={REPO} />
+        <LandingNav joinHref="/join" repoHref={REPO} releases={releases} />
 
         <Stack as="main" align="center" gap={0} className={styles.hero}>
           <h1 className={styles.headline}>

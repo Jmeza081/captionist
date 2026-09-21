@@ -5,6 +5,8 @@ import { Button } from '@/components/atoms/Button'
 import { HelpKey } from '@/components/atoms/HelpKey'
 import { Wordmark } from '@/components/molecules/Wordmark'
 import { HelpModal } from '@/components/molecules/HelpModal'
+import { WhatsNewModal } from '@/components/molecules/WhatsNewModal'
+import type { ReleaseFeed } from '@/lib/releases'
 import styles from './LandingNav.module.scss'
 
 /**
@@ -26,10 +28,18 @@ export interface LandingNavProps {
   /** Where "Join a room" goes. */
   joinHref: string
   repoHref: string
+  /**
+   * Fetched on the server by the page above. Passed down rather than fetched
+   * here: this bar is a client component so a walkthrough can open, and a
+   * client fetch would spend a GitHub request per visitor instead of one per
+   * hour per deployment.
+   */
+  releases: ReleaseFeed
 }
 
-export function LandingNav({ joinHref, repoHref }: LandingNavProps) {
+export function LandingNav({ joinHref, repoHref, releases }: LandingNavProps) {
   const [helpOpen, setHelpOpen] = useState(false)
+  const [newsOpen, setNewsOpen] = useState(false)
 
   return (
     <header className={styles.nav}>
@@ -38,6 +48,9 @@ export function LandingNav({ joinHref, repoHref }: LandingNavProps) {
       <nav className={styles.links} aria-label="Captionist">
         <button type="button" className={styles.link} onClick={() => setHelpOpen(true)}>
           How it works
+        </button>
+        <button type="button" className={styles.link} onClick={() => setNewsOpen(true)}>
+          Release notes
         </button>
         <a className={styles.link} href={repoHref} target="_blank" rel="noreferrer noopener">
           GitHub
@@ -60,6 +73,12 @@ export function LandingNav({ joinHref, repoHref }: LandingNavProps) {
       {/* No room yet, so no format is in play: the walkthrough opens on
           captions and the switcher marks nothing. */}
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      {/* No round key of its own. The phone bar is already a wordmark, a help
+          key and the way in, and the fourth control the design has no room for
+          is this one — so the words stand down below `md` with the rest of the
+          links, and a phone reads the notes on GitHub. */}
+      <WhatsNewModal open={newsOpen} onClose={() => setNewsOpen(false)} feed={releases} />
     </header>
   )
 }

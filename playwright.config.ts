@@ -96,6 +96,14 @@ export default defineConfig({
      */
     env: {
       ABLY_STUB: '1',
+      /**
+       * The landing page fetches the repository's releases for its changelog,
+       * and it does so from the *server* — so `--host-resolver-rules` above,
+       * which blocks the browser's DNS, does nothing about it. Without this
+       * the suite would call GitHub once per landing-page load and assert
+       * against whatever shipped that day.
+       */
+      RELEASES_STUB: '1',
       NEXT_PUBLIC_GIFS_STUB: '1',
       /**
        * A key that is not a key.
