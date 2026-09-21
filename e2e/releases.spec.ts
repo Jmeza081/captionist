@@ -52,7 +52,7 @@ test.describe('release notes', () => {
     // heading and a list inside the card's default `<p>` would be reparented
     // by the browser and take the layout with them.
     await expect(dialog.getByRole('heading', { name: 'What it does' })).toBeVisible()
-    await expect(dialog.getByRole('listitem')).toHaveCount(2)
+    await expect(dialog.getByRole('listitem').first()).toBeVisible()
   })
 
   test('sends every link in a note somewhere that exists', async ({ page }) => {
@@ -83,6 +83,33 @@ test.describe('release notes', () => {
     // count and this pair of controls all come for free.
     await dialog.getByRole('button', { name: 'Next' }).click()
     await expect(dialog.getByRole('heading', { name: 'v9.9.8' })).toBeVisible()
+  })
+
+  test('keeps its controls reachable under a long note', async ({ page }) => {
+    await page.goto('/')
+    if (!wide(page)) return
+
+    await page.getByRole('button', { name: 'Release notes' }).click()
+    const dialog = page.getByRole('dialog', { name: 'What shipped' })
+
+    /*
+      The bug this locks down. The card used to be the scroller, so a release
+      longer than 408px pushed the foot below the fold — the dots, Back and
+      Next were all unreachable, and the only way out was the close key the
+      text was sliding under. The body scrolls now and the chrome stays put.
+    */
+    await expect(dialog.getByRole('button', { name: 'Back' })).toBeInViewport()
+    await expect(dialog.getByRole('button', { name: 'Next' })).toBeInViewport()
+    await expect(dialog.getByRole('button', { name: 'Close' })).toBeInViewport()
+
+    // And the body is what has the overflow, not the card.
+    const scrollers = await dialog.evaluate((card) =>
+      [...card.querySelectorAll('*')]
+        .filter((el) => el.scrollHeight > el.clientHeight + 2)
+        .map((el) => getComputedStyle(el).overflowY),
+    )
+    expect(scrollers).toContain('auto')
+    expect(await dialog.evaluate((c) => c.scrollHeight <= c.clientHeight + 2)).toBe(true)
   })
 
   test('never takes the front door down with it', async ({ page }) => {

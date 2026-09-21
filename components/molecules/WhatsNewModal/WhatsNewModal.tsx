@@ -36,6 +36,9 @@ export function WhatsNewModal({ open, onClose, feed }: WhatsNewModalProps) {
       steps={stepsFor(feed)}
       stepIndex={step}
       onStepChange={setStep}
+      // A changelog is a list, not a walkthrough step: at the step height the
+      // first release showed about a third of itself and cut off mid-sentence.
+      size="list"
       // Not `error`: the red glow is the room breaking underneath somebody
       // mid-game. GitHub being unreachable is a page that could not fetch a
       // changelog, and dressing it as a failure of the app overstates it.

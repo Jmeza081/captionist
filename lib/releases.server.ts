@@ -30,9 +30,27 @@ const STUB_RELEASES: readonly Release[] = [
     tag: 'v9.9.9',
     name: 'v9.9.9',
     publishedAt: '2026-09-21T16:03:24Z',
+    /*
+      Deliberately longer than the card.
+
+      The bug this fixture has to reproduce is a body that overflows: the card
+      used to be the scroller, so a long release pushed the foot — the dots,
+      Back and Next — below the fold and out of reach. A three-line stub would
+      fit, pass, and prove nothing.
+    */
     html: toSafeHtml(
       '<p>A stub release, so the suite asks nobody anything.</p>' +
         '<h2>What it does</h2><ul><li>Holds still</li><li>Says the same thing twice</li></ul>' +
+        '<h2>Why it is long</h2>' +
+        '<p>Because the card is six hundred pixels tall and the thing worth ' +
+        'testing is what happens when the notes are not. A release that fits ' +
+        'exercises none of the layout this fixture exists for.</p>' +
+        '<p>So it keeps going. The body is the scroller, the head stays where ' +
+        'it is, and the pair of controls at the foot stays reachable however ' +
+        'much somebody wrote about a patch release.</p>' +
+        '<h2>And once more</h2>' +
+        '<ul><li>The dots stay visible</li><li>Back stays visible</li>' +
+        '<li>The last line does not sit flush against either of them</li></ul>' +
         '<p>See <a href="/Jmeza081/captionist/blob/main/docs/backlog.md">the backlog</a>.</p>',
     ),
     url: 'https://github.com/Jmeza081/captionist/releases/tag/v9.9.9',

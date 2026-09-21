@@ -23,7 +23,12 @@
   // every step, with the footer pinned to the bottom of the column.
   height: t.$modal-height-sm;
   max-height: 100%;
-  overflow: auto;
+  // The *body* scrolls, not the card. When the card was the scroller, a long
+  // step pushed the foot below the fold — so the dots, Back and Next were
+  // unreachable, and the step count stopped being visible on the one screen
+  // that needed it. It also meant content slid up under the close key on its
+  // way past. See `.body`.
+  overflow: hidden;
   border: 1px solid t.$accent-border-weak;
   border-radius: t.$radius-modal;
   background-color: t.$surface-modal;
@@ -40,6 +45,13 @@
   }
 }
 
+// A body of many paragraphs rather than a step's few lines.
+.list {
+  @include t.mq('md') {
+    height: t.$modal-height-list;
+  }
+}
+
 .error {
   border-color: rgba(255, 120, 125, 0.3);
   box-shadow: t.$shadow-modal-error;
@@ -50,6 +62,9 @@
   display: flex;
   flex-direction: column;
   padding: t.$modal-pad;
+  // Without this a flex child refuses to shrink below its content, so the
+  // body's own `overflow` never engages and the card grows instead.
+  min-height: 0;
 }
 
 .head {
@@ -100,7 +115,23 @@
   margin: t.$space-10 0 0;
 }
 
+/**
+ * The scrolling part, and the only part.
+ *
+ * `flex: 1` with `min-height: 0` is what hands the overflow to this element
+ * rather than the card: the head stays put, the foot stays reachable, and a
+ * changelog of ten releases scrolls under a close key that never moves.
+ *
+ * The bottom padding is not decoration — it is the gap between the last line
+ * of a scrolled body and the controls under it. Without it the text ends flush
+ * against the foot and reads as clipped rather than as finished.
+ */
 .body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: t.$space-14;
   margin: t.$space-10 0 0;
   font-family: t.$font-sans;
   font-size: 14px;

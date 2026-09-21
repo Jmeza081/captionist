@@ -54,6 +54,19 @@ export interface ModalProps {
   headerControl?: ReactNode
   /** Disconnect and error modals swap the purple glow for red. */
   tone?: 'default' | 'error'
+  /**
+   * What the card is holding.
+   *
+   * `step` is the design's walkthrough — an illustration and a few lines, at a
+   * height chosen so the controls sit under them. `list` is the taller card a
+   * body of many paragraphs needs; a changelog at the step height showed a
+   * third of one release and clipped the rest mid-sentence.
+   *
+   * A prop rather than a second modal, per `components/README.md`: the head,
+   * the foot, the focus handling and the three ways out are all identical and
+   * only the measure differs.
+   */
+  size?: 'step' | 'list'
 }
 
 /**
@@ -74,6 +87,7 @@ export function Modal({
   onStepChange,
   headerControl,
   tone = 'default',
+  size = 'step',
 }: ModalProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   /**
@@ -127,7 +141,9 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        className={`${styles.card} ${tone === 'error' ? styles.error : ''}`}
+        className={`${styles.card} ${tone === 'error' ? styles.error : ''} ${
+          size === 'list' ? styles.list : ''
+        }`}
       >
         <div className={styles.copy}>
           <div className={styles.head}>
