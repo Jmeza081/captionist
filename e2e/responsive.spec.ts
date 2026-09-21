@@ -179,8 +179,18 @@ test.describe('the room header holds its line', () => {
           const header = await page.evaluate(() => {
             const bar = document.querySelector('header')
             if (!bar) return null
+            /*
+              Visible text only.
+
+              `> 0` was the test for that and is not quite it: the `srOnly`
+              mixin sizes a span to 1px and hides its overflow, which is
+              exactly the shape this check calls "cut off". Such a span is
+              clipped on purpose and is never read by eye, so a 2px floor
+              separates the two rather than a zero one. No real header text is
+              a pixel wide.
+            */
             const visible = Array.from(bar.querySelectorAll('span')).filter(
-              (s) => s.getBoundingClientRect().width > 0,
+              (s) => s.getBoundingClientRect().width > 2,
             )
             const mark = bar.querySelector('img')
             const label = visible.find((s) => (s.textContent ?? '').startsWith('Round'))

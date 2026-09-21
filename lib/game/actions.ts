@@ -40,6 +40,16 @@ export type GameAction = ActionMeta &
     | { type: 'round/advanced' }
     | { type: 'host/paused' }
     | { type: 'host/resumed' }
+    /**
+     * Pause or resume, whichever this room needs.
+     *
+     * Exists because the two above make the *caller* decide, and a caller
+     * cannot know: a keyboard shortcut is bound in an effect, effects run
+     * after paint, so a second press landing in that window carries the
+     * previous answer and asks for the state the room is already in. The
+     * reducer is the only thing that knows for certain, so it decides.
+     */
+    | { type: 'host/togglePaused' }
     | { type: 'host/adjustedClock'; deltaMs: number }
     | { type: 'host/skippedPhase' }
     | { type: 'host/switchedMode'; mode: GameMode }
@@ -101,6 +111,7 @@ export const HOST_ONLY: ReadonlySet<ActionType> = new Set<ActionType>([
   'round/advanced',
   'host/paused',
   'host/resumed',
+  'host/togglePaused',
   'host/adjustedClock',
   'host/skippedPhase',
   'host/switchedMode',

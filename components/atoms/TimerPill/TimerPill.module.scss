@@ -22,3 +22,19 @@
   background-color: t.$urgent-fill;
   color: t.$urgent;
 }
+
+/**
+ * Held by the host.
+ *
+ * The amber is `$status-waiting`, which is already the room's colour for
+ * "waiting on someone" — and a paused round is the room waiting on the host.
+ * No new token, and the meaning was already agreed.
+ *
+ * The word does the work for anyone who cannot see the tint. §6: colour is
+ * never the only signal, and this state is otherwise a number that has simply
+ * stopped moving — the least visible kind of change there is.
+ */
+.paused {
+  background-color: t.$winner-fill;
+  color: t.$winner;
+}

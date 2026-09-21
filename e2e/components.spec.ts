@@ -119,17 +119,25 @@ test.describe('component gallery', () => {
   test('the timer pill flips to urgent at 15 seconds', async ({ page }) => {
     await page.goto('/components')
 
-    const neutral = page.getByRole('timer').filter({ hasText: '1:12' })
-    const urgent = page.getByRole('timer').filter({ hasText: '0:09' })
+    // Exact text, because the gallery now draws a paused 0:09 beside the
+    // urgent one and `hasText` is a substring match.
+    const neutral = page.getByRole('timer').filter({ hasText: /^1:12/ })
+    const urgent = page.getByRole('timer').filter({ hasText: /^0:09 left$/ })
+    const paused = page.getByRole('timer').filter({ hasText: /^0:09 · paused$/ })
 
     const neutralColor = await neutral.evaluate(
       (el) => getComputedStyle(el).color,
     )
     const urgentColor = await urgent.evaluate((el) => getComputedStyle(el).color)
+    const pausedColor = await paused.evaluate((el) => getComputedStyle(el).color)
 
     // #FF787D — the urgent token.
     expect(urgentColor).toBe('rgb(255, 120, 125)')
     expect(neutralColor).not.toBe(urgentColor)
+
+    // #F6E338 — `$status-waiting`. A held clock at nine seconds is not running
+    // out, so paused beats urgent rather than the other way round.
+    expect(pausedColor).toBe('rgb(246, 227, 56)')
   })
 
   test('the segmented control is a radiogroup and switches', async ({

@@ -135,6 +135,49 @@
   }
 }
 
+/**
+ * The shortcut flash: in fast, hold, out slower.
+ *
+ * Two keyframes rather than one with a `prefers-reduced-motion` override
+ * inside it, because the two do genuinely different things — `keyflash`
+ * animates opacity *and* scale, `keyhold` animates neither and only needs the
+ * keys to exist and then stop existing. A reduced-motion reader still has to
+ * see them.
+ *
+ * Both run the full `$duration-keyflash`, so the component's unmount timer is
+ * right whichever one plays.
+ */
+@mixin keyflashKeyframes {
+  @keyframes keyflash {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    12% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    62% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes keyhold {
+    0%,
+    75% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
 $duration-toast: 0.2s;
 $duration-toggle: 0.16s;
 
@@ -145,6 +188,10 @@ $duration-genie-out: 170ms;
 // Auto-dismiss timings the logic layer needs to match.
 $dismiss-snackbar: 2800ms;
 $dismiss-interstitial: 3800ms;
+// The shortcut flash. Long enough to read two keys, short enough that a host
+// pausing twice in a row does not watch a queue drain. `ShortcutFlash` unmounts
+// on the same number, so a change here is a change in both places at once.
+$duration-keyflash: 800ms;
 
 /**
  * The waiting wall's cross-fade — `gcy` in the design.

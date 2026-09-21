@@ -990,3 +990,28 @@ describe('a role holder who dropped', () => {
     expect(state.round?.roleHolderId).toBe(holder)
   })
 })
+
+describe('the pause toggle', () => {
+  it('goes whichever way the room is not, so a caller cannot get it wrong', () => {
+    // The bug it exists for: a keyboard listener is bound in an effect, and
+    // effects run after paint — so a second press landing in that window
+    // carried a stale `paused` and asked for the state the clock was already
+    // in, which the reducer correctly ignored. The room decides instead.
+    const running = fixtureFor('vote', { players: 5 })
+    expect(running.clock.status).toBe('running')
+
+    const at = Date.now()
+    const paused = reduce(running, { type: 'host/togglePaused', at, actor: 'p0' })
+    expect(paused.clock.status).toBe('paused')
+
+    const resumed = reduce(paused, { type: 'host/togglePaused', at, actor: 'p0' })
+    expect(resumed.clock.status).toBe('running')
+  })
+
+  it('is a no-op on a phase with no clock to hold', () => {
+    const idle = fixtureFor('score', { players: 5 })
+    expect(idle.clock.status).toBe('idle')
+    const after = reduce(idle, { type: 'host/togglePaused', at: Date.now(), actor: 'p0' })
+    expect(after.clock.status).toBe('idle')
+  })
+})

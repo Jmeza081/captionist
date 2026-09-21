@@ -1,0 +1,47 @@
+@use 'theme' as t;
+
+/**
+ * A keyboard is necessary and not sufficient — the header also has to have
+ * room for it.
+ *
+ * `useHasKeyboard` answers the first question and cannot answer the second: a
+ * laptop window dragged narrow has a fine pointer and no space, and the header
+ * already carries a mark, a phase label, a settings line and a clock. So the
+ * hint is mobile-first absent and appears at `xl`, where the settings line and
+ * the clock stop competing for the same row.
+ *
+ * Both gates, not either: the media query alone would offer a key to a tablet,
+ * and the pointer query alone truncated the header at 1024.
+ */
+.hint {
+  display: none;
+  align-items: center;
+  white-space: nowrap;
+}
+
+@include t.mq('xl') {
+  .hint {
+    display: inline-flex;
+  }
+}
+
+.shown {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-6;
+  @include t.labelText;
+  // Quieter than a label: this is chrome explaining a control, not the control.
+  // At full label weight it competed with the clock it is about.
+  font-weight: 600;
+  color: t.$text-label;
+}
+
+.caps {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-5;
+}
+
+.srOnly {
+  @include t.srOnly;
+}

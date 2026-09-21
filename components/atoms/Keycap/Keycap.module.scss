@@ -1,0 +1,45 @@
+@use 'theme' as t;
+
+/**
+ * A raised key.
+ *
+ * `$shadow-glass` rather than a new token: its `inset 0 1px 0` is a lit top
+ * edge, which is the whole difference between a box with a character in it and
+ * something that looks pressable. It was written for the landing page's
+ * frosted pill and does the same job here.
+ *
+ * `$surface-field` is the surface, a step above the header it sits on — a key
+ * has to come forward off its own chrome.
+ */
+.cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background-color: t.$surface-field;
+  border: 1px solid t.$line-outline;
+  box-shadow: t.$shadow-glass;
+  color: t.$text-primary;
+  font-family: t.$font-sans;
+  // Keys are glyphs on a keyboard, not text in a sentence: no leading.
+  line-height: 1;
+  @include t.tabularFigures;
+}
+
+.sm {
+  min-width: t.$keycap-sm;
+  height: t.$keycap-sm;
+  padding: 0 t.$space-5;
+  border-radius: t.$radius-media;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lg {
+  min-width: t.$keycap-lg;
+  height: t.$keycap-lg;
+  padding: 0 t.$space-14;
+  border-radius: t.$radius-field;
+  font-size: 30px;
+  font-weight: 800;
+}

@@ -401,7 +401,25 @@ derivable at the reveal — `round.ballots` survives until the next
 incidental rather than intended, and `project.ts` exists to enforce anonymity by
 redaction. Small if skipped, medium if not.
 
-### 2.3 Manual advance — medium
+### 2.3 Let the host hold a phase open — medium
+
+**Partly shipped 2026-09-21, and the entry below overstated the gap.** Pause
+was already built — `host/paused`, a toolbox button, and a `Round timer`
+stepper that adds time through `host/adjustedClock` — so the host could
+already slow a round down two ways. What shipped now is reaching it without
+opening a drawer (⌥P, host-only, ignored while a field has focus) and the
+clock admitting it has stopped, which was a real bug: a paused `0:24` and a
+running `0:24` were pixel-identical. Plus `host/togglePaused`, because a
+caller cannot know which way a toggle goes
+([ADR 0041](./adr/0041-the-room-decides-which-way-a-toggle-goes.md)).
+
+**What is still not built is the *setting*** — a room that never auto-advances
+at all, rather than a host who catches a running clock. With pause and +time
+both shipping, the only thing left that they cannot do is undo an expiry
+nobody caught in time. That is a much smaller complaint than the entry below
+describes, and it is why this dropped down the order.
+
+### 2.3a The old entry — not auto-advancing
 
 "Skip this phase" already ships (`host/skippedPhase`, in `RoomToolbox`), and
 `reveal`/`score` are already host-paced — their `PHASE_DURATIONS` are `null`.

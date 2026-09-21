@@ -7,6 +7,8 @@ import { ProgressRail } from '@/components/atoms/ProgressRail'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
 import { Snackbar, type SnackbarTone } from '@/components/atoms/Snackbar'
 import { TimerPill, URGENT_AT } from '@/components/atoms/TimerPill'
+import { ShortcutFlash } from '@/components/molecules/ShortcutFlash'
+import { ShortcutHint } from '@/components/molecules/ShortcutHint'
 import { AppHeader } from '@/components/molecules/AppHeader'
 import { ChatRail } from '@/components/molecules/ChatRail'
 import { ChatToast, ChatToastOverflow } from '@/components/molecules/ChatToast'
@@ -34,6 +36,7 @@ import {
 import { SEAT_GRACE_MS } from '@/lib/game/constants'
 import type { Clock, RoomPhase } from '@/lib/game/types'
 import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
+import { isPauseShortcut, isTypingTarget } from '@/lib/shortcuts'
 import type { ChatQuote } from '@/lib/room/transport'
 import { previewColor } from '@/lib/avatar'
 import { useBootTimeline } from '@/lib/room/bootTimeline'
@@ -218,6 +221,46 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const urgent = Boolean(state && (isUrgent(state) || countdown.seconds <= URGENT_AT))
   const showRail = Boolean(state && showsProgressRail(state) && countdown.running)
 
+  /*
+    The room's one keyboard shortcut: ⌥P holds the clock.
+
+    Here rather than in `RoomToolbox`, which is where the button lives, because
+    the shortcut has to work with the toolbox shut — that is the entire point
+    of it. `RoomShell` is already a client component and already owns the
+    action.
+
+    Host-only and clock-only, matching the button exactly: a shortcut that can
+    do something the visible control cannot is a second, undocumented set of
+    rules.
+  */
+  const canPause = Boolean(state && isHost && state.clock.status !== 'idle')
+  const [flash, setFlash] = useState(0)
+
+
+  useEffect(() => {
+    if (!canPause) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      // A caption is being typed, or the chat is. The letter belongs to them.
+      if (isTypingTarget(event.target)) return
+      if (!isPauseShortcut(event)) return
+      // Nothing claims ⌥P, so this is belt and braces — but a browser that
+      // ever did would open something over a projected game.
+      event.preventDefault()
+      setFlash((n) => n + 1)
+      // The room decides which way, not this closure. Effects run after paint,
+      // so a second press arriving in that window would otherwise carry the
+      // previous answer and ask for the state the clock is already in.
+      send({ type: 'host/togglePaused' })
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+    // Nothing about the clock's *state* in the deps, only whether there is one
+    // — which is what lets the listener be bound once per phase rather than
+    // re-bound on every pause, and is the whole point of the toggle action.
+  }, [canPause, send])
+
   const openHelp = useCallback(() => {
     setOverlay('help')
   }, [])
@@ -355,11 +398,18 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
               showLabel
             />
           ) : countdown.running || countdown.paused ? (
-            <TimerPill
-              seconds={countdown.seconds}
-              suffix={timerSuffix(state, selfId)}
-              urgent={urgent}
-            />
+            <span className={styles.clockGroup}>
+              {/* Host-only: a guest cannot pause, and a key they cannot press
+                  is a lie about what their own keyboard does. `ShortcutHint`
+                  draws nothing without a keyboard either way. */}
+              {canPause && <ShortcutHint action={countdown.paused ? 'resume' : 'pause'} />}
+              <TimerPill
+                seconds={countdown.seconds}
+                suffix={timerSuffix(state, selfId)}
+                urgent={urgent}
+                paused={countdown.paused}
+              />
+            </span>
           ) : undefined
         }
       />
@@ -468,7 +518,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
                     }),
                   paused: countdown.paused,
                   onTogglePause: () =>
-                    send({ type: countdown.paused ? 'host/resumed' : 'host/paused' }),
+                    send({ type: 'host/togglePaused' }),
                   onSkip: () => send({ type: 'host/skippedPhase' }),
                   // No snackbar: the room announces this to everyone, and the
                   // host is in the room. See `LobbyScreen.setMode`.
@@ -540,6 +590,12 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
       <div className={styles.floaterDock}>
         <ReactionFloaters burst={floaterBurst} />
       </div>
+
+      {/* The keys, for as long as it takes to read them. Host-only, and
+          already gated by `canPause` where `flash` is incremented. Outside the
+          floater dock: that one is pinned to the bottom of the room and this
+          belongs under the clock. */}
+      <ShortcutFlash burst={flash} />
 
       {queue[0] && (
         <div className={styles.snackbarDock}>

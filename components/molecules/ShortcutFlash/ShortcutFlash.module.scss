@@ -1,0 +1,42 @@
+@use 'theme' as t;
+
+@include t.keyflashKeyframes;
+
+/**
+ * Under the header, on the clock's side.
+ *
+ * `fixed` rather than absolute: the room's content column scrolls, and keys
+ * that scroll away mid-flash would read as a glitch rather than a keystroke.
+ */
+.flash {
+  position: fixed;
+  top: calc(#{t.$header-height} + #{t.$space-14});
+  /*
+    Under the clock, which means clearing the docked chat rail — otherwise the
+    keys land on top of the conversation instead of the room. `--room-rail-width`
+    is `RoomShell`'s, 0 on a phone and the rail's width once it docks, and it
+    inherits down to here. The fallback keeps this honest anywhere else it is
+    ever mounted.
+  */
+  right: calc(var(--room-rail-width, 0px) + #{t.$screen-pad-h});
+  z-index: t.$z-floater;
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+  padding: t.$space-12 t.$space-14;
+  border-radius: t.$radius-field;
+  // Its own scrim, so the keys stay legible over whatever the round is
+  // showing — the compose screen is a GIF at full bleed.
+  background-color: t.$scrim-tally;
+  box-shadow: t.$shadow-popover;
+  pointer-events: none;
+  animation: keyflash #{t.$duration-keyflash} ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    // Shown and cut, rather than faded. The keys still have to appear and go
+    // away; what they must not do is move.
+    animation: keyhold #{t.$duration-keyflash} steps(1, end) forwards;
+  }
+}

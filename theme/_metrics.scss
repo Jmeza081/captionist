@@ -70,6 +70,27 @@ $timer-pad-y: 7px;
 $timer-pad-x: 15px;
 $progress-rail-height: 3px;
 
+/**
+ * The two keycap sizes, and the one place in `theme/` with no design behind it.
+ *
+ * `design/` draws no keyboard shortcut anywhere — the prototype is a phone and
+ * a projected laptop, and neither was given a key to press. So these are
+ * derived rather than copied, and the derivation is the justification:
+ *
+ * - **22px** is the height at which a 12px cap with its 1px border and 5px
+ *   side padding still reads as square-ish beside 14px `TimerPill` text. Under
+ *   20 the border eats the glyph; over 24 it out-weighs the clock it is
+ *   explaining.
+ * - **68px** is the flash, sized against `$avatar-56` — the largest face the
+ *   room draws — so a key that appears over the screen reads as deliberately
+ *   bigger than a person without becoming the whole frame.
+ *
+ * Not on the spacing scale, and deliberately not rounded onto it: these are
+ * component measurements like `$stepper-height: 44px` above, not gaps.
+ */
+$keycap-sm: 22px;
+$keycap-lg: 68px;
+
 $chip-pad-y: 8px;
 $chip-pad-x: 15px;
 $tag-pad-y: 4px;

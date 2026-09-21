@@ -315,3 +315,17 @@
  * header to hang a control off it ends with three screens each hanging a
  * different one. The lobby asks for it through `openHelp`, which it had.
  */
+
+/**
+ * The clock and the key that stops it.
+ *
+ * One group so the header's trailing slot still hands back a single node, and
+ * so the hint travels with the pill rather than being positioned against it.
+ * The hint removes itself where there is no keyboard, and the gap goes with it.
+ */
+.clockGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$space-12;
+  min-width: 0;
+}

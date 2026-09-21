@@ -224,6 +224,17 @@ export function reduce(state: GameState, action: GameAction): GameState {
       })
     }
 
+    // Resolved here rather than by whoever tapped, because only the room knows
+    // which way the clock is currently going. Delegates to the two cases above
+    // so there is exactly one implementation of each direction.
+    case 'host/togglePaused':
+      return reduce(
+        state,
+        state.clock.status === 'paused'
+          ? { ...action, type: 'host/resumed' }
+          : { ...action, type: 'host/paused' },
+      )
+
     case 'host/adjustedClock': {
       const clock = state.clock
       if (clock.status === 'running') {

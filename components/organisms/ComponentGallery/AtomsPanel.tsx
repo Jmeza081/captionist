@@ -21,6 +21,7 @@ import { Stepper } from '@/components/atoms/Stepper'
 import { Tag } from '@/components/atoms/Tag'
 import { TallyPill } from '@/components/atoms/TallyPill'
 import { TextField } from '@/components/atoms/TextField'
+import { Keycap } from '@/components/atoms/Keycap'
 import { TimerPill } from '@/components/atoms/TimerPill'
 import { Toggle } from '@/components/atoms/Toggle'
 import { TvStatic } from '@/components/atoms/TvStatic'
@@ -150,12 +151,34 @@ export function AtomsPanel() {
       </Section>
 
       <Section id="status">
-        <Case label="Timer pill — neutral flips to urgent at 15s">
+        <Case label="Timer pill — neutral flips to urgent at 15s, and paused beats both">
           <Inline gap={10}>
             <TimerPill seconds={72} />
             <TimerPill seconds={9} />
             <TimerPill seconds={30} suffix="to pick" />
             <TimerPill seconds={120} urgent suffix="sudden death" />
+            {/* Held by the host. Beside the urgent one on purpose: a paused
+                clock under fifteen seconds is amber, not red — it is not
+                running out, it is stopped. */}
+            <TimerPill seconds={30} suffix="to pick" paused />
+            <TimerPill seconds={9} paused />
+          </Inline>
+        </Case>
+
+        <Case label="Keycaps — the host's pause shortcut, at both sizes">
+          <Inline gap={14}>
+            <Inline gap={5}>
+              <Keycap>⌥</Keycap>
+              <Keycap>P</Keycap>
+            </Inline>
+            <Inline gap={5}>
+              <Keycap>Alt</Keycap>
+              <Keycap>P</Keycap>
+            </Inline>
+            <Inline gap={10}>
+              <Keycap size="lg">⌥</Keycap>
+              <Keycap size="lg">P</Keycap>
+            </Inline>
           </Inline>
         </Case>
         <Case label="Progress rail — the header hairline, and the countdown bar">

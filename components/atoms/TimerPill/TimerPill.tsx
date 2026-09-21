@@ -10,6 +10,12 @@ export interface TimerPillProps {
    */
   suffix?: string
   /**
+   * The clock is held. Takes precedence over `urgent` — a paused clock at four
+   * seconds is not running out, it is stopped, and drawing it red would be the
+   * pill shouting about a deadline nobody is on.
+   */
+  paused?: boolean
+  /**
    * Force the urgent look regardless of the clock. Sudden death is always
    * urgent even when the number is high.
    */
@@ -41,17 +47,28 @@ export function TimerPill({
   seconds,
   suffix = 'left',
   urgent = false,
+  paused = false,
 }: TimerPillProps) {
-  const isUrgent = urgent || seconds <= URGENT_AT
+  const isUrgent = !paused && (urgent || seconds <= URGENT_AT)
   const clock = formatClock(seconds)
+
+  // What it was counting *to* stops being true the moment it stops counting,
+  // so the suffix gives way rather than sitting beside a number that is not
+  // moving. "0:24 to pick" on a held clock is a promise about a deadline that
+  // is not running.
+  const tone = paused ? styles.paused : isUrgent ? styles.urgent : styles.neutral
+  const label = paused ? `${clock} · paused` : suffix ? `${clock} ${suffix}` : clock
 
   return (
     <span
-      className={`${styles.pill} ${isUrgent ? styles.urgent : styles.neutral}`}
+      className={`${styles.pill} ${tone}`}
       role="timer"
+      // Nothing to announce when nothing is counting down. Assertive on a
+      // frozen number would interrupt a screen reader to say the same thing
+      // forever.
       aria-live={isUrgent ? 'assertive' : 'off'}
     >
-      {suffix ? `${clock} ${suffix}` : clock}
+      {label}
     </span>
   )
 }
