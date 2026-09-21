@@ -370,14 +370,12 @@ came first, which the screen was already saying twice above it.
   beat. The placement line closes the same gap for the person who actually
   wants it, without a second scroll surface.
 - **Vote attribution.** Out on product grounds — coworkers play this. But the
-  investigation turned up something real and still open: `project()` redacts
-  `authorId` at `vote` and `tiebreak` and **never touches `round.ballots`**, so
-  at `reveal`, once `authorOf` is back, every guest holds who-voted-for-whom in
-  devtools. Nobody decided that; it is incidental. The fix is to project
-  `ballots` down to the viewer's own at every phase, plus a `project.test.ts`
-  case. **Deliberately not done here** — it changes what guests receive over
-  the wire, which is a bigger blast radius than the rest of this put together.
-  Logged as §1.6 below.
+  investigation turned up something real: `project()` redacted `authorId` at
+  `vote` and `tiebreak` and **never touched `round.ballots`**, so at `reveal`,
+  once `authorOf` was back, every guest held who-voted-for-whom in devtools.
+  Nobody decided that; it was incidental. Kept out of this commit because it
+  changes what guests receive over the wire, then fixed on its own the same day
+  — §1.6 above, [ADR 0040](./adr/0040-a-ballot-is-secret-at-every-phase.md).
 
 `Standing` carries `delta` (points this round) and `roundWins` as separate
 fields. `ScoreScreen` renders neither — only `note`, and `standingNote` collapses
