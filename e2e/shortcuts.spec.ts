@@ -91,6 +91,41 @@ test.describe('the pause shortcut', () => {
   })
 })
 
+test.describe('the flash', () => {
+  test('says which way it went, centred over the room', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=vote&gifs=stub')
+    await expect(timer(page)).toBeVisible()
+
+    // Fired by the transition rather than the keystroke, so the word is right
+    // from the first frame rather than guessing and correcting.
+    await pressPause(page)
+    await expect(page.getByText('Paused', { exact: true })).toBeVisible()
+
+    await pressPause(page)
+    await expect(page.getByText('Resumed', { exact: true })).toBeVisible()
+  })
+
+  test('goes away on its own', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=vote&gifs=stub')
+    await expect(timer(page)).toBeVisible()
+
+    await pressPause(page)
+    const flash = page.getByText('Paused', { exact: true })
+    await expect(flash).toBeVisible()
+    // FLASH_MS is 800; the clock stays paused, so only the flash should go.
+    await expect(flash).toHaveCount(0, { timeout: 4_000 })
+    await expect(timer(page)).toContainText('paused')
+  })
+
+  test('is not drawn for a guest, who did not do it', async ({ page }) => {
+    await page.goto('/room/DEV?seed=42&phase=vote&as=p2&gifs=stub')
+    await expect(timer(page)).toBeVisible()
+
+    await pressPause(page)
+    await expect(page.getByText('Paused', { exact: true })).toHaveCount(0)
+  })
+})
+
 test.describe('the shortcut hint', () => {
   test('names the key beside the clock, and flips with the state', async ({ page }) => {
     await page.goto('/room/DEV?seed=42&phase=vote&gifs=stub')

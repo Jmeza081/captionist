@@ -234,7 +234,6 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
     rules.
   */
   const canPause = Boolean(state && isHost && state.clock.status !== 'idle')
-  const [flash, setFlash] = useState(0)
 
 
   useEffect(() => {
@@ -247,10 +246,11 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
       // Nothing claims ⌥P, so this is belt and braces — but a browser that
       // ever did would open something over a projected game.
       event.preventDefault()
-      setFlash((n) => n + 1)
       // The room decides which way, not this closure. Effects run after paint,
       // so a second press arriving in that window would otherwise carry the
-      // previous answer and ask for the state the clock is already in.
+      // previous answer and ask for the state the clock is already in. The
+      // flash is fired by the resulting transition rather than from here, for
+      // the same reason — see `ShortcutFlash`.
       send({ type: 'host/togglePaused' })
     }
 
@@ -591,11 +591,10 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
         <ReactionFloaters burst={floaterBurst} />
       </div>
 
-      {/* The keys, for as long as it takes to read them. Host-only, and
-          already gated by `canPause` where `flash` is incremented. Outside the
-          floater dock: that one is pinned to the bottom of the room and this
-          belongs under the clock. */}
-      <ShortcutFlash burst={flash} />
+      {/* The keys and what they did, centred over the room. Watches the clock
+          rather than the keyboard, so the word is right from the first frame
+          and the toolbox button gets the same confirmation. */}
+      <ShortcutFlash paused={countdown.paused} enabled={canPause} />
 
       {queue[0] && (
         <div className={styles.snackbarDock}>

@@ -3,40 +3,61 @@
 @include t.keyflashKeyframes;
 
 /**
- * Under the header, on the clock's side.
+ * The whole viewport, so the card is centred on the room rather than on a
+ * column — and `pointer-events: none`, because nothing here is for clicking
+ * and a full-screen layer that swallowed taps would take the vote grid with it.
  *
- * `fixed` rather than absolute: the room's content column scrolls, and keys
- * that scroll away mid-flash would read as a glitch rather than a keystroke.
+ * No rail offset. This one is deliberately centred on the *window*: it is the
+ * room announcing something to everyone looking at the screen, including a
+ * projector, and a card nudged left of centre to dodge the chat rail reads as
+ * misaligned rather than as considerate.
  */
-.flash {
+.dock {
   position: fixed;
-  top: calc(#{t.$header-height} + #{t.$space-14});
-  /*
-    Under the clock, which means clearing the docked chat rail — otherwise the
-    keys land on top of the conversation instead of the room. `--room-rail-width`
-    is `RoomShell`'s, 0 on a phone and the rail's width once it docks, and it
-    inherits down to here. The fallback keeps this honest anywhere else it is
-    ever mounted.
-  */
-  right: calc(var(--room-rail-width, 0px) + #{t.$screen-pad-h});
+  inset: 0;
   z-index: t.$z-floater;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.flash {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: t.$space-10;
-  padding: t.$space-12 t.$space-14;
-  border-radius: t.$radius-field;
-  // Its own scrim, so the keys stay legible over whatever the round is
-  // showing — the compose screen is a GIF at full bleed.
+  gap: t.$space-14;
+  padding: t.$space-26 t.$space-34;
+  border-radius: t.$radius-modal;
+  // Its own scrim: the compose screen is a GIF at full bleed, and two keys
+  // over a bright frame are unreadable without one.
   background-color: t.$scrim-tally;
   box-shadow: t.$shadow-popover;
-  pointer-events: none;
   animation: keyflash #{t.$duration-keyflash} ease-out forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .flash {
-    // Shown and cut, rather than faded. The keys still have to appear and go
-    // away; what they must not do is move.
+    // Shown and cut rather than faded. The keys still have to appear and go;
+    // what they must not do is move.
     animation: keyhold #{t.$duration-keyflash} steps(1, end) forwards;
   }
+}
+
+.keys {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+}
+
+/**
+ * What just happened, under the keys that did it.
+ *
+ * Card-title scale rather than a label: this is the word the room reads from
+ * across a table, and at label size it was a footnote to a graphic.
+ */
+.label {
+  @include t.cardTitleText;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: t.$text-primary;
 }
