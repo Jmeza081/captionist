@@ -86,9 +86,14 @@ and the react-lane audit has since added `$prompt-banner-columns` and
 mechanism is a wrapping flex row whose children go from full-width lines to
 real widths inside the query, because a container cannot query itself.
 `PlayerRow`'s `standing` variant is its own container — the row is the only
-thing that knows whether it can afford a bar and a note, and **the round's own
-points are outside both queries on purpose**, because a query decides what a row
-can drop and the number the round was about is not droppable — and `Grid` gained a
+thing that knows whether it can afford a bar (`$standing-bar-min`, 440px) and a
+note (`$standing-note-min`, 560px), and **the round's own points are outside
+both queries on purpose**, because a query decides what a row
+can drop and the number the round was about is not droppable. That is the
+negative case a container query is easy to get wrong in: the delta *was* in the
+note column once, which meant it had never drawn on a phone for anybody, for any
+row — a 560px measure taken on a row inside a 393px screen is never met, and
+nothing fails, it just does not appear. `Grid` also gained a
 `fluid` mode that derives its column count from its own width, capped at
 `mdColumns`, so the vote grid never has to be told the rail is open.
 
@@ -814,6 +819,101 @@ attribution belongs. It is what widened `ModalStep.body` from `string` to
 `app/page.tsx` is still a Server Component: the `'use client'` boundary is that
 one line rather than the page.
 
+**Since then the clock can be held from the keyboard, and it admits it.**
+`host/paused` has worked since phase 1; what it lacked was a way to reach it
+without opening a drawer, and a pill that looked any different once it had been
+reached — a held 0:24 and a running 0:24 were pixel-identical, on a screen being
+shared to a room. ⌥P is the room's first and only keyboard shortcut: host-only,
+ignored while a caption field or the chat composer has focus, and matched on
+`event.code`, because ⌥P emits `π` on macOS and `event.key` will never be `p`.
+**Not ⌘P**, which is where it started — Safari does not dispatch keydown for
+combinations reserved by browser UI at all, so the listener would never run, and
+the failure mode is an OS print sheet opening over a projected game.
+`lib/shortcuts.ts` is the pure half (`isPauseShortcut`, `isTypingTarget`,
+`altGlyph`) and `lib/useKeyboard.ts` the browser half (`useHasKeyboard`,
+`useAltGlyph`), and the listener is bound in `RoomShell` rather than in
+`RoomToolbox`, where the button lives, because working with the toolbox shut is
+the entire point of it.
+
+**The press asks the room which way rather than telling it.** `host/paused` and
+`host/resumed` each make the *caller* decide, and a caller bound in an effect
+cannot: effects run after paint, so a second press inside that window closes over
+the previous answer and asks for the state the clock is already in — the reducer
+correctly returns the state untouched and the room simply does not resume.
+`host/togglePaused` is a third action that delegates to those two, resolved
+against the authoritative clock, which is
+[ADR 0041](./adr/0041-the-room-decides-which-way-a-toggle-goes.md). Three
+components carry it — `Keycap` as an atom at two fixed sizes, `ShortcutHint`
+beside the clock and `ShortcutFlash` over the middle of the screen — and the
+flash is fired by the **state transition** rather than by the keystroke. A label
+derived at press time would show the old answer for a frame, in type the size of
+a headline; watching the clock makes "Paused" and "Resumed" right by
+construction, and means the toolbox button earns the same confirmation. The two
+gates on the hint are two different questions and both are needed:
+`useHasKeyboard` asks `(hover: hover) and (pointer: fine)`, because a host in
+landscape has a wide screen and no keys, and the stylesheet asks for `xl`,
+because a narrow laptop window has keys and no room.
+
+**And a ballot is secret at every phase, which the projection had never said.**
+`project()` enforced one rule and enforced it correctly — an entry is anonymous
+until the reveal — while `Round.ballots`, keyed by voter and valued by the
+entries they ranked, went out whole to every client at every phase. Each half
+was harmless alone: during the vote a ballot names entries whose authors have
+just been stripped. **The leak was the join.** At the reveal authorship
+deliberately comes back and `ballots` is still sitting beside it, unchanged,
+because `Round` is not replaced until `round/advanced` calls `beginRound()` — so
+for the length of the reveal *and* the untimed scoreboard after it, one line of
+devtools turned "p4 ranked r3-e2 first" into "Jesse put Melania first and Jack
+last". `Tiebreak.votes` was the same map on a worse screen: the duel names both
+contenders by design, so it read straight off with no join at all. Authorship
+and ballots ride **different schedules** now — authorship is secret until the
+reveal, a ballot is secret always — so `ballots` is projected to the viewer's own
+at every phase, and the duel's votes keep their keys (`tiebreakCopy` counts them
+for "4 of 7 have voted") while losing their values. No field was added and no
+type widened, so a client on the old build receives less rather than skewing.
+[ADR 0040](./adr/0040-a-ballot-is-secret-at-every-phase.md).
+
+**Since then the front door carries a changelog, and it is the first page in
+this app that awaits a third party.** `WhatsNewModal` opens from `LandingNav`
+beside "GitHub", one release per `Modal` step — so Back, Next, the dot row and
+the count all come from the dialog rather than from a scrolling list inside a
+card that already scrolls. The notes are GitHub's own `body_html`, asked for
+with `Accept: application/vnd.github.html+json` and rendered with
+`dangerouslySetInnerHTML`, which is a decision rather than a shortcut and is
+written down as [ADR 0042](./adr/0042-the-changelog-is-githubs-html.md): the
+alternative was ~40kB of Markdown parser in the bundle for four sentences that
+change weekly, and the trust boundary is not new, since writing a release note
+already requires push access to this repository. What `toSafeHtml` fixes is a
+real bug rather than a hypothetical one — GitHub sends **relative** links, which
+resolve against `captionist.fun` and 404. **The fetch is the page's**, not a
+route handler's and not the browser's: `app/page.tsx` is `async` now and
+`fetchReleases` carries `next: { revalidate: 3600 }`, so `/` stays statically
+prerendered behind a one-hour window and spends one GitHub request an hour per
+deployment rather than one per visitor. Because it is a *server* fetch, the
+suite's browser-level host blocking does not reach it — `RELEASES_STUB` sits
+beside `ABLY_STUB` in `playwright.config.ts` for exactly that reason. The module
+is split for a build rule rather than for tidiness: `lib/releases.ts` is
+client-safe (the types, `toSafeHtml`, `releaseDate`) because a client component
+importing a *value* from a `server-only` module is a build error, and
+`lib/releases.server.ts` is `server-only` and holds the fetch.
+
+**`Modal` grew three things carrying it, and one of them is a fix for every
+caller it has.** `bodyBlock` is block content in a `<div>`, because `body`
+renders inside a `<p>` and a browser meeting a heading there closes the
+paragraph and reparents the rest, taking the card's layout with it; `body` still
+wins if both arrive, since it is the older contract. `size='list'` is a 600px
+card (`$modal-height-list`) where `step` is the walkthrough's 408 — a measure
+chosen for an illustration, a heading and three lines, which showed about a
+third of one release. And **the body is the scroller rather than the card**: a
+release longer than the card used to push the foot clean below the fold, so the
+dots, Back and Next were all unreachable and the only way out was the close key
+the copy was sliding under — a trapdoor under any step whose copy outgrew the
+card, not just this one. The foot itself now draws its dot row and its Back
+button only on `steps.length > 1`, which is the rule the step count already
+followed: a one-step modal is an announcement rather than a walkthrough, a
+single dot is a bullet rather than progress, and a Back that can never enable is
+furniture beside the way out.
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -850,7 +950,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Language | TypeScript 5.9, `strict` | `@/*` path alias maps to the repo root |
 | Styling | Sass modules + `theme/` tokens | `sassOptions.loadPaths` makes `@use 'theme'` resolve from anywhere |
 | Layout | `Stack` · `Inline` · `Box` · `Grid` | Spacing is a token-typed prop; see "Token flow" below |
-| Game state | `lib/game/` — pure reducer, no React | `reduce()` is total and pure; randomness is a seeded PRNG cursor in state. **Every phase gate counts the people who are still here** — `competingPlayers`/`votingPlayers` filter on `connection`, `countPresent` holds the numerator to the same population, and `settleGates` re-asks the question from the five actions that can move either side of it ([ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md)) |
+| Game state | `lib/game/` — pure reducer, no React | `reduce()` is total and pure; randomness is a seeded PRNG cursor in state. **Every phase gate counts the people who are still here** — `competingPlayers`/`votingPlayers` filter on `connection`, `countPresent` holds the numerator to the same population, and `settleGates` re-asks the question from the five actions that can move either side of it ([ADR 0029](./adr/0029-a-held-seat-does-not-hold-the-round.md)). **What leaves the host is `project()`, and it now models two schedules rather than one** — authorship is secret until the reveal, a ballot is secret always ([ADR 0040](./adr/0040-a-ballot-is-secret-at-every-phase.md)) |
 | Room runtime | `lib/room/` — `RoomTransport` + `HostEngine` | The host browser is the server — see [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md). `RoomSnapshot.boot` is the same runtime reporting where an *opening* room has got to, and `isSeated()` is the one predicate that says whether this tab is in it yet |
 | Chat + tallies | `lib/room/events.ts` — a second store, beside `RoomStore` | [ADR 0010](./adr/0010-chat-is-a-second-store-and-its-sender-is-stamped.md) — the event lane, never game state: a message must not bump the `rev` guests drop stale game updates against. Every guard runs on *receive* — membership, 1.5s per sender on the local clock, 140 characters, 50 messages of scrollback, and since phase 7 an origin check on every URL a message carries. The log is `LogEntry = ChatEntry \| AnnouncementEntry` now, one list because the two occupy the same slot in the same stream, and the room's own line has its own guard rather than the clock: `isRoomHost`, since any member who could publish `kind: 'announcement'` would have every browser render it as *the room* speaking |
 | What the room says about itself | `lib/room/announce.ts` — the rule and the words, together | `roomAnnouncements(before, after)` is a pure diff of two `GameState`s, so every road a change arrives by is covered once; `announcementLine(body, state, selfId)` renders it where it is *read*, off the current roster, which is what lets the line say "you" and stops somebody being announced under a nickname they have since changed. `ROOM_FACE` is the author — a constant, not the host's props, because passing the host's would credit them with unplugging somebody else's router. In `lib/room/` rather than `lib/game/` because `AnnouncementBody` is wire vocabulary, and `lib/room → lib/game` is the allowed direction. [ADR 0028](./adr/0028-the-room-speaks-in-its-own-lane.md) |
@@ -858,6 +958,8 @@ here now*. Where they overlap, this file links rather than repeats.
 | Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the toolbox's react row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
 | Reaction affordance | `ReactionCTA` on all five sites the design names | Caption cards, chat messages, the composer, the reveal bar and the **room toolbox** — DESIGNSYSTEM §4.4's "uniform everywhere", which three of the five did not honour until recently. `ChatMessage` had no affordance at all, so every chat reaction landed on whatever arrived last, and the composer withheld its CTA on an empty log while rendering six quick keys that silently did nothing. The fifth site was the collapsed chat rail and **is now `RoomToolbox`**: reacting to the room is something any player does at any time, not an edge-of-chat control, so `ChatRail` no longer takes `onReact` and `RoomShell`'s `Overlay` union is back to `'toolbox' \| 'help' \| null`. `ChatPanel`'s reaction surface still carries *what it is aimed at* — a message id, or `null` for the composer, which **posts**: an emoji from the composer is a chat message that also fires the room's burst, rather than a chat control that quietly did something else. A *picture* reaction posts as an **attachment**, not as text: an image tile's glyph is a URL and `say`'s body is verbatim, so a Slackmoji used to render `/media/slackmoji-lgtm.svg` in 14px type. And the message CTA is reachable again — it was drawn only on the player row, while `ChatPanel` marked every host line an announcement, so in a host's own room no message had one |
 | Reaction art | `public/media/emoji/` stills · `lib/noto.ts` derives the motion | 584 CC BY 4.0 stills, 2.79MB, written by `scripts/import-noto-emoji.mjs` — run by hand, output committed, **deliberately not wired into `build`**, which has no network. `animatedSrcFor(glyph)` turns a same-origin still into its `fonts.gstatic.com` WebP and returns `null` for anything else; Google publishes these at 512px only, so one animated tile is ~369KB and the whole catalog would be ~57MB committed. [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
+| Keyboard | `lib/shortcuts.ts` (pure) + `lib/useKeyboard.ts` (browser) | One shortcut, ⌥P, and the split is the usual one: `isPauseShortcut`, `isTypingTarget` and `altGlyph` are node-reachable and unit-tested, while `useHasKeyboard` and `useAltGlyph` are `useSyncExternalStore` with **no keyboard and `Alt`** as the server snapshots. Matched on `event.code`, because ⌥P emits `π` on macOS and `event.key` will never be `p`; refused when any other modifier is down, so ⌃⌥P on the way somewhere else is not this. `navigator.platform` rather than `userAgentData.platform` — the modern answer reports `Windows` on macOS under Playwright (playwright#39568), which would make the suite assert a glyph no Mac user sees. The listener lives in `RoomShell`, not in the toolbox that holds the button, because reaching pause with the toolbox shut is the point |
+| Release notes | `lib/releases.ts` (client-safe) + `lib/releases.server.ts` (`server-only`) | The landing page's changelog. The split is a build rule rather than tidiness: a client component importing a *value* from a `server-only` module is a build error, so the types, `toSafeHtml` and `releaseDate` sit on one side and `fetchReleases` on the other. GitHub's `body_html` is rendered as it arrives — [ADR 0042](./adr/0042-the-changelog-is-githubs-html.md) — with `toSafeHtml` absolutising the **relative** links GitHub actually sends. `next: { revalidate: 3600 }` is the whole rate-limit story: one request an hour per deployment against an anonymous allowance of sixty. Three outcomes rather than an array and a `null` — `ok` · `rate-limited` · `unavailable` — because an empty changelog and a broken one must not render the same sentence, and it never throws: the front door may not fail to render over a changelog |
 | Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Read by `HeroWall`, `SceneBackdrop`, `ReactionGlyph` and the walkthrough's illustrations: every place the decision is *which file to fetch* rather than which rule to apply, and therefore every place CSS cannot make it |
 | Sharing a link | `lib/useWebShare.ts` | `useSyncExternalStore` over `navigator.share`, with **`false` as the server snapshot** — a button whose label came out of feature detection during SSR is a hydration mismatch on every phone, and it settles on the first client commit long before anybody has read the button. `share()` resolves to what happened — `shared` · `copied` · `cancelled` · `failed` — so the caller can confirm a copy, say nothing about a sheet that is already on screen, and treat a dismissal as a decision rather than an error. `AbortError` *is* the dismissal; every other failure falls through to the clipboard, because a sheet that refused to open is exactly when the old behaviour is wanted. The label moves with the capability rather than only the behaviour — [ADR 0033](./adr/0033-a-device-capability-decides-the-label.md) |
 | Sharing a file | `lib/export/` — `gifuct-js@2.1.2` decodes, `gifenc@1.0.3` encodes, both reached only through dynamic `import()` | **Client-side, end to end, and nothing is kept.** The pure half — `budget.ts` (480px wide, 100 frames, a 20ms floor under a delay), `layout.ts` (band and overlay geometry against an injected `measure`), `labels.ts` (capability → label, filenames, `markFor(src)` over `providerOf`, every snackbar line) — imports nothing that needs a browser, so Vitest covers it. The DOM half — `fonts.ts` reads `--font-inter`, the colours, the four overlay steps and the hat numbers off `:root`; `frames.ts` fetches with CORS and decodes one frame at a time with the file's own disposal, or takes one frame through an `<img>` for anything that is not a GIF; `compose.ts` paints a frame, the caption and the footer with the provider's mark; `encode.ts` builds one palette from sampled *composed* frames and yields per frame; `meme.ts` runs those two passes; `standings.ts` draws the table with DiceBear data-URI faces and hats; `deliver.ts` picks sheet, clipboard or download by capability. `useExport` is the hook a screen owns — capability through `useSyncExternalStore` with a `false` server snapshot, progress, an idle `prepare()`, and the `expired` two-tap for a sheet that refused a stale gesture — and `jobs.ts` is what the screens call, importing the renderers only when a job runs. Both pins are exact and both libraries are dormant, because GIF89a is finished; `types/gifenc.d.ts` declares the slice that is called. [ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md) |
@@ -887,11 +989,13 @@ here now*. Where they overlap, this file links rather than repeats.
 | `npm run docs:pack` | Repomix pack → `docs/repomix-output.xml` (gitignored) |
 
 No key is needed to run any of these, and the E2E suite refuses to use one:
-`playwright.config.ts` sets `ABLY_STUB: '1'`, `NEXT_PUBLIC_GIFS_STUB: '1'` and
+`playwright.config.ts` sets `ABLY_STUB: '1'`, `RELEASES_STUB: '1'`,
+`NEXT_PUBLIC_GIFS_STUB: '1'` and
 `NEXT_PUBLIC_BOTS_STUB: '1'` on
 the dev server it spawns, so `/api/ably/seat` answers `stub: true`, `transportKind`
 resolves to `broadcast`, the picker and the landing wall come off the
-offline shelf, and every bot in every spec plays with written-in jokes. That is stated rather than inherited from the machine, so a key
+offline shelf, the landing page's changelog is a fixed two-release fixture, and
+every bot in every spec plays with written-in jokes. That is stated rather than inherited from the machine, so a key
 in `.env.local` cannot silently move the suite onto a live service — and it is
 also why phase 5's gate is unverified: nothing in the repo exercises Ably, key
 or no key. `?transport=broadcast` and `?gifs=stub` do the same for one page
@@ -916,6 +1020,15 @@ same reason the Klipy one is: with no key at all the route answers `stub: true`,
 and `e2e/bots.spec.ts`'s count of how many calls a phase makes would assert
 nothing while looking green.
 
+**The changelog is the second hole and the plainer one.** `fetchReleases` runs
+in the *page*, on the server, so `--host-resolver-rules` — which blocks the
+browser's DNS — does nothing about it, and `page.route` cannot intercept a call
+the browser never makes. Without `RELEASES_STUB` a full run would spend a GitHub
+request per landing-page load and `e2e/releases.spec.ts` would assert against
+whatever shipped that day. The fixture is deliberately **longer than the card**,
+because the bug it guards is a body that overflows one: a three-line stub would
+fit, pass, and prove nothing.
+
 With **neither** `NEXT_PUBLIC_KLIPY_API_KEY` nor `NEXT_PUBLIC_GIPHY_API_KEY` the
 picker serves the offline shelf outside production, so a fresh clone gets a
 working board rather than an error; holding only one of the two is enough,
@@ -939,26 +1052,44 @@ app changes.
 
 ## Routes
 
-Eleven routes of ours. `next build` reports ten — the eleventh is `/components`,
-which exists only under `next dev` and is explained below. `/_not-found` used to
+Eleven routes of ours. `next build` reports twelve entries — ten of those eleven
+plus two it generates from files rather than from pages, and the eleventh of
+ours is `/components`, which exists only under `next dev` and is explained
+below. `/_not-found` used to
 be Next's default black page and is now `app/not-found.tsx`; `/api/bots/turn`
 was the first route handler added since the terms took `/api/gifs`, and
-`/.well-known/vercel/flags` is the newest of the ten — a handler that serves
+`/.well-known/vercel/flags` is the newest of them — a handler that serves
 nobody in the room, only the Vercel Toolbar:
 
 ```
-Route (app)       Revalidate  Expire
-○ /
-ƒ /.well-known/vercel/flags
+Route (app)                    Revalidate  Expire
+○ /                                    1h      1y
 ○ /_not-found
+ƒ /.well-known/vercel/flags
 ƒ /api/ably/seat
 ƒ /api/ably/token
 ƒ /api/bots/turn
+○ /apple-icon.png
 ○ /host
+○ /icon.svg
 ○ /join
 ƒ /join/[code]
 ƒ /room/[code]
 ```
+
+`/apple-icon.png` and `/icon.svg` are Next's file-convention metadata routes,
+generated from `app/apple-icon.png` and `app/icon.svg` rather than written as
+pages — they are in the build output and in no diagram below, because nothing
+navigates to them.
+
+**`/` is the one row with a revalidate window, and it is new.** The landing page
+awaits `fetchReleases()` for the changelog now, and that fetch carries
+`next: { revalidate: 3600 }` — so the page stays *prerendered* and the window is
+what refreshes it, rather than the page going dynamic. One GitHub request an
+hour per deployment, on a page with no API key and an anonymous allowance of
+sixty an hour. It cannot fail the render: `fetchReleases` answers with a status
+in every branch, including the network error, because a changelog must never be
+the reason the front door does not draw.
 
 **`/components` is not in that list, and that is the point.** The gallery is a
 dev tool, so its page file is `app/components/page.dev.tsx` and `next.config.mjs`
@@ -969,8 +1100,11 @@ reaction catalogue, every molecule at once — reaches the production bundle. A
 `notFound()` guard inside the page would have shipped all of it to serve a 404.
 
 `/`, `/_not-found`, `/host` and `/join` are prerendered at build
-time, and **none of them awaits anything** — there is no revalidate column
-because no page fetches. `HeroWall` used to be handed a `wallTiles()` result the
+time. **Three of them await nothing at all, and `/` awaits exactly one thing
+that is not about the room** — this paragraph used to say all four fetched
+nothing, and the changelog is what changed it. The distinction that survives is
+the one that mattered: no page fetches *media* at render time, and nothing on
+any of them waits on a room. `HeroWall` used to be handed a `wallTiles()` result the
 page awaited; that function is gone from every route and the wall is a
 `'use client'` molecule that renders the app's own art immediately and calls
 `useResolvedArt(WALL_SLUGS)` for the real GIFs afterwards. It has been three
@@ -984,8 +1118,10 @@ about the *room*, because **nothing before the room needs one**: a code is
 generated in the browser, and whether a room already exists is a question only
 the transport can answer, which happens after the push. `/join/[code]` is dynamic solely because it awaits `params` to prefill one field;
 `/room/[code]` is dynamic and everything inside it is client-driven — and it is
-now the one page that **awaits something other than a `params` promise before
-it renders**: the `export-media` flag, read from `flags.ts` per request because this is the last
+one of two pages that **await something other than a `params` promise before
+they render** (`/` is the other, and the difference is the point: a flag read
+per request keeps a page dynamic, a fetch with a `revalidate` keeps one static):
+the `export-media` flag, read from `flags.ts` per request because this is the last
 Server Component above the room, and passed to `RoomProvider` as
 `flags={{ exportMedia }}`. The room's screens read `useRoomFlags()` and see a
 boolean; none of them knows where it came from, and nothing in the browser can
@@ -1029,7 +1165,7 @@ upgrade happens in the browser.
 ```mermaid
 graph TD
   L["app/layout.tsx<br/><i>root layout · Inter · globals.css + tokens.scss</i>"]
-  P["app/page.tsx<br/><i>/ — landing · static ○ · awaits nothing</i>"]
+  P["app/page.tsx<br/><i>/ — landing · static ○ · revalidate 1h<br/>async, for the changelog and nothing else</i>"]
   C["app/components/page.dev.tsx<br/><i>/components — the gallery<br/>dev server only · not in the build</i>"]
   H["app/host/page.tsx<br/><i>/host — set the rules · static ○</i>"]
   J["app/join/page.tsx<br/><i>/join — type a code · static ○</i>"]
@@ -1049,6 +1185,10 @@ graph TD
   LA["LandingActions<br/><i>'use client' · a link and a code field</i>"]
   LL["LandingLegal<br/><i>'use client' · the foot — one boolean,<br/>so the page above it stays a server component</i>"]
   LM["LicenseModal<br/><i>four licences, in a configured Modal</i>"]
+  LN["LandingNav<br/><i>'use client' · the bar — the walkthrough<br/>and the changelog, both as modals</i>"]
+  WN["WhatsNewModal<br/><i>one release per Modal step<br/>feed handed down, never fetched here</i>"]
+  RS["lib/releases.server.ts<br/><i>server-only · fetchReleases</i>"]
+  GH["GitHub — /repos/…/releases<br/><i>body_html · revalidate 3600<br/>RELEASES_STUB answers instead under test</i>"]
   HS["HostSetupScreen<br/><i>generateCode · writePendingSettings</i>"]
   JS["JoinScreen<br/><i>normalizeCode · writeIdentity</i>"]
   RP["lib/room/RoomProvider<br/><i>'use client' · claims the code</i>"]
@@ -1075,6 +1215,11 @@ graph TD
   HW -.->|"resolveArt(WALL_SLUGS) — slugs travel, URLs don't"| GP
   P --> LA
   P --> LL
+  P --> LN
+  P -->|"await fetchReleases() — the one server-side<br/>third party in the app, and the only revalidate"| RS
+  RS --> GH
+  P -->|"feed: ReleaseFeed — ok · rate-limited · unavailable"| LN
+  LN -->|"open — what shipped"| WN
   LL -->|"open — the licences, without leaving the page"| LM
   LA -->|"href — 'Start a game'"| H
   LA -->|"router.push → /room/CODE"| R
@@ -1103,9 +1248,14 @@ graph TD
   SH -.->|"HelpModal's four illustrations —<br/>resolveArt(HELP_SLUGS), the SVG until it lands"| GP
 ```
 
-**No page reaches a third party from the server render any more**, which is why
+**No page reaches a *media provider* from the server render**, which is why
 every arrow to the provider is dotted and every one of them leaves a browser.
-That is one rule with two consequences rather than two decisions: a request must
+This sentence used to read "no third party" full stop, and the changelog is what
+narrowed it: `/` awaits GitHub on the server, on the solid arrow above, and that
+is allowed for exactly the reasons the media rule is not — nobody's terms forbid
+it, the response is text we may cache, and caching it is the whole point. The
+media rule is unchanged and is one rule with two consequences rather than two
+decisions: a request must
 be made client-side, and a media URL must not be retained. So the picker fetches
 from the browser, and the four surfaces whose pick is *ours* — the wall, the
 waiting backdrop, the 404 and the walkthrough's four illustrations — ship the
@@ -1126,7 +1276,12 @@ the picture on the way in, and none holds it on the way out
 **`/` is the landing page from artboard 1a**, and it composes four things:
 `LandingNav`, the hero copy, `LandingActions` and — since the licences arrived —
 `LandingLegal`, whose whole reason to be a component is that the page above it
-stays a Server Component. It holds no markup of its
+stays a Server Component. **It is `async` now and still a Server Component**,
+which is the one thing about this page worth restating: it awaits
+`fetchReleases()` and hands the result to `LandingNav` as a prop, so the
+changelog is fetched once an hour per deployment rather than once per visitor,
+and the bar — which is already `'use client'` for the walkthrough — never calls
+GitHub itself. It holds no markup of its
 own beyond the headline, the lead and the avatar proof row — whose five faces
 now carry the catalogue's first five seeds on the first five seat colours, so
 the row is literally "here are five of the faces you can pick" rather than five
@@ -1354,7 +1509,11 @@ Three layers in a stack, plus `lib/gifs/`, `lib/bots/`, `lib/export/`,
 `lib/avatar.ts`, `lib/ably/`, `lib/reactions.ts`, `lib/noto.ts` and
 `lib/recent-reactions.ts` alongside — and `flags.ts` at the repo root, which is
 read by a page and by nothing in `lib/` — and
-the arrows only ever point one way. **State lives in `lib/`; `components/` is
+the arrows only ever point one way. **Two of the newest neighbours belong to no
+room at all**: `lib/shortcuts.ts` + `lib/useKeyboard.ts` are read by
+`RoomShell` and by two molecules, and `lib/releases.ts` +
+`lib/releases.server.ts` are read by a page and a molecule on the *front door*,
+which is the first thing in `lib/` that `lib/room/` has no reason to know about. **State lives in `lib/`; `components/` is
 UI.** Providers, stores and hooks belong in `lib/room/` even though they are
 React — putting a provider in `components/` would make a tier that is supposed
 to be about markup the owner of room authority instead.
@@ -2070,7 +2229,24 @@ Seven details are load-bearing:
   `entry.authorId` had just been stripped of. `project()` narrows it to the two
   contenders rather than deleting it, because the duel is the one named screen
   before the reveal — a head-to-head cannot be anonymous, and the design puts
-  both faces under the cards. `lib/game/project.test.ts` holds both doors shut.
+  both faces under the cards. **The third and fourth doors are ballots, and
+  they are on a different schedule from the other two.** `Round.ballots` is
+  keyed by voter and valued by the entries they ranked; on its own it names
+  nobody during the vote, and at the reveal authorship comes back and sits
+  beside it unchanged until `round/advanced` replaces the `Round` — so the join
+  was open for the whole reveal and the untimed scoreboard after it.
+  `Tiebreak.votes` is the same map on a screen that has already named both
+  contenders, so it needed no join at all. Authorship is secret *until the
+  reveal*; a ballot is secret *always*. So `ballots` is narrowed to the viewer's
+  own at every phase, and the duel's votes keep their keys and lose their
+  values — an empty id there means "this seat has voted and you may not see for
+  whom", which `tiebreakCopy` counts for "4 of 7 have voted". The cost is
+  written down rather than discovered: a per-contender *live* tally can no
+  longer be derived client-side, because `Object.values(votes)` is blanks now
+  and would read as zero votes instead of failing loudly — that number has to
+  come from the host
+  ([ADR 0040](./adr/0040-a-ballot-is-secret-at-every-phase.md)).
+  `lib/game/project.test.ts` holds all four doors shut.
   This is the one part of the interface a broadcast channel does not satisfy
   for free — [ADR 0003](./adr/0003-host-authority-over-a-swappable-transport.md)
   flagged it and deferred the choice, and phase 4 had to make it a phase early:
@@ -2367,6 +2543,16 @@ a second, not once, because `?fast=80` lands a room-second every 12ms; it
 re-renders only when a displayed second actually changes, and a paused or idle
 clock gets no interval at all.
 
+**A held clock says so now, which it did not.** `useCountdown` has always
+reported `paused`; nothing drew it, so a held 0:24 and a running 0:24 were
+pixel-identical on a screen being shared to a room — the same "a timer may not
+lie" rule that dropped the reveal's `auto-advancing in 6s` label, failing from
+the other direction. `TimerPill` takes `paused` and wears `$status-waiting`, the
+amber the room already uses for "waiting on somebody", and its accessible label
+becomes `0:24 · paused`. `paused` beats `urgent` deliberately: a held clock at
+four seconds is not running out, so pulsing red at it would be the same lie in a
+different colour.
+
 **One screen reads a deadline without counting it.** `BriefScreen`'s auto-pick
 is a `setTimeout` armed against `clock.endsAt` — one shot, cleared on a new
 deadline, and holding no state — rather than a subscription to the countdown,
@@ -2511,6 +2697,8 @@ graph BT
     Close["CloseButton<br/><i>the filled key — one drawing at two sizes,<br/>and the only caller of Icon's weight</i>"]
     Glyph["ReactionGlyph<br/><i>'use client' · a character, or the still —<br/>which upgrades to the animation</i>"]
     Dots["WaitingDots"]
+    Help["HelpKey<br/><i>the round key that opens the walkthrough —<br/>accent in the room, outline in the landing bar</i>"]
+    Cap["Keycap<br/><i>one character drawn as a key — sm · lg<br/>decorative: the sentence around it tells</i>"]
     Static["TvStatic<br/><i>a server component · inline-SVG noise and CSS —<br/>no script, no request, no decode</i>"]
   end
   subgraph molecules["molecules/ — compose atoms, and occasionally another molecule"]
@@ -2525,6 +2713,9 @@ graph BT
     Bots["BotPicker<br/><i>'use client' · three levels and the spend meter —<br/>a form, so not a configured Modal</i>"]
     Landing["HeroWall · LandingNav · QuickJoin"]
     Legal["LandingLegal · LicenseModal<br/><i>the foot, and the four licences —<br/>a configured Modal, like HelpModal</i>"]
+    News["WhatsNewModal<br/><i>'use client' · the changelog —<br/>a configured Modal too; the feed is a prop</i>"]
+    Keys["ShortcutHint · ShortcutFlash<br/><i>'use client' · the key beside the clock,<br/>and the key over the room</i>"]
+    Wait["CycleWall · UpNext<br/><i>the pick wait — sixteen GIFs on a CSS schedule,<br/>and the rotation as a pill</i>"]
     Boot["BootChecklist<br/><i>an ol — the order is the meaning</i>"]
     Mark["Wordmark<br/><i>the mark and the name — a molecule<br/>because it imports Logo, and Icon<br/>is the only atom exemption</i>"]
     Scene["SceneBackdrop<br/><i>'use client' · a dead channel behind a wait —<br/>a molecule for Wordmark's reason: it composes TvStatic</i>"]
@@ -2542,7 +2733,7 @@ graph BT
     EntryScreens["JoinScreen · HostSetupScreen<br/><i>route — no useRoom</i>"]
   end
   subgraph pages["app/ — composition only"]
-    Home["page.tsx<br/><i>composition only — awaits nothing</i>"]
+    Home["page.tsx<br/><i>composition only — async, for the changelog<br/>and nothing else it draws</i>"]
     Comp["components/page.tsx"]
     JoinPage["join/page.tsx<br/>join/[code]/page.tsx"]
     HostPage["host/page.tsx"]
@@ -2573,6 +2764,14 @@ graph BT
   Landing --> Home
   Dialog -->|"LicenseModal is a Modal with four steps in it"| Legal
   Legal -->|"LandingLegal — the page's foot"| Home
+  Cap -->|"⌥ and P, twice — sm in the hint, lg in the flash"| Keys
+  Dialog -->|"WhatsNewModal is a Modal with one step per release"| News
+  News -->|"LandingNav — beside GitHub, above md"| Landing
+  Help -->|"LandingNav — the phone's stand-in for<br/>'How it works' when the words stand down"| Landing
+  Landing -->|"LandingNav — the feed arrives as a prop,<br/>fetched by the page above"| Home
+  Ident -->|"Avatar — the rotation, in the order it runs"| Wait
+  Static -->|"CycleWall — four veiled dead channels<br/>where the lookup settles on nothing"| Wait
+  Wait -->|"BriefScreen — the pick wait, as a wall<br/>rather than as a backdrop"| Screens
   Actions --> Home
   Layout -->|"Stack"| Home
   Ident -->|"Avatar"| Home
@@ -2622,6 +2821,9 @@ graph BT
   Static -->|"HeroWall — one tuning set per cell,<br/>while the real GIF is still out"| Landing
   Static -->|"one set per picture, seeded off the src —<br/>so no two tiles in a grid run the same field"| Tuned
   Static --> Gallery
+  Cap -->|"both sizes, and both modifier names"| Gallery
+  Help -->|"both tones — the room's and the bar's"| Gallery
+  Wait -->|"CycleWall · UpNext"| Gallery
   Static -->|"GifPanel's placeholder tiles — the set alone,<br/>at a reserved ratio, while a board is out"| Overlay
   Tuned -->|"GifPanel's board tile — tuning={board},<br/>so the chat popover is deliberately out"| Overlay
   Tuned -->|"MediaCard's img — the client boundary is the leaf,<br/>so the card is still a server component"| Media
@@ -2649,7 +2851,8 @@ graph BT
   BootScreen -->|"returned in place of the chrome,<br/>until isSeated()"| Shell
 
   Status -->|"TimerPill · RoundProgress · ProgressRail"| Shell
-  Icon -->|"help — the lobby's walkthrough key,<br/>drawn straight into AppHeader's trailing slot"| Shell
+  Help -->|"the lobby's walkthrough key,<br/>drawn straight into AppHeader's trailing slot"| Shell
+  Keys -->|"ShortcutHint beside the clock in that same slot,<br/>ShortcutFlash centred over the whole window"| Shell
   Feedback --> Shell
   Chat -->|"ChatRail · ChatToast"| Shell
   Overlay -->|"HelpModal · RoundOpener · RoomToolbox — everyone's<br/>ReconnectOverlay — over a live room"| Shell
@@ -2711,10 +2914,23 @@ it holds the same way**: the lobby's walkthrough key, which has neither a clock
 nor a round to report, so the slot's invariant survives a phase check
 (`state.phase === 'lobby'`) sitting in front of the selector. It moved out of
 `LobbyScreen`, where it took a third of the one row a phone has for two mode
-names, and that move is why `RoomShell` now imports `Icon` directly — the one
-new edge this pass put in the tier map. The `AppHeader` half of the same pass is the
+names. It was drawn with `Icon` directly at first and is `HelpKey` now — an
+atom, because the landing bar needed the same round key and a second copy of it
+was the alternative; the tone carries the size, since the room's plate stacks
+under the chat sheet's × and the bar's sits in an outline button's row.
+The `AppHeader` half of the same pass is the
 settings line: it is drawn only from `md` up, because in a round the phase takes
 a phone's width and in the lobby the name, the host chip and this key do.
+
+**The invariant has since bent by exactly one thing, and the bend is the
+honest version of it.** On a timed phase the slot holds a `.clockGroup` — the
+`TimerPill` and, for a host on a device with both a keyboard and an `xl`
+window, `ShortcutHint` beside it. That is still one *occupant* in the sense the
+rule means (nothing else can apply at the same time), but it is two elements,
+and the second is the only thing in the slot gated on the viewer rather than on
+the phase. The branch also widened: the clock is drawn while
+`countdown.running || countdown.paused`, because a held clock that vanished
+from the header would be a worse answer than one that never admitted it stopped.
 
 The screens are injected, not imported: `RoomShell` takes a
 `Partial<Record<RoomPhase, ComponentType>>`, and the map lives in
@@ -3182,6 +3398,40 @@ nothing. The scoreboard passes `as="li"`; `e2e/hats.spec.ts` stopped walking up
 through `main div` to find the crowned row and asks for it by role, which is
 the assertion that will now fail if the element regresses.
 
+**The pause key added one atom and two molecules, and the split between them is
+where the keyboard is read.** `Keycap` is an atom by the rule — no app state, no
+component imports — and its two sizes are fixed rather than a number, because a
+key has to stay square enough to read as one and a caller picking a height would
+get the padding, the radius or the type wrong. `ShortcutHint` and `ShortcutFlash`
+are molecules because they compose it, and both are `'use client'` for the same
+one fact: which glyph the modifier wears. **Neither is in the gallery**, and
+for two different reasons worth separating. The hint renders nothing without a
+real keyboard under a real pointer query, so a gallery case would be a picture
+of it on the machines that have one and an empty box on the rest. The flash has
+no static state at all — it is derived from a *transition*, so there is nothing
+to hand it as props; `e2e/shortcuts.spec.ts` drives both in a room. `Keycap`
+itself is in the Atoms panel at both sizes and with both modifier names, which
+is the part a design review can actually look at.
+
+**The changelog added one molecule and grew `Modal` by three things, and only
+one of the three is about release notes.** `WhatsNewModal` is a configured
+`Modal` exactly as `HelpModal` and `LicenseModal` are — the third of them now,
+which is the shape earning its keep rather than a pattern being repeated — and
+it fetches nothing: the `ReleaseFeed` arrives as a prop from the page, so the
+molecule is a renderer of three states and not a client that could quietly spend
+a GitHub request per visitor. `Modal`'s `bodyBlock` is the invalid-markup fix
+(`body` renders in a `<p>`, and block content there is reparented by the
+browser, taking the card's layout with it), `size='list'` is the taller measure,
+and **the body becoming the scroller is a fix for every caller it has** — any
+step whose copy outgrew the 408px card had the same trapdoor, with the foot
+below the fold and the only way out being the close key the copy was sliding
+under. `flex: 1` with `min-height: 0` on the body, `overflow: hidden` on the
+card, and the `min-height: 0` on `.copy` without which a flex child refuses to
+shrink below its content and the card grows instead. The foot's dot row and Back
+are drawn on `steps.length > 1`, which is the step count's own rule reaching the
+rest of the row: they come back on their own the day there is a second release,
+and every multi-step caller is untouched.
+
 ## Token flow
 
 Values exist exactly once. Sass owns them; React reads them by name.
@@ -3393,7 +3643,12 @@ behind it, and the seventh is the export, which touches no route of ours at
 all. (This count read "ten routes" while there were nine: it was one ahead from
 the day `/api/gifs` was removed, and the arrival of `/api/bots/turn` is what
 made it right rather than what changed it. The eleventh is the flags discovery
-handler, which no shape below passes through.)
+handler, which no shape below passes through.) **The third shape has since grown
+a server leg** — `/` awaits GitHub for its changelog behind a one-hour
+`revalidate` — and it is counted as the same shape rather than an eighth,
+because what leaves the process is a build-time-or-hourly call whose answer is
+identical for every visitor. It is not a request-time fetch and nobody waits on
+it.
 
 The simple one is prerendered HTML with
 hydration reaching only the `'use client'` islands inside it — `/components`,
@@ -3494,11 +3749,23 @@ screen it lands on is the screen that is showing, which is the whole reason the
 refusal is routed to `boot.failure` rather than to a snackbar underneath it.
 
 The third path is `/`, and it is the third shape: a Server Component that
-**awaits nothing and answers complete**, with a client island that improves
-itself afterwards. The wall used to be the counter-example — a page that awaited
-remote data before it answered at all — and it is now the clearest case of the
-rule that replaced it: the server may not make this call, and the URL it would
-return may not be kept.
+**answers complete**, with a client island that improves itself afterwards. The
+wall used to be the counter-example — a page that awaited remote data before it
+answered at all — and it is now the clearest case of the rule that replaced it:
+the server may not make this call, and the URL it would return may not be kept.
+
+**This paragraph used to say "awaits nothing", and the changelog is what took
+that half of the sentence.** The page is `async` now and awaits `fetchReleases()`
+before it answers — which is the opposite of what the wall was made to stop
+doing, and allowed for reasons that are specific rather than a softening. The
+wall's data is media: its provider forbids a server call and forbids retaining
+the URL, and the answer is per-viewer and immediately stale. GitHub's is text,
+nobody's terms forbid the call, and it is the *same* answer for every visitor
+for an hour — so `revalidate: 3600` turns one fetch into a build artefact with a
+window on it, the page stays `○` in the route table, and the visitor waits for
+nothing. The failure modes are covered in the other direction too: `fetchReleases`
+returns a status rather than throwing in all three bad cases, so the front door
+renders whatever GitHub does.
 
 ```mermaid
 sequenceDiagram
@@ -3507,15 +3774,24 @@ sequenceDiagram
   participant H as HeroWall — 'use client'
   participant A as lib/gifs/art
   participant G as The GIF provider
+  participant R as lib/releases.server
+  participant GH as GitHub
 
-  Note over N,H: build time, once
-  N->>N: render HeroWall · LandingNav · LandingActions
-  Note over N: no fetch, no key, no cache —<br/>the tiles are twenty TvStatic sets
+  Note over N,H: build time, and once an hour after it
+  N->>R: await fetchReleases()
+  alt the window has expired, and RELEASES_STUB is unset
+    R->>GH: GET /repos/…/releases — Accept: html+json
+    GH-->>R: body_html → toSafeHtml → Release[]
+  else inside the window, stubbed, or GitHub is unreachable
+    R-->>N: the cached feed, the fixture,<br/>or rate-limited / unavailable — never a throw
+  end
+  N->>N: render HeroWall · LandingNav(feed) · LandingActions
+  Note over N: no media fetch, no key, no cache —<br/>the tiles are twenty TvStatic sets
 
   Note over B,N: request time
   B->>N: GET /
-  N-->>B: full HTML — 20 cells, already sized
-  B->>B: hydrate HeroWall + LandingActions
+  N-->>B: full HTML — 20 cells already sized,<br/>the changelog already in the payload
+  B->>B: hydrate HeroWall + LandingActions + LandingNav
   B->>B: read prefers-reduced-motion
   H->>A: resolveArt(WALL_SLUGS)
   A->>G: items(slugs) — from the browser, per page load
@@ -3551,10 +3827,19 @@ animated image only when a source has none.
 smallest one in the app.** `LandingLegal` is `'use client'` for a single
 boolean, and `LicenseModal` is not rendered at all until it flips — so the
 headline, the lead, the proof row and the twenty cells are all still server
-output, and what hydration reaches on `/` is the wall, the two actions and one
+output, and what hydration reaches on `/` is the wall, the two actions, the bar
+and one
 button in the foot. Pushing the boundary down to the line that needs it is the
 same move `TunedImage` makes inside `MediaCard`; the difference is only which
 direction the tree is read from.
+
+**`LandingNav` is the island the changelog rides in, and it fetches nothing.**
+It has been `'use client'` since the walkthrough, for one boolean; the release
+notes add a second boolean and no network — the feed is serialised into the RSC
+payload by the page above. That is the whole reason the fetch is the page's: a
+client component asking GitHub would be one request per visitor against a
+sixty-an-hour anonymous allowance, where the server's is one per hour per
+deployment however many people open the door.
 
 **A fourth surface takes the wall's road and is not a page at all.**
 `HelpModal`'s four illustrations call `useResolvedArt(HELP_SLUGS)` and match the
@@ -4159,6 +4444,30 @@ room's behalf, and those stand as they were. The whole feature sits behind the
 `flags.ts`, so it can go dark without a deploy if the provider objects. The
 path from that flag to the file is drawn in [the export](#the-export).
 
+**The pause key and the changelog closed no row and opened none, which is the
+same reading the boot screen and the bots got.** The design draws no keyboard
+shortcut and no release notes, so neither is a gap in a sweep of it — both were
+designed during the feature, and what holds them to the same standard as the
+rest is the rule the boot screen wrote down: a surface may not state something
+the app does not do. `ShortcutHint` renders nothing where there is no keyboard
+to press, the flash names the state the clock actually reached rather than the
+one the keystroke asked for, and `WhatsNewModal` says three different true
+things — nothing shipped yet, GitHub is rate-limiting us, GitHub could not be
+reached — rather than one sentence covering all three
+([ADR 0015](./adr/0015-a-progress-screen-may-not-invent-a-stage.md) applied to
+two more screens).
+
+**The ballot leak is the one entry here that was a *defect* rather than a gap,
+and it is closed.** It is named because a reader looking for "what is not done"
+deserves to know it was found by this file's own sweep rather than by a player:
+`project()` had one rule where it needed two, and the second is now
+[ADR 0040](./adr/0040-a-ballot-is-secret-at-every-phase.md). What it leaves
+behind is a *constraint* rather than a gap, and it belongs here for that reason:
+a per-contender live tiebreak tally cannot be derived on a client any more. If
+that number is ever wanted it has to be computed on the host and published,
+because the blanks a client now holds would read as zero votes and be quietly
+wrong.
+
 | Area | What exists | What doesn't |
 | --- | --- | --- |
 | The round-flow screens | **All ten phases**, inside the `RoomShell` chrome drawn above — `opener` as the `RoundOpener` overlay, the other nine through the [tier map](#component-tiers). `PhasePending` is gone | Four pieces of the design, each left out for a reason rather than for time — see below the table |
@@ -4240,8 +4549,9 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-455 unit tests (`lib/**/*.test.ts`, node, over 30 files) and 642 Playwright
-tests across the two viewports — 321 per project, over 33 spec files. Not all of
+476 unit tests (`lib/**/*.test.ts`, node, over 32 files) and 674 Playwright
+tests across the two viewports — 337 per project, over 35 spec files, 644 of
+which pass and none of which fail. Not all of
 them run: 30 skip, and 26 of those are on viewport (a docked rail exists only
 above `md`, a floating dock only below it), which is a branch of the layout
 rather than a hole in the coverage. The other four are
@@ -4252,10 +4562,14 @@ The two counts differ because
 `responsive.spec.ts` skips at the describe level and takes all of its own with
 it: 13 of the 26 skip on the phone (the width sweep's three, and ten that need
 a docked rail, an `lg` or `xl` split, or the reveal's desktop-only reaction
-bar), and 13 on the desk (the responsive sweep's six phone layouts, the
-floating keys' two, chat's one sheet, and four in `refinements.spec.ts` for the
-floating dock and the sheet handle — a docked column is not dragged anywhere).
+bar), and 13 on the desk — six in `responsive.spec.ts` (the floating keys' two
+and the boards-and-feet four), four in `refinements.spec.ts` for the close key,
+the floating dock and the sheet handle, two in `targets.spec.ts`, and chat's one
+sheet. A docked column is not dragged anywhere.
 Both projects would otherwise sweep the same widths through the same browser.
+(That desk list used to read "the responsive sweep's six phone layouts, the
+floating keys' two…", which double-counted the sweep and left `targets.spec.ts`
+out; the totals were right and the breakdown was not.)
 
 **The avatar change's share is 12 unit tests and five specs.**
 `lib/avatar.test.ts` is the 12, and it is aimed at the two things a style swap
@@ -4638,6 +4952,53 @@ on it. They count rows with `getByRole('listitem')`, which only became possible
 when the row became an `li`; `e2e/hats.spec.ts` was re-pointed at the same role
 for the same reason.
 
+**The ballot redaction's share is 9 unit tests and no spec, and the absence is
+the right answer rather than a gap.** `lib/game/project.test.ts` went from 3
+tests to 12, and every one of the new ones is a claim about a *payload* — that
+another player's ballot is absent at `vote`, at `tiebreak`, at `reveal` and at
+`score`; that the viewer's own survives all four, because `hasVoted` and
+`ballotFrom` index it; that the duel's votes keep every key and lose every value
+but the viewer's; and that the count `tiebreakCopy` renders off those keys is
+unchanged. A browser cannot make any of those claims better than a node test
+can — what the projection does is decided before anything renders, and the
+screens were already correct because none of them ever read another player's
+ballot. That is also the shape of the bug: nothing on screen was wrong, so no
+E2E test could have caught it and none was added to pretend otherwise.
+
+**The pause key's share is 6 unit tests and one new spec of 10 per project, and
+two older test *premises* had to move.** `lib/shortcuts.test.ts` is 4 over the
+pure half — that the match is on `event.code` rather than `event.key`, that a
+second modifier refuses it, and that the glyph is `⌥` on Apple platforms and
+`Alt` everywhere else, including on the platform string Playwright reports.
+`lib/game/reducer.test.ts` is 2 more, and they are the ADR's claim made
+executable: `host/togglePaused` holds a running clock and resumes a held one,
+and does nothing at all to an idle one. `e2e/shortcuts.spec.ts` is the 10, and
+they are the half only a browser has: that the clock really stops and *looks*
+stopped, that a second press resumes, that a keystroke inside the chat composer
+belongs to the composer, that a guest's press changes nothing and draws no
+flash, that the flash says which way it went and leaves on its own, and that the
+hint is offered only where there is both a keyboard and an `xl` window. The two
+moved premises are worth naming because both were previously passing on
+accident: the gallery's timer assertion matched `0:09` as a *substring*, which a
+paused `0:09` also satisfies, and the header's truncation check counted any
+`scrollWidth > clientWidth` span as clipped — `srOnly` is a 1px box with hidden
+overflow, clipped on purpose and read by nobody, so the floor is 2px now.
+
+**The changelog's share is 6 unit tests and one new spec of 6 per project, and
+five of the six browser tests are gated on width.** `lib/releases.test.ts` holds
+`toSafeHtml` and `releaseDate`: that a relative `href` is absolutised, that an
+already-absolute one is left alone, that every anchor gets the `target` and
+`rel` the rest of the app's outbound links carry, and that an unparseable date
+says nothing rather than `Invalid Date`. `e2e/releases.spec.ts` runs against
+`RELEASES_STUB`, whose fixture is deliberately longer than the card — the modal
+opens and closes three ways, the newest release is first with its **block**
+markup rendered (a heading and a `listitem`, which is the `bodyBlock` claim),
+the relative link resolves to `github.com`, Next walks to the older release, and
+the dots, Back, Next and Close are all still in the viewport under 1273px of
+release notes, with the *body* holding the overflow rather than the card. The
+sixth is the one that runs on a phone too and is the most important of them: the
+front door renders its headline and its way in whatever the changelog did.
+
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a
 guest closing its tab turned into a held seat through Ably presence. Two bugs
@@ -4646,7 +5007,8 @@ outright, and a `?phase=` fixture asked the server for a seat it would never
 use. Both are fixed; neither was reachable from any test.
 
 **But no test touches Ably.** `playwright.config.ts` sets `ABLY_STUB: '1'`,
-`NEXT_PUBLIC_GIFS_STUB: '1'` and `NEXT_PUBLIC_BOTS_STUB: '1'`
+`RELEASES_STUB: '1'`, `NEXT_PUBLIC_GIFS_STUB: '1'` and
+`NEXT_PUBLIC_BOTS_STUB: '1'`
 on the dev server it spawns, so `/api/ably/seat` answers
 `stub: true`, `transportKind` resolves to `broadcast`, and every spec in the
 repo — `twotabs`, `reconnect`, `chat`, all of it — exercises the tab transport.
@@ -4658,6 +5020,15 @@ of a hermetic suite, and it is why
 [the roadmap](./roadmap.md#phases) records phase 5's gate — two devices on the
 same wifi — as unverified rather than done. This file says the same thing rather
 than implying the swap is proven.
+
+**GitHub is the newest road on that list and the shortest one.** `RELEASES_STUB`
+means no test has ever seen a real `body_html`, so what is verified is the
+*shape* this app expects and what it does to it — the narrowing in `toRelease`,
+the link rewriting, the three failure states — rather than that GitHub still
+sends what it sent when ADR 0042 was written. The payload was read by hand
+against this repository's `v0.1.0` and is recorded there. The failure mode is
+mild by construction, which is why the stub is the right trade: a changed
+payload renders an empty changelog, not a broken front door.
 
 Three things will bite on the first real run, and all three are configuration
 rather than code:

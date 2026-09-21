@@ -332,6 +332,43 @@ Worth noting what this was not. No shipped copy ever promised voter anonymity �
 the player-facing strings are about entries and all of them were honest. The
 only thing overclaiming was a code comment in `VoteScreen`.
 
+**The host got a key, and the clock stopped lying.** Not a phase — the
+half of backlog §2.3 that was worth doing. Pause already existed: an action,
+a toolbox button, and a stepper that adds time. What did not exist was
+reaching it without opening a drawer, and any sign that it had worked —
+`TimerPill` had no paused state, so a held `0:24` and a running one were
+pixel-identical. ⌥P now holds the clock, host-only, ignored while a field has
+focus, matched on `event.code` because ⌥P emits `π` on a Mac. Not ⌘P: Safari
+does not dispatch keys reserved by browser UI at all, so the listener would
+never have run.
+
+The hint needs a keyboard **and** room for one — `(hover: hover) and
+(pointer: fine)` for the first, `xl` for the second, and the responsive sweep
+is what caught the header truncating with only the pointer gate in place. The
+paused pill needed no new colour: `$status-waiting` already meant "waiting on
+someone", and a paused round is the room waiting on the host.
+
+It also turned up a bug in its own first draft. `send({ type: paused ?
+'host/resumed' : 'host/paused' })` cannot be right from a listener bound in an
+effect, because effects run after paint — so a fast second press carries the
+previous answer and asks for the state the clock is already in, which reads as
+a dropped keystroke. `host/togglePaused` lets the reducer decide
+([ADR 0041](./adr/0041-the-room-decides-which-way-a-toggle-goes.md)).
+
+**The front door grew a changelog.** Not a phase either. `v0.1.0` was tagged
+on 2026-09-21 — the first release this repository has had — and "Release
+notes" in `LandingNav` opens it. No Markdown dependency: GitHub returns its
+own rendered HTML for the right `Accept` header, which is documented along
+with why it is not sanitised again in
+[ADR 0042](./adr/0042-the-changelog-is-githubs-html.md). One fetch per hour
+per deployment, so `/` stays static with an ISR window.
+
+`Modal` paid for most of it. A step's body renders in a `<p>`, so block markup
+needed `bodyBlock`; a changelog needed a taller card than the walkthrough's
+408px; and the card being the scroller meant a long step pushed the foot below
+the fold, leaving Back and Next unreachable. The body is the scroller now,
+which was a latent trapdoor in every modal rather than a changelog problem.
+
 ## Before launch
 
 Not a phase — a gate. Do these when the room stops being a dev toy.

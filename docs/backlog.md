@@ -403,7 +403,8 @@ redaction. Small if skipped, medium if not.
 
 ### 2.3 Let the host hold a phase open — medium
 
-**Partly shipped 2026-09-21, and the entry below overstated the gap.** Pause
+**Partly shipped 2026-09-21** — see the roadmap for what landed. **The entry
+below overstated the gap.** Pause
 was already built — `host/paused`, a toolbox button, and a `Round timer`
 stepper that adds time through `host/adjustedClock` — so the host could
 already slow a round down two ways. What shipped now is reaching it without
