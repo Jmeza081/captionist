@@ -131,6 +131,7 @@ function leverSettings(levers: Levers): Partial<RoomSettings> | undefined {
   if (levers.mode) settings.mode = levers.mode
   if (levers.voting) settings.voting = levers.voting
   if (levers.format) settings.format = levers.format
+  if (levers.paced) settings.hostPaced = true
   return Object.keys(settings).length > 0 ? settings : undefined
 }
 

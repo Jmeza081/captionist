@@ -403,6 +403,25 @@ redaction. Small if skipped, medium if not.
 
 ### 2.3 Let the host hold a phase open — medium
 
+**Shipped 2026-09-22**, and the entry below is wrong about where the work was.
+§2.3a scoped it as chrome that would start lying; none of that survived reading
+the code. `RoomShell`'s header ternary already falls through to `undefined` on
+an idle clock, `ProgressRail` is already gated on `countdown.running`, and
+`phaseLength` reads `WAITING_ALL_IN_MS` off the tracker rather than the duration
+table — so the beat survives. `enterPhase` already maps a `null` duration to an
+idle clock and `host/skippedPhase` is already `advance()`. **The reducer was not
+touched.** What actually lied was four copy strings naming a deadline, which
+§2.3a never mentions. Shipped as `RoomSettings.hostPaced`, a duration rule in
+`durationFor`, a header control on the four phases that lost a clock, and ⌥↵.
+`settleGates` was left alone on purpose, so a paced room still ends a phase on
+consensus and the host only taps for stragglers.
+[ADR 0043](./adr/0043-a-paced-room-removes-the-clock-not-the-gate.md).
+
+**Still open, deliberately:** the setting is lobby-only, because
+`room/settingsChanged` is gated to `['lobby']`. Mid-game needs a dedicated
+action *and* a decision about what happens to a clock that is already running
+when the switch flips — see the ADR's consequences.
+
 **Partly shipped 2026-09-21** — see the roadmap for what landed. **The entry
 below overstated the gap.** Pause
 was already built — `host/paused`, a toolbox button, and a `Round timer`

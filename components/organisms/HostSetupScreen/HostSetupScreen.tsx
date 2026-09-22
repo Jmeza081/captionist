@@ -195,6 +195,18 @@ export function HostSetupScreen() {
                   checked={settings.uniqueNicknames}
                   onChange={(uniqueNicknames) => patch({ uniqueNicknames })}
                 />
+
+                {/* The hint rides below the switch in the rounds stepper's
+                    shape, rather than as a second `Toggle` prop — one row that
+                    needs a sentence is not a component change. */}
+                <Stack gap={5}>
+                  <Toggle
+                    label={copy.pacedLabel}
+                    checked={settings.hostPaced}
+                    onChange={(hostPaced) => patch({ hostPaced })}
+                  />
+                  <p className={styles.hint}>{copy.pacedBody}</p>
+                </Stack>
                 <hr className={styles.rule} />
 
                 {/* The design drops this row entirely in react mode — there is no
@@ -229,15 +241,24 @@ export function HostSetupScreen() {
                   />
                 </Inline>
 
-                <Stepper
-                  label={copy.capLabel}
-                  value={settings.capSeconds}
-                  format={(n) => `${n} sec`}
-                  step={CAP_SECONDS_STEP}
-                  min={CAP_SECONDS_MIN}
-                  max={CAP_SECONDS_MAX}
-                  onChange={(capSeconds) => patch({ capSeconds })}
-                />
+                {/* Blocked rather than removed while the host is pacing: the
+                    cap is the length of a clock that is not running, so the
+                    control stays where it was and the line under it says why
+                    (rule 10). Flipping the switch back restores the number the
+                    host already chose. */}
+                <Stack gap={5}>
+                  <Stepper
+                    label={copy.capLabel}
+                    value={settings.capSeconds}
+                    format={(n) => `${n} sec`}
+                    step={CAP_SECONDS_STEP}
+                    min={CAP_SECONDS_MIN}
+                    max={CAP_SECONDS_MAX}
+                    blocked={settings.hostPaced}
+                    onChange={(capSeconds) => patch({ capSeconds })}
+                  />
+                  {settings.hostPaced && <p className={styles.hint}>{copy.capPacedHint}</p>}
+                </Stack>
 
                 {/*
                   Room size and rounds are independent settings.

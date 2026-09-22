@@ -30,6 +30,17 @@ export interface Levers {
   voting?: RoomSettings['voting']
   format?: RoomSettings['format']
   /**
+   * Boot the fixture with the clocks off, for the same reason as `voting` and
+   * `format`: every fixture takes `DEFAULT_SETTINGS`, so a host-paced room is
+   * otherwise reachable only by walking `/host` → `sessionStorage` → a room,
+   * which drags a route boundary into a screen spec.
+   *
+   * On is the only value. `?paced=0` is not a way to force clocks *back* on —
+   * that is already the default, and a two-way lever would be two ways to say
+   * the same thing.
+   */
+  paced?: true
+  /**
    * Who the local player is. Defaults to the host.
    *
    * The round-1 role holder is `players[0]`, which is also the host — so as
@@ -151,6 +162,8 @@ export function readLevers(
 
   const format = search.get('format')
   if (format === 'tb' || format === 'one') levers.format = format
+
+  if (search.get('paced') === '1') levers.paced = true
 
   // Shape only — whether that seat exists is the room's business, not the
   // parser's, and a fixture with fewer players should fall back rather than throw.

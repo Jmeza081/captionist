@@ -381,7 +381,11 @@ export function roomRulesLine(state: GameState): string {
   const s = state.settings
   return [
     `${s.totalRounds} ${s.totalRounds === 1 ? 'round' : 'rounds'}`,
-    `${s.capSeconds}s`,
+    // The cap is the length of the compose clock. A paced room has no compose
+    // clock, so "90s" there is a rule the room does not play by — and this
+    // line is precisely where a late joiner learns the rules. It says who
+    // holds the door instead.
+    s.hostPaced ? 'host-paced' : `${s.capSeconds}s`,
     s.voting === 'rank' ? 'rank top 3' : 'single vote',
   ].join(' · ')
 }
@@ -428,6 +432,36 @@ function holderName(state: GameState): string {
   return roleHolder(state)?.name ?? 'The role holder'
 }
 
+/**
+ * "you open the vote" / "Jesse opens the vote" — the clause a paced room uses
+ * where a timed one names the clock.
+ *
+ * Two whole clauses rather than a name interpolated into one, because the verb
+ * conjugates with the person and a `${who} open${s}` is how that goes wrong.
+ * The third-person fallback is `lobbyCopy`'s rule verbatim: a host who never
+ * named themselves is "the host", never their placeholder.
+ */
+function pacerClause(state: GameState, viewerId: PlayerId | undefined, verb: string): string {
+  const you = viewerId ? playerById(state, viewerId) : undefined
+  if (you?.isHost) return `you ${verb}`
+  const host = state.players.find((p) => p.isHost)
+  const who = host && host.name && host.name !== HOST_FALLBACK_NAME ? host.name : 'the host'
+  return `${who} ${verb}s`
+}
+
+/**
+ * Picks between a sentence about the clock and a sentence about the host.
+ *
+ * Every string this guards names a deadline, and a host-paced room does not
+ * have one. Branching the value rather than the screen, per the house rule —
+ * and the *behaviour* is identical either way, because `host/skippedPhase`
+ * reaches the same `advance()` the clock did, fallback subject and all. Only
+ * the trigger moved, so only the sentence changes.
+ */
+function pacedNote(state: GameState, timed: string, paced: string): string {
+  return state.settings.hostPaced ? paced : timed
+}
+
 /** `BriefScreen`'s four faces — pick, prompt, and the two waits. */
 export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
   const view = viewKey(state, viewerId)
@@ -439,7 +473,11 @@ export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       eyebrow: `You’re up, ${name}`,
       headline: 'Pick the GIF everyone has to suffer through.',
       action: 'Lock it in',
-      timeoutNote: 'If the clock runs out we’ll pick for you — and our taste is questionable.',
+      timeoutNote: pacedNote(
+        state,
+        'If the clock runs out we’ll pick for you — and our taste is questionable.',
+        'If you move on without one, we’ll pick for you — and our taste is questionable.',
+      ),
     }
   }
 
@@ -450,7 +488,11 @@ export function briefCopy(state: GameState, viewerId: PlayerId): ScreenCopy {
       headline: 'Write one line. Let them find the GIF.',
       body: 'No image from you this round. Everyone else answers your prompt with something they had to search for.',
       action: 'Send it to the room',
-      timeoutNote: 'If the clock runs out we’ll send a starter for you.',
+      timeoutNote: pacedNote(
+        state,
+        'If the clock runs out we’ll send a starter for you.',
+        'If you move on without one, we’ll send a starter for you.',
+      ),
     }
   }
 
@@ -686,6 +728,40 @@ export function hostControls(state: GameState): HostControls {
     jumpToFinal: live,
     restart: started,
     note: noteFor(state),
+  }
+}
+
+/**
+ * The host's way out of a phase that has no clock to end it.
+ *
+ * Only in a host-paced room, only while the clock really is idle, and only on
+ * the phases that have no advance control of their own — `waiting` draws
+ * `waitingCopy.action`, and `reveal` and `score` have been host-paced since
+ * phase 3 with their own docked buttons. Drawing a second one beside those
+ * would be two buttons for one tap.
+ *
+ * It takes the header's trailing slot, which is exactly the slot `TimerPill`
+ * vacates: `showsRoundProgress` is `score` alone, so on these four phases the
+ * slot is empty in a paced room. The clock is replaced by the thing that
+ * replaced the clock.
+ *
+ * Verb-first and names the outcome, per §5 — never "Next".
+ */
+export function hostAdvanceLabel(state: GameState): string | undefined {
+  if (!state.settings.hostPaced) return undefined
+  if (state.clock.status !== 'idle') return undefined
+
+  switch (state.phase) {
+    case 'brief':
+      return 'Start the round'
+    case 'compose':
+      return 'Close submissions'
+    case 'vote':
+      return 'Close the vote'
+    case 'tiebreak':
+      return 'Settle the tie'
+    default:
+      return undefined
   }
 }
 
@@ -1111,7 +1187,7 @@ export interface WaitingCopy {
  * step with the real one. The body is rewritten to match: it states what
  * happens next rather than promising an edit that isn't offered.
  */
-export function waitingCopy(state: GameState): WaitingCopy {
+export function waitingCopy(state: GameState, viewerId?: PlayerId): WaitingCopy {
   const react = state.settings.mode === 'react'
   // `activeCompetitors`, not `competitors`: the wait is over when everyone
   // still *here* is in. Somebody who closed their tab is not a straggler the
@@ -1139,12 +1215,19 @@ export function waitingCopy(state: GameState): WaitingCopy {
     }
   }
 
+  /* The one sentence on this screen that names a deadline. A paced room has
+     none, so it names the person holding the door instead — and says "you" to
+     the host, who is that person. `pacerClause` carries the conjugation. */
+  const deadline = state.settings.hostPaced
+    ? `when ${pacerClause(state, viewerId, 'open')} the vote`
+    : 'when the clock hits zero'
+
   return {
     eyebrow: react ? 'Answer locked' : 'Submitted',
     headline: react ? 'Bold choice. Now we wait.' : 'Nice one. Now we wait.',
     body: react
-      ? 'It goes up anonymously next to everyone else’s when the clock hits zero.'
-      : 'It goes up anonymously when the clock hits zero, and the roasting begins.',
+      ? `It goes up anonymously next to everyone else’s ${deadline}.`
+      : `It goes up anonymously ${deadline}, and the roasting begins.`,
     locked: 'Locked in',
     trackerLabel: 'Submissions',
     /**
@@ -1650,6 +1733,9 @@ export interface HostSetupCopy {
   modeHelp: string
   settingsSection: string
   uniqueLabel: string
+  pacedLabel: string
+  pacedBody: string
+  capPacedHint: string
   formatLabel: string
   votingLabel: string
   capLabel: string
@@ -1690,6 +1776,14 @@ export function hostSetupCopy(): HostSetupCopy {
     modeHelp: 'How this mode works',
     settingsSection: 'Room settings',
     uniqueLabel: 'Enforce unique nicknames',
+    // "phase", not "round": this governs the brief, the compose window, the
+    // wait and the vote, and a host who reads "rounds" would expect to keep
+    // tapping only at the round boundary.
+    pacedLabel: 'Advance each phase yourself',
+    pacedBody: 'No countdown on a phase you decide in. The room waits on your tap.',
+    // The cap is a length for a clock this switch just removed. Rule 10: the
+    // control stays put and says why rather than vanishing.
+    capPacedHint: 'No clock to cap while you’re pacing the room.',
     formatLabel: 'Caption format',
     votingLabel: 'Voting',
     capLabel: 'Submission time limit',

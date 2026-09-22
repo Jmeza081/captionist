@@ -296,6 +296,20 @@ export interface RoomSettings {
   /** How many rounds this room plays, 1 to `ROUNDS_MAX`. */
   totalRounds: number
   uniqueNicknames: boolean
+  /**
+   * The host paces the room: no phase runs a clock, and the only thing that
+   * moves it on is a tap.
+   *
+   * This is a *duration* setting, not a new control flow. `durationFor` returns
+   * `null` for the paced phases, `enterPhase` already maps that to an idle
+   * clock, and `host/skippedPhase` already runs the same `advance()` the clock
+   * would have. Nothing in the reducer branches on it.
+   *
+   * `settleGates` is deliberately untouched, so the room still moves itself on
+   * consensus: compose ends when every competitor is in, vote when every ballot
+   * lands. The host only taps for stragglers.
+   */
+  hostPaced: boolean
 }
 
 export interface GameState {
