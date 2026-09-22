@@ -823,14 +823,15 @@ one line rather than the page.
 `host/paused` has worked since phase 1; what it lacked was a way to reach it
 without opening a drawer, and a pill that looked any different once it had been
 reached — a held 0:24 and a running 0:24 were pixel-identical, on a screen being
-shared to a room. ⌥P is the room's first and only keyboard shortcut: host-only,
+shared to a room. ⌥P was the room's first keyboard shortcut, and for a while
+its only one: host-only,
 ignored while a caption field or the chat composer has focus, and matched on
 `event.code`, because ⌥P emits `π` on macOS and `event.key` will never be `p`.
 **Not ⌘P**, which is where it started — Safari does not dispatch keydown for
 combinations reserved by browser UI at all, so the listener would never run, and
 the failure mode is an OS print sheet opening over a projected game.
-`lib/shortcuts.ts` is the pure half (`isPauseShortcut`, `isTypingTarget`,
-`altGlyph`) and `lib/useKeyboard.ts` the browser half (`useHasKeyboard`,
+`lib/shortcuts.ts` is the pure half (`isPauseShortcut`, `isAdvanceShortcut`,
+`isTypingTarget`, `altGlyph`) and `lib/useKeyboard.ts` the browser half (`useHasKeyboard`,
 `useAltGlyph`), and the listener is bound in `RoomShell` rather than in
 `RoomToolbox`, where the button lives, because working with the toolbox shut is
 the entire point of it.
@@ -914,6 +915,39 @@ followed: a one-step modal is an announcement rather than a walkthrough, a
 single dot is a bullet rather than progress, and a Back that can never enable is
 furniture beside the way out.
 
+**And a room can now run with no clock at all, which turned out to be a duration
+setting rather than a second control flow.** `RoomSettings.hostPaced` is the
+switch — off by default, because "timers are honest" cuts both ways and the
+honest default is that they exist — and the whole of its mechanism is
+`durationFor` returning `null` for `brief`, `compose`, `waiting`, `vote` and
+`tiebreak`. That test sits *ahead* of the `compose` cap, since a compose window
+with no clock has no cap either, which is why `/host`'s timer stepper goes
+`blocked` beside the switch rather than disappearing. **Nothing in the reducer
+branches on it**, and nothing had to: `enterPhase` already maps a `null`
+duration to an idle clock, and `host/skippedPhase` is already
+`bump(advance(state, at))` — the same `advance()` the clock called. `opener`
+deliberately keeps its 3.8 seconds, because it is an animation beat with nothing
+to decide in it and making the host tap past a transition is not pacing.
+**`settleGates` is deliberately untouched**, so a paced room still moves itself
+on *consensus* — compose ends when every competitor is in, vote when every
+ballot lands — and the host taps for stragglers rather than for everybody.
+
+What the feature actually cost is a header control and four sentences.
+`hostAdvanceLabel(state)` draws a host-only `Button` in the trailing slot on
+exactly the four phases that lost a clock and have no advance control of their
+own — `waiting` already has `waitingCopy.action`, and `reveal` and `score` have
+carried their own docked buttons since phase 3 — and **⌥↵ is bound to precisely
+what that selector draws**, so the key and the button are one rule rather than
+two. That is the room's second keyboard shortcut (`ADVANCE_CODE`,
+`isAdvanceShortcut`), and it is what made `ShortcutHint`'s keycap a `cap`/
+`capLabel` prop instead of the hardcoded `P` — a variant is a prop. The four
+strings are the ones that named a deadline: both `briefCopy.timeoutNote`s,
+`waitingCopy.body` — which now takes an optional `viewerId` so it can say "when
+*you* open the vote" to the host and name them to everyone else — and
+`roomRulesLine`, which says `host-paced` where it used to print the cap. Zero
+new components, zero new tokens.
+[ADR 0043](./adr/0043-a-paced-room-removes-the-clock-not-the-gate.md).
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -958,7 +992,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Reactions | `lib/reactions.ts` — one ordered list of 616 | 32 curated, then the 584 in the generated `lib/reactions.catalog.ts`, concatenated rather than merged. Read by the picker, the composer row, the toolbox's react row, the reveal bar, the tallies and the gallery; `lib/game/selectors.ts` re-exports `REVEAL_REACTIONS` from it. **The order is load-bearing**: 1–6 are emoji (`QUICK_REACTIONS`, `REVEAL_REACTIONS` slice off the front), 7–10 are the Slackmoji tiles, so the unsearched grid is DESIGNSYSTEM §4.4's "6 emoji + 4 Slackmoji" — and because the import lands behind that head, every slice is unchanged at 616. `lib/reactions.test.ts` asserts it. Five `ReactionPack`s now, `nature` and `places` having arrived with the import. The wire carries the glyph and the pickers key on the id, so `glyphFor`/`idFor` are the hop between — over `BY_ID`/`BY_GLYPH` Maps, since a `find` that was free across 32 runs once per tally per render across 616; `matchesQuery` is the search half, over a `SEARCH_TEXT` index built once at module load. `kind: 'image'` makes a glyph a URL, which is what `ReactionGlyph` and the allowlist exist for |
 | Reaction affordance | `ReactionCTA` on all five sites the design names | Caption cards, chat messages, the composer, the reveal bar and the **room toolbox** — DESIGNSYSTEM §4.4's "uniform everywhere", which three of the five did not honour until recently. `ChatMessage` had no affordance at all, so every chat reaction landed on whatever arrived last, and the composer withheld its CTA on an empty log while rendering six quick keys that silently did nothing. The fifth site was the collapsed chat rail and **is now `RoomToolbox`**: reacting to the room is something any player does at any time, not an edge-of-chat control, so `ChatRail` no longer takes `onReact` and `RoomShell`'s `Overlay` union is back to `'toolbox' \| 'help' \| null`. `ChatPanel`'s reaction surface still carries *what it is aimed at* — a message id, or `null` for the composer, which **posts**: an emoji from the composer is a chat message that also fires the room's burst, rather than a chat control that quietly did something else. A *picture* reaction posts as an **attachment**, not as text: an image tile's glyph is a URL and `say`'s body is verbatim, so a Slackmoji used to render `/media/slackmoji-lgtm.svg` in 14px type. And the message CTA is reachable again — it was drawn only on the player row, while `ChatPanel` marked every host line an announcement, so in a host's own room no message had one |
 | Reaction art | `public/media/emoji/` stills · `lib/noto.ts` derives the motion | 584 CC BY 4.0 stills, 2.79MB, written by `scripts/import-noto-emoji.mjs` — run by hand, output committed, **deliberately not wired into `build`**, which has no network. `animatedSrcFor(glyph)` turns a same-origin still into its `fonts.gstatic.com` WebP and returns `null` for anything else; Google publishes these at 512px only, so one animated tile is ~369KB and the whole catalog would be ~57MB committed. [ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md) |
-| Keyboard | `lib/shortcuts.ts` (pure) + `lib/useKeyboard.ts` (browser) | One shortcut, ⌥P, and the split is the usual one: `isPauseShortcut`, `isTypingTarget` and `altGlyph` are node-reachable and unit-tested, while `useHasKeyboard` and `useAltGlyph` are `useSyncExternalStore` with **no keyboard and `Alt`** as the server snapshots. Matched on `event.code`, because ⌥P emits `π` on macOS and `event.key` will never be `p`; refused when any other modifier is down, so ⌃⌥P on the way somewhere else is not this. `navigator.platform` rather than `userAgentData.platform` — the modern answer reports `Windows` on macOS under Playwright (playwright#39568), which would make the suite assert a glyph no Mac user sees. The listener lives in `RoomShell`, not in the toolbox that holds the button, because reaching pause with the toolbox shut is the point |
+| Keyboard | `lib/shortcuts.ts` (pure) + `lib/useKeyboard.ts` (browser) | **Two shortcuts now** — ⌥P holds the clock, and ⌥↵ advances a host-paced room, bound to exactly what `hostAdvanceLabel` draws so the key can never reach a phase the visible button does not. The split is the usual one: `isPauseShortcut`, `isAdvanceShortcut`, `isTypingTarget` and `altGlyph` are node-reachable and unit-tested, while `useHasKeyboard` and `useAltGlyph` are `useSyncExternalStore` with **no keyboard and `Alt`** as the server snapshots. Matched on `event.code`, because ⌥P emits `π` on macOS and `event.key` will never be `p`; refused when any other modifier is down, so ⌃⌥P on the way somewhere else is not this. `navigator.platform` rather than `userAgentData.platform` — the modern answer reports `Windows` on macOS under Playwright (playwright#39568), which would make the suite assert a glyph no Mac user sees. Both listeners live in `RoomShell`, not in the toolbox that holds the pause button, because reaching pause with the toolbox shut is the point. The ⌥ on the advance key is load-bearing rather than symmetrical: bare Return submits forms all over this app, and `isTypingTarget` is what keeps either key out of a caption field or the chat composer |
 | Release notes | `lib/releases.ts` (client-safe) + `lib/releases.server.ts` (`server-only`) | The landing page's changelog. The split is a build rule rather than tidiness: a client component importing a *value* from a `server-only` module is a build error, so the types, `toSafeHtml` and `releaseDate` sit on one side and `fetchReleases` on the other. GitHub's `body_html` is rendered as it arrives — [ADR 0042](./adr/0042-the-changelog-is-githubs-html.md) — with `toSafeHtml` absolutising the **relative** links GitHub actually sends. `next: { revalidate: 3600 }` is the whole rate-limit story: one request an hour per deployment against an anonymous allowance of sixty. Three outcomes rather than an array and a `null` — `ok` · `rate-limited` · `unavailable` — because an empty changelog and a broken one must not render the same sentence, and it never throws: the front door may not fail to render over a changelog |
 | Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Read by `HeroWall`, `SceneBackdrop`, `ReactionGlyph` and the walkthrough's illustrations: every place the decision is *which file to fetch* rather than which rule to apply, and therefore every place CSS cannot make it |
 | Sharing a link | `lib/useWebShare.ts` | `useSyncExternalStore` over `navigator.share`, with **`false` as the server snapshot** — a button whose label came out of feature detection during SSR is a hydration mismatch on every phone, and it settles on the first client commit long before anybody has read the button. `share()` resolves to what happened — `shared` · `copied` · `cancelled` · `failed` — so the caller can confirm a copy, say nothing about a sheet that is already on screen, and treat a dismissal as a decision rather than an error. `AbortError` *is* the dismissal; every other failure falls through to the clipboard, because a sheet that refused to open is exactly when the old behaviour is wanted. The label moves with the capability rather than only the behaviour — [ADR 0033](./adr/0033-a-device-capability-decides-the-label.md) |
@@ -972,7 +1006,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | GIF search | A **provider seam**, called from the browser — Klipy by default, Giphy as the second adapter | `lib/gifs/provider.ts` is the contract (`search`, optional `share`, optional `items`) and `descriptors.ts` is the data — the brand, the placeholder, the attribution mark, the board ceiling and the media hosts, so nothing downstream hard-codes a vendor. `registry.ts` resolves who answers: `?gifs=klipy\|giphy` pins one for a page load, then `NEXT_PUBLIC_GIF_PROVIDER`, then the preference order `klipy → giphy`, and a named provider with no key falls through rather than erroring. Both keys are public by necessity — `NEXT_PUBLIC_KLIPY_API_KEY`, `NEXT_PUBLIC_GIPHY_API_KEY` — because both providers require the call to come from the client and forbid proxying and caching alike ([ADR 0020](./adr/0020-giphy-is-called-from-the-browser.md) · [ADR 0022](./adr/0022-the-gif-provider-is-a-seam.md)). Errors are provider-neutral too: `GifProviderError`, with `GifQuotaError` for a spent allowance, the one failure the room ends the game over. **Searching is unmetered** — a Klipy production key does not charge for boards, so the per-round budget is gone ([ADR 0026](./adr/0026-the-rooms-limits-are-a-design-choice.md)) |
 | GIF renditions | GIF · MP4 · WebP · a still — Giphy's `fixed_width` family, Klipy's `file.md` (with `file.xs.jpg` for the still it has no format for) | `GifResult` carries all four whichever adapter filled it, **and the rendition's own `width`/`height`** — read off the same rendition `src` came from, so the ratio describes the image actually rendered. It is a rendering hint and nothing depends on it: the picker reserves each tile's shape from it before the image lands, `SAMPLE_GIFS` states its artwork's 320×200, and `toMediaRef()` drops it with `id` and `keywords`. The picker shows one animation and uses `src`; the landing wall runs twenty and prefers `mp4`, with `still` as the poster and the paused frame |
 | Bots | A **brain seam**, `lib/bots/` — `stub` written in, `claude` through our own route | `types.ts` is the contract and holds nothing that fetches: `subject`, `answers`, `ballots` — the last two **plural**, because one model call serves every bot in a phase. `personas.ts` is data only, three levels each carrying a voice, a dwell before acting and how it ranks without a model, so `BotPicker` can import it without importing a client. `source.ts` resolves the road exactly as `lib/gifs/source.ts` does — `?brain=stub\|live` beats `NEXT_PUBLIC_BOTS_STUB` **in both directions**, and no browser means no route at all. `prompt.ts` is server-side, so nothing in the bundle knows what a bot is told; `budget.ts` is a per-room tally of what the model cost, read off each response's own `usage`, local to the host's tab and never on the wire — the shape `lib/gifs/usage.ts` established. **A bot never receives a player's name**, and the cards it ranks carry no authorship because `project()` already stripped it. [ADR 0035](./adr/0035-the-comedy-is-a-seam-and-its-key-cannot-be-public.md) |
-| Bot runtime | `lib/room/BotPool.ts` — host-local, and the pool acts rather than the seat | **The pool acts, not the seat.** It calls `engine.apply(action, botId)` directly rather than sending an intent over the transport, and reads `project(state, botId)`. Seating one is the *host's* `player/joined` carrying `bot`, which `authorize` refuses from anyone else — `player/joined` has no phase guard and is deliberately not host-only, and that openness is exactly why the check has to exist. Firing one is `host/botRemoved`, never a drop, because a bot has no presence entry to lose; `reconcile` skips bots explicitly rather than letting them survive on the `everAttached` guard written for fixture players. Every ask is raced against the phase's own remaining clock — capped at 15s, floored at 1.5s, less the slowest dwell — and falls to the written-in corpus rather than leaving a gate nobody can pass. [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md) |
+| Bot runtime | `lib/room/BotPool.ts` — host-local, and the pool acts rather than the seat | **The pool acts, not the seat.** It calls `engine.apply(action, botId)` directly rather than sending an intent over the transport, and reads `project(state, botId)`. Seating one is the *host's* `player/joined` carrying `bot`, which `authorize` refuses from anyone else — `player/joined` has no phase guard and is deliberately not host-only, and that openness is exactly why the check has to exist. Firing one is `host/botRemoved`, never a drop, because a bot has no presence entry to lose; `reconcile` skips bots explicitly rather than letting them survive on the `everAttached` guard written for fixture players. Every ask is raced against the phase's own remaining clock — capped at 15s, floored at 1.5s, less the slowest dwell — and falls to the written-in corpus rather than leaving a gate nobody can pass. A host-paced room needed no change here: `deadlineFor` already returns the 15s cap whenever the clock is not `running`, which an idle clock is not. [ADR 0034](./adr/0034-a-bot-is-the-hosts-puppet-not-a-peer.md) |
 | Unit tests | Vitest 4, `node` environment | `lib/**/*.test.ts` only — anything needing a DOM is Playwright's job |
 | E2E | Playwright 1.56.1, Chromium only | Pinned — see [ADR 0002](./adr/0002-pin-playwright-to-browser-build.md) |
 
@@ -1427,9 +1461,13 @@ guard kept only for SSR — what actually holds the screen up is
 The phase is on the DOM as well as in state: `RoomShell` renders
 `<main data-phase={state.phase}>`, and every room spec drives
 `main[data-phase]` rather than guessing at copy. `reveal` and `score` are the
-two phases that are untimed by design, so each of their screens carries the
-host's own advance button — without it a room with no bots in it would stop
+two phases that are untimed in **every** room, so each of their screens carries
+the host's own advance button — without it a room with no bots in it would stop
 permanently, which `e2e/room.spec.ts` now asserts directly rather than assuming.
+A `hostPaced` room untimes five more (`brief`, `compose`, `waiting`, `vote`,
+`tiebreak`), and reuses that same mechanism rather than inventing a second one:
+the advance control moves into the header and `host/skippedPhase` is still the
+action behind it.
 
 **The picker calls the provider from the browser**, and `/api/gifs` — once this
 repo's first route handler, and the shape the Ably routes copied — is gone. Both
@@ -1657,14 +1695,19 @@ named selector** — `viewKey`, `briefCopy`, `phaseLabel`, `canStart`, phase
 `podiumCopy`, and phase 4's `joinCopy` · `JOIN_ERRORS` · `hostSetupCopy` ·
 `modeChoices` · `showsCaptionFormat` · `settingsSummary` · `WAITING_LINE`, and
 phase 5's `presentCount` · `seatState` · `seatSecondsLeft` · `reconnectCopy`, and
-phase 7's `ballotFrom` · `captionFields`, and the phone lobby's
-`roomRulesLine` · `rosterCopy` · `ROSTER_WINDOW` — so
+phase 7's `ballotFrom` · `captionFields`, the phone lobby's
+`roomRulesLine` · `rosterCopy` · `ROSTER_WINDOW`, and the paced room's
+`hostAdvanceLabel` — so
 the decision about what a phase means lives in a file a node test can reach, and
 the screen is left holding markup. The last three are the rule holding under a
 *layout* change rather than a phase one. `roomRulesLine` is `settingsLine`
 without the mode, because on a phone the share card sits directly above the mode
 toggle and a mode name there would be the screen saying it twice; `settingsLine`
-is now that function plus the mode. `rosterCopy` names who the phone's
+is now that function plus the mode. **Both print `host-paced` where a paced room
+would have printed its cap**, because the cap is the length of the compose clock
+and a `90s` in a room with no compose clock is a rule the room does not play by —
+and this line is exactly where a late joiner learns the rules.
+`rosterCopy` names who the phone's
 three-row window hides and who has just walked in, and takes `now` as a
 parameter rather than calling `Date.now()`, so it stays pure and the caller owns
 the tick. `ROSTER_WINDOW` is `3` in TypeScript and `$lobby-roster-cap` in Sass —
@@ -2553,6 +2596,28 @@ becomes `0:24 · paused`. `paused` beats `urgent` deliberately: a held clock at
 four seconds is not running out, so pulsing red at it would be the same lie in a
 different colour.
 
+**And a room may now have no clock to draw, which is a different thing from a
+stopped one.** `durationFor` is where that is decided and the only place it is:
+in a `hostPaced` room it returns `null` for `brief`, `compose`, `waiting`,
+`vote` and `tiebreak`, `enterPhase` maps that `null` to `{ status: 'idle' }`,
+and the header's ternary — `countdown.running || countdown.paused` — simply
+falls through. Nothing renders `0:00`, because nothing renders. `TimerPill`,
+`ProgressRail` and `timerSuffix` are untouched and needed to be: the rail is
+gated on `countdown.running` and the suffix is only reached inside the clock
+branch, so both fail closed by construction. What takes the vacated slot is the
+host's advance button — see [component tiers](#component-tiers).
+
+**So `PHASE_DURATIONS` is not the answer to "how long is this phase", and has
+not been for a while.** Three things sit between the table and a `Clock`, in
+this order: `phaseLength` short-circuits `waiting` onto the tracker,
+`durationFor` drops the five paced phases, and only then does the `compose` cap
+or the table answer. The first of those is why a paced room still runs **one**
+clock: a `waiting` everybody is already in gets `WAITING_ALL_IN_MS`, three
+seconds to read your own confirmation on, because that value is read off the
+tracker rather than the duration table and pacing never reaches it. It is the
+mechanism behind the "still ends a phase on consensus" spec, and it is the
+honest exception to "no phase clocks".
+
 **One screen reads a deadline without counting it.** `BriefScreen`'s auto-pick
 is a `setTimeout` armed against `clock.endsAt` — one shot, cleared on a new
 deadline, and holding no state — rather than a subscription to the countdown,
@@ -2567,8 +2632,8 @@ now)` is a pure function, and the `now` it reads comes from the room clock.
 
 ### Dev levers
 
-Fifteen now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
-`?format=` · `?out=` · `?submitted=` · `?votes=` · `?as=` · `?gifs=` ·
+Sixteen now: `?seed=` · `?bots=` · `?fast=` · `?phase=` · `?mode=` · `?voting=` ·
+`?format=` · `?paced=` · `?out=` · `?submitted=` · `?votes=` · `?as=` · `?gifs=` ·
 `?transport=` · `?brain=` · `?export=`, read once in `RoomProvider` and gated to
 non-production in `lib/room/levers.ts` — in a production build every lever reads
 as absent whatever the query string says. Two more live in the same parser and
@@ -2599,7 +2664,12 @@ way round the flag, which is the one thing the flag exists to prevent.
 every fixture takes `DEFAULT_SETTINGS`, so the only other road to a single-vote
 or one-line room is `/host` → `sessionStorage` → a room, which drags a route
 boundary into a screen spec. That is precisely why both settings survived four
-phases doing nothing — nothing could reach them to cover them. **`?phase=` now also declares host-ness.** A
+phases doing nothing — nothing could reach them to cover them. **`?paced=1` is
+the third of that family and the newest lever**, boots the fixture with
+`hostPaced` set and rides the same `leverSettings` helper. It is **one-way**:
+`?paced=0` is not a way to force the clocks back on, because that is already the
+default and a two-way lever would be two ways to say the same thing — the rule
+`?export=off` established from the other direction. **`?phase=` now also declares host-ness.** A
 fixture *is* the room, so probing for one could only ever hand it to a stale
 tab; the harness connects with `role: 'host'` and skips the claim, which is what
 keeps every harness URL behaving exactly as it did before joining existed. That
@@ -2714,7 +2784,7 @@ graph BT
     Landing["HeroWall · LandingNav · QuickJoin"]
     Legal["LandingLegal · LicenseModal<br/><i>the foot, and the four licences —<br/>a configured Modal, like HelpModal</i>"]
     News["WhatsNewModal<br/><i>'use client' · the changelog —<br/>a configured Modal too; the feed is a prop</i>"]
-    Keys["ShortcutHint · ShortcutFlash<br/><i>'use client' · the key beside the clock,<br/>and the key over the room</i>"]
+    Keys["ShortcutHint · ShortcutFlash<br/><i>'use client' · the key beside the clock<br/>or the advance button, and the key<br/>over the room</i>"]
     Wait["CycleWall · UpNext<br/><i>the pick wait — sixteen GIFs on a CSS schedule,<br/>and the rotation as a pill</i>"]
     Boot["BootChecklist<br/><i>an ol — the order is the meaning</i>"]
     Mark["Wordmark<br/><i>the mark and the name — a molecule<br/>because it imports Logo, and Icon<br/>is the only atom exemption</i>"]
@@ -2764,7 +2834,7 @@ graph BT
   Landing --> Home
   Dialog -->|"LicenseModal is a Modal with four steps in it"| Legal
   Legal -->|"LandingLegal — the page's foot"| Home
-  Cap -->|"⌥ and P, twice — sm in the hint, lg in the flash"| Keys
+  Cap -->|"⌥ with P or ↵ — sm in the hint, lg in the flash"| Keys
   Dialog -->|"WhatsNewModal is a Modal with one step per release"| News
   News -->|"LandingNav — beside GitHub, above md"| Landing
   Help -->|"LandingNav — the phone's stand-in for<br/>'How it works' when the words stand down"| Landing
@@ -2852,7 +2922,8 @@ graph BT
 
   Status -->|"TimerPill · RoundProgress · ProgressRail"| Shell
   Help -->|"the lobby's walkthrough key,<br/>drawn straight into AppHeader's trailing slot"| Shell
-  Keys -->|"ShortcutHint beside the clock in that same slot,<br/>ShortcutFlash centred over the whole window"| Shell
+  Keys -->|"ShortcutHint beside the clock — or beside the<br/>advance button, in the slot the clock left;<br/>ShortcutFlash centred over the whole window"| Shell
+  Controls -->|"Button — the host's advance, drawn only<br/>where hostAdvanceLabel returns one"| Shell
   Feedback --> Shell
   Chat -->|"ChatRail · ChatToast"| Shell
   Overlay -->|"HelpModal · RoundOpener · RoomToolbox — everyone's<br/>ReconnectOverlay — over a live room"| Shell
@@ -2931,6 +3002,20 @@ and the second is the only thing in the slot gated on the viewer rather than on
 the phase. The branch also widened: the clock is drawn while
 `countdown.running || countdown.paused`, because a held clock that vanished
 from the header would be a worse answer than one that never admitted it stopped.
+
+**A host-paced room adds the fourth occupant and takes the first one away, which
+is why the invariant survives it.** `hostAdvanceLabel(state)` returns a label
+only when `settings.hostPaced` is on, the clock really is `idle`, and the phase
+is one of `brief` · `compose` · `vote` · `tiebreak` — the four that lost a clock
+and have no advance control of their own, since `waiting` draws
+`waitingCopy.action` and `reveal` and `score` have carried docked buttons since
+phase 3. Those are precisely the phases where `showsRoundProgress` is false and
+the countdown is neither running nor paused, so the slot it moves into is one
+the clock has vacated rather than one it is competing for. It is drawn in the
+same `.clockGroup` shape and gated the same way — `ShortcutHint` for ⌥↵ beside a
+`Button` — and the whole group is **host-only**, because a guest cannot advance
+and a control they cannot press is a lie about whose room this is. They get
+`phaseLabel` and body copy naming whoever they are waiting on.
 
 The screens are injected, not imported: `RoomShell` takes a
 `Partial<Record<RoomPhase, ComponentType>>`, and the map lives in
@@ -4468,11 +4553,24 @@ that number is ever wanted it has to be computed on the host and published,
 because the blanks a client now holds would read as zero votes and be quietly
 wrong.
 
+**Host-paced rooms closed no row either, and left one genuinely open — which is
+the row below.** The design draws no such setting, so it is not a gap in a sweep
+of it; `hostPaced` was designed during the feature and held to the same
+standard, which is why the four strings that named a deadline now name the host
+and the compose cap goes `blocked` with a line saying why rather than
+disappearing. It touched two claims in this section without breaking either: the
+`waiting` omission still reads correctly (that button was never a gate, and
+`host/skippedPhase` is still the same `advance()`), and the `reveal` omission's
+reasoning is now the mechanism four more phases borrow. What it deliberately did
+*not* decide is when the switch may be thrown
+([ADR 0043](./adr/0043-a-paced-room-removes-the-clock-not-the-gate.md)).
+
 | Area | What exists | What doesn't |
 | --- | --- | --- |
 | The round-flow screens | **All ten phases**, inside the `RoomShell` chrome drawn above — `opener` as the `RoundOpener` overlay, the other nine through the [tier map](#component-tiers). `PhasePending` is gone | Four pieces of the design, each left out for a reason rather than for time — see below the table |
 | Iconography | `Icon` ships the design's own SVG paths | `@phosphor-icons/react` is installed and unused |
 | Custom team emoji | 616 reactions from `lib/reactions.ts` — 32 authored, four of them Slackmoji-style, plus 584 Noto imports under CC BY 4.0 | A *workspace's* own emoji, which is what the ask meant. Blocked by licensing rather than by time — slackmojis.com's terms forbid compiling their directory and it does not own the art ([ADR 0012](./adr/0012-the-catalog-is-licensed-art-and-the-animation-is-borrowed.md)). The honest route is host-supplied URLs, which needs a storage target this app has decided not to acquire ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)) |
+| Pacing, after the lobby | The `hostPaced` switch on `/host`, which rides `pendingSettings` into the room it opens. `actions.ts` gates `room/settingsChanged` to `['lobby']`, so the last moment the value can move at all is before `game/started` | Flipping it **mid-game**. The shape is not settled rather than the code being unwritten: turning pacing on during a running phase either strands a countdown or stops it, and stopping a clock is a third thing `host/paused` already does. It needs either a widened guard or a dedicated action on the `host/switchedMode` precedent, and [ADR 0043](./adr/0043-a-paced-room-removes-the-clock-not-the-gate.md) declines to guess which |
 | Uploads | Nothing — the GIF provider is the only image source, in both modes | A *player's own file*, by decision rather than omission. The storage target was priced and declined ([ADR 0014](./adr/0014-uploads-are-not-a-feature.md)), and the `Dropzone`, the source tabs and the `/host` toggle were removed rather than left explaining themselves. `Player.src` is the same door on the avatar side and stays open: the prop exists, nothing populates it, and seeds cover every face the app draws |
 
 The four omissions in the round-flow screens, in phase order:
@@ -4480,7 +4578,7 @@ The four omissions in the round-flow screens, in phase order:
 | Screen | Left out | Why |
 | --- | --- | --- |
 | `waiting` | "Edit my caption" | Phase is room-wide and authoritative, so a guest cannot rewind the room to `compose`, and an inline editor would be a second composer to keep in step with the real one. `waitingCopy` was rewritten to match — it says what happens next rather than promising an edit that isn't offered |
-| `waiting` | *"Everyone's in — start voting"*, always | The button was never a gate — `waiting` is timed, and `host/skippedPhase` runs the same `advance()` the clock does — so once the last entry landed the room said "now we wait" over a tracker reading N of N, under a 12s clock, beside a button offering to start a vote that was starting anyway. `waitingCopy` now reads the tracker: everyone in gets *"That's everyone in."*, `WAITING_ALL_IN_MS` instead of the full `PHASE_DURATIONS.waiting`, and no button; a straggler gets *"Now we wait."*, the full 12s, and a label that names who is being left behind. Both readings count the *present* now — `phaseLength` applies `settleGates`' both-sides rule, so a wait that is over because everybody left reads as over and a held entry does not make it so |
+| `waiting` | *"Everyone's in — start voting"*, always | The button was never a gate — `waiting` is timed unless the room is host-paced, and `host/skippedPhase` runs the same `advance()` the clock does — so once the last entry landed the room said "now we wait" over a tracker reading N of N, under a 12s clock, beside a button offering to start a vote that was starting anyway. `waitingCopy` now reads the tracker: everyone in gets *"That's everyone in."*, `WAITING_ALL_IN_MS` instead of the full `PHASE_DURATIONS.waiting`, and no button; a straggler gets *"Now we wait."*, the full 12s, and a label that names who is being left behind. Both readings count the *present* now — `phaseLength` applies `settleGates`' both-sides rule, so a wait that is over because everybody left reads as over and a held entry does not make it so. `waitingCopy` takes an optional `viewerId` since ADR 0043, because the one sentence naming the deadline has to name the *host* in a paced room, and say "you" to the host themselves |
 | `vote` | The Caption \| Vote segmented control | Two views of one grid, and the vote is the one the phase is for |
 | `reveal` | `auto-advancing in 6s` | `reveal` is untimed by design. The label would be counting a clock that does not exist; the host's advance button is the real mechanism, and `?bots=` supplies the [autopilot dwell](#dev-levers) instead |
 | `podium` | The awards row, the highlight reel and posting to Slack on the room's behalf | Awards need a stat layer nothing computes yet; the reel needs somewhere to keep one and a post needs a workspace of ours to post into. **The pill row's third pill is built**, as `Share image` — the final standings as a PNG, handed to the share sheet, the clipboard or a download by capability ([ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md); drawn in [the export](#the-export)). What the design labels it is what is not: a reel, and a destination |
@@ -4549,8 +4647,8 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-476 unit tests (`lib/**/*.test.ts`, node, over 32 files) and 674 Playwright
-tests across the two viewports — 337 per project, over 35 spec files, 644 of
+489 unit tests (`lib/**/*.test.ts`, node, over 33 files) and 692 Playwright
+tests across the two viewports — 346 per project, over 36 spec files, 662 of
 which pass and none of which fail. Not all of
 them run: 30 skip, and 26 of those are on viewport (a docked rail exists only
 above `md`, a floating dock only below it), which is a branch of the layout
@@ -4998,6 +5096,25 @@ the dots, Back, Next and Close are all still in the viewport under 1273px of
 release notes, with the *body* holding the overflow rather than the card. The
 sixth is the one that runs on a phone too and is the most important of them: the
 front door renders its headline and its way in whatever the changelog did.
+
+**The paced room's share is 13 unit tests and one new spec of 9 per project,
+and most of what the spec asserts is an absence.** `lib/game/constants.test.ts`
+is 6 and is the duration rule pinned from both ends: the default is off, the
+five deciding phases lose their clocks and only those five, `opener` keeps its
+3.8s, `hostPaced` beats the `compose` cap rather than falling through it, and
+the already-untimed four read the same in either room. `lib/game/selectors.test.ts`
+is 7 more over the strings and the control — the two `timeoutNote`s, the
+`waitingCopy` clause that says "you" to the host and names them to everyone
+else, `roomRulesLine`'s `host-paced`, the label on each of the four phases that
+lost a clock, and **nothing** on the phases that already had their own way on.
+`e2e/host-paced.spec.ts` is the 9, and the first two are a claim and its
+control: no `role="timer"` in a paced room, one in the same room without the
+lever — because the absence assertion passes on any broken room without it. The
+rest are the half only a browser has: the host's button advances the phase, ⌥↵
+does the same thing, a guest gets neither and reads the host's name in the body
+copy instead, the `/host` switch quiets the cap beside it, and — the point of
+leaving `settleGates` alone — a paced `waiting` where everybody is in still
+moves itself on with nobody tapping anything.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

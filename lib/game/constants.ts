@@ -32,8 +32,26 @@ export const PHASE_DURATIONS: Readonly<Record<RoomPhase, number | null>> = {
  */
 export const WAITING_ALL_IN_MS = 3_000
 
-/** Resolves the one phase whose length is a room setting. */
+/**
+ * The phases a host-paced room stops timing.
+ *
+ * `opener` is deliberately absent. It is a 3.8s animation beat rather than a
+ * deadline — nobody is deciding anything during it — so holding it open would
+ * make the host tap to get past a transition. `reveal`, `score`, `podium` and
+ * `lobby` are absent because they are already untimed.
+ */
+const PACED_PHASES: readonly RoomPhase[] = ['brief', 'compose', 'waiting', 'vote', 'tiebreak']
+
+/**
+ * Resolves the one phase whose length is a room setting — and drops every
+ * length a host-paced room does not keep.
+ *
+ * The `hostPaced` test comes first, ahead of `compose`'s cap: a compose window
+ * with no clock has no cap either, which is why the setup screen's timer
+ * stepper goes quiet beside the switch.
+ */
 export function durationFor(phase: RoomPhase, settings: RoomSettings): number | null {
+  if (settings.hostPaced && PACED_PHASES.includes(phase)) return null
   if (phase === 'compose') return settings.capSeconds * 1_000
   return PHASE_DURATIONS[phase]
 }
@@ -93,6 +111,9 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   maxPlayers: MAX_PLAYERS,
   totalRounds: 5,
   uniqueNicknames: true,
+  // Off, because a clock is what the game promises by default — "timers are
+  // honest" is a design-system rule, and the honest default is that they exist.
+  hostPaced: false,
 }
 
 /** Bounds the host setup steppers enforce. */

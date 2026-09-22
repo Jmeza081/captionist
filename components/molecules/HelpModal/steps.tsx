@@ -69,7 +69,7 @@ export const HELP_STEPS: Readonly<Record<GameMode, ModalStep[]>> = {
     {
       eyebrow: 'The answer',
       heading: 'Everyone else answers with a GIF',
-      body: 'Search for the answer that lands. Entries are anonymous until the reveal, and you can swap yours until the clock runs out.',
+      body: 'Search for the answer that lands. Entries are anonymous until the reveal, and you can swap yours until the vote opens.',
       illustration: <AnswerIllustration />,
     },
     {

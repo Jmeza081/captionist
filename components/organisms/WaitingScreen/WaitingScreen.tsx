@@ -37,7 +37,9 @@ export function WaitingScreen() {
   const { state, selfId, isHost, send } = useRoom()
   if (!state) return null
 
-  const copy = waitingCopy(state)
+  // `selfId`, because the body names whoever opens the vote in a paced room —
+  // and says "you" when that is the person reading it.
+  const copy = waitingCopy(state, selfId)
   const mine = myEntry(state, selfId)
   const subject = requireSubject(state)
   const shared = subject?.kind === 'media' ? subject.media : undefined

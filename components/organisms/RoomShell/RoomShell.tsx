@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
+import { Button } from '@/components/atoms/Button'
 import { HelpKey } from '@/components/atoms/HelpKey'
 import { ProgressRail } from '@/components/atoms/ProgressRail'
 import { RoundProgress } from '@/components/atoms/RoundProgress'
@@ -29,6 +30,7 @@ import {
   roleHolder,
   settingsLine,
   showsProgressRail,
+  hostAdvanceLabel,
   showsRoundProgress,
   timerSuffix,
   toAvatarProps,
@@ -36,7 +38,7 @@ import {
 import { SEAT_GRACE_MS } from '@/lib/game/constants'
 import type { Clock, RoomPhase } from '@/lib/game/types'
 import { QUICK_REACTIONS, REACTIONS } from '@/lib/reactions'
-import { isPauseShortcut, isTypingTarget } from '@/lib/shortcuts'
+import { isAdvanceShortcut, isPauseShortcut, isTypingTarget } from '@/lib/shortcuts'
 import type { ChatQuote } from '@/lib/room/transport'
 import { previewColor } from '@/lib/avatar'
 import { useBootTimeline } from '@/lib/room/bootTimeline'
@@ -222,7 +224,7 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
   const showRail = Boolean(state && showsProgressRail(state) && countdown.running)
 
   /*
-    The room's one keyboard shortcut: ⌥P holds the clock.
+    The first of the room's two keyboard shortcuts: ⌥P holds the clock.
 
     Here rather than in `RoomToolbox`, which is where the button lives, because
     the shortcut has to work with the toolbox shut — that is the entire point
@@ -260,6 +262,36 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
     // — which is what lets the listener be bound once per phase rather than
     // re-bound on every pause, and is the whole point of the toggle action.
   }, [canPause, send])
+
+  /*
+    The second: ⌥↵ moves a host-paced room on.
+
+    Bound to exactly what `hostAdvanceLabel` draws, so the key and the button
+    are the same rule — the reason ⌥P is gated on `canPause` rather than on
+    being the host. A shortcut that reaches a phase the visible control does
+    not is an undocumented second set of rules.
+
+    `host/skippedPhase` and not a new action: it is already `advance()`, which
+    is already what the clock called. The host's tap and the clock's expiry
+    have to stay one code path or they will drift.
+  */
+  const advanceLabel = state ? hostAdvanceLabel(state) : undefined
+  const canAdvance = Boolean(isHost && advanceLabel)
+
+  useEffect(() => {
+    if (!canAdvance) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      // Return submits the composer and sends a chat line. Those win.
+      if (isTypingTarget(event.target)) return
+      if (!isAdvanceShortcut(event)) return
+      event.preventDefault()
+      send({ type: 'host/skippedPhase' })
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [canAdvance, send])
 
   const openHelp = useCallback(() => {
     setOverlay('help')
@@ -397,6 +429,17 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
               total={state.settings.totalRounds}
               showLabel
             />
+          ) : advanceLabel && isHost ? (
+            /* The slot the clock vacated, holding the thing that replaced it.
+               Host-only: a guest cannot advance, and a button they cannot press
+               is a lie about whose room this is. They get `phaseLabel` and the
+               body copy naming whoever they are waiting on. */
+            <span className={styles.clockGroup}>
+              <ShortcutHint action="advance" cap="↵" capLabel="Return" />
+              <Button size="small" onClick={() => send({ type: 'host/skippedPhase' })}>
+                {advanceLabel}
+              </Button>
+            </span>
           ) : countdown.running || countdown.paused ? (
             <span className={styles.clockGroup}>
               {/* Host-only: a guest cannot pause, and a key they cannot press

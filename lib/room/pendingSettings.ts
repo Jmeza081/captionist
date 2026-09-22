@@ -3,7 +3,7 @@ import type { RoomSettings } from '@/lib/game/types'
 /**
  * What `/host` chose, on its way to the room it is about to open.
  *
- * The settings ride in `sessionStorage` rather than the URL. Seven of them
+ * The settings ride in `sessionStorage` rather than the URL. Eight of them
  * would make an unreadable query string on a screen whose whole job is a code
  * somebody reads out loud — and per-tab is right, because they belong to the
  * room this tab is opening rather than to the browser.

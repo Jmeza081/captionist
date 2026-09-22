@@ -53,6 +53,8 @@ import {
   voteCards,
   voteCopy,
   waitingCopy,
+  hostAdvanceLabel,
+  roomRulesLine,
 } from './selectors'
 import type { GameMode, GameState, PlayerId, RoundResult } from './types'
 import { mediaKey } from '@/lib/media'
@@ -215,6 +217,74 @@ describe('a taken GIF', () => {
   it('is empty in a caption room, where every answer is text', () => {
     const state = fixtureFor('compose', { players: 5, settings: { mode: 'caption' }, submitted: 2 })
     expect(takenMedia(state, 'p4').size).toBe(0)
+  })
+})
+
+describe('a host-paced room', () => {
+  const pacedAt = (phase: Parameters<typeof fixtureFor>[0], extra: object = {}) =>
+    fixtureFor(phase, { players: 5, settings: { hostPaced: true }, ...extra })
+
+  it('stops the brief promising a clock that is not running', () => {
+    const timed = briefCopy(fixtureFor('brief', { players: 5 }), 'p0')
+    expect(timed.timeoutNote).toMatch(/clock runs out/)
+
+    // Same behaviour either way — `host/skippedPhase` reaches the same
+    // `advance()`, fallback subject and all. Only the trigger moved, so only
+    // the sentence changes.
+    const paced = briefCopy(pacedAt('brief'), 'p0')
+    expect(paced.timeoutNote).not.toMatch(/clock/)
+    expect(paced.timeoutNote).toMatch(/we’ll pick for you/)
+  })
+
+  it('names who opens the vote, and says "you" to the person who will', () => {
+    const state = pacedAt('waiting', { out: 1 })
+
+    // p0 is the host in every fixture.
+    expect(waitingCopy(state, 'p0').body).toMatch(/when you open the vote/)
+    expect(waitingCopy(state, 'p1').body).toMatch(/when Jesse opens the vote/)
+
+    // The verb conjugates with the person, which is the whole reason this is
+    // two clauses rather than a name interpolated into one.
+    expect(waitingCopy(state, 'p1').body).not.toMatch(/Jesse open the/)
+    expect(waitingCopy(state, 'p0').body).not.toMatch(/you opens/)
+  })
+
+  it('still says "the clock" when there is one', () => {
+    const state = fixtureFor('waiting', { players: 5, out: 1 })
+    expect(waitingCopy(state, 'p0').body).toMatch(/when the clock hits zero/)
+  })
+
+  it('gives the host a way out of each phase that lost its clock', () => {
+    expect(hostAdvanceLabel(pacedAt('brief'))).toBe('Start the round')
+    expect(hostAdvanceLabel(pacedAt('compose'))).toBe('Close submissions')
+    expect(hostAdvanceLabel(pacedAt('vote'))).toBe('Close the vote')
+  })
+
+  it('draws nothing where a screen already has its own way on', () => {
+    // `waiting` has `waitingCopy.action`; `reveal` and `score` have been
+    // host-paced since phase 3 and carry their own docked buttons. A second
+    // control beside those is two buttons for one tap.
+    for (const phase of ['waiting', 'reveal', 'score'] as const) {
+      const state = pacedAt(phase)
+      // Assert the fixture arrived, or `undefined` would pass for the wrong
+      // reason — a room stuck one phase short reports no label either.
+      expect(state.phase).toBe(phase)
+      expect(hostAdvanceLabel(state)).toBeUndefined()
+    }
+  })
+
+  it('stops the rules line quoting a cap the room does not play by', () => {
+    // The line a late joiner learns the rules from. "90s" is the compose
+    // clock's length, and there is no compose clock.
+    expect(roomRulesLine(fixtureFor('vote', { players: 5 }))).toMatch(/90s/)
+
+    const paced = roomRulesLine(pacedAt('vote'))
+    expect(paced).not.toMatch(/\d+s/)
+    expect(paced).toMatch(/host-paced/)
+  })
+
+  it('draws nothing in a room that kept its clocks', () => {
+    expect(hostAdvanceLabel(fixtureFor('vote', { players: 5 }))).toBeUndefined()
   })
 })
 

@@ -1,5 +1,5 @@
 /**
- * The room's one keyboard shortcut.
+ * The room's keyboard shortcuts.
  *
  * ## Why not ⌘P
  *
@@ -32,6 +32,26 @@ export const PAUSE_CODE = 'KeyP'
  */
 export function isPauseShortcut(event: KeyboardEvent): boolean {
   if (event.code !== PAUSE_CODE) return false
+  if (!event.altKey) return false
+  if (event.ctrlKey || event.metaKey || event.shiftKey) return false
+  return !event.repeat
+}
+
+/**
+ * The host's advance key, in a room with no clock to advance it.
+ *
+ * ⌥ Return rather than another letter, because this one is not a toggle: it
+ * commits the room to the next phase, and Return is the key that means "go"
+ * everywhere else on the platform. It is also not a letter a caption contains,
+ * though `isTypingTarget` is what actually keeps it out of the composer.
+ *
+ * Same modifier rule as `isPauseShortcut` — bare Return submits forms all over
+ * this app, so the ⌥ is load-bearing rather than decorative here.
+ */
+export const ADVANCE_CODE = 'Enter'
+
+export function isAdvanceShortcut(event: KeyboardEvent): boolean {
+  if (event.code !== ADVANCE_CODE) return false
   if (!event.altKey) return false
   if (event.ctrlKey || event.metaKey || event.shiftKey) return false
   return !event.repeat
