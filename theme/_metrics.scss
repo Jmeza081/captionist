@@ -761,3 +761,8 @@ $reveal-columns: 900px;
 /// them. Under this they stack, because two cards shrunk to fit are two
 /// captions nobody can read.
 $duel-columns: 860px;
+
+/// The sound offer's mark: the music glyph on its own accent tile. Not in the
+/// design, which predates sound — sized to sit beside a two-line title and body
+/// without setting the card's height.
+$sound-offer-mark: 34px;

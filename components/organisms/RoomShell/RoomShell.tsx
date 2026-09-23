@@ -47,6 +47,10 @@ import { clearPendingSettings } from '@/lib/room/pendingSettings'
 import { isSeated } from '@/lib/room/store'
 import { ROOM_TARGET } from '@/lib/room/transport'
 import { useCountdown } from '@/lib/room/useCountdown'
+import { CUES } from '@/lib/audio/catalog'
+import { audio } from '@/lib/audio/engine'
+import { setSoundPrefs, useSoundPrefs } from '@/lib/audio/preferences'
+import { useAudioEngine, useSoundtrack } from '@/lib/audio/useSoundtrack'
 import { useWideViewport } from '@/lib/useWideViewport'
 import {
   useChat,
@@ -57,6 +61,7 @@ import {
   useLastReaction,
   useRoom,
   useRoomCode,
+  useRoomNow,
   useRoomRefusal,
   useUnread,
 } from '@/lib/room/useRoom'
@@ -141,6 +146,27 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
     [heldUntil],
   )
   const grace = useCountdown(graceClock)
+
+  /*
+    The room's sound. Every tab plays its own copy from the same broadcast
+    phase and clock, so a remote room hears the same bar without anybody
+    streaming anything. Urgency is the timer pill's threshold, and only while
+    a clock is actually running — a host-paced room has no last stretch.
+  */
+  const roomNow = useRoomNow()
+  const sound = useSoundPrefs()
+  const engine = useAudioEngine()
+  useSoundtrack({
+    phase: state?.phase,
+    clock: state?.clock,
+    urgent: countdown.running && countdown.seconds <= URGENT_AT,
+    seconds: countdown.seconds,
+    running: countdown.running,
+    roomNow,
+  })
+  // Asked for, and refused: a reload leaves the page with no gesture to its
+  // name, so the browser holds the sound until the next tap.
+  const soundBlocked = (sound.music || sound.sfx) && engine.state === 'suspended'
 
   /**
    * Chat arrives open where there is room to dock it.
@@ -403,6 +429,10 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
       ]
         .filter(Boolean)
         .join(' ')}
+      // What the page can hear, for the E2E suite — there is no other way to
+      // ask a browser whether it is making a sound.
+      data-sound={engine.state}
+      data-sound-playing={engine.playing}
     >
       <AppHeader
         phase={label?.anchor}
@@ -550,6 +580,21 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           reactions={[...REACTIONS]}
           onReact={reactToRoom}
           onHelp={openHelp}
+          sound={{
+            music: sound.music,
+            sfx: sound.sfx,
+            // Unlock first: the toggle's tap is the gesture, and the store's
+            // listeners are what start the music.
+            onMusicChange: (on) => {
+              if (on) audio.unlock()
+              setSoundPrefs({ music: on, offered: true })
+            },
+            onSfxChange: (on) => {
+              if (on) audio.unlock()
+              setSoundPrefs({ sfx: on, offered: true })
+            },
+            nowPlaying: engine.playing ? CUES[engine.playing] : undefined,
+          }}
           host={
             isHost
               ? {
@@ -639,10 +684,23 @@ export function RoomShell({ screens = {} }: RoomShellProps) {
           and the toolbox button gets the same confirmation. */}
       <ShortcutFlash paused={countdown.paused} enabled={canPause} />
 
-      {queue[0] && (
+      {queue[0] ? (
         <div className={styles.snackbarDock}>
           <Snackbar message={queue[0].message} tone={queue[0].tone} />
         </div>
+      ) : (
+        soundBlocked && (
+          /*
+            Not queued: it stays until the sound is back. No key on it, either —
+            the engine resumes on any tap anywhere, and the dock lets taps
+            through to the screen under it, so the tap somebody makes to vote
+            or type is the one that fixes it. A button here was a target the
+            width of a phone's corner, straddling the floating keys.
+          */
+          <div className={styles.snackbarDock}>
+            <Snackbar message="Tap anywhere to bring the sound back." tone="warning" />
+          </div>
+        )
       )}
     </div>
   )

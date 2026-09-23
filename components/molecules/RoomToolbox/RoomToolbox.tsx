@@ -7,6 +7,7 @@ import { Icon } from '@/components/atoms/Icon'
 import { ReactionCTA } from '@/components/atoms/ReactionCTA'
 import { ReactionGlyph } from '@/components/atoms/ReactionGlyph'
 import { Stepper } from '@/components/atoms/Stepper'
+import { Toggle } from '@/components/atoms/Toggle'
 import { formatClock } from '@/components/atoms/TimerPill'
 import type { HostControls as HostAvailability } from '@/lib/game/selectors'
 import { ReactionToolbar, type Reaction } from '@/components/molecules/ReactionToolbar'
@@ -38,6 +39,17 @@ export interface HostTools {
   available: HostAvailability
 }
 
+/** This person's sound. Everyone has it — it is theirs, not the room's. */
+export interface SoundTools {
+  music: boolean
+  sfx: boolean
+  /** Must unlock audio synchronously when turning on — the tap is the gesture. */
+  onMusicChange: (on: boolean) => void
+  onSfxChange: (on: boolean) => void
+  /** What is playing right now, for the credit line. Absent in silence. */
+  nowPlaying?: { title: string; artist: string }
+}
+
 export interface RoomToolboxProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -48,6 +60,7 @@ export interface RoomToolboxProps {
   /** Fires a room-wide reaction. The glyph, because that is what the wire carries. */
   onReact: (glyph: string) => void
   onHelp: () => void
+  sound?: SoundTools
   /** Present for the host, absent for everyone else. */
   host?: HostTools
   /**
@@ -81,6 +94,7 @@ export function RoomToolbox({
   reactions,
   onReact,
   onHelp,
+  sound,
   host,
   railWidth = 0,
 }: RoomToolboxProps) {
@@ -231,6 +245,33 @@ export function RoomToolbox({
             />
           </div>
         </div>
+
+        {/*
+          Beside the reactions, above the host's controls: it is one of the
+          things everybody's toolbox has, and a person reaching to mute should
+          not have to scroll past a timer they cannot touch.
+        */}
+        {sound && (
+          <>
+            <hr className={styles.rule} />
+            <div className={styles.section}>
+              <span className={styles.eyebrow}>Sound</span>
+              <Toggle label="Music" checked={sound.music} onChange={sound.onMusicChange} />
+              <Toggle label="Sound effects" checked={sound.sfx} onChange={sound.onSfxChange} />
+              {sound.music && sound.nowPlaying && (
+                <p className={styles.nowPlaying}>
+                  <Icon name="music" size={14} />
+                  <span className={styles.nowPlayingText}>
+                    {sound.nowPlaying.title} · {sound.nowPlaying.artist}
+                  </span>
+                </p>
+              )}
+              {(sound.music || sound.sfx) && (
+                <p className={styles.note}>Hearing nothing? Check your silent switch.</p>
+              )}
+            </div>
+          </>
+        )}
 
         {host && (
           <>

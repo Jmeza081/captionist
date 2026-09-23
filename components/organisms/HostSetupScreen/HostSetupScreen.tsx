@@ -36,6 +36,7 @@ import { writeIdentity } from '@/lib/room/identity'
 import { writePendingSettings } from '@/lib/room/pendingSettings'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
 import { useNicknameField } from '@/lib/room/useSuggestedName'
+import { unlockAudio } from '@/lib/audio/engine'
 import styles from './HostSetupScreen.module.scss'
 
 /**
@@ -117,6 +118,9 @@ export function HostSetupScreen() {
       window.open(`/join/${code}?auto=${i}`, '_blank', 'noopener')
     }
 
+    // Inside the tap, before the navigation: the room is a soft route change
+    // away, and this is the last gesture the page will see before it.
+    unlockAudio()
     router.push(`/room/${code}`)
   }
 

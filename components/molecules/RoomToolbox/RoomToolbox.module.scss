@@ -200,6 +200,32 @@
   text-wrap: pretty;
 }
 
+// --- sound ---
+
+// What is playing, credited where it plays. One line, truncated rather than
+// wrapped: a long title is not worth a taller toolbox.
+.nowPlaying {
+  display: flex;
+  align-items: center;
+  gap: t.$space-10;
+  margin: 0;
+  padding: t.$space-10 t.$space-12;
+  border-radius: t.$radius-field;
+  background-color: t.$fill-quote;
+  color: t.$accent-text;
+}
+
+.nowPlayingText {
+  min-width: 0;
+  overflow: hidden;
+  font-family: t.$font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  color: t.$text-primary;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 @keyframes toolboxIn {
   from {
     // 0.9 rather than 0: a panel that grows from nothing reads as a zoom, and

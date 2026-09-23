@@ -17,6 +17,7 @@ import { devGuestDelay } from '@/lib/room/devGuests'
 import { writeIdentity } from '@/lib/room/identity'
 import { useStoredPerson } from '@/lib/room/useStoredPerson'
 import { useNicknameField } from '@/lib/room/useSuggestedName'
+import { unlockAudio } from '@/lib/audio/engine'
 import styles from './JoinScreen.module.scss'
 
 /**
@@ -100,6 +101,9 @@ export function JoinScreen({ initialCode = '', autoJoin }: JoinScreenProps) {
     if (name.trim().length === 0) return
     // The room reads these back out of storage when it asks for a seat.
     writeIdentity({ name: name.trim(), avatarSeed: seed, hat })
+    // Inside the tap, before the navigation: the room is a soft route change
+    // away, and this is the last gesture the page will see before it.
+    unlockAudio()
     router.push(`/room/${normalized}`)
   }
 

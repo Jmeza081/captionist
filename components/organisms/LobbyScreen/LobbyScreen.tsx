@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Avatar } from '@/components/atoms/Avatar'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
@@ -13,6 +13,7 @@ import { WaitingDots } from '@/components/atoms/WaitingDots'
 import { BotPicker } from '@/components/molecules/BotPicker'
 import { PlayerRow } from '@/components/molecules/PlayerRow'
 import { RoomShare } from '@/components/molecules/RoomShare'
+import { SoundOffer } from '@/components/molecules/SoundOffer'
 import { useRoomShell } from '@/components/organisms/RoomShell/context'
 import { budgetSpent } from '@/lib/bots/budget'
 import {
@@ -26,6 +27,8 @@ import {
   toAvatarProps,
 } from '@/lib/game/selectors'
 import type { GameMode, GameState, PlayerId } from '@/lib/game/types'
+import { audio } from '@/lib/audio/engine'
+import { setSoundPrefs, useSoundPrefs } from '@/lib/audio/preferences'
 import { useBots, useRoom } from '@/lib/room/useRoom'
 import { useWebShare } from '@/lib/useWebShare'
 import styles from './LobbyScreen.module.scss'
@@ -84,12 +87,29 @@ function joinUrlFor(code: string): string {
 export function LobbyScreen() {
   const { state, selfId, isHost, send } = useRoom()
   const { notify } = useRoomShell()
+  const sound = useSoundPrefs()
   if (!state) return null
 
+  /*
+    Everybody's, host and guest alike: the room is remote-first, so each person
+    decides for their own speakers. The tap unlocks audio before the preference
+    is stored, because the unlock has to happen inside the gesture and the
+    store's listeners are what start the music.
+  */
+  const offer = sound.offered ? undefined : (
+    <SoundOffer
+      onAccept={() => {
+        audio.unlock()
+        setSoundPrefs({ music: true, sfx: true, offered: true })
+      }}
+      onDecline={() => setSoundPrefs({ offered: true })}
+    />
+  )
+
   return isHost ? (
-    <HostLobby state={state} selfId={selfId} send={send} notify={notify} />
+    <HostLobby state={state} selfId={selfId} send={send} notify={notify} soundOffer={offer} />
   ) : (
-    <GuestLobby state={state} selfId={selfId} />
+    <GuestLobby state={state} selfId={selfId} soundOffer={offer} />
   )
 }
 
@@ -125,7 +145,15 @@ function useSecondHand(): number {
  * a host would act on is absent rather than disabled, because there is nothing
  * here for a guest to do but read.
  */
-function GuestLobby({ state, selfId }: { state: GameState; selfId?: PlayerId }) {
+function GuestLobby({
+  state,
+  selfId,
+  soundOffer,
+}: {
+  state: GameState
+  selfId?: PlayerId
+  soundOffer?: ReactNode
+}) {
   const copy = lobbyCopy(state, selfId)
 
   return (
@@ -142,42 +170,45 @@ function GuestLobby({ state, selfId }: { state: GameState; selfId?: PlayerId }) 
             </Stack>
           </Stack>
 
-          <Box background="card" radius="modal" padding={26} className={styles.guestCard}>
-            <Stack gap={20}>
-              <Inline justify="between" align="baseline">
-                <h2 className={styles.rosterTitle}>In the room</h2>
-                <span className={styles.count}>
-                  {state.players.length} {state.players.length === 1 ? 'player' : 'players'}
-                </span>
-              </Inline>
+          <Stack gap={14} className={styles.guestCard}>
+            {soundOffer}
+            <Box background="card" radius="modal" padding={26} className={styles.guestCard}>
+              <Stack gap={20}>
+                <Inline justify="between" align="baseline">
+                  <h2 className={styles.rosterTitle}>In the room</h2>
+                  <span className={styles.count}>
+                    {state.players.length} {state.players.length === 1 ? 'player' : 'players'}
+                  </span>
+                </Inline>
 
-              <ul className={styles.rosterPills}>
-                {state.players.map((player) => (
-                  <li key={player.id}>
-                    <PlayerRow
-                      player={toAvatarProps(state, player)}
-                      variant="pill"
-                      host={player.isHost}
-                      you={player.id === selfId}
-                    />
-                  </li>
-                ))}
-              </ul>
+                <ul className={styles.rosterPills}>
+                  {state.players.map((player) => (
+                    <li key={player.id}>
+                      <PlayerRow
+                        player={toAvatarProps(state, player)}
+                        variant="pill"
+                        host={player.isHost}
+                        you={player.id === selfId}
+                      />
+                    </li>
+                  ))}
+                </ul>
 
-              <hr className={styles.rule} />
+                <hr className={styles.rule} />
 
-              {/* The rules, read-only. The same four pairs the host set, in the
+                {/* The rules, read-only. The same four pairs the host set, in the
                   same order they set them. */}
-              <dl className={styles.settings}>
-                {settingsSummary(state).map((pair) => (
-                  <div key={pair.label} className={styles.setting}>
-                    <dt className={styles.settingLabel}>{pair.label}</dt>
-                    <dd className={styles.settingValue}>{pair.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </Stack>
-          </Box>
+                <dl className={styles.settings}>
+                  {settingsSummary(state).map((pair) => (
+                    <div key={pair.label} className={styles.setting}>
+                      <dt className={styles.settingLabel}>{pair.label}</dt>
+                      <dd className={styles.settingValue}>{pair.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Stack>
+            </Box>
+          </Stack>
         </Stack>
 
         <StatusPill waiting>{WAITING_LINE}</StatusPill>
@@ -211,11 +242,13 @@ function HostLobby({
   selfId,
   send,
   notify,
+  soundOffer,
 }: {
   state: GameState
   selfId?: PlayerId
   send: ReturnType<typeof useRoom>['send']
   notify: (message: string) => void
+  soundOffer?: ReactNode
 }) {
   const copy = lobbyCopy(state, selfId)
   const gate = canStart(state)
@@ -241,6 +274,12 @@ function HostLobby({
     <div className={styles.lobby}>
       <div className={styles.columns}>
         <Stack gap={26} className={styles.share}>
+          {/* First, not after the blurb: on a phone the start button is pinned
+              across the foot of the glass, and anything low in this column
+              opens half under it. It is answered once and gone, so the share
+              card only moves down for as long as it takes to say yes or no. */}
+          {soundOffer}
+
           {/* A card on a phone, a plain block on a desk — the phone needs
               something holding the QR, the code and the two actions together
               when they are the whole top of the screen. See the stylesheet. */}
@@ -374,7 +413,6 @@ function HostLobby({
                 {roster.arrival}
               </p>
             )}
-
           </Stack>
         </div>
       </div>

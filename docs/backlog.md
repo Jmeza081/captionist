@@ -462,6 +462,13 @@ already past, so they act instantly on resume.
 
 ### 2.4 Audio — medium, and the assets are the smaller half
 
+> **Built** as roadmap phase 10 — see [ADR 0044](./adr/0044-every-tab-plays-its-own-copy-of-the-soundtrack.md).
+> Kept below as the scoping it was built from. Two calls went the other way:
+> rooms are remote-first, so every device plays its own copy rather than one
+> shared speaker; and the unlock piggybacks on the join/start tap *and* resumes
+> on the next tap anywhere, because a reload has no gesture to piggyback on. Still open: click
+> sounds on `Button`, and choosing the opener/reveal jingles by ear.
+
 Background music and per-step sound effects. **Nothing exists today** — no audio
 element, no files, no dependency. The only `muted` hits are `<video muted>` on
 decorative backdrops.

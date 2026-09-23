@@ -6,7 +6,7 @@ feature — if this file disagrees with the code, the file is the bug.
 Companion docs: [design system](./design-system.md) · [roadmap](./roadmap.md) ·
 [decisions](./adr/) · [component tiers](../components/README.md)
 
-Current as of phase 7: **a message can carry a picture and answer a caption.**
+Current as of phase 10: **the room has a soundtrack.** Phase 7's headline — **a message can carry a picture and answer a caption** — still describes the chat lane.
 The event lane's `chat` variant now takes an optional `attachment` and a
 `replyTo` quote, the reaction picker put its 32 reactions behind pack tabs
 with the design's four Slackmoji tiles among them, and the two `/host` settings
@@ -810,9 +810,10 @@ not a second component.
 
 **The landing page gained a foot, and it is where the licences live.**
 `LandingLegal` is one link — "Licensing and credits" — holding `LicenseModal`, which is a configured `Modal` the way `HelpModal` is:
-four steps for the four obligations a production deploy carries (MIT for the
+five steps for the obligations a production deploy carries (MIT for the
 app, the providers' terms for the GIFs, CC0 for the faces, CC BY for the
-reaction art, OFL for the type). Not a `/legal` route, because three of the four
+reaction art and OFL for the type, which share the fourth step, and since phase
+10 CC0 for the music and sound effects). Not a `/legal` route, because most of them
 are attribution rather than a contract and a page nobody visits is not where
 attribution belongs. It is what widened `ModalStep.body` from `string` to
 `ReactNode` — a licence you cannot open is a licence nobody read — and it is why
@@ -948,6 +949,23 @@ strings are the ones that named a deadline: both `briefCopy.timeoutNote`s,
 new components, zero new tokens.
 [ADR 0043](./adr/0043-a-paced-room-removes-the-clock-not-the-gate.md).
 
+**Phase 10: the room has a soundtrack now, and nothing about it goes over the
+wire.** `lib/audio/` is a new neighbour beside `lib/room/`, and it is the
+same split the round engine makes: `soundtrack.ts` is pure (`bedFor(phase,
+urgent)`, `stingFor(from, to)`, `ticks()`, `bedOffset(clock, roomNow)`) and
+`engine.ts` is the one `AudioContext` on the page, a module singleton so it
+outlives the soft navigation from `/join` or `/host` into the room. Every tab
+runs its own copy against the broadcast phase and clock, and a clock-driven bed
+starts at `roomNow - (endsAt - totalMs)` seconds in, so a remote room hears the
+same bar without anybody streaming anything
+([ADR 0044](./adr/0044-every-tab-plays-its-own-copy-of-the-soundtrack.md)).
+The eight files are CC0 MP3s in `public/audio/` (2.7MB), served as static
+assets and decoded into buffers. There is no route. **Sound is a person's
+preference rather than the room's**: `captionist:sound` in `localStorage`,
+silent until the lobby's one-time `SoundOffer` or the toolbox's two new toggles
+say otherwise, and never in `GameState`. The path is drawn in
+[the soundtrack](#the-soundtrack).
+
 Phase 6 stands as built: **the room can talk while it plays.** Chat and live
 reaction tallies ride the transport's event lane into a second store that sits
 *beside* `RoomStore` rather than inside it — a message never bumps `rev`, never
@@ -995,6 +1013,7 @@ here now*. Where they overlap, this file links rather than repeats.
 | Keyboard | `lib/shortcuts.ts` (pure) + `lib/useKeyboard.ts` (browser) | **Two shortcuts now** — ⌥P holds the clock, and ⌥↵ advances a host-paced room, bound to exactly what `hostAdvanceLabel` draws so the key can never reach a phase the visible button does not. The split is the usual one: `isPauseShortcut`, `isAdvanceShortcut`, `isTypingTarget` and `altGlyph` are node-reachable and unit-tested, while `useHasKeyboard` and `useAltGlyph` are `useSyncExternalStore` with **no keyboard and `Alt`** as the server snapshots. Matched on `event.code`, because ⌥P emits `π` on macOS and `event.key` will never be `p`; refused when any other modifier is down, so ⌃⌥P on the way somewhere else is not this. `navigator.platform` rather than `userAgentData.platform` — the modern answer reports `Windows` on macOS under Playwright (playwright#39568), which would make the suite assert a glyph no Mac user sees. Both listeners live in `RoomShell`, not in the toolbox that holds the pause button, because reaching pause with the toolbox shut is the point. The ⌥ on the advance key is load-bearing rather than symmetrical: bare Return submits forms all over this app, and `isTypingTarget` is what keeps either key out of a caption field or the chat composer |
 | Release notes | `lib/releases.ts` (client-safe) + `lib/releases.server.ts` (`server-only`) | The landing page's changelog. The split is a build rule rather than tidiness: a client component importing a *value* from a `server-only` module is a build error, so the types, `toSafeHtml` and `releaseDate` sit on one side and `fetchReleases` on the other. GitHub's `body_html` is rendered as it arrives — [ADR 0042](./adr/0042-the-changelog-is-githubs-html.md) — with `toSafeHtml` absolutising the **relative** links GitHub actually sends. `next: { revalidate: 3600 }` is the whole rate-limit story: one request an hour per deployment against an anonymous allowance of sixty. Three outcomes rather than an array and a `null` — `ok` · `rate-limited` · `unavailable` — because an empty changelog and a broken one must not render the same sentence, and it never throws: the front door may not fail to render over a changelog |
 | Motion preference | `lib/useReducedMotion.ts` | `useSyncExternalStore` over `matchMedia`, with `true` as the server snapshot — of the two wrong first answers, "started still, then moved" is the kinder one. Read by `HeroWall`, `SceneBackdrop`, `ReactionGlyph` and the walkthrough's illustrations: every place the decision is *which file to fetch* rather than which rule to apply, and therefore every place CSS cannot make it |
+| Sound | `lib/audio/` — Web Audio, no dependency | `catalog.ts` maps a `CueId` to its file in `public/audio/`, its gain, whether it loops and its credit. `soundtrack.ts` is pure and unit-tested: one bed per phase, a sting only on a transition (never on the first phase a tab sees), a tick for the last five seconds of a running compose clock, and `bedOffset` to land every tab on the same bar. `engine.ts` is a module-singleton `AudioContext`: each bed goes through its own gain to the music bus, then the duck, then out, and one-shots go through the sfx bus. It uses decoded buffers rather than `<audio>` for gapless loops, crossfades over 1.5s, and reports `off · starting · suspended · running`. `starting` exists because every context is born suspended, including the ones the browser is about to allow. `preferences.ts` is `useSyncExternalStore` over `localStorage` `captionist:sound` with a silent server snapshot. `useSoundtrack` is the effect in `RoomShell` that joins them. [ADR 0044](./adr/0044-every-tab-plays-its-own-copy-of-the-soundtrack.md) |
 | Sharing a link | `lib/useWebShare.ts` | `useSyncExternalStore` over `navigator.share`, with **`false` as the server snapshot** — a button whose label came out of feature detection during SSR is a hydration mismatch on every phone, and it settles on the first client commit long before anybody has read the button. `share()` resolves to what happened — `shared` · `copied` · `cancelled` · `failed` — so the caller can confirm a copy, say nothing about a sheet that is already on screen, and treat a dismissal as a decision rather than an error. `AbortError` *is* the dismissal; every other failure falls through to the clipboard, because a sheet that refused to open is exactly when the old behaviour is wanted. The label moves with the capability rather than only the behaviour — [ADR 0033](./adr/0033-a-device-capability-decides-the-label.md) |
 | Sharing a file | `lib/export/` — `gifuct-js@2.1.2` decodes, `gifenc@1.0.3` encodes, both reached only through dynamic `import()` | **Client-side, end to end, and nothing is kept.** The pure half — `budget.ts` (480px wide, 100 frames, a 20ms floor under a delay), `layout.ts` (band and overlay geometry against an injected `measure`), `labels.ts` (capability → label, filenames, `markFor(src)` over `providerOf`, every snackbar line) — imports nothing that needs a browser, so Vitest covers it. The DOM half — `fonts.ts` reads `--font-inter`, the colours, the four overlay steps and the hat numbers off `:root`; `frames.ts` fetches with CORS and decodes one frame at a time with the file's own disposal, or takes one frame through an `<img>` for anything that is not a GIF; `compose.ts` paints a frame, the caption and the footer with the provider's mark; `encode.ts` builds one palette from sampled *composed* frames and yields per frame; `meme.ts` runs those two passes; `standings.ts` draws the table with DiceBear data-URI faces and hats; `deliver.ts` picks sheet, clipboard or download by capability. `useExport` is the hook a screen owns — capability through `useSyncExternalStore` with a `false` server snapshot, progress, an idle `prepare()`, and the `expired` two-tap for a sheet that refused a stale gesture — and `jobs.ts` is what the screens call, importing the renderers only when a job runs. Both pins are exact and both libraries are dormant, because GIF89a is finished; `types/gifenc.d.ts` declares the slice that is called. [ADR 0036](./adr/0036-a-shared-meme-is-rendered-where-it-is-watched.md) |
 | Feature flags | `flags@4.3.0` + `@flags-sdk/vercel@1.4.7`, declared in `flags.ts` at the repo root | One flag, `export-media`, and it exists for one reason: the export has to be able to go dark in the time it takes to flip a switch. `flag()` from `flags/next` takes `vercelAdapter()` only where a Vercel project can answer (`VERCEL`, `FLAGS` or `VERCEL_OIDC_TOKEN` set); everywhere else a `decide` returns the environment's default, `process.env.EXPORT_MEDIA !== 'off'` — server-side on purpose, since a `NEXT_PUBLIC_` variable is inlined at build and cannot be flipped. Evaluated per request in `app/room/[code]/page.tsx`, the last Server Component above the room, and carried down as `RoomProvider`'s `flags` prop to `useRoomFlags()`; a client component never evaluates one. `/.well-known/vercel/flags` is the Flags Explorer's discovery endpoint, 401 without `FLAGS_SECRET`. `?export=off` is the only lever, and it can only take the keys away |
@@ -1218,7 +1237,7 @@ graph TD
   GP["The GIF provider<br/><i>Klipy, or Giphy — registry.ts picks</i>"]
   LA["LandingActions<br/><i>'use client' · a link and a code field</i>"]
   LL["LandingLegal<br/><i>'use client' · the foot — one boolean,<br/>so the page above it stays a server component</i>"]
-  LM["LicenseModal<br/><i>four licences, in a configured Modal</i>"]
+  LM["LicenseModal<br/><i>five licence steps, in a configured Modal</i>"]
   LN["LandingNav<br/><i>'use client' · the bar — the walkthrough<br/>and the changelog, both as modals</i>"]
   WN["WhatsNewModal<br/><i>one release per Modal step<br/>feed handed down, never fetched here</i>"]
   RS["lib/releases.server.ts<br/><i>server-only · fetchReleases</i>"]
@@ -1230,6 +1249,7 @@ graph TD
   BT["RoomBootScreen<br/><i>the interstitial · host or guest<br/>no chrome — it is the whole page</i>"]
   SC["screens.ts<br/><i>RoomPhase → ComponentType</i>"]
   SCR["The phase's screen<br/><i>one per phase, lobby…podium<br/>opener has none — the shell covers it</i>"]
+  AU["public/audio/*.mp3<br/><i>8 CC0 files · static, same origin<br/>no route</i>"]
 
   L --> P
   L --> C
@@ -1260,8 +1280,8 @@ graph TD
   H --> HS
   J --> JS
   JC -->|"code prefilled"| JS
-  HS -->|"router.push → /room/NEW"| R
-  JS -->|"router.push → /room/CODE"| R
+  HS -->|"unlockAudio() · router.push → /room/NEW"| R
+  JS -->|"unlockAudio() · router.push → /room/CODE"| R
   R -->|"flags: exportMedia — a boolean,<br/>read by the screens through useRoomFlags()"| RP
   RP --> SH
   RP -.->|"probeRealtime() — one ask, two answers"| SE
@@ -1280,6 +1300,7 @@ graph TD
   SCR -.->|"lib/export/frames — fetch(src) with CORS,<br/>decoded and re-encoded in this tab, kept nowhere"| GP
   SH -.->|"ChatPanel's GifPanel — same hook,<br/>mounted only while the surface is open"| GP
   SH -.->|"HelpModal's four illustrations —<br/>resolveArt(HELP_SLUGS), the SVG until it lands"| GP
+  SH -.->|"useSoundtrack → engine — fetch + decode,<br/>only once this person turned sound on"| AU
 ```
 
 **No page reaches a *media provider* from the server render**, which is why
@@ -1545,7 +1566,7 @@ property, so no component ever declares a font family directly.
 
 Three layers in a stack, plus `lib/gifs/`, `lib/bots/`, `lib/export/`,
 `lib/avatar.ts`, `lib/ably/`, `lib/reactions.ts`, `lib/noto.ts` and
-`lib/recent-reactions.ts` alongside — and `flags.ts` at the repo root, which is
+`lib/recent-reactions.ts` alongside, plus `lib/audio/` since phase 10. Then there is `flags.ts` at the repo root, which is
 read by a page and by nothing in `lib/` — and
 the arrows only ever point one way. **Two of the newest neighbours belong to no
 room at all**: `lib/shortcuts.ts` + `lib/useKeyboard.ts` are read by
@@ -1579,6 +1600,8 @@ graph LR
   MD["lib/media.ts<br/><i>captionLines · CHARS_PER_LINE · mediaAspect<br/>mediaKey — what makes two MediaRefs one GIF</i>"]
   CDN["The provider's CDN<br/><i>static.klipy.com · media.giphy.com</i>"]
   FLG["flags.ts<br/><i>export-media · read by the room page,<br/>never by lib/</i>"]
+  AUD["lib/audio/<br/><i>catalog · soundtrack — pure<br/>engine — one AudioContext · preferences<br/>useSoundtrack</i>"]
+  AUF["public/audio/*.mp3"]
   U -->|"useRoom() · useChat() · publish(event)<br/>announcementLine · ROOM_FACE — the words,<br/>rendered where they are read"| R
   U -->|"useExport() · memeJob · standingsJob —<br/>Reveal · Vote · Score · Podium"| EX
   U -->|"MediaCard — captionLines, the step as a class<br/>GifPanel · ComposeScreen — mediaKey, per tile"| MD
@@ -1590,6 +1613,9 @@ graph LR
   EX -.->|"fetch(src) with CORS — bytes in, a Blob out,<br/>nothing kept between"| CDN
   FLG -.->|"through app/room/[code]/page.tsx — a prop, not an import:<br/>RoomProvider flags: exportMedia → useRoomFlags()"| R
   U -->|"REACTIONS · glyphFor · labelFor · isImageGlyph"| RX
+  U -->|"useSoundtrack · useAudioEngine — RoomShell<br/>useSoundPrefs · setSoundPrefs — shell and lobby<br/>unlockAudio — JoinScreen · HostSetupScreen"| AUD
+  AUD -.->|"RoomPhase · Clock — types only"| G
+  AUD -.->|"fetch → decodeAudioData, per tab"| AUF
   U -->|"readRecent · pushRecent<br/>ReactionToolbar only"| RC
   U -->|"useGifSearch() · useResolvedArt()<br/>both in the browser — nothing on the server"| F
   U -->|"selectors · constants"| G
@@ -1681,6 +1707,17 @@ dotted arrow with no import behind it is `flags.ts` → `lib/room/`: the flag
 crosses the server–client boundary as a *prop* on `RoomProvider`, which is the
 only way a server-evaluated value can reach a client component, and it is why
 `lib/` never imports `flags.ts` at all.
+
+**Sound added one arrow into `lib/` and one out of it, and neither touches
+`lib/room/`.** `components/` → `lib/audio/` has four callers. `RoomShell`
+drives the hook and reads the engine's snapshot. `LobbyScreen` and the shell
+write the preference, and each calls `audio.unlock()` first, inside the tap. The two entry screens call `unlockAudio()` inside the tap
+that leaves for the room. `lib/audio/` → `lib/game/` is type-only: `RoomPhase`
+and `Clock` are the whole input, so the reducer has no idea a speaker exists and
+the transport carries nothing new. The room clock reaches the soundtrack as a
+function argument (`useRoomNow()`, handed in by the shell) rather than as an
+import of `lib/room/`, which keeps `lib/audio/` testable without a room. The
+dotted arrow is each tab fetching the same static files for itself.
 
 `lib/game/` imports nothing outside `lib/` — no React, no browser, no
 transport. Phase 6 added its one exception and made it a re-export rather than a
@@ -2782,7 +2819,7 @@ graph BT
     Entry["AvatarPicker · ModeCard · HatPicker"]
     Bots["BotPicker<br/><i>'use client' · three levels and the spend meter —<br/>a form, so not a configured Modal</i>"]
     Landing["HeroWall · LandingNav · QuickJoin"]
-    Legal["LandingLegal · LicenseModal<br/><i>the foot, and the four licences —<br/>a configured Modal, like HelpModal</i>"]
+    Legal["LandingLegal · LicenseModal<br/><i>the foot, and the five licence steps —<br/>a configured Modal, like HelpModal</i>"]
     News["WhatsNewModal<br/><i>'use client' · the changelog —<br/>a configured Modal too; the feed is a prop</i>"]
     Keys["ShortcutHint · ShortcutFlash<br/><i>'use client' · the key beside the clock<br/>or the advance button, and the key<br/>over the room</i>"]
     Wait["CycleWall · UpNext<br/><i>the pick wait — sixteen GIFs on a CSS schedule,<br/>and the rotation as a pill</i>"]
@@ -2791,6 +2828,7 @@ graph BT
     Scene["SceneBackdrop<br/><i>'use client' · a dead channel behind a wait —<br/>a molecule for Wordmark's reason: it composes TvStatic</i>"]
     Tuned["TunedImage<br/><i>'use client' · TvStatic behind a picture on its way —<br/>dropped on load, and never on error</i>"]
     Export["ExportKey<br/><i>'use client' · the one key that takes something out —<br/>label, or a glyph in a card's foot; the word is the device's</i>"]
+    Sound["SoundOffer<br/><i>the lobby asks once — props only,<br/>a row on a phone, a card above md</i>"]
   end
   subgraph organisms["organisms/ — room state or routing"]
     Shell["RoomShell<br/>+ context (notify)"]
@@ -2832,7 +2870,7 @@ graph BT
   Controls --> Actions
   Landing -->|"QuickJoin"| Actions
   Landing --> Home
-  Dialog -->|"LicenseModal is a Modal with four steps in it"| Legal
+  Dialog -->|"LicenseModal is a Modal with five steps in it"| Legal
   Legal -->|"LandingLegal — the page's foot"| Home
   Cap -->|"⌥ with P or ↵ — sm in the hint, lg in the flash"| Keys
   Dialog -->|"WhatsNewModal is a Modal with one step per release"| News
@@ -2905,6 +2943,12 @@ graph BT
   Icon -->|"share — the fourteenth glyph"| Export
   Export -->|"RevealScreen · VoteScreen — into MediaCard's share slot<br/>ScoreScreen — before the host's primary<br/>PodiumScreen — the third pill, size=form"| Screens
   Export -->|"idle · rendering · ready · as a glyph"| Gallery
+  Controls -->|"Button — secondary accept, ghost decline"| Sound
+  Close -->|"the phone's decline — the text one stands down"| Sound
+  Icon -->|"music — the sixteenth glyph, on its accent tile"| Sound
+  Sound -->|"LobbyScreen — host and guest,<br/>until either answer is stored"| Screens
+  Controls -->|"Toggle — Music · Sound effects, in everyone's toolbox"| Overlay
+  Icon -->|"music — the toolbox's now-playing line"| Overlay
   Scene -->|"BriefScreen — behind the wait,<br/>and it settles to the picked GIF"| Screens
   Dots -->|"LobbyScreen · ComposeScreen · WaitingScreen"| Screens
   Dots --> Gallery
@@ -3516,6 +3560,23 @@ shrink below its content and the card grows instead. The foot's dot row and Back
 are drawn on `steps.length > 1`, which is the step count's own rule reaching the
 rest of the row: they come back on their own the day there is a second release,
 and every multi-step caller is untouched.
+
+**Sound added one molecule, one glyph, one toolbox section and one licence
+step, and no organism.** `SoundOffer` is new because nothing in the inventory
+asks a one-time yes-or-no and then goes away. It composes `Button`,
+`CloseButton` and `Icon`, which makes it a molecule, and it reads nothing: the
+two callbacks are the caller's. `LobbyScreen` renders it for host and guest
+alike and passes both answers through the preference store. It is first in the
+host's share column because on a phone the start button is pinned across the
+foot of the screen. On a phone it is one row, and "Keep it quiet" becomes the
+close key. Both declines are rendered and CSS shows one, the way `RoomToolbox`
+picks between its pill and its key. `RoomToolbox` gained an optional `sound`
+prop (`SoundTools`): two `Toggle`s, a now-playing credit with the `music` glyph,
+and a silent-switch note. It sits above the host's controls because everyone
+has it. `LicenseModal` gained a fifth step for the CC0 soundtrack's credits.
+**`SoundOffer` is not in the gallery yet.** It is in the
+[inventory](./design-system.md#component-inventory), and `e2e/sound.spec.ts`
+drives it in a room.
 
 ## Token flow
 
@@ -4409,6 +4470,72 @@ moving `encode.ts` to a Worker. A hand check is not coverage, and this file
 lists it with the other unverified gates
 [below](#what-is-verified-and-what-is-not) rather than implying otherwise.
 
+### The soundtrack
+
+The soundtrack is not an eighth shape. No route is involved and nothing is
+rendered: the files are static assets under `public/audio/`, and everything
+else happens in the tab after hydration. It gets a diagram anyway, because the
+mechanism has two parts that are easy to get wrong: the browser's gesture rule,
+and keeping remote tabs in step with no audio on the wire.
+
+```mermaid
+sequenceDiagram
+  actor P as The person
+  participant T as A tap — JoinScreen · HostSetupScreen<br/>SoundOffer · the toolbox toggles
+  participant PR as preferences.ts<br/>localStorage captionist:sound
+  participant E as engine.ts<br/>the one AudioContext
+  participant SH as RoomShell · useSoundtrack
+  participant ST as soundtrack.ts — pure
+  participant F as public/audio/*.mp3
+
+  P->>T: tap
+  T->>E: unlock() — synchronous, inside the gesture<br/>resume() + a one-sample blank for iOS
+  T->>PR: setSoundPrefs({ music, sfx, offered })
+  PR-->>SH: useSoundPrefs() — silent on the server
+  SH->>E: setEnabled(music, sfx) — one-shots preloaded
+
+  Note over SH: state.phase + state.clock, off the broadcast —<br/>the same on every tab
+  SH->>ST: bedFor({ phase, urgent }) · stingFor(prev, phase) · ticks()
+  ST-->>SH: a Bed, a sting, a tick — or nothing
+  SH->>E: setBed(bed, () => bedOffset(clock, roomNow()))
+  alt same cue, new level
+    E->>E: ramp the bed's gain — it keeps its place
+  else different music
+    E->>F: fetch → decodeAudioData, once per cue
+    F-->>E: an AudioBuffer
+    E->>E: fade the old bed out, start the new one<br/>at offset() % duration — read now, after the load
+  end
+  SH->>E: play(sting) — the sfx bus ducks the music under it
+
+  alt a reload with no gesture yet
+    E-->>SH: state: starting → suspended after 600ms
+    SH->>P: Snackbar — "Tap anywhere to bring the sound back."
+    P->>E: any pointerup · touchend · keydown — capture phase
+    E->>E: unlock() — running, and the snackbar goes
+  end
+  E-->>SH: useAudioEngine() → data-sound · data-sound-playing
+```
+
+**The gesture comes before the store write, every time.** A browser lets a page
+start sound only inside a user gesture, and the store's listeners are what start
+the music. So every caller calls `audio.unlock()` synchronously and then writes
+the preference. The engine is a module rather than a component for the same
+reason: `/join` and `/host` unlock inside the tap that calls `router.push`, and
+a soft navigation keeps the module, so the room mounts with a context that is
+already running. `unlockAudio()` does nothing for someone who has never turned
+sound on, so nobody gets a context before the lobby has asked. **Remote tabs
+stay in step because they all compute the same offset, not because anything is
+sent.** A bed under a running clock starts `roomNow − (endsAt − totalMs)`
+seconds in, and the offset is read after the file has loaded, so a slow
+download still lands on the same bar. A clockless phase starts from the top,
+which is also where every tab that saw the transition starts it. Stings play
+only on a transition, never on the first phase a tab sees, so reloading into a
+reveal does not replay its jingle. **Blocked is not the same as starting.**
+Every context is born suspended, so the engine waits 600ms before reporting
+`suspended`. Without that, the warning would flash on browsers that were about
+to allow sound anyway. The warning has no button. The engine resumes on any tap,
+and the snackbar dock lets taps through to the screen underneath it.
+
 ---
 
 ## Not yet built
@@ -4565,6 +4692,14 @@ reasoning is now the mechanism four more phases borrow. What it deliberately did
 *not* decide is when the switch may be thrown
 ([ADR 0043](./adr/0043-a-paced-room-removes-the-clock-not-the-gate.md)).
 
+**Sound closed no row and opened none.** The design has no audio, so it was
+never a gap here. It was designed during phase 10 and follows the same rule as
+the others: the toolbox names only what is actually sounding, and the blocked
+warning appears only after the browser has actually refused. The whole path is
+drawn in [the soundtrack](#the-soundtrack), and
+[ADR 0044](./adr/0044-every-tab-plays-its-own-copy-of-the-soundtrack.md)
+records the choices.
+
 | Area | What exists | What doesn't |
 | --- | --- | --- |
 | The round-flow screens | **All ten phases**, inside the `RoomShell` chrome drawn above — `opener` as the `RoundOpener` overlay, the other nine through the [tier map](#component-tiers). `PhasePending` is gone | Four pieces of the design, each left out for a reason rather than for time — see below the table |
@@ -4647,9 +4782,10 @@ put the key in the bundle, while `ABLY_API_KEY` stays server-side. The authority
 
 ## What is verified, and what is not
 
-489 unit tests (`lib/**/*.test.ts`, node, over 33 files) and 692 Playwright
-tests across the two viewports — 346 per project, over 36 spec files, 662 of
-which pass and none of which fail. Not all of
+506 unit tests (`lib/**/*.test.ts`, node, over 34 files) and 704 Playwright
+tests across the two viewports — 352 per project, over 37 spec files. The last
+full run, with `sound.spec.ts` in it, passed 674 of 704 and failed none; what
+the sound spec found is under "Sound's share" below. Not all of
 them run: 30 skip, and 26 of those are on viewport (a docked rail exists only
 above `md`, a floating dock only below it), which is a branch of the layout
 rather than a hole in the coverage. The other four are
@@ -5115,6 +5251,31 @@ does the same thing, a guest gets neither and reads the host's name in the body
 copy instead, the `/host` switch quiets the cap beside it, and — the point of
 leaving `settleGates` alone — a paced `waiting` where everybody is in still
 moves itself on with nobody tapping anything.
+
+**Sound's share is 17 unit tests and one new spec of 6 per project, and the
+spec has to fake a browser policy to test the half that matters.**
+`lib/audio/soundtrack.test.ts` covers the pure half and the catalogue: every
+file it names exists and every cue is credited, a bed for every phase, silence
+while waiting, stings only on a real transition, the five-second tick, and
+`bedOffset` with and without a running clock. The engine and
+the preference store need a browser, so `e2e/sound.spec.ts` asks the page
+instead of the speakers. `RoomShell` publishes `data-sound` (the engine state)
+and `data-sound-playing` (the cue), because nothing else can tell a test
+whether a page is making a sound. Four tests run under Chromium's default,
+which allows sound outright: silent until the lobby's offer, a mute that
+survives a reload, "Keep it quiet" staying silent, and a reload landing in the
+right phase's bed. Two run under the policy phones ship with, which Playwright's
+Chromium will not adopt from launch flags. An init script suspends every
+`AudioContext` created before `navigator.userActivation.hasBeenActive`: a
+reload shows the tap-anywhere warning and any tap clears it, and the lobby
+offer's own tap is enough. **What is not verified is what anybody hears.**
+The attributes report the graph, not the output. Crossfades, the duck, iOS
+Safari's `audioSession` and two devices landing on the same bar have not been
+checked at all. **One of the six was timing-sensitive, and is fixed.** "says so
+after a reload" failed under parallel load because the browser's own start of
+an allowed context could land after the init script's suspend. The script now
+re-suspends on any `statechange` to `running` before a gesture, and the spec
+passed 96 of 96 at eight repeats across eight workers.
 
 **The Ably path has now been driven by hand, once.** With a key in
 `.env.local`: three clients connected, shared a roster, started a round, and a

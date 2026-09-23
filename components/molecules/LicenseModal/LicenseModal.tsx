@@ -10,14 +10,14 @@ export interface LicenseModalProps {
 }
 
 /**
- * "What this is built on" — the four licences a production deploy carries.
+ * "What this is built on" — the licences a production deploy carries.
  *
  * A configured `Modal`, the same shape as `HelpModal`: the walkthrough is a
  * thing the product has rather than a thing a page assembles. It holds nothing
  * but which step you are reading, has no rail, and knows nothing about a room —
  * which is what lets the public landing page be the one that opens it.
  *
- * **Why the landing page and not a `/legal` route.** Three of the four are
+ * **Why the landing page and not a `/legal` route.** Most of them are
  * attribution rather than a contract: CC BY asks for credit where the art is,
  * CC0 asks for nothing, and the provider marks are already on the picker where
  * the GIFs are. What was actually missing was one place a person can read all

@@ -1,0 +1,96 @@
+@use 'theme' as t;
+
+// The accent's weakest fill and edge: an invitation, not an alert. The room's
+// yellow is for refusals and its red is for things that cannot be undone.
+//
+// A grid rather than a stack of primitives because the same four children
+// take two arrangements: one row on a phone — mark, title, the answer, the
+// close key — and above `md` the reason under the title with the two answers
+// under that.
+.offer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'mark copy actions';
+  align-items: center;
+  column-gap: t.$space-12;
+  padding: t.$space-10 t.$space-10 t.$space-10 t.$space-14;
+  border: 1px solid t.$accent-border-weak;
+  border-radius: t.$radius-card;
+  background-color: t.$accent-fill-weak;
+
+  @include t.mq('md') {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'mark copy'
+      '. actions';
+    align-items: start;
+    row-gap: t.$space-10;
+    padding: t.$space-14;
+  }
+}
+
+.mark {
+  grid-area: mark;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: t.$sound-offer-mark;
+  height: t.$sound-offer-mark;
+  border-radius: t.$radius-toolbox;
+  background-color: t.$accent-fill;
+  color: t.$accent-on-fill;
+}
+
+.copy {
+  grid-area: copy;
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+}
+
+.title {
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 15px;
+  font-weight: 700;
+  color: t.$text-primary;
+}
+
+// The reason is the desk's. On a phone the title and the button say enough.
+.body {
+  display: none;
+  margin: 0;
+  font-family: t.$font-sans;
+  font-size: 14px;
+  line-height: 1.45;
+  color: t.$text-body;
+
+  @include t.mq('md') {
+    display: block;
+  }
+}
+
+.actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: t.$space-6;
+
+  @include t.mq('md') {
+    gap: t.$space-8;
+  }
+}
+
+.declineText {
+  display: none;
+
+  @include t.mq('md') {
+    display: inline-flex;
+  }
+}
+
+.declineKey {
+  @include t.mq('md') {
+    display: none;
+  }
+}

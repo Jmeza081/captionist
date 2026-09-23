@@ -340,7 +340,7 @@ test.describe('licensing', () => {
     await expect(dialog).toBeVisible()
     await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Captionist is MIT')
 
-    // Four obligations to four parties, and every one of them is readable.
+    // One obligation per party, and every one of them is readable.
     await dialog.getByRole('button', { name: 'Next' }).click()
     await expect(
       dialog.getByRole('link', { name: 'KLIPY', exact: true }),
@@ -357,6 +357,14 @@ test.describe('licensing', () => {
     await dialog.getByRole('button', { name: 'Next' }).click()
     await expect(dialog.getByRole('link', { name: 'CC BY 4.0' })).toBeVisible()
     await expect(dialog.getByRole('link', { name: 'Inter' })).toBeVisible()
+
+    // The soundtrack names who made it, even though CC0 does not ask.
+    await dialog.getByRole('button', { name: 'Next' }).click()
+    await expect(dialog.getByRole('link', { name: 'Juhani Junkala’s' })).toHaveAttribute(
+      'href',
+      /opengameart\.org/,
+    )
+    await expect(dialog.getByRole('link', { name: 'Kenney’s' })).toBeVisible()
 
     // The last step's key closes rather than advancing into nothing.
     await dialog.getByRole('button', { name: 'Got it' }).click()

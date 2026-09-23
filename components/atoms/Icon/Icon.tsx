@@ -24,6 +24,7 @@ export type IconName =
   | 'toolbox'
   | 'warning'
   | 'share'
+  | 'music'
 
 interface PathSpec {
   d: string[]
@@ -135,6 +136,16 @@ const PATHS: Record<IconName, PathSpec> = {
   // Not in the design — it draws "Shuffle" as bare text — so it is traced to
   // match the set rather than copied: two crossed paths at the `help` weight,
   // both landing on the same arrowhead the chevron uses.
+  // Traced, not drawn by the design — the sound offer needed a mark for
+  // "music" and the set had none. Beamed pair at `shuffle`'s weight.
+  music: {
+    d: ['M9 18V6l11-2v12'],
+    circles: [
+      { cx: 6, cy: 18, r: 3 },
+      { cx: 17, cy: 16, r: 3 },
+    ],
+    width: 2.1,
+  },
   shuffle: {
     d: [
       'M3 7h3.6l10.8 10H21',

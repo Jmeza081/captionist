@@ -5,14 +5,14 @@ import styles from './LicenseModal.module.scss'
  * What Captionist is built out of, and on whose terms.
  *
  * Co-located with the component that renders it, the same as `HelpModal`'s.
- * Four steps rather than one wall of text, because `Modal` is a fixed-height
+ * Five steps rather than one wall of text, because `Modal` is a fixed-height
  * card and a licence page that scrolls inside one is a licence page nobody
- * reaches the bottom of — and because these are genuinely four different
- * obligations to four different parties.
+ * reaches the bottom of — and because these are genuinely different
+ * obligations to different parties.
  *
  * **Kept honest by hand.** Nothing here is generated from `package.json`: the
  * things that actually carry a condition are the *assets* — the GIFs, the
- * faces, the emoji, the typeface — and a dependency list would bury those four
+ * faces, the emoji, the typeface, the sound — and a dependency list would bury those
  * under sixty MIT runtimes that ask for nothing. Change an asset source and
  * this file changes with it.
  */
@@ -85,6 +85,23 @@ export const LICENSE_STEPS: ModalStep[] = [
         asks for exactly this. The typeface is{' '}
         <Link href="https://rsms.me/inter/">Inter</Link> under the{' '}
         <Link href="https://openfontlicense.org/">SIL Open Font License 1.1</Link>.
+      </>
+    ),
+  },
+  {
+    eyebrow: 'The sound',
+    heading: 'Music and sound effects are CC0',
+    body: (
+      <>
+        The music is{' '}
+        <Link href="https://opengameart.org/content/5-chiptunes-action">Juhani Junkala&rsquo;s</Link>{' '}
+        chiptunes, with a fanfare by{' '}
+        <Link href="https://opengameart.org/content/glorious-victory-fanfare-nes">
+          congusbongus
+        </Link>
+        , both via OpenGameArt. The jingles and the countdown tick are{' '}
+        <Link href="https://kenney.nl/assets/music-jingles">Kenney&rsquo;s</Link>. All of it
+        is released under CC0, which asks for no credit, so this is a courtesy.
       </>
     ),
   },
